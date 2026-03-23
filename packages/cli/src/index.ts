@@ -14,6 +14,12 @@ import { inventoryCommand } from "./commands/inventory.js";
 import { shopCommand, buyCommand } from "./commands/shop.js";
 import { useItemCommand } from "./commands/use-item.js";
 import { rankingCommand } from "./commands/ranking.js";
+import { interactiveMode } from "./interactive.js";
+
+// 인자 없이 실행하면 인터랙티브 모드
+if (process.argv.length <= 2) {
+  interactiveMode().then(() => process.exit(0));
+} else {
 
 const program = new Command();
 program.name("pokelog").description("커밋으로 포켓몬을 키우는 개발자 동기부여 CLI").version("0.1.0");
@@ -62,3 +68,5 @@ program.command("use <item> <pokemonUid>").description("아이템 사용").actio
 program.command("ranking").description("랭킹").option("--by <criteria>", "정렬 기준", "exp").action((opts) => rankingCommand(opts.by));
 
 program.parse();
+
+} // end else (non-interactive)
