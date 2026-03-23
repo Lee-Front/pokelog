@@ -61,3 +61,52 @@ export async function adminPollingRun() {
   if (res.ok) console.log("Polling 완료!");
   else console.error(`오류: ${res.data.error}`);
 }
+
+// ========== 테스트/디버그 ==========
+
+export async function testCommit(userId: string, bytes: string) {
+  const res = await apiPost("/api/admin/test/commit", { userId, bytes: parseInt(bytes, 10) });
+  if (res.ok) {
+    const d = res.data;
+    console.log(`커밋 시뮬레이션 완료!`);
+    console.log(`  경험치: +${d.exp}  포인트: +${d.points}`);
+    console.log(`  콤보: ${d.combo}x (배율: ${d.multiplier})`);
+  } else {
+    console.error(`오류: ${res.data.error}`);
+  }
+}
+
+export async function testEncounter(userId: string, species?: string, level?: string) {
+  const body: Record<string, unknown> = { userId };
+  if (species) body.species = species;
+  if (level) body.level = parseInt(level, 10);
+  const res = await apiPost("/api/admin/test/encounter", body);
+  if (res.ok) {
+    const d = res.data.event as { id: string; species: string; level: number };
+    console.log(`야생 ${d.species} Lv.${d.level} 출현! (이벤트: ${d.id.slice(0, 12)})`);
+  } else {
+    console.error(`오류: ${res.data.error}`);
+  }
+}
+
+export async function testGivePoints(userId: string, amount: string) {
+  const res = await apiPost("/api/admin/test/give-points", { userId, amount: parseInt(amount, 10) });
+  if (res.ok) console.log(`포인트 지급 완료! 현재: ${res.data.points}P`);
+  else console.error(`오류: ${res.data.error}`);
+}
+
+export async function testGiveItem(userId: string, item: string, quantity?: string) {
+  const res = await apiPost("/api/admin/test/give-item", { userId, item, quantity: parseInt(quantity || "1", 10) });
+  if (res.ok) console.log(`아이템 지급 완료!`);
+  else console.error(`오류: ${res.data.error}`);
+}
+
+export async function testGivePokemon(userId: string, species: string, level?: string) {
+  const res = await apiPost("/api/admin/test/give-pokemon", { userId, species, level: parseInt(level || "5", 10) });
+  if (res.ok) {
+    const d = res.data.pokemon as { uid: string; species: string; level: number };
+    console.log(`${d.species} Lv.${d.level} 지급 완료! (UID: ${d.uid.slice(0, 12)})`);
+  } else {
+    console.error(`오류: ${res.data.error}`);
+  }
+}
