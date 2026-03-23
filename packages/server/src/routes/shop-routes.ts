@@ -2,8 +2,10 @@ import { Router } from "express";
 import type { AuthRequest } from "../middleware/auth-middleware.js";
 import { getUser, saveUser } from "../storage/user-store.js";
 import { getConfig } from "../storage/config-store.js";
+import { authMiddleware } from "../middleware/auth-middleware.js";
 
 const router = Router();
+router.use(authMiddleware);
 
 router.get("/", async (req, res) => {
   try {
