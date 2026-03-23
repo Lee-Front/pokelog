@@ -1,4 +1,5 @@
 import { apiGet, apiPost } from "../api-client.js";
+import { selectAction } from "../ui/prompts.js";
 
 export async function storageCommand() {
   const res = await apiGet("/api/game/storage");
@@ -16,11 +17,23 @@ export async function storageCommand() {
     console.log("보관함이 비어 있습니다.");
     return;
   }
+
   console.log("  보관함 포켓몬");
   console.log("  " + "─".repeat(30));
   for (const p of storage) {
     console.log(`  ${p.uid.slice(0, 8)}  ${p.species.padEnd(12)} Lv.${p.level}`);
   }
+
+  const choices = storage.map((p) => ({
+    name: `${p.species} Lv.${p.level} → 파티로 이동`,
+    value: p.uid,
+  }));
+  choices.push({ name: "← 돌아가기", value: "__back__" });
+
+  const selected = await selectAction("\n포켓몬을 선택하세요:", choices);
+  if (selected === "__back__") return;
+
+  await withdrawCommand(selected);
 }
 
 export async function withdrawCommand(uid: string) {

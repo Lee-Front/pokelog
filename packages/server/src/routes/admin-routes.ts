@@ -160,6 +160,37 @@ adminRoutes.post("/test/commit", async (req, res) => {
       }
     }
 
+    // 조우 판정
+    const { checkEncounter } = await import("../game/encounter.js");
+    const encounterResult = checkEncounter(
+      user.encounterCeiling.accumulatedBytes,
+      bytes,
+      config.rewards.encounter.baseChance,
+      multiplier,
+      config.rewards.encounter.ceilingBytes
+    );
+    user.encounterCeiling.accumulatedBytes = encounterResult.newCeiling;
+
+    let encounterInfo: { species: string; level: number } | null = null;
+    if (encounterResult.encountered) {
+      const fs = await import("node:fs");
+      const path = await import("node:path");
+      const regionPath = path.default.resolve(process.cwd(), "data/regions/default.json");
+      const regionData = JSON.parse(fs.default.readFileSync(regionPath, "utf-8"));
+      const pick = selectWildPokemon(regionData);
+      const wildPokemon = createWildPokemon(pick.species, pick.level);
+
+      const event = {
+        id: `evt-${crypto.randomUUID()}`,
+        type: "wild_encounter" as const,
+        pokemon: wildPokemon,
+        createdAt: new Date().toISOString(),
+        expiresAt: new Date(Date.now() + config.rewards.encounter.timeLimitHours * 3600000).toISOString(),
+      };
+      user.pendingEvents.push(event);
+      encounterInfo = { species: pick.species, level: pick.level };
+    }
+
     // 로그
     user.log.push({
       type: "reward",
@@ -174,7 +205,11 @@ adminRoutes.post("/test/commit", async (req, res) => {
     if (user.log.length > 200) user.log = user.log.slice(-200);
 
     await saveUser(user);
-    res.json({ ok: true, exp: reward.exp, points: reward.points, combo: user.combo.count, multiplier });
+    res.json({
+      ok: true, exp: reward.exp, points: reward.points,
+      combo: user.combo.count, multiplier,
+      encounter: encounterInfo,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "서버 오류" });

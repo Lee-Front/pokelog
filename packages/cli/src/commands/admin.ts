@@ -71,6 +71,10 @@ export async function testCommit(userId: string, bytes: string) {
     console.log(`커밋 시뮬레이션 완료!`);
     console.log(`  경험치: +${d.exp}  포인트: +${d.points}`);
     console.log(`  콤보: ${d.combo}x (배율: ${d.multiplier})`);
+    const enc = d.encounter as { species: string; level: number } | null;
+    if (enc) {
+      console.log(`  야생 ${enc.species} Lv.${enc.level} 출현!`);
+    }
   } else {
     console.error(`오류: ${res.data.error}`);
   }

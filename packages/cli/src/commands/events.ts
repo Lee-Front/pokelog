@@ -1,4 +1,6 @@
 import { apiGet } from "../api-client.js";
+import { selectAction } from "../ui/prompts.js";
+import { encounterCommand } from "./encounter.js";
 
 export async function eventsCommand() {
   const res = await apiGet("/api/game/events");
@@ -18,12 +20,19 @@ export async function eventsCommand() {
     return;
   }
 
-  for (const evt of events) {
+  const choices = events.map((evt) => {
     const remaining = new Date(evt.expiresAt).getTime() - Date.now();
     const hours = Math.floor(remaining / 3600000);
     const mins = Math.floor((remaining % 3600000) / 60000);
-    console.log(
-      `[${evt.id.slice(0, 8)}] 야생 ${evt.pokemon.species} Lv.${evt.pokemon.level} 출현! (남은 시간: ${hours}시간 ${mins}분)`
-    );
-  }
+    return {
+      name: `야생 ${evt.pokemon.species} Lv.${evt.pokemon.level} (남은 시간: ${hours}시간 ${mins}분)`,
+      value: evt.id,
+    };
+  });
+  choices.push({ name: "← 돌아가기", value: "__back__" });
+
+  const selected = await selectAction("이벤트를 선택하세요:", choices);
+  if (selected === "__back__") return;
+
+  await encounterCommand(selected);
 }

@@ -1,5 +1,7 @@
-import { apiGet, apiPut, apiPost } from "../api-client.js";
+import { apiGet, apiPut } from "../api-client.js";
 import { renderHpBar } from "../ui/display.js";
+import { selectAction } from "../ui/prompts.js";
+import { pokemonCommand } from "./pokemon.js";
 
 export async function partyCommand() {
   const res = await apiGet("/api/game/party");
@@ -13,8 +15,12 @@ export async function partyCommand() {
     level: number;
     hp: number;
     maxHp: number;
-    types: string[];
   }>;
+
+  if (party.length === 0) {
+    console.log("파티가 비어 있습니다.");
+    return;
+  }
 
   console.log("  파티 포켓몬");
   console.log("  " + "─".repeat(30));
@@ -26,6 +32,17 @@ export async function partyCommand() {
       console.log(`  ${i + 1}. (빈 슬롯)`);
     }
   }
+
+  const choices = party.map((p) => ({
+    name: `${p.species} Lv.${p.level} - 상세 정보`,
+    value: p.uid,
+  }));
+  choices.push({ name: "← 돌아가기", value: "__back__" });
+
+  const selected = await selectAction("\n포켓몬을 선택하세요:", choices);
+  if (selected === "__back__") return;
+
+  await pokemonCommand(selected);
 }
 
 export async function partySetCommand(uids: string[]) {
