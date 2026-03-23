@@ -188,10 +188,22 @@ export async function interactiveMode() {
     prompt: "\x1b[36mpokelog>\x1b[0m ",
   });
 
-  rl.prompt();
+  const promptOnce = () =>
+    new Promise<string | null>((resolve) => {
+      rl.prompt();
+      rl.once("line", (line) => resolve(line));
+      rl.once("close", () => resolve(null));
+    });
 
-  for await (const line of rl) {
+  while (true) {
+    const line = await promptOnce();
+    if (line === null) break;
+
     try {
+      // readline 일시 중지 — inquirer가 stdin을 온전히 사용할 수 있게
+      rl.pause();
+      if (process.stdin.isTTY) process.stdin.setRawMode(false);
+
       const shouldContinue = await executeCommand(line);
       if (!shouldContinue) {
         rl.close();
@@ -201,7 +213,9 @@ export async function interactiveMode() {
     } catch (err) {
       console.error("오류:", err);
     }
+
+    // readline 재개
+    rl.resume();
     console.log();
-    rl.prompt();
   }
 }
