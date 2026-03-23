@@ -1,0 +1,452 @@
+[
+  {
+    "id": 1,
+    "species": "bulbasaur",
+    "name": "이상해씨",
+    "types": ["grass", "poison"],
+    "baseStats": {
+      "hp": 45,
+      "attack": 49,
+      "defense": 49,
+      "spAttack": 65,
+      "spDefense": 65,
+      "speed": 45
+    },
+    "catchRate": 0.12,
+    "expGroup": "medium-slow",
+    "learnset": {
+      "1": ["tackle", "growl"],
+      "5": ["vine-whip"],
+      "10": ["razor-leaf"],
+      "15": ["bite"]
+    },
+    "maxMoves": 4
+  },
+  {
+    "id": 2,
+    "species": "ivysaur",
+    "name": "이상해풀",
+    "types": ["grass", "poison"],
+    "baseStats": {
+      "hp": 60,
+      "attack": 62,
+      "defense": 63,
+      "spAttack": 80,
+      "spDefense": 80,
+      "speed": 60
+    },
+    "catchRate": 0.12,
+    "expGroup": "medium-slow",
+    "learnset": {
+      "1": ["tackle", "growl"],
+      "5": ["vine-whip"],
+      "10": ["razor-leaf"],
+      "15": ["bite"]
+    },
+    "maxMoves": 4
+  },
+  {
+    "id": 3,
+    "species": "venusaur",
+    "name": "이상해꽃",
+    "types": ["grass", "poison"],
+    "baseStats": {
+      "hp": 80,
+      "attack": 82,
+      "defense": 83,
+      "spAttack": 100,
+      "spDefense": 100,
+      "speed": 80
+    },
+    "catchRate": 0.12,
+    "expGroup": "medium-slow",
+    "learnset": {
+      "1": ["tackle", "growl"],
+      "5": ["vine-whip"],
+      "10": ["razor-leaf"],
+      "15": ["bite"]
+    },
+    "maxMoves": 4
+  },
+  {
+    "id": 4,
+    "species": "charmander",
+    "name": "파이리",
+    "types": ["fire"],
+    "baseStats": {
+      "hp": 39,
+      "attack": 52,
+      "defense": 43,
+      "spAttack": 60,
+      "spDefense": 50,
+      "speed": 65
+    },
+    "catchRate": 0.12,
+    "expGroup": "medium-slow",
+    "learnset": {
+      "1": ["scratch", "growl"],
+      "5": ["ember"],
+      "10": ["bite"],
+      "15": ["flamethrower"]
+    },
+    "maxMoves": 4
+  },
+  {
+    "id": 5,
+    "species": "charmeleon",
+    "name": "리자드",
+    "types": ["fire"],
+    "baseStats": {
+      "hp": 58,
+      "attack": 64,
+      "defense": 58,
+      "spAttack": 80,
+      "spDefense": 65,
+      "speed": 80
+    },
+    "catchRate": 0.12,
+    "expGroup": "medium-slow",
+    "learnset": {
+      "1": ["scratch", "growl"],
+      "5": ["ember"],
+      "10": ["bite"],
+      "15": ["flamethrower"]
+    },
+    "maxMoves": 4
+  },
+  {
+    "id": 6,
+    "species": "charizard",
+    "name": "리자몽",
+    "types": ["fire", "flying"],
+    "baseStats": {
+      "hp": 78,
+      "attack": 84,
+      "defense": 78,
+      "spAttack": 109,
+      "spDefense": 85,
+      "speed": 100
+    },
+    "catchRate": 0.12,
+    "expGroup": "medium-slow",
+    "learnset": {
+      "1": ["scratch", "growl"],
+      "5": ["ember"],
+      "10": ["bite"],
+      "15": ["flamethrower"]
+    },
+    "maxMoves": 4
+  },
+  {
+    "id": 7,
+    "species": "squirtle",
+    "name": "꼬부기",
+    "types": ["water"],
+    "baseStats": {
+      "hp": 44,
+      "attack": 48,
+      "defense": 65,
+      "spAttack": 50,
+      "spDefense": 64,
+      "speed": 43
+    },
+    "catchRate": 0.12,
+    "expGroup": "medium-slow",
+    "learnset": {
+      "1": ["tackle", "tail-whip"],
+      "5": ["water-gun"],
+      "10": ["bubble"],
+      "15": ["hydro-pump"]
+    },
+    "maxMoves": 4
+  },
+  {
+    "id": 8,
+    "species": "wartortle",
+    "name": "어니부기",
+    "types": ["water"],
+    "baseStats": {
+      "hp": 59,
+      "attack": 63,
+      "defense": 80,
+      "spAttack": 65,
+      "spDefense": 80,
+      "speed": 58
+    },
+    "catchRate": 0.12,
+    "expGroup": "medium-slow",
+    "learnset": {
+      "1": ["tackle", "tail-whip"],
+      "5": ["water-gun"],
+      "10": ["bubble"],
+      "15": ["hydro-pump"]
+    },
+    "maxMoves": 4
+  },
+  {
+    "id": 9,
+    "species": "blastoise",
+    "name": "거북왕",
+    "types": ["water"],
+    "baseStats": {
+      "hp": 79,
+      "attack": 83,
+      "defense": 100,
+      "spAttack": 85,
+      "spDefense": 105,
+      "speed": 78
+    },
+    "catchRate": 0.12,
+    "expGroup": "medium-slow",
+    "learnset": {
+      "1": ["tackle", "tail-whip"],
+      "5": ["water-gun"],
+      "10": ["bubble"],
+      "15": ["hydro-pump"]
+    },
+    "maxMoves": 4
+  },
+  {
+    "id": 16,
+    "species": "pidgey",
+    "name": "구구",
+    "types": ["normal", "flying"],
+    "baseStats": {
+      "hp": 40,
+      "attack": 45,
+      "defense": 40,
+      "spAttack": 35,
+      "spDefense": 35,
+      "speed": 56
+    },
+    "catchRate": 0.5,
+    "expGroup": "medium-slow",
+    "learnset": {
+      "1": ["tackle", "growl"],
+      "5": ["peck"],
+      "10": ["quick-attack"],
+      "15": ["bite"]
+    },
+    "maxMoves": 4
+  },
+  {
+    "id": 17,
+    "species": "pidgeotto",
+    "name": "피죤",
+    "types": ["normal", "flying"],
+    "baseStats": {
+      "hp": 63,
+      "attack": 60,
+      "defense": 55,
+      "spAttack": 50,
+      "spDefense": 50,
+      "speed": 71
+    },
+    "catchRate": 0.3,
+    "expGroup": "medium-slow",
+    "learnset": {
+      "1": ["tackle", "growl"],
+      "5": ["peck"],
+      "10": ["quick-attack"],
+      "15": ["bite"]
+    },
+    "maxMoves": 4
+  },
+  {
+    "id": 19,
+    "species": "rattata",
+    "name": "꼬렛",
+    "types": ["normal"],
+    "baseStats": {
+      "hp": 30,
+      "attack": 56,
+      "defense": 35,
+      "spAttack": 25,
+      "spDefense": 35,
+      "speed": 72
+    },
+    "catchRate": 0.5,
+    "expGroup": "medium-fast",
+    "learnset": {
+      "1": ["tackle", "tail-whip"],
+      "5": ["quick-attack"],
+      "10": ["bite"]
+    },
+    "maxMoves": 4
+  },
+  {
+    "id": 20,
+    "species": "raticate",
+    "name": "레트라",
+    "types": ["normal"],
+    "baseStats": {
+      "hp": 55,
+      "attack": 81,
+      "defense": 60,
+      "spAttack": 50,
+      "spDefense": 70,
+      "speed": 97
+    },
+    "catchRate": 0.25,
+    "expGroup": "medium-fast",
+    "learnset": {
+      "1": ["tackle", "tail-whip"],
+      "5": ["quick-attack"],
+      "10": ["bite"]
+    },
+    "maxMoves": 4
+  },
+  {
+    "id": 25,
+    "species": "pikachu",
+    "name": "피카츄",
+    "types": ["electric"],
+    "baseStats": {
+      "hp": 35,
+      "attack": 55,
+      "defense": 40,
+      "spAttack": 50,
+      "spDefense": 50,
+      "speed": 90
+    },
+    "catchRate": 0.3,
+    "expGroup": "medium-fast",
+    "learnset": {
+      "1": ["thunder-shock", "growl"],
+      "5": ["tail-whip"],
+      "10": ["quick-attack"],
+      "15": ["thunderbolt"]
+    },
+    "maxMoves": 4
+  },
+  {
+    "id": 26,
+    "species": "raichu",
+    "name": "라이츄",
+    "types": ["electric"],
+    "baseStats": {
+      "hp": 60,
+      "attack": 90,
+      "defense": 55,
+      "spAttack": 90,
+      "spDefense": 80,
+      "speed": 110
+    },
+    "catchRate": 0.15,
+    "expGroup": "medium-fast",
+    "learnset": {
+      "1": ["thunder-shock", "growl"],
+      "5": ["tail-whip"],
+      "10": ["quick-attack"],
+      "15": ["thunderbolt"]
+    },
+    "maxMoves": 4
+  },
+  {
+    "id": 10,
+    "species": "caterpie",
+    "name": "캐터피",
+    "types": ["bug"],
+    "baseStats": {
+      "hp": 45,
+      "attack": 30,
+      "defense": 35,
+      "spAttack": 20,
+      "spDefense": 20,
+      "speed": 45
+    },
+    "catchRate": 0.5,
+    "expGroup": "medium-fast",
+    "learnset": {
+      "1": ["tackle", "string-shot"]
+    },
+    "maxMoves": 4
+  },
+  {
+    "id": 13,
+    "species": "weedle",
+    "name": "뿔충이",
+    "types": ["bug", "poison"],
+    "baseStats": {
+      "hp": 40,
+      "attack": 35,
+      "defense": 30,
+      "spAttack": 20,
+      "spDefense": 20,
+      "speed": 50
+    },
+    "catchRate": 0.5,
+    "expGroup": "medium-fast",
+    "learnset": {
+      "1": ["tackle", "string-shot"],
+      "5": ["harden"]
+    },
+    "maxMoves": 4
+  },
+  {
+    "id": 74,
+    "species": "geodude",
+    "name": "꼬마돌",
+    "types": ["rock", "ground"],
+    "baseStats": {
+      "hp": 40,
+      "attack": 80,
+      "defense": 100,
+      "spAttack": 30,
+      "spDefense": 30,
+      "speed": 20
+    },
+    "catchRate": 0.4,
+    "expGroup": "medium-slow",
+    "learnset": {
+      "1": ["tackle", "growl"],
+      "5": ["rock-throw"],
+      "10": ["harden"],
+      "15": ["bite"]
+    },
+    "maxMoves": 4
+  },
+  {
+    "id": 129,
+    "species": "magikarp",
+    "name": "잉어킹",
+    "types": ["water"],
+    "baseStats": {
+      "hp": 20,
+      "attack": 10,
+      "defense": 55,
+      "spAttack": 15,
+      "spDefense": 20,
+      "speed": 80
+    },
+    "catchRate": 0.5,
+    "expGroup": "slow",
+    "learnset": {
+      "1": ["tackle"]
+    },
+    "maxMoves": 4
+  },
+  {
+    "id": 147,
+    "species": "dratini",
+    "name": "미뇽",
+    "types": ["dragon"],
+    "baseStats": {
+      "hp": 41,
+      "attack": 64,
+      "defense": 45,
+      "spAttack": 50,
+      "spDefense": 50,
+      "speed": 50
+    },
+    "catchRate": 0.1,
+    "expGroup": "slow",
+    "learnset": {
+      "1": ["wrap", "growl"],
+      "5": ["thunder-shock"],
+      "10": ["water-gun"],
+      "15": ["bite"]
+    },
+    "maxMoves": 4
+  }
+]

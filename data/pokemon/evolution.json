@@ -1,0 +1,16 @@
+{
+  "bulbasaur": { "evolvesTo": "ivysaur", "condition": { "type": "level", "level": 16 } },
+  "ivysaur": { "evolvesTo": "venusaur", "condition": { "type": "level", "level": 32 } },
+  "charmander": { "evolvesTo": "charmeleon", "condition": { "type": "level", "level": 16 } },
+  "charmeleon": { "evolvesTo": "charizard", "condition": { "type": "level", "level": 36 } },
+  "squirtle": { "evolvesTo": "wartortle", "condition": { "type": "level", "level": 16 } },
+  "wartortle": { "evolvesTo": "blastoise", "condition": { "type": "level", "level": 36 } },
+  "pidgey": { "evolvesTo": "pidgeotto", "condition": { "type": "level", "level": 18 } },
+  "rattata": { "evolvesTo": "raticate", "condition": { "type": "level", "level": 20 } },
+  "pikachu": { "evolvesTo": "raichu", "condition": { "type": "item", "item": "thunder-stone" } },
+  "caterpie": { "evolvesTo": null, "condition": null },
+  "weedle": { "evolvesTo": null, "condition": null },
+  "geodude": { "evolvesTo": null, "condition": null },
+  "magikarp": { "evolvesTo": null, "condition": null },
+  "dratini": { "evolvesTo": null, "condition": null }
+}

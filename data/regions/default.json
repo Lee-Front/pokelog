@@ -1,0 +1,25 @@
+{
+  "name": "default",
+  "encounters": [
+    { "species": "pidgey", "weight": 100, "levelRange": [2, 5] },
+    { "species": "rattata", "weight": 100, "levelRange": [2, 5] },
+    { "species": "caterpie", "weight": 80, "levelRange": [2, 4] },
+    { "species": "weedle", "weight": 80, "levelRange": [2, 4] },
+    { "species": "geodude", "weight": 40, "levelRange": [4, 8] },
+    { "species": "magikarp", "weight": 60, "levelRange": [3, 6] },
+    { "species": "pikachu", "weight": 20, "levelRange": [3, 7] },
+    { "species": "pidgeotto", "weight": 15, "levelRange": [10, 15] },
+    { "species": "raticate", "weight": 15, "levelRange": [10, 15] },
+    { "species": "bulbasaur", "weight": 10, "levelRange": [5, 10] },
+    { "species": "charmander", "weight": 10, "levelRange": [5, 10] },
+    { "species": "squirtle", "weight": 10, "levelRange": [5, 10] },
+    { "species": "raichu", "weight": 5, "levelRange": [12, 18] },
+    { "species": "ivysaur", "weight": 5, "levelRange": [16, 22] },
+    { "species": "charmeleon", "weight": 5, "levelRange": [16, 22] },
+    { "species": "wartortle", "weight": 5, "levelRange": [16, 22] },
+    { "species": "venusaur", "weight": 2, "levelRange": [32, 40] },
+    { "species": "charizard", "weight": 2, "levelRange": [36, 45] },
+    { "species": "blastoise", "weight": 2, "levelRange": [36, 45] },
+    { "species": "dratini", "weight": 3, "levelRange": [8, 15] }
+  ]
+}

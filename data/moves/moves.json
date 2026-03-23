@@ -1,0 +1,202 @@
+[
+  {
+    "id": "tackle",
+    "name": "몸통박치기",
+    "type": "normal",
+    "category": "physical",
+    "power": 40,
+    "accuracy": 100,
+    "pp": 35,
+    "description": "몸 전체로 부딪쳐서 공격한다."
+  },
+  {
+    "id": "scratch",
+    "name": "할퀴기",
+    "type": "normal",
+    "category": "physical",
+    "power": 40,
+    "accuracy": 100,
+    "pp": 35,
+    "description": "뾰족한 발톱으로 할퀴어 공격한다."
+  },
+  {
+    "id": "growl",
+    "name": "울음소리",
+    "type": "normal",
+    "category": "status",
+    "power": 0,
+    "accuracy": 100,
+    "pp": 40,
+    "description": "귀여운 울음소리로 방심하게 하여 공격을 떨어뜨린다."
+  },
+  {
+    "id": "tail-whip",
+    "name": "꼬리흔들기",
+    "type": "normal",
+    "category": "status",
+    "power": 0,
+    "accuracy": 100,
+    "pp": 30,
+    "description": "꼬리를 좌우로 흔들어 방어를 떨어뜨린다."
+  },
+  {
+    "id": "vine-whip",
+    "name": "덩굴채찍",
+    "type": "grass",
+    "category": "physical",
+    "power": 45,
+    "accuracy": 100,
+    "pp": 25,
+    "description": "덩굴을 휘둘러 상대를 때려서 공격한다."
+  },
+  {
+    "id": "ember",
+    "name": "불꽃세례",
+    "type": "fire",
+    "category": "special",
+    "power": 40,
+    "accuracy": 100,
+    "pp": 25,
+    "description": "작은 불꽃을 날려 공격한다."
+  },
+  {
+    "id": "water-gun",
+    "name": "물대포",
+    "type": "water",
+    "category": "special",
+    "power": 40,
+    "accuracy": 100,
+    "pp": 25,
+    "description": "물을 세차게 발사하여 공격한다."
+  },
+  {
+    "id": "thunder-shock",
+    "name": "전기쇼크",
+    "type": "electric",
+    "category": "special",
+    "power": 40,
+    "accuracy": 100,
+    "pp": 30,
+    "description": "전격을 날려 공격한다."
+  },
+  {
+    "id": "quick-attack",
+    "name": "전광석화",
+    "type": "normal",
+    "category": "physical",
+    "power": 40,
+    "accuracy": 100,
+    "pp": 30,
+    "description": "눈에 보이지 않는 빠른 속도로 공격한다."
+  },
+  {
+    "id": "thunderbolt",
+    "name": "10만볼트",
+    "type": "electric",
+    "category": "special",
+    "power": 90,
+    "accuracy": 100,
+    "pp": 15,
+    "description": "강한 전격으로 공격한다."
+  },
+  {
+    "id": "flamethrower",
+    "name": "화염방사",
+    "type": "fire",
+    "category": "special",
+    "power": 90,
+    "accuracy": 100,
+    "pp": 15,
+    "description": "뜨거운 불꽃을 내뿜어 공격한다."
+  },
+  {
+    "id": "hydro-pump",
+    "name": "하이드로펌프",
+    "type": "water",
+    "category": "special",
+    "power": 110,
+    "accuracy": 80,
+    "pp": 5,
+    "description": "큰 물줄기를 세차게 내뿜어 공격한다."
+  },
+  {
+    "id": "razor-leaf",
+    "name": "잎날가르기",
+    "type": "grass",
+    "category": "physical",
+    "power": 55,
+    "accuracy": 95,
+    "pp": 25,
+    "description": "날카로운 잎을 날려 공격한다."
+  },
+  {
+    "id": "bite",
+    "name": "물기",
+    "type": "dark",
+    "category": "physical",
+    "power": 60,
+    "accuracy": 100,
+    "pp": 25,
+    "description": "날카로운 이빨로 물어서 공격한다."
+  },
+  {
+    "id": "peck",
+    "name": "쪼기",
+    "type": "flying",
+    "category": "physical",
+    "power": 35,
+    "accuracy": 100,
+    "pp": 35,
+    "description": "뾰족한 부리로 쪼아서 공격한다."
+  },
+  {
+    "id": "string-shot",
+    "name": "실뿜기",
+    "type": "bug",
+    "category": "status",
+    "power": 0,
+    "accuracy": 95,
+    "pp": 40,
+    "description": "실을 뿜어 감아서 스피드를 떨어뜨린다."
+  },
+  {
+    "id": "harden",
+    "name": "단단해지기",
+    "type": "normal",
+    "category": "status",
+    "power": 0,
+    "accuracy": 100,
+    "pp": 30,
+    "description": "몸을 단단하게 하여 방어를 올린다."
+  },
+  {
+    "id": "bubble",
+    "name": "거품",
+    "type": "water",
+    "category": "special",
+    "power": 40,
+    "accuracy": 100,
+    "pp": 30,
+    "description": "거품을 날려 공격한다."
+  },
+  {
+    "id": "rock-throw",
+    "name": "돌떨구기",
+    "type": "rock",
+    "category": "physical",
+    "power": 50,
+    "accuracy": 90,
+    "pp": 15,
+    "description": "작은 바위를 들어올려 상대에게 던져서 공격한다."
+  },
+  {
+    "id": "wrap",
+    "name": "감기",
+    "type": "normal",
+    "category": "physical",
+    "power": 15,
+    "accuracy": 90,
+    "pp": 20,
+    "description": "긴 몸이나 덩굴 등을 사용해 조여서 공격한다."
+  }
+]
