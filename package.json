@@ -1,0 +1,12 @@
+{
+  "name": "pokelog",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": ["packages/*"],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspaces",
+    "dev:server": "npm run dev -w packages/server",
+    "dev:cli": "npm run dev -w packages/cli"
+  }
+}
