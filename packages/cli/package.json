@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "bin": {
-    "pokelog": "dist/index.js",
-    "pokelog-admin": "dist/admin-entry.js"
+    "pokelog": "dist/packages/cli/src/index.js",
+    "pokelog-admin": "dist/packages/cli/src/admin-entry.js"
   },
   "scripts": {
     "build": "tsc",
