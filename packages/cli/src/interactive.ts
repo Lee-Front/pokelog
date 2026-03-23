@@ -15,6 +15,16 @@ import { useItemCommand } from "./commands/use-item.js";
 import { withdrawCommand, depositCommand } from "./commands/storage.js";
 import { initCommand } from "./commands/init.js";
 
+// Alternate Screen Buffer — 별도 화면 버퍼 사용 (vim, htop 방식)
+function enterAltScreen() {
+  process.stdout.write("\x1b[?1049h"); // 대체 화면 진입
+  process.stdout.write("\x1b[2J\x1b[H"); // 클리어 + 커서 홈
+}
+
+function leaveAltScreen() {
+  process.stdout.write("\x1b[?1049l"); // 원래 화면 복귀
+}
+
 export function clearScreen() {
   process.stdout.write("\x1b[2J\x1b[H");
 }
@@ -164,8 +174,13 @@ async function executeCommand(line: string): Promise<boolean> {
 }
 
 export async function interactiveMode() {
-  clearScreen();
+  enterAltScreen();
   printBanner();
+
+  // 종료 시 원래 화면 복귀
+  const cleanup = () => leaveAltScreen();
+  process.on("exit", cleanup);
+  process.on("SIGINT", () => { cleanup(); process.exit(0); });
 
   const rl = readline.createInterface({
     input: process.stdin,
@@ -180,6 +195,7 @@ export async function interactiveMode() {
       const shouldContinue = await executeCommand(line);
       if (!shouldContinue) {
         rl.close();
+        leaveAltScreen();
         return;
       }
     } catch (err) {
