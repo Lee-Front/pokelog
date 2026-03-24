@@ -182,31 +182,27 @@ export async function interactiveMode() {
   process.on("exit", cleanup);
   process.on("SIGINT", () => { cleanup(); process.exit(0); });
 
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    prompt: "\x1b[36mpokelog>\x1b[0m ",
-  });
-
-  const promptOnce = () =>
-    new Promise<string | null>((resolve) => {
-      rl.prompt();
-      rl.once("line", (line) => resolve(line));
+  function promptOnce(): Promise<string | null> {
+    return new Promise((resolve) => {
+      const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout,
+      });
+      rl.question("\x1b[36mpokelog>\x1b[0m ", (answer) => {
+        rl.close();
+        resolve(answer);
+      });
       rl.once("close", () => resolve(null));
     });
+  }
 
   while (true) {
     const line = await promptOnce();
     if (line === null) break;
 
     try {
-      // readline 일시 중지 — inquirer가 stdin을 온전히 사용할 수 있게
-      rl.pause();
-      if (process.stdin.isTTY) process.stdin.setRawMode(false);
-
       const shouldContinue = await executeCommand(line);
       if (!shouldContinue) {
-        rl.close();
         leaveAltScreen();
         return;
       }
@@ -214,8 +210,6 @@ export async function interactiveMode() {
       console.error("오류:", err);
     }
 
-    // readline 재개
-    rl.resume();
     console.log();
   }
 }
