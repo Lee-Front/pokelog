@@ -1,6 +1,7 @@
 import express from "express";
 import path from "node:path";
 import fs from "node:fs";
+import { getConfig } from "./storage/config-store.js";
 import { authRoutes } from "./routes/auth-routes.js";
 import { userRoutes } from "./routes/user-routes.js";
 import { gameRoutes } from "./routes/game-routes.js";
@@ -12,6 +13,12 @@ import { adminRoutes } from "./routes/admin-routes.js";
 export function createApp() {
   const app = express();
   app.use(express.json());
+
+  // 서버 메타데이터 (인증 불필요)
+  app.get("/api/meta", async (_req, res) => {
+    const config = await getConfig();
+    res.json(config.meta);
+  });
 
   // 포켓몬 ANSI 아트 API (인증 불필요)
   app.get("/api/art/:species", (req, res) => {

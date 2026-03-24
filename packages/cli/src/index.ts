@@ -1,6 +1,10 @@
 #!/usr/bin/env node
 import { Command } from "commander";
-import { initCommand } from "./commands/init.js";
+import { joinCommand } from "./commands/join.js";
+import { serversCommand } from "./commands/servers.js";
+import { useCommand } from "./commands/use.js";
+import { leaveCommand } from "./commands/leave.js";
+import { whereamiCommand } from "./commands/whereami.js";
 import { registerCommand, loginCommand, logoutCommand } from "./commands/auth.js";
 import { profileCommand, nicknameCommand, matchCommand, unmatchCommand } from "./commands/profile.js";
 import { statusCommand } from "./commands/status.js";
@@ -24,8 +28,12 @@ if (process.argv.length <= 2) {
 const program = new Command();
 program.name("pokelog").description("커밋으로 포켓몬을 키우는 개발자 동기부여 CLI").version("0.1.0");
 
-// Init
-program.command("init").description("서버 URL 설정").requiredOption("--server <url>", "서버 URL").action((opts) => initCommand(opts.server));
+// Server management
+program.command("join <url>").description("서버에 참가").action(joinCommand);
+program.command("servers").description("참가한 서버 목록").action(serversCommand);
+program.command("use <name>").description("활성 서버 전환").action(useCommand);
+program.command("leave <name>").description("서버에서 나가기").action(leaveCommand);
+program.command("whereami").description("현재 서버 정보").action(whereamiCommand);
 
 // Auth
 program.command("register").description("회원가입").action(registerCommand);
@@ -62,10 +70,13 @@ program.command("inventory").description("인벤토리").action(inventoryCommand
 // Shop
 program.command("shop").description("상점").action(shopCommand);
 program.command("buy <item> [quantity]").description("아이템 구매").action((item, qty) => buyCommand(item, parseInt(qty || "1", 10)));
-program.command("use <item> <pokemonUid>").description("아이템 사용").action(useItemCommand);
+program.command("use-item <item> <pokemonUid>").description("아이템 사용").action(useItemCommand);
 
 // Social
 program.command("ranking").description("랭킹").option("--by <criteria>", "정렬 기준", "exp").action((opts) => rankingCommand(opts.by));
+
+// Deprecated (하위 호환)
+program.command("init").description("[deprecated] pokelog join <url> 을 사용하세요").requiredOption("--server <url>", "서버 URL").action((opts) => joinCommand(opts.server));
 
 program.parse();
 

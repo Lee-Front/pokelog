@@ -7,6 +7,18 @@ const CONFIG_PATH = path.join(DATA_DIR, "config.json");
 
 export const DEFAULT_CONFIG: ServerConfig = {
   server: { port: 3000 },
+  meta: {
+    serverId: "default",
+    serverName: "local",
+    displayName: "PokeLog Server",
+    apiVersion: "1",
+    featureFlags: {
+      pvp: false,
+      trade: false,
+      achievements: false,
+      regions: false,
+    },
+  },
   polling: {
     intervalMinutes: 5,
     repos: [],

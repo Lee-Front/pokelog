@@ -1,6 +1,6 @@
-import { saveServerUrl } from "../config.js";
+import { joinCommand } from "./join.js";
 
 export async function initCommand(serverUrl: string) {
-  await saveServerUrl(serverUrl);
-  console.log(`서버 설정 완료: ${serverUrl}`);
+  console.log("[deprecated] pokelog join <url> 을 사용하세요.\n");
+  await joinCommand(serverUrl);
 }

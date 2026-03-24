@@ -2,7 +2,7 @@ import readline from "node:readline";
 import { statusCommand } from "./commands/status.js";
 import { eventsCommand } from "./commands/events.js";
 import { partyCommand } from "./commands/party.js";
-import { storageCommand } from "./commands/storage.js";
+import { storageCommand, withdrawCommand, depositCommand } from "./commands/storage.js";
 import { pokemonCommand } from "./commands/pokemon.js";
 import { pokedexCommand } from "./commands/pokedex.js";
 import { inventoryCommand } from "./commands/inventory.js";
@@ -12,17 +12,21 @@ import { profileCommand, nicknameCommand, matchCommand, unmatchCommand } from ".
 import { registerCommand, loginCommand, logoutCommand } from "./commands/auth.js";
 import { encounterCommand } from "./commands/encounter.js";
 import { useItemCommand } from "./commands/use-item.js";
-import { withdrawCommand, depositCommand } from "./commands/storage.js";
-import { initCommand } from "./commands/init.js";
+import { joinCommand } from "./commands/join.js";
+import { serversCommand } from "./commands/servers.js";
+import { useCommand } from "./commands/use.js";
+import { leaveCommand } from "./commands/leave.js";
+import { whereamiCommand } from "./commands/whereami.js";
+import { hasNoServers, getCurrentServerName, getCurrentServer, getToken } from "./config.js";
 
-// Alternate Screen Buffer — 별도 화면 버퍼 사용 (vim, htop 방식)
+// Alternate Screen Buffer
 function enterAltScreen() {
-  process.stdout.write("\x1b[?1049h"); // 대체 화면 진입
-  process.stdout.write("\x1b[2J\x1b[H"); // 클리어 + 커서 홈
+  process.stdout.write("\x1b[?1049h");
+  process.stdout.write("\x1b[2J\x1b[H");
 }
 
 function leaveAltScreen() {
-  process.stdout.write("\x1b[?1049l"); // 원래 화면 복귀
+  process.stdout.write("\x1b[?1049l");
 }
 
 export function clearScreen() {
@@ -30,13 +34,11 @@ export function clearScreen() {
 }
 
 async function printBanner() {
-  // 칠색조 ANSI 아트 — 서버에서 가져옴
   const { fetchArt } = await import("./ui/display.js");
   const art = await fetchArt("ho-oh");
   if (art) console.log(art);
 
-  // 타이틀 — 골드 글씨 (테두리 없음)
-  const G = "\x1b[1m\x1b[38;2;218;165;32m"; // 골드색 (bold)
+  const G = "\x1b[1m\x1b[38;2;218;165;32m";
   const R = "\x1b[0m";
   console.log(`${G}  ██████╗  ██████╗ ██╗  ██╗███████╗██╗      ██████╗  ██████╗ ${R}`);
   console.log(`${G}  ██╔══██╗██╔═══██╗██║ ██╔╝██╔════╝██║     ██╔═══██╗██╔════╝ ${R}`);
@@ -44,12 +46,20 @@ async function printBanner() {
   console.log(`${G}  ██╔═══╝ ██║   ██║██╔═██╗ ██╔══╝  ██║     ██║   ██║██║   ██║${R}`);
   console.log(`${G}  ██║     ╚██████╔╝██║  ██╗███████╗███████╗╚██████╔╝╚██████╔╝${R}`);
   console.log(`${G}  ╚═╝      ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝ ╚═════╝  ╚═════╝ ${R}`);
-  console.log("\x1b[90m  help를 입력하면 명령어 목록을 볼 수 있습니다.\x1b[0m\n");
+  console.log(`\x1b[90m  help를 입력하면 명령어 목록을 볼 수 있습니다.\x1b[0m\n`);
 }
 
 function printHelp() {
   console.log(`
-  사용 가능한 명령어:
+  서버 관리:
+  ──────────────────────────────
+  join <url>          서버에 참가
+  servers             참가한 서버 목록
+  use <name>          서버 전환
+  leave <name>        서버에서 나가기
+  whereami            현재 서버 정보
+
+  게임:
   ──────────────────────────────
   status              현황 요약
   events              미확인 이벤트
@@ -59,12 +69,15 @@ function printHelp() {
   inventory           인벤토리
   shop                상점
   buy <item> [qty]    아이템 구매
-  use <item> <uid>    아이템 사용
+  use-item <item> <uid>  아이템 사용
   storage             보관함
   withdraw <uid>      보관함 → 파티
   deposit <uid>       파티 → 보관함
   pokemon <uid>       포켓몬 상세
   ranking             랭킹
+
+  계정:
+  ──────────────────────────────
   profile [nickname]  프로필
   nickname <name>     닉네임 변경
   match <app> <id>    매칭 추가
@@ -72,6 +85,9 @@ function printHelp() {
   login               로그인
   logout              로그아웃
   register            회원가입
+
+  기타:
+  ──────────────────────────────
   clear               화면 지우기
   help                도움말
   quit                종료
@@ -88,6 +104,30 @@ async function executeCommand(line: string): Promise<boolean> {
   clearScreen();
 
   switch (cmd) {
+    // 서버 관리
+    case "join":
+      if (args[0]) await joinCommand(args[0]);
+      else console.log("사용법: join <url>");
+      break;
+    case "servers":
+      await serversCommand();
+      break;
+    case "server":
+      await whereamiCommand();
+      break;
+    case "use":
+      if (args[0]) await useCommand(args[0]);
+      else console.log("사용법: use <name>");
+      break;
+    case "leave":
+      if (args[0]) await leaveCommand(args[0]);
+      else console.log("사용법: leave <name>");
+      break;
+    case "whereami":
+      await whereamiCommand();
+      break;
+
+    // 게임
     case "status":
       await statusCommand();
       break;
@@ -139,9 +179,9 @@ async function executeCommand(line: string): Promise<boolean> {
       if (args[0]) await buyCommand(args[0], parseInt(args[1] || "1", 10));
       else console.log("사용법: buy <item> [quantity]");
       break;
-    case "use":
+    case "use-item":
       if (args[0] && args[1]) await useItemCommand(args[0], args[1]);
-      else console.log("사용법: use <item> <pokemonUid>");
+      else console.log("사용법: use-item <item> <pokemonUid>");
       break;
     case "withdraw":
       if (args[0]) await withdrawCommand(args[0]);
@@ -160,10 +200,6 @@ async function executeCommand(line: string): Promise<boolean> {
     case "register":
       await registerCommand();
       break;
-    case "init":
-      if (args[0]) await initCommand(args[0]);
-      else console.log("사용법: init <serverUrl>");
-      break;
     case "clear":
       clearScreen();
       break;
@@ -181,23 +217,58 @@ async function executeCommand(line: string): Promise<boolean> {
   return true;
 }
 
+async function getPrompt(): Promise<string> {
+  const name = await getCurrentServerName();
+  if (name) {
+    return `\x1b[36mpokelog\x1b[0m[\x1b[33m${name}\x1b[0m]> `;
+  }
+  return "\x1b[36mpokelog\x1b[0m> ";
+}
+
+async function showFirstRunUx(): Promise<void> {
+  const noServers = await hasNoServers();
+  if (noServers) {
+    console.log("\x1b[33m  참가한 서버가 없습니다.\x1b[0m\n");
+    console.log("  서버에 참가하세요:");
+    console.log("    join <url>\n");
+    return;
+  }
+
+  const server = await getCurrentServer();
+  if (!server) {
+    console.log("\x1b[33m  활성 서버가 없습니다.\x1b[0m\n");
+    console.log("  서버를 선택하세요:");
+    console.log("    servers → use <name>\n");
+    return;
+  }
+
+  const token = await getToken();
+  if (!token) {
+    console.log(`  서버: \x1b[33m${server.displayName}\x1b[0m (${server.name})\n`);
+    console.log("  로그인 또는 회원가입이 필요합니다:");
+    console.log("    login");
+    console.log("    register\n");
+    return;
+  }
+}
+
 export async function interactiveMode() {
   enterAltScreen();
   await printBanner();
+  await showFirstRunUx();
 
-  // 종료 시 원래 화면 복귀
   const cleanup = () => leaveAltScreen();
   process.on("exit", cleanup);
   process.on("SIGINT", () => { cleanup(); process.exit(0); });
 
-  function promptOnce(): Promise<string | null> {
+  function promptOnce(prompt: string): Promise<string | null> {
     return new Promise((resolve) => {
       let resolved = false;
       const rl = readline.createInterface({
         input: process.stdin,
         output: process.stdout,
       });
-      rl.question("\x1b[36mpokelog>\x1b[0m ", (answer) => {
+      rl.question(prompt, (answer) => {
         if (!resolved) {
           resolved = true;
           rl.close();
@@ -214,7 +285,8 @@ export async function interactiveMode() {
   }
 
   while (true) {
-    const line = await promptOnce();
+    const prompt = await getPrompt();
+    const line = await promptOnce(prompt);
     if (line === null) break;
 
     try {

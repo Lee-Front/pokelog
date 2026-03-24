@@ -121,8 +121,18 @@ export interface ShopItem {
   healAmount?: number;
 }
 
+// === Server Meta ===
+export interface ServerMeta {
+  serverId: string;
+  serverName: string;
+  displayName: string;
+  apiVersion: string;
+  featureFlags: Record<string, boolean>;
+}
+
 export interface ServerConfig {
   server: { port: number };
+  meta: ServerMeta;
   polling: {
     intervalMinutes: number;
     repos: RepoConfig[];
