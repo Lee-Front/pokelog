@@ -71,7 +71,7 @@ export async function encounterCommand(eventId: string) {
     const myPoke = party.find((p) => p.uid === state.myPokemonUid);
 
     console.log(`\n야생 ${state.wild.species} Lv.${state.wild.level}`);
-    renderPokemonArt(state.wild.species);
+    await renderPokemonArt(state.wild.species);
     console.log(`  HP: ${renderHpBar(state.wild.hp, state.wild.maxHp)}`);
     if (myPoke) {
       console.log(`\n내 포켓몬: ${myPoke.species} Lv.${myPoke.level}`);

@@ -29,17 +29,11 @@ export function clearScreen() {
   process.stdout.write("\x1b[2J\x1b[H");
 }
 
-function printBanner() {
-  // 뮤츠 ANSI 아트 출력
-  try {
-    const fs = require("node:fs");
-    const path = require("node:path");
-    const artPath = path.resolve(process.cwd(), "data/colorscripts/small/regular/ho-oh");
-    const art = fs.readFileSync(artPath, "utf-8");
-    console.log(art);
-  } catch {
-    // 아트 파일 없으면 스킵
-  }
+async function printBanner() {
+  // 칠색조 ANSI 아트 — 서버에서 가져옴
+  const { fetchArt } = await import("./ui/display.js");
+  const art = await fetchArt("ho-oh");
+  if (art) console.log(art);
 
   // 타이틀 — 골드 글씨 (테두리 없음)
   const G = "\x1b[1m\x1b[38;2;218;165;32m"; // 골드색 (bold)
@@ -189,7 +183,7 @@ async function executeCommand(line: string): Promise<boolean> {
 
 export async function interactiveMode() {
   enterAltScreen();
-  printBanner();
+  await printBanner();
 
   // 종료 시 원래 화면 복귀
   const cleanup = () => leaveAltScreen();

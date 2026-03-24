@@ -20,7 +20,7 @@ export async function pokemonCommand(uid: string) {
     caughtAt: string;
   };
 
-  renderPokemonArt(p.species);
+  await renderPokemonArt(p.species);
   console.log(`  ${p.nickname || p.species} Lv.${p.level}`);
   console.log(`  HP: ${renderHpBar(p.hp, p.maxHp)}`);
   console.log(`  EXP: ${p.exp}`);

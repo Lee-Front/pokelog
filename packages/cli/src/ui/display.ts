@@ -1,15 +1,30 @@
-import fs from "node:fs";
-import path from "node:path";
+import { getServerUrl } from "../config.js";
 
-const DATA_ROOT = path.resolve(process.cwd(), "data");
-
-export function renderPokemonArt(species: string): void {
-  const artPath = path.join(DATA_ROOT, "colorscripts", "small", "regular", species);
+export async function renderPokemonArt(species: string): Promise<void> {
   try {
-    const art = fs.readFileSync(artPath, "utf-8");
-    console.log(art);
+    const serverUrl = await getServerUrl();
+    if (!serverUrl) return;
+    const res = await fetch(`${serverUrl}/api/art/${species}`);
+    if (res.ok) {
+      const art = await res.text();
+      console.log(art);
+    } else {
+      console.log(`  [${species}]`);
+    }
   } catch {
     console.log(`  [${species}]`);
+  }
+}
+
+export async function fetchArt(species: string): Promise<string | null> {
+  try {
+    const serverUrl = await getServerUrl();
+    if (!serverUrl) return null;
+    const res = await fetch(`${serverUrl}/api/art/${species}`);
+    if (res.ok) return await res.text();
+    return null;
+  } catch {
+    return null;
   }
 }
 
