@@ -34,25 +34,22 @@ function printBanner() {
   try {
     const fs = require("node:fs");
     const path = require("node:path");
-    const artPath = path.resolve(process.cwd(), "data/colorscripts/small/regular/mewtwo");
+    const artPath = path.resolve(process.cwd(), "data/colorscripts/small/regular/ho-oh");
     const art = fs.readFileSync(artPath, "utf-8");
     console.log(art);
   } catch {
     // 아트 파일 없으면 스킵
   }
 
-  // 타이틀 — 노란 글씨 + 남색 테두리
-  const Y = "\x1b[1m\x1b[33m"; // 노란색 (bold)
-  const B = "\x1b[34m";        // 남색
-  const R = "\x1b[0m";         // 리셋
-  console.log(`${B}  ╔═══════════════════════════════════════════════════════════════════╗${R}`);
-  console.log(`${B}  ║ ${Y}██████╗  ██████╗ ██╗  ██╗███████╗██╗      ██████╗  ██████╗ ${B} ║${R}`);
-  console.log(`${B}  ║ ${Y}██╔══██╗██╔═══██╗██║ ██╔╝██╔════╝██║     ██╔═══██╗██╔════╝ ${B} ║${R}`);
-  console.log(`${B}  ║ ${Y}██████╔╝██║   ██║█████╔╝ █████╗  ██║     ██║   ██║██║  ███╗${B} ║${R}`);
-  console.log(`${B}  ║ ${Y}██╔═══╝ ██║   ██║██╔═██╗ ██╔══╝  ██║     ██║   ██║██║   ██║${B} ║${R}`);
-  console.log(`${B}  ║ ${Y}██║     ╚██████╔╝██║  ██╗███████╗███████╗╚██████╔╝╚██████╔╝${B} ║${R}`);
-  console.log(`${B}  ║ ${Y}╚═╝      ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝ ╚═════╝  ╚═════╝ ${B} ║${R}`);
-  console.log(`${B}  ╚═══════════════════════════════════════════════════════════════════╝${R}`);
+  // 타이틀 — 골드 글씨 (테두리 없음)
+  const G = "\x1b[1m\x1b[38;2;218;165;32m"; // 골드색 (bold)
+  const R = "\x1b[0m";
+  console.log(`${G}  ██████╗  ██████╗ ██╗  ██╗███████╗██╗      ██████╗  ██████╗ ${R}`);
+  console.log(`${G}  ██╔══██╗██╔═══██╗██║ ██╔╝██╔════╝██║     ██╔═══██╗██╔════╝ ${R}`);
+  console.log(`${G}  ██████╔╝██║   ██║█████╔╝ █████╗  ██║     ██║   ██║██║  ███╗${R}`);
+  console.log(`${G}  ██╔═══╝ ██║   ██║██╔═██╗ ██╔══╝  ██║     ██║   ██║██║   ██║${R}`);
+  console.log(`${G}  ██║     ╚██████╔╝██║  ██╗███████╗███████╗╚██████╔╝╚██████╔╝${R}`);
+  console.log(`${G}  ╚═╝      ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝ ╚═════╝  ╚═════╝ ${R}`);
   console.log("\x1b[90m  help를 입력하면 명령어 목록을 볼 수 있습니다.\x1b[0m\n");
 }
 
