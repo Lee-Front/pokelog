@@ -30,13 +30,27 @@ export function clearScreen() {
 }
 
 function printBanner() {
-  console.log("\x1b[33m");
-  console.log("  ╔═══════════════════════════════════╗");
-  console.log("  ║         P O K E L O G             ║");
-  console.log("  ║   커밋으로 포켓몬을 키우자!        ║");
-  console.log("  ╚═══════════════════════════════════╝");
+  // 뮤츠 ANSI 아트 출력
+  try {
+    const fs = require("node:fs");
+    const path = require("node:path");
+    const artPath = path.resolve(process.cwd(), "data/colorscripts/small/regular/mewtwo");
+    const art = fs.readFileSync(artPath, "utf-8");
+    console.log(art);
+  } catch {
+    // 아트 파일 없으면 스킵
+  }
+
+  // 타이틀
+  console.log("\x1b[1m\x1b[35m");
+  console.log("  ██████╗  ██████╗ ██╗  ██╗███████╗██╗      ██████╗  ██████╗ ");
+  console.log("  ██╔══██╗██╔═══██╗██║ ██╔╝██╔════╝██║     ██╔═══██╗██╔════╝ ");
+  console.log("  ██████╔╝██║   ██║█████╔╝ █████╗  ██║     ██║   ██║██║  ███╗");
+  console.log("  ██╔═══╝ ██║   ██║██╔═██╗ ██╔══╝  ██║     ██║   ██║██║   ██║");
+  console.log("  ██║     ╚██████╔╝██║  ██╗███████╗███████╗╚██████╔╝╚██████╔╝");
+  console.log("  ╚═╝      ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝ ╚═════╝  ╚═════╝ ");
   console.log("\x1b[0m");
-  console.log("  help를 입력하면 명령어 목록을 볼 수 있습니다.\n");
+  console.log("\x1b[90m  help를 입력하면 명령어 목록을 볼 수 있습니다.\x1b[0m\n");
 }
 
 function printHelp() {
