@@ -192,15 +192,24 @@ export async function interactiveMode() {
 
   function promptOnce(): Promise<string | null> {
     return new Promise((resolve) => {
+      let resolved = false;
       const rl = readline.createInterface({
         input: process.stdin,
         output: process.stdout,
       });
       rl.question("\x1b[36mpokelog>\x1b[0m ", (answer) => {
-        rl.close();
-        resolve(answer);
+        if (!resolved) {
+          resolved = true;
+          rl.close();
+          resolve(answer);
+        }
       });
-      rl.once("close", () => resolve(null));
+      rl.once("close", () => {
+        if (!resolved) {
+          resolved = true;
+          resolve(null);
+        }
+      });
     });
   }
 
