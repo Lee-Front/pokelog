@@ -1,11 +1,84 @@
 import { apiPost, apiGet } from "../api-client.js";
-import { selectAction } from "../ui/prompts.js";
-import { fetchArt, fetchBallArt, renderHpBar, sideBySide } from "../ui/display.js";
+import { fetchArt, fetchBallArt, renderHpBar, sideBySide, stripAnsi } from "../ui/display.js";
+
+const DIM = "\x1b[90m";
+const YEL = "\x1b[1m\x1b[33m";
+const GRN = "\x1b[32m";
+const RED = "\x1b[31m";
+const CYN = "\x1b[36m";
+const BLD = "\x1b[1m";
+const R   = "\x1b[0m";
+
+// ── stdin 유틸 ──────────────────────────────────────────────────
+function enterRaw() {
+  process.stdin.setRawMode(true);
+  process.stdin.resume();
+  process.stdin.setEncoding("utf8");
+}
+
+function waitKey(): Promise<string> {
+  return new Promise((resolve) => {
+    const handler = (chunk: string) => {
+      process.stdin.removeListener("data", handler);
+      resolve(chunk);
+    };
+    process.stdin.once("data", handler);
+  });
+}
 
 function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+// ── 레이아웃 유틸 ───────────────────────────────────────────────
+function visualWidth(s: string): number {
+  let w = 0;
+  for (const ch of stripAnsi(s)) {
+    const c = ch.codePointAt(0) ?? 0;
+    w += (c >= 0x1100 && c <= 0x115F) || (c >= 0x2E80 && c <= 0xA4CF) ||
+         (c >= 0xAC00 && c <= 0xD7AF) || (c >= 0xF900 && c <= 0xFAFF) ||
+         (c >= 0xFF01 && c <= 0xFF60) ? 2 : 1;
+  }
+  return w;
+}
+
+function padRight(s: string, width: number): string {
+  return s + " ".repeat(Math.max(0, width - visualWidth(s)));
+}
+
+const LEFT_W = 38;
+const GAP    = "    ";
+
+function artToLines(art: string | null): string[] {
+  return art ? art.trimEnd().split("\n") : [];
+}
+
+function mergeSideBySide(leftLines: string[], rightLines: string[]): string[] {
+  const rows = Math.max(leftLines.length, rightLines.length);
+  const out: string[] = [];
+  for (let i = 0; i < rows; i++) {
+    const l = padRight(leftLines[i] ?? "", LEFT_W);
+    const r = rightLines[i] ?? "";
+    out.push(`  ${l}${GAP}${r}`);
+  }
+  return out;
+}
+
+function redraw(lines: string[], lineCount: number, first: boolean): number {
+  let out = "\x1b[?25l";
+  if (first || lineCount !== lines.length) {
+    out += "\x1b[2J\x1b[H";
+    out += lines.join("\n") + "\n";
+  } else {
+    out += `\x1b[${lineCount}A`;
+    out += lines.map(l => "\r" + l + "\x1b[K").join("\n") + "\n";
+  }
+  out += "\x1b[?25h";
+  process.stdout.write(out);
+  return lines.length;
+}
+
+// ── 아트 유틸 ───────────────────────────────────────────────────
 function tintArt(art: string, color: string): string {
   return art
     .split("\n")
@@ -21,11 +94,10 @@ function buildBattleScene(
   myArt: string,
   rightArt: string,
 ): string {
-  const myLabel  = `  ${myPoke.species} Lv.${myPoke.level}`;
+  const myLabel   = `  ${myPoke.species} Lv.${myPoke.level}`;
   const wildLabel = `  ${wild.species} Lv.${wild.level}`;
-  const myHp  = `  HP: ${renderHpBar(myPoke.hp, myPoke.maxHp, 12)}`;
-  const wildHp = `  HP: ${renderHpBar(wild.hp, wild.maxHp, 12)}`;
-  // 아트: 4칸 오른쪽, 이름: 아트 중앙에 오도록 8칸, HP바: 그대로, 사이 간격: 6
+  const myHp      = `  HP: ${renderHpBar(myPoke.hp, myPoke.maxHp, 12)}`;
+  const wildHp    = `  HP: ${renderHpBar(wild.hp, wild.maxHp, 12)}`;
   const indentArt = (s: string) => s.split("\n").map(l => "    " + l).join("\n");
   return [
     sideBySide(myLabel, "        " + wildLabel, 6),
@@ -52,7 +124,6 @@ async function playBallThrowAnimation(
 ): Promise<{ data: unknown; ok: boolean }> {
   let lineCount = 0;
 
-  // 볼 하단 2칸 패딩 → HP바에서 2줄 위에 표시
   const padded = ballArt + "\n\n";
 
   const draw = (rightArt: string) => {
@@ -60,7 +131,6 @@ async function playBallThrowAnimation(
     const lines = content.split("\n");
     let out = "\x1b[?25l";
     if (lineCount > 0) {
-      // 지우지 않고 줄 단위로 덮어쓰기 → 빈 프레임 없음
       out += `\x1b[${lineCount}A`;
       out += lines.map(l => "\r" + l + "\x1b[K").join("\n") + "\n";
     } else {
@@ -72,21 +142,18 @@ async function playBallThrowAnimation(
     lineCount = lines.length;
   };
 
-  // 1. 볼 던지기
   draw(padded);
   await sleep(350);
 
-  // 2. 좌우 흔들기 (3회)
   for (let i = 0; i < 3; i++) {
-    draw(shiftArt(padded, 2));   // 오른쪽
+    draw(shiftArt(padded, 2));
     await sleep(100);
-    draw(shiftArt(padded, -2));  // 왼쪽
+    draw(shiftArt(padded, -2));
     await sleep(100);
-    draw(padded);                 // 중앙
+    draw(padded);
     await sleep(200);
   }
 
-  // 3. 결과 확인
   const result = await catchResultPromise;
   const r = result.data as { result?: string; battleOver?: boolean };
 
@@ -103,350 +170,748 @@ async function playBallThrowAnimation(
   return result;
 }
 
+// ── 아이템 메타 ─────────────────────────────────────────────────
+const BALL_KEYS = ["pokeball", "safariball", "greatball", "ultraball", "masterball"];
+const POTION_KEYS = ["potion", "superPotion", "hyperPotion"];
+
+const ITEM_DISPLAY: Record<string, string> = {
+  pokeball:    "몬스터볼",
+  safariball:  "사파리볼",
+  greatball:   "슈퍼볼",
+  ultraball:   "울트라볼",
+  masterball:  "마스터볼",
+  potion:      "상처약",
+  superPotion: "좋은 상처약",
+  hyperPotion: "굉장한 상처약",
+};
+
+const BALL_ART_KEY: Record<string, string> = {
+  pokeball:   "MonsterBall",
+  safariball: "SafariBall",
+  greatball:  "GreatBall",
+  ultraball:  "UltraBall",
+  masterball: "MasterBall",
+};
+
+type Move = { id: string; name?: string; pp: number; maxPp: number };
+
 interface BattleResult {
   battleOver: boolean;
   result?: string;
   log?: string[];
-  playerDamage?: number;
-  wildDamage?: number;
   caught?: boolean;
   missed?: boolean;
   effectiveness?: number;
   message?: string;
   rewards?: { exp: number; points: number };
-  wildHp?: number;
-  wildMaxHp?: number;
-  myHp?: number;
-  myMaxHp?: number;
-  wild?: { species: string; level: number; hp: number; maxHp: number };
-  myPokemon?: { species: string; level: number; hp: number; maxHp: number };
   [key: string]: unknown;
 }
 
-export async function encounterCommand(eventId: string) {
-  // Get party to select pokemon
+type PartyMon = { uid: string; species: string; level: number; hp: number; maxHp: number };
+
+// ── Phase 1: 포켓몬 선택 ─────────────────────────────────────────
+function buildSelectLines(
+  title: string,
+  party: PartyMon[],
+  cursor: number,
+  art: string | null,
+): string[] {
+  const alive = party.filter(p => p.hp > 0);
+  const left: string[] = [];
+  for (let i = 0; i < alive.length; i++) {
+    const p      = alive[i];
+    const active = i === cursor;
+    const cur    = active ? `${CYN}❯${R}` : " ";
+    const name   = active ? `${BLD}${p.species}${R}` : p.species;
+    const level  = `${DIM}Lv.${p.level}${R}`;
+    const ratio  = p.hp / p.maxHp;
+    const hpCol  = ratio <= 0.25 ? RED : ratio <= 0.5 ? YEL : GRN;
+    const bar    = renderHpBar(p.hp, p.maxHp, 10);
+    left.push(`${cur} ${padRight(name, 14)} ${padRight(level, 7)} ${hpCol}${bar}${R}`);
+  }
+
+  const right = artToLines(art);
+
+  const lines: string[] = [
+    "",
+    `  ${DIM}${title}${R}`,
+    "",
+    `  ${BLD}── 출전 포켓몬 선택 ──${R}`,
+    "  " + "─".repeat(50),
+    "",
+    ...mergeSideBySide(left, right),
+    "",
+    `  ${DIM}↑↓ 탐색   Enter 출전   Esc 뒤로${R}`,
+  ];
+  return lines;
+}
+
+// ── 배틀 패널 빌더 ──────────────────────────────────────────────
+type SubMode = "menu" | "fight" | "bag" | "party";
+
+const MENU_ACTIONS = ["싸운다", "가방", "포켓몬", "도망치기"];
+
+function buildMenuPanel(menuCursor: number): string[] {
+  const items = MENU_ACTIONS.map((a, i) =>
+    i === menuCursor ? `${CYN}[ ${BLD}${a}${R}${CYN} ]${R}` : `${DIM}[ ${a} ]${R}`
+  );
+  return [
+    `  ${items.join("   ")}`,
+    "",
+    `  ${DIM}←→ 선택   Enter 결정${R}`,
+  ];
+}
+
+function buildFightPanel(moves: Move[], fightCursor: number): string[] {
+  // 2x2 그리드
+  const lines: string[] = [];
+  const row0: string[] = [];
+  const row1: string[] = [];
+
+  for (let i = 0; i < 4; i++) {
+    const m      = moves[i];
+    const active = i === fightCursor;
+    if (!m) {
+      const cell = `${DIM}[ ──────────────── ]${R}`;
+      if (i < 2) row0.push(cell); else row1.push(cell);
+      continue;
+    }
+    const pp      = m.pp;
+    const maxPp   = m.maxPp;
+    const ratio   = maxPp > 0 ? pp / maxPp : 1;
+    const ppColor = pp === 0 ? RED : ratio <= 0.25 ? YEL : DIM;
+    const ppStr   = `${ppColor}PP ${pp}/${maxPp}${R}`;
+    const moveName = m.name ?? m.id;
+    const inner   = active
+      ? `${CYN}${BLD}${padRight(moveName, 12)}${R} ${ppStr}`
+      : `${DIM}${padRight(moveName, 12)}${R} ${ppStr}`;
+    const cell    = active
+      ? `${CYN}[${R} ${inner} ${CYN}]${R}`
+      : `${DIM}[${R} ${inner} ${DIM}]${R}`;
+    if (i < 2) row0.push(cell); else row1.push(cell);
+  }
+
+  lines.push(`  ${row0.join("   ")}`);
+  lines.push(`  ${row1.join("   ")}`);
+  lines.push("");
+  lines.push(`  ${DIM}↑↓←→ 선택   Enter 사용   Esc 뒤로${R}`);
+  return lines;
+}
+
+const BAG_CATEGORIES = [
+  { label: "몬스터볼", keys: BALL_KEYS },
+  { label: "상처약",   keys: POTION_KEYS },
+];
+
+function buildBagPanel(
+  bagCat: number,
+  bagCursor: number,
+  inventory: Record<string, number>,
+  visibleItems: [string, number][],
+): string[] {
+  // 카테고리 탭
+  const catLabel = BAG_CATEGORIES.map((c, i) =>
+    i === bagCat ? `${CYN}${BLD}${c.label}${R}` : `${DIM}${c.label}${R}`
+  ).join(`  ${DIM}·${R}  `);
+
+  const lines: string[] = [];
+  lines.push(`  ← ${catLabel}  →`);
+
+  // 아이템 목록 (최대 4줄, 빈 줄로 패딩)
+  const MAX_VISIBLE = 4;
+  for (let i = 0; i < MAX_VISIBLE; i++) {
+    const item = visibleItems[i];
+    if (!item) {
+      lines.push("");
+      continue;
+    }
+    const [key, count] = item;
+    const active = i === bagCursor;
+    const cur    = active ? `${CYN}❯${R}` : " ";
+    const name   = active ? `${BLD}${ITEM_DISPLAY[key] ?? key}${R}` : `${DIM}${ITEM_DISPLAY[key] ?? key}${R}`;
+    lines.push(`  ${cur} ${padRight(name, 16)} ${DIM}×${count}${R}`);
+  }
+
+  lines.push("");
+  lines.push(`  ${DIM}←→ 카테고리   ↑↓ 아이템   Enter 사용/던지기   Esc 뒤로${R}`);
+  return lines;
+}
+
+function buildPartyPanel(
+  party: PartyMon[],
+  partyCursor: number,
+  currentUid: string,
+  art: string | null,
+  partyForced: boolean,
+): string[] {
+  const left: string[] = [];
+  for (let i = 0; i < party.length; i++) {
+    const p       = party[i];
+    const isActive = p.uid === currentUid;
+    const fainted  = p.hp <= 0;
+    const active   = i === partyCursor;
+
+    const cur = active ? `${CYN}❯${R}` : " ";
+    let name: string;
+    let extra = "";
+
+    if (isActive) {
+      name  = `${DIM}${p.species}${R}`;
+      extra = ` ${DIM}[출전 중]${R}`;
+    } else if (fainted) {
+      name = `${DIM}${p.species}${R}`;
+    } else {
+      name = active ? `${BLD}${p.species}${R}` : p.species;
+    }
+
+    const level = `${DIM}Lv.${p.level}${R}`;
+    const ratio  = p.maxHp > 0 ? p.hp / p.maxHp : 0;
+    const hpCol  = fainted ? DIM : ratio <= 0.25 ? RED : ratio <= 0.5 ? YEL : GRN;
+    const bar    = fainted
+      ? `${DIM}${renderHpBar(0, p.maxHp, 10)}${R}`
+      : `${hpCol}${renderHpBar(p.hp, p.maxHp, 10)}${R}`;
+
+    left.push(`${cur} ${padRight(name, 14)} ${padRight(level, 7)} ${bar}${extra}`);
+  }
+
+  const right = artToLines(art);
+
+  const escHint = partyForced
+    ? `${DIM}↑↓ 탐색   Enter 교체${R}`
+    : `${DIM}↑↓ 탐색   Enter 교체   Esc 취소${R}`;
+
+  const lines: string[] = [
+    "",
+    `  ${BLD}포켓몬 교체${R}`,
+    "  " + "─".repeat(50),
+    "",
+    ...mergeSideBySide(left, right),
+    "",
+    `  ${escHint}`,
+  ];
+  return lines;
+}
+
+// ── 메인 ───────────────────────────────────────────────────────
+export async function encounterCommand(
+  eventId: string,
+  wildInfo: { species: string; level: number },
+): Promise<void> {
+  enterRaw();
+
+  // 파티 로드
   const partyRes = await apiGet("/api/game/party");
   if (!partyRes.ok) {
-    console.error(`오류: ${partyRes.data.error}`);
+    process.stdout.write(`\n  ${RED}오류: ${partyRes.data.error}${R}\n`);
     return;
   }
 
-  const party = partyRes.data.party as Array<{
-    uid: string;
-    species: string;
-    level: number;
-    hp: number;
-    maxHp: number;
-  }>;
-
-  const alivePokemon = party.filter((p) => p.hp > 0);
+  const party = partyRes.data.party as PartyMon[];
+  const alivePokemon = party.filter(p => p.hp > 0);
   if (alivePokemon.length === 0) {
-    console.log("\n  \x1b[31m전투 가능한 포켓몬이 없습니다.\x1b[0m");
-    console.log("  포켓몬이 모두 쓰러져 있습니다. 인벤토리에서 회복 아이템을 사용하세요.\n");
-    await selectAction("", [{ name: "← 돌아가기", value: "back" }]);
+    const errLines = [
+      "",
+      `  ${RED}전투 가능한 포켓몬이 없습니다.${R}`,
+      `  ${DIM}포켓몬이 모두 쓰러져 있습니다. 인벤토리에서 회복 아이템을 사용하세요.${R}`,
+      "",
+      `  ${DIM}Enter / Esc 뒤로${R}`,
+    ];
+    redraw(errLines, 0, true);
+    await waitKey();
     return;
   }
 
-  const choices = alivePokemon.map((p) => ({
-    name: `${p.species.padEnd(12)} Lv.${String(p.level).padEnd(4)} HP:${p.hp}/${p.maxHp}`,
-    value: p.uid,
-  }));
-  choices.push({ name: "← 돌아가기", value: "__back__" });
+  // ── Phase 1: 포켓몬 선택 ─────────────────────────────────────
+  const artCache = new Map<string, string | null>();
 
-  const pokemonUid = await selectAction("출전할 포켓몬을 선택하세요:", choices);
-  if (pokemonUid === "__back__") return;
+  async function getCachedArt(species: string): Promise<string | null> {
+    if (!artCache.has(species)) {
+      const art = await fetchArt(species);
+      artCache.set(species, art);
+    }
+    return artCache.get(species) ?? null;
+  }
 
-  // Start battle
-  const startRes = await apiPost("/api/battle/start", { eventId, pokemonUid });
+  let selectCursor = 0;
+  let selectLineCount = 0;
+  let selectFirst = true;
+  let selectArt: string | null = null;
+  let lastSelectSpecies = "";
+  const titleStr = `야생 ${wildInfo.species} Lv.${wildInfo.level}`;
+
+  let selectedUid: string | null = null;
+
+  while (selectedUid === null) {
+    const alive = party.filter(p => p.hp > 0);
+    selectCursor = Math.min(selectCursor, Math.max(0, alive.length - 1));
+
+    const species = alive[selectCursor]?.species ?? "";
+    if (species !== lastSelectSpecies) {
+      selectArt = species ? await getCachedArt(species) : null;
+      lastSelectSpecies = species;
+    }
+
+    const lines = buildSelectLines(titleStr, party, selectCursor, selectArt);
+    selectLineCount = redraw(lines, selectLineCount, selectFirst);
+    selectFirst = false;
+
+    const key = await waitKey();
+    if (key === "\x03") { process.stdout.write("\x1b[?25h"); process.exit(0); }
+    else if (key === "\x1b" || key === "q") {
+      process.stdout.write("\x1b[?25h\x1b[2J\x1b[H");
+      return;
+    }
+    else if (key === "\x1b[A") { if (selectCursor > 0) selectCursor--; }
+    else if (key === "\x1b[B") { if (selectCursor < alive.length - 1) selectCursor++; }
+    else if (key === "\r") {
+      const chosen = alive[selectCursor];
+      if (chosen) selectedUid = chosen.uid;
+    }
+  }
+
+  // 배틀 시작
+  const startRes = await apiPost("/api/battle/start", { eventId, pokemonUid: selectedUid });
   if (!startRes.ok) {
-    console.error(`  전투 시작 오류: ${startRes.data.error}`);
-    await selectAction("", [{ name: "확인", value: "ok" }]);
+    const errLines = [
+      "",
+      `  ${RED}전투 시작 오류: ${startRes.data.error}${R}`,
+      "",
+      `  ${DIM}Enter / Esc 뒤로${R}`,
+    ];
+    redraw(errLines, 0, true);
+    await waitKey();
     return;
   }
 
-  // Battle loop
+  // ── Phase 2: 배틀 루프 ───────────────────────────────────────
   let battleOver = false;
   const battleLog: string[] = [];
-  let lastWild: { species: string; level: number; hp: number; maxHp: number } | null = null;
-  let lastMyPokemonUid: string | null = null;
+
+  type SubMode = "menu" | "fight" | "bag" | "party";
+  let subMode: SubMode = "menu";
+
+  let menuCursor  = 0;
+  let fightCursor = 0;
+  let bagCat      = 0;
+  let bagCursor   = 0;
+  let partyCursor = 0;
+  let partyForced = false;
+
+  let stateStale  = true;
+  let first       = true;
+  let lineCount   = 0;
+
+  // 현재 배틀 상태
+  let wildState: PokemonInfo = { species: wildInfo.species, level: wildInfo.level, hp: 1, maxHp: 1 };
+  let myPoke: PartyMon | null = null;
+  let myPokeMoves: Move[] = [];
+  let inventory: Record<string, number> = {};
+
+  let wildArt: string | null = null;
+  let myArt: string | null = null;
+  let partyArt: string | null = null;
+  let lastPartyArtUid = "";
+
+  // scene lines (battle art + log)
+  let sceneLines: string[] = [];
+
+  function buildSceneLines(): string[] {
+    const lines: string[] = [];
+    lines.push("");
+    if (myPoke && wildArt && myArt) {
+      const scene = buildBattleScene(myPoke, wildState, myArt, wildArt);
+      for (const l of scene.split("\n")) lines.push(l);
+    } else {
+      lines.push(`  ${wildState.species} Lv.${wildState.level}`);
+      lines.push(`  HP: ${renderHpBar(wildState.hp, wildState.maxHp, 12)}`);
+      if (myPoke) {
+        lines.push(`  ${myPoke.species} Lv.${myPoke.level}`);
+        lines.push(`  HP: ${renderHpBar(myPoke.hp, myPoke.maxHp, 12)}`);
+      }
+    }
+    lines.push("");
+    lines.push(`  ${DIM}${"─".repeat(48)}${R}`);
+    const recent = battleLog.slice(-3);
+    if (recent.length === 0) {
+      lines.push(`  ${DIM}전투 시작!${R}`);
+    } else {
+      for (const msg of recent) lines.push(`  ${msg}`);
+    }
+    lines.push(`  ${DIM}${"─".repeat(48)}${R}`);
+    lines.push("");
+    return lines;
+  }
+
+  function buildFullLines(): string[] {
+    const scene = buildSceneLines();
+    let panel: string[];
+
+    if (subMode === "menu") {
+      panel = buildMenuPanel(menuCursor);
+    } else if (subMode === "fight") {
+      panel = buildFightPanel(myPokeMoves, fightCursor);
+    } else if (subMode === "bag") {
+      const catKeys = BAG_CATEGORIES[bagCat].keys;
+      const visibleItems: [string, number][] = catKeys
+        .filter(k => (inventory[k] ?? 0) > 0)
+        .map(k => [k, inventory[k]] as [string, number]);
+      panel = buildBagPanel(bagCat, bagCursor, inventory, visibleItems);
+    } else {
+      // party mode — use separate full-screen layout
+      panel = buildPartyPanel(party, partyCursor, myPoke?.uid ?? "", partyArt, partyForced);
+    }
+
+    if (subMode === "party") {
+      // Party mode: replace scene entirely
+      return panel;
+    }
+
+    return [...scene, ...panel];
+  }
 
   while (!battleOver) {
-    const stateRes = await apiGet("/api/battle/state");
-    if (!stateRes.ok || !stateRes.data.battleState) break;
+    // 상태 갱신
+    if (stateStale) {
+      const stateRes = await apiGet("/api/battle/state");
+      if (!stateRes.ok || !stateRes.data.battleState) break;
 
-    const state = stateRes.data.battleState as {
-      wild: { species: string; level: number; hp: number; maxHp: number };
-      myPokemonUid: string;
-    };
-    lastWild = state.wild;
-    lastMyPokemonUid = state.myPokemonUid;
-    const myPoke = party.find((p) => p.uid === state.myPokemonUid);
+      const state = stateRes.data.battleState as {
+        wild: { species: string; level: number; hp: number; maxHp: number };
+        myPokemonUid: string;
+      };
 
-    // 화면 그리기 — art 먼저 fetch 후 한 번에 출력
-    const wildArt = await fetchArt(state.wild.species);
-    const myArt = myPoke ? await fetchArt(myPoke.species) : null;
+      wildState = state.wild;
+      myPoke    = party.find(p => p.uid === state.myPokemonUid) ?? null;
 
-    if (wildArt && myArt) {
-      const scene = buildBattleScene(myPoke!, state.wild, myArt, wildArt);
-      process.stdout.write("\x1b[?25l\x1b[2J\x1b[H" + scene + "\n\x1b[?25h");
-    } else {
-      process.stdout.write("\x1b[?25l\x1b[2J\x1b[H");
+      // 아트 fetch
+      if (!artCache.has(wildState.species)) {
+        const art = await fetchArt(wildState.species);
+        artCache.set(wildState.species, art);
+      }
+      wildArt = artCache.get(wildState.species) ?? null;
+
       if (myPoke) {
-        console.log(`  ${myPoke.species} Lv.${myPoke.level}`);
-        if (myArt) console.log(myArt);
-        console.log(`  HP: ${renderHpBar(myPoke.hp, myPoke.maxHp)}`);
-      }
-      console.log(`\n  ${state.wild.species} Lv.${state.wild.level}`);
-      if (wildArt) console.log(wildArt);
-      console.log(`  HP: ${renderHpBar(state.wild.hp, state.wild.maxHp)}`);
-      process.stdout.write("\x1b[?25h");
-    }
-
-    // 현재 포켓몬이 쓰러진 경우 강제 교체
-    if (myPoke && myPoke.hp <= 0) {
-      const DIM2 = "\x1b[90m";
-      const R2 = "\x1b[0m";
-      console.log(`\n  ${DIM2}${"─".repeat(40)}${R2}`);
-      console.log(`  \x1b[31m${myPoke.species}이(가) 쓰러졌다!\x1b[0m`);
-      console.log(`  ${DIM2}${"─".repeat(40)}${R2}\n`);
-
-      const alive = party.filter((p) => p.hp > 0);
-      if (alive.length === 0) break;
-
-      const switchChoices = alive.map((p) => ({
-        name: `${p.species} Lv.${p.level} HP:${p.hp}/${p.maxHp}`,
-        value: p.uid,
-      }));
-
-      const newUid = await selectAction("교체할 포켓몬을 선택하세요:", switchChoices);
-      const switchRes = await apiPost("/api/battle/action", {
-        action: "switch",
-        data: { pokemonUid: newUid, forced: true },
-      });
-      const sr = switchRes.data as { log?: string[] };
-      if (Array.isArray(sr.log)) {
-        for (const msg of sr.log) battleLog.push(msg);
+        if (!artCache.has(myPoke.species)) {
+          const art = await fetchArt(myPoke.species);
+          artCache.set(myPoke.species, art);
+        }
+        myArt = artCache.get(myPoke.species) ?? null;
       }
 
-      // 파티 HP 갱신
-      const refreshAfterSwitch = await apiGet("/api/game/party");
-      if (refreshAfterSwitch.ok) {
-        const newParty = refreshAfterSwitch.data.party as typeof party;
-        for (const p of party) {
-          const updated = newParty.find((n) => n.uid === p.uid);
-          if (updated) { p.hp = updated.hp; p.maxHp = updated.maxHp; }
+      // 기술 목록 fetch
+      if (myPoke) {
+        const detailRes = await apiGet(`/api/game/pokemon/${myPoke.uid}`);
+        if (detailRes.ok) {
+          myPokeMoves = (detailRes.data.pokemon as { moves?: Move[] })?.moves ?? [];
         }
       }
-      continue;
-    }
 
-    // 배틀 로그 (최근 2줄)
-    const DIM = "\x1b[90m";
-    const R = "\x1b[0m";
-    console.log(`\n  ${DIM}${"─".repeat(40)}${R}`);
-    const recent = battleLog.slice(-2);
-    if (recent.length === 0) {
-      console.log(`  ${DIM}전투 시작!${R}`);
-    } else {
-      for (const log of recent) {
-        console.log(`  ${log}`);
-      }
-    }
-    console.log(`  ${DIM}${"─".repeat(40)}${R}`);
-    console.log();
-
-    const action = await selectAction("행동을 선택하세요:", [
-      { name: "싸우기", value: "fight" },
-      { name: "몬스터볼", value: "catch" },
-      { name: "아이템", value: "item" },
-      { name: "포켓몬 교체", value: "switch" },
-      { name: "도망치기", value: "run" },
-    ]);
-
-    let actionData: Record<string, unknown> = {};
-
-    if (action === "fight") {
-      const moveRes = await apiGet("/api/battle/state");
-      const bs = moveRes.data.battleState as { myPokemonUid: string };
-      const detailRes = await apiGet(`/api/game/pokemon/${bs.myPokemonUid}`);
-      const moves = (detailRes.data.pokemon as { moves: Array<{ id: string; pp: number; maxPp: number }> })?.moves || [];
-
-      const moveChoices = moves.map((m) => ({
-        name: `${m.id} (PP: ${m.pp}/${m.maxPp})`,
-        value: m.id,
-      }));
-      moveChoices.push({ name: "← 돌아가기", value: "__back__" });
-
-      const moveId = await selectAction("기술을 선택하세요:", moveChoices);
-      if (moveId === "__back__") continue;
-      actionData = { moveId };
-    } else if (action === "catch") {
+      // 인벤토리 fetch
       const invRes = await apiGet("/api/game/inventory");
-      const inv = invRes.data.inventory as Record<string, number>;
-      const balls = Object.entries(inv)
-        .filter(([k]) => k.includes("ball"))
-        .filter(([, v]) => v > 0);
+      if (invRes.ok) inventory = invRes.data.inventory as Record<string, number>;
 
-      if (balls.length === 0) {
-        console.log("  몬스터볼이 없습니다!");
-        await selectAction("", [{ name: "← 돌아가기", value: "back" }]);
-        continue;
-      }
-      const ballChoices = balls.map(([k, v]) => ({ name: `${k} (${v}개)`, value: k }));
-      ballChoices.push({ name: "← 돌아가기", value: "__back__" });
+      stateStale = false;
 
-      const ballType = await selectAction("볼을 선택하세요:", ballChoices);
-      if (ballType === "__back__") continue;
-
-      // API 요청 즉시 시작 (애니메이션과 병렬)
-      const catchPromise = apiPost("/api/battle/action", { action: "catch", data: { ball: ballType } });
-
-      // 볼 아트 로드 + 애니메이션 재생
-      if (myPoke && myArt && wildArt) {
-        const ballArtStr = await fetchBallArt(ballType);
-        if (ballArtStr) {
-          await playBallThrowAnimation(
-            myPoke,
-            state.wild,
-            myArt,
-            wildArt,
-            ballArtStr,
-            catchPromise,
-          );
+      // 현재 포켓몬이 쓰러진 경우 강제 교체
+      if (myPoke && myPoke.hp <= 0) {
+        const alive = party.filter(p => p.hp > 0);
+        if (alive.length === 0) {
+          battleOver = true;
+          battleLog.push(`${RED}전투 패배...${R}`);
+          first = true;
+          break;
         }
+        subMode     = "party";
+        partyForced = true;
+        partyCursor = party.findIndex(p => p.hp > 0);
+        if (partyCursor < 0) partyCursor = 0;
+        first = true;
       }
-
-      const catchResult = await catchPromise;
-      const r = catchResult.data as BattleResult;
-
-      if (r.message) battleLog.push(r.message);
-      if (Array.isArray(r.log)) {
-        for (const msg of r.log as string[]) battleLog.push(msg);
-      }
-      if (r.caught) battleLog.push("\x1b[33m포획 성공!\x1b[0m");
-      if (r.rewards) battleLog.push(`보상: EXP +${r.rewards.exp}, ${r.rewards.points}P`);
-      if (r.battleOver) {
-        battleOver = true;
-        if (r.result === "caught") battleLog.push("\x1b[33m포켓몬을 잡았다!\x1b[0m");
-        else if (r.result === "victory") battleLog.push("\x1b[32m전투 승리!\x1b[0m");
-        else if (r.result === "defeat") battleLog.push("\x1b[31m전투 패배...\x1b[0m");
-      }
-
-      const refreshCatch = await apiGet("/api/game/party");
-      if (refreshCatch.ok) {
-        const np = refreshCatch.data.party as typeof party;
-        for (const p of party) {
-          const u = np.find((n) => n.uid === p.uid);
-          if (u) { p.hp = u.hp; p.maxHp = u.maxHp; }
-        }
-      }
-      continue;
-    } else if (action === "item") {
-      const invRes = await apiGet("/api/game/inventory");
-      const inv = invRes.data.inventory as Record<string, number>;
-      const healItems = Object.entries(inv)
-        .filter(([k]) => k.includes("potion"))
-        .filter(([, v]) => v > 0);
-
-      if (healItems.length === 0) {
-        console.log("  사용 가능한 아이템이 없습니다!");
-        await selectAction("", [{ name: "← 돌아가기", value: "back" }]);
-        continue;
-      }
-      const itemChoices = healItems.map(([k, v]) => ({ name: `${k} (${v}개)`, value: k }));
-      itemChoices.push({ name: "← 돌아가기", value: "__back__" });
-
-      const itemId = await selectAction("아이템을 선택하세요:", itemChoices);
-      if (itemId === "__back__") continue;
-      actionData = { itemId, targetUid: state.myPokemonUid };
-    } else if (action === "switch") {
-      const alive = party.filter((p) => p.hp > 0 && p.uid !== state.myPokemonUid);
-      if (alive.length === 0) {
-        console.log("  교체할 수 있는 포켓몬이 없습니다!");
-        await selectAction("", [{ name: "← 돌아가기", value: "back" }]);
-        continue;
-      }
-      const switchChoices = alive.map((p) => ({
-        name: `${p.species} Lv.${p.level} HP:${p.hp}/${p.maxHp}`,
-        value: p.uid,
-      }));
-      switchChoices.push({ name: "← 돌아가기", value: "__back__" });
-
-      const uid = await selectAction("교체할 포켓몬:", switchChoices);
-      if (uid === "__back__") continue;
-      actionData = { pokemonUid: uid };
     }
 
-    const result = await apiPost("/api/battle/action", { action, data: actionData });
-    const r = result.data as BattleResult;
-
-    if (r.message) battleLog.push(r.message);
-    if (Array.isArray(r.log)) {
-      for (const msg of r.log as string[]) {
-        battleLog.push(msg);
+    // 파티 모드일 때 아트 fetch
+    if (subMode === "party") {
+      const targetUid = party[partyCursor]?.uid ?? "";
+      if (targetUid !== lastPartyArtUid) {
+        const sp = party[partyCursor]?.species ?? "";
+        partyArt = sp ? await getCachedArt(sp) : null;
+        lastPartyArtUid = targetUid;
       }
     }
-    if (r.caught) battleLog.push("\x1b[33m포획 성공!\x1b[0m");
-    if (r.rewards) battleLog.push(`보상: EXP +${r.rewards.exp}, ${r.rewards.points}P`);
 
-    if (r.battleOver) {
-      battleOver = true;
-      if (r.result === "victory") battleLog.push("\x1b[32m전투 승리!\x1b[0m");
-      else if (r.result === "defeat") battleLog.push("\x1b[31m전투 패배...\x1b[0m");
-      else if (r.result === "run") battleLog.push("도망쳤다!");
-      else if (r.result === "caught") battleLog.push("\x1b[33m포켓몬을 잡았다!\x1b[0m");
+    const lines = buildFullLines();
+    lineCount = redraw(lines, lineCount, first);
+    first = false;
+
+    const key = await waitKey();
+    if (key === "\x03") { process.stdout.write("\x1b[?25h"); process.exit(0); }
+
+    // ── 메뉴 모드 ──────────────────────────────────────────────
+    if (subMode === "menu") {
+      if (key === "\x1b[D") { menuCursor = (menuCursor - 1 + MENU_ACTIONS.length) % MENU_ACTIONS.length; }
+      else if (key === "\x1b[C") { menuCursor = (menuCursor + 1) % MENU_ACTIONS.length; }
+      else if (key === "\r") {
+        const action = MENU_ACTIONS[menuCursor];
+        if (action === "싸운다") {
+          subMode = "fight";
+          fightCursor = 0;
+          first = true;
+        } else if (action === "가방") {
+          subMode = "bag";
+          bagCat = 0;
+          bagCursor = 0;
+          first = true;
+        } else if (action === "포켓몬") {
+          subMode = "party";
+          partyForced = false;
+          partyCursor = 0;
+          lastPartyArtUid = "";
+          partyArt = null;
+          first = true;
+        } else if (action === "도망치기") {
+          const runRes = await apiPost("/api/battle/action", { action: "run", data: {} });
+          const r = runRes.data as BattleResult;
+          if (r.message) battleLog.push(r.message);
+          if (Array.isArray(r.log)) for (const m of r.log as string[]) battleLog.push(m);
+          if (r.battleOver) {
+            battleOver = true;
+            battleLog.push("도망쳤다!");
+          }
+          // 파티 HP 갱신
+          const pr = await apiGet("/api/game/party");
+          if (pr.ok) {
+            const np = pr.data.party as PartyMon[];
+            for (const p of party) {
+              const u = np.find(n => n.uid === p.uid);
+              if (u) { p.hp = u.hp; p.maxHp = u.maxHp; }
+            }
+          }
+          stateStale = true;
+          subMode    = "menu";
+          first      = true;
+        }
+      }
     }
 
-    // Refresh party HP
-    const refreshRes = await apiGet("/api/game/party");
-    if (refreshRes.ok) {
-      const newParty = refreshRes.data.party as typeof party;
-      for (const p of party) {
-        const updated = newParty.find((n) => n.uid === p.uid);
-        if (updated) {
-          p.hp = updated.hp;
-          p.maxHp = updated.maxHp;
+    // ── 싸운다 모드 ────────────────────────────────────────────
+    else if (subMode === "fight") {
+      const rowSize = 2;
+      const row = Math.floor(fightCursor / rowSize);
+      const col = fightCursor % rowSize;
+      const moveCount = myPokeMoves.length;
+
+      if (key === "\x1b" || key === "q") { subMode = "menu"; first = true; }
+      else if (key === "\x1b[A") {
+        const newRow = row - 1;
+        if (newRow >= 0) fightCursor = newRow * rowSize + col;
+      }
+      else if (key === "\x1b[B") {
+        const newRow = row + 1;
+        const newIdx = newRow * rowSize + col;
+        if (newIdx < moveCount) fightCursor = newIdx;
+      }
+      else if (key === "\x1b[D") {
+        if (col > 0) fightCursor--;
+      }
+      else if (key === "\x1b[C") {
+        if (col < rowSize - 1 && fightCursor + 1 < moveCount) fightCursor++;
+      }
+      else if (key === "\r") {
+        const move = myPokeMoves[fightCursor];
+        if (!move) continue;
+        if (move.pp <= 0) continue;
+
+        const res = await apiPost("/api/battle/action", { action: "fight", data: { moveId: move.id } });
+        const r   = res.data as BattleResult;
+        if (r.message) battleLog.push(r.message);
+        if (Array.isArray(r.log)) for (const m of r.log as string[]) battleLog.push(m);
+        if (r.battleOver) {
+          battleOver = true;
+          if (r.result === "victory") battleLog.push(`${GRN}전투 승리!${R}`);
+          else if (r.result === "defeat") battleLog.push(`${RED}전투 패배...${R}`);
         }
+        if (r.rewards) battleLog.push(`보상: EXP +${r.rewards.exp}, ${r.rewards.points}P`);
+
+        const pr = await apiGet("/api/game/party");
+        if (pr.ok) {
+          const np = pr.data.party as PartyMon[];
+          for (const p of party) {
+            const u = np.find(n => n.uid === p.uid);
+            if (u) { p.hp = u.hp; p.maxHp = u.maxHp; }
+          }
+        }
+        stateStale = true;
+        subMode    = "menu";
+        first      = true;
+      }
+    }
+
+    // ── 가방 모드 ──────────────────────────────────────────────
+    else if (subMode === "bag") {
+      const catKeys = BAG_CATEGORIES[bagCat].keys;
+      const visibleItems: [string, number][] = catKeys
+        .filter(k => (inventory[k] ?? 0) > 0)
+        .map(k => [k, inventory[k]] as [string, number]);
+
+      if (key === "\x1b" || key === "q") { subMode = "menu"; first = true; }
+      else if (key === "\x1b[D") {
+        bagCat    = (bagCat - 1 + BAG_CATEGORIES.length) % BAG_CATEGORIES.length;
+        bagCursor = 0;
+      }
+      else if (key === "\x1b[C") {
+        bagCat    = (bagCat + 1) % BAG_CATEGORIES.length;
+        bagCursor = 0;
+      }
+      else if (key === "\x1b[A") {
+        if (bagCursor > 0) bagCursor--;
+      }
+      else if (key === "\x1b[B") {
+        if (bagCursor < visibleItems.length - 1) bagCursor++;
+      }
+      else if (key === "\r") {
+        const item = visibleItems[bagCursor];
+        if (!item) continue;
+        const [itemKey] = item;
+
+        if (BALL_KEYS.includes(itemKey)) {
+          // 볼 던지기
+          const catchPromise = apiPost("/api/battle/action", { action: "catch", data: { ball: itemKey } });
+
+          if (myPoke && myArt && wildArt) {
+            const ballArtStr = await fetchBallArt(BALL_ART_KEY[itemKey] ?? itemKey);
+            if (ballArtStr) {
+              await playBallThrowAnimation(myPoke, wildState, myArt, wildArt, ballArtStr, catchPromise);
+            }
+          }
+
+          const catchResult = await catchPromise;
+          const r = catchResult.data as BattleResult;
+          if (r.message) battleLog.push(r.message);
+          if (Array.isArray(r.log)) for (const m of r.log as string[]) battleLog.push(m);
+          if (r.caught) battleLog.push(`${YEL}포획 성공!${R}`);
+          if (r.battleOver) {
+            battleOver = true;
+            if (r.result === "caught") battleLog.push(`${YEL}포켓몬을 잡았다!${R}`);
+            else if (r.result === "victory") battleLog.push(`${GRN}전투 승리!${R}`);
+            else if (r.result === "defeat")  battleLog.push(`${RED}전투 패배...${R}`);
+          }
+          if (r.rewards) battleLog.push(`보상: EXP +${r.rewards.exp}, ${r.rewards.points}P`);
+
+          const pr = await apiGet("/api/game/party");
+          if (pr.ok) {
+            const np = pr.data.party as PartyMon[];
+            for (const p of party) {
+              const u = np.find(n => n.uid === p.uid);
+              if (u) { p.hp = u.hp; p.maxHp = u.maxHp; }
+            }
+          }
+          inventory[itemKey] = Math.max(0, (inventory[itemKey] ?? 1) - 1);
+          stateStale = true;
+          subMode    = "menu";
+          first      = true;
+        } else {
+          // 포션 사용
+          if (!myPoke) continue;
+          const res = await apiPost("/api/battle/action", {
+            action: "item",
+            data: { itemId: itemKey, targetUid: myPoke.uid },
+          });
+          const r = res.data as BattleResult;
+          if (r.message) battleLog.push(r.message);
+          if (Array.isArray(r.log)) for (const m of r.log as string[]) battleLog.push(m);
+          if (r.battleOver) {
+            battleOver = true;
+            if (r.result === "victory") battleLog.push(`${GRN}전투 승리!${R}`);
+            else if (r.result === "defeat") battleLog.push(`${RED}전투 패배...${R}`);
+          }
+          if (r.rewards) battleLog.push(`보상: EXP +${r.rewards.exp}, ${r.rewards.points}P`);
+
+          const pr = await apiGet("/api/game/party");
+          if (pr.ok) {
+            const np = pr.data.party as PartyMon[];
+            for (const p of party) {
+              const u = np.find(n => n.uid === p.uid);
+              if (u) { p.hp = u.hp; p.maxHp = u.maxHp; }
+            }
+          }
+          inventory[itemKey] = Math.max(0, (inventory[itemKey] ?? 1) - 1);
+          stateStale = true;
+          subMode    = "menu";
+          first      = true;
+        }
+      }
+    }
+
+    // ── 파티 모드 ──────────────────────────────────────────────
+    else if (subMode === "party") {
+      if (key === "\x1b[A") {
+        if (partyCursor > 0) {
+          partyCursor--;
+          lastPartyArtUid = "";
+        }
+      }
+      else if (key === "\x1b[B") {
+        if (partyCursor < party.length - 1) {
+          partyCursor++;
+          lastPartyArtUid = "";
+        }
+      }
+      else if (key === "\x1b" || key === "q") {
+        if (!partyForced) {
+          subMode = "menu";
+          first   = true;
+          lastPartyArtUid = "";
+          partyArt = null;
+        }
+        // partyForced 시 Esc 무시
+      }
+      else if (key === "\r") {
+        const target = party[partyCursor];
+        if (!target) continue;
+        if (target.uid === myPoke?.uid) continue; // 이미 출전 중
+        if (target.hp <= 0) continue; // 쓰러진 포켓몬
+
+        const forced = partyForced;
+        const res = await apiPost("/api/battle/action", {
+          action: "switch",
+          data: { pokemonUid: target.uid, forced },
+        });
+        const r = res.data as BattleResult;
+        if (r.message) battleLog.push(r.message);
+        if (Array.isArray(r.log)) for (const m of r.log as string[]) battleLog.push(m);
+        if (r.battleOver) {
+          battleOver = true;
+          if (r.result === "victory") battleLog.push(`${GRN}전투 승리!${R}`);
+          else if (r.result === "defeat") battleLog.push(`${RED}전투 패배...${R}`);
+        }
+
+        const pr = await apiGet("/api/game/party");
+        if (pr.ok) {
+          const np = pr.data.party as PartyMon[];
+          for (const p of party) {
+            const u = np.find(n => n.uid === p.uid);
+            if (u) { p.hp = u.hp; p.maxHp = u.maxHp; }
+          }
+        }
+        partyForced     = false;
+        stateStale      = true;
+        subMode         = "menu";
+        lastPartyArtUid = "";
+        partyArt        = null;
+        first           = true;
       }
     }
   }
 
-  // 전투 종료 — 결과 화면
-  if (battleLog.length > 0) {
-    const DIM = "\x1b[90m";
-    const R = "\x1b[0m";
-    process.stdout.write("\x1b[2J\x1b[H");
-
-    const lastResult = battleLog[battleLog.length - 1];
-    const isDefeat = lastResult?.includes("전투 패배");
-    const isRun = lastResult?.includes("도망쳤다");
-
-    const myPoke = party.find((p) => p.uid === (lastMyPokemonUid ?? "")) ?? null;
-
-    if (myPoke && lastWild) {
-      const myArt = await fetchArt(myPoke.species);
-      const wildArt = await fetchArt(lastWild.species);
-      if (myArt && wildArt) {
-        const scene = buildBattleScene(myPoke, lastWild, myArt, wildArt);
-        process.stdout.write("\x1b[?25l" + scene + "\n\x1b[?25h");
-      } else {
-        if (myArt) {
-          console.log(`  ${myPoke.species} Lv.${myPoke.level}`);
-          console.log(myArt);
-          console.log(`  HP: ${renderHpBar(myPoke.hp, myPoke.maxHp)}`);
-        }
-        if (wildArt) {
-          console.log(`  ${lastWild.species} Lv.${lastWild.level}`);
-          console.log(wildArt);
-        }
-      }
-    }
-
-    console.log(`\n  ${DIM}${"─".repeat(40)}${R}`);
-    for (const log of battleLog.slice(-3)) {
-      console.log(`  ${log}`);
-    }
-    console.log(`  ${DIM}${"─".repeat(40)}${R}`);
-    await selectAction("", [{ name: "확인", value: "ok" }]);
-  }
+  // ── 전투 종료 화면 ───────────────────────────────────────────
+  first = true;
+  const finalScene = buildSceneLines();
+  const finalLines = [
+    ...finalScene,
+    "",
+    `  ${DIM}아무 키나 누르세요...${R}`,
+  ];
+  lineCount = redraw(finalLines, lineCount, first);
+  await waitKey();
+  process.stdout.write("\x1b[?25h\x1b[2J\x1b[H");
 }
