@@ -817,7 +817,7 @@ export async function encounterCommand(
           if (!myPoke) continue;
           const res = await apiPost("/api/battle/action", {
             action: "item",
-            data: { itemId: itemKey, targetUid: myPoke.uid },
+            data: { item: itemKey, pokemonUid: myPoke.uid },
           });
           const r = res.data as BattleResult;
           if (r.message) battleLog.push(r.message);
