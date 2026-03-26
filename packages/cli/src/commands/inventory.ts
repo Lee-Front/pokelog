@@ -1,88 +1,319 @@
-import { apiGet } from "../api-client.js";
-import { selectAction } from "../ui/prompts.js";
-import { useItemCommand } from "./use-item.js";
+import { apiGet, apiPost } from "../api-client.js";
+import { fetchArt, fetchBallArt, renderHpBar, stripAnsi } from "../ui/display.js";
 
-function clearScreen() {
-  process.stdout.write("\x1b[2J\x1b[H");
+const DIM = "\x1b[90m";
+const YEL = "\x1b[1m\x1b[33m";
+const GRN = "\x1b[32m";
+const RED = "\x1b[31m";
+const CYN = "\x1b[36m";
+const BLD = "\x1b[1m";
+const R   = "\x1b[0m";
+
+// ── 아이템 메타데이터 ───────────────────────────────────────────
+const ITEM_META: Record<string, {
+  name: string;
+  type: "ball" | "potion";
+  ballKey?: string;
+  heal?: number;
+  desc: string;
+}> = {
+  pokeball:    { name: "몬스터볼",       type: "ball",   ballKey: "MonsterBall", desc: "전투 전용 — 포획에 사용" },
+  safariball:  { name: "사파리볼",       type: "ball",   ballKey: "SafariBall",  desc: "전투 전용 — 포획에 사용" },
+  greatball:   { name: "슈퍼볼",         type: "ball",   ballKey: "GreatBall",   desc: "전투 전용 — 포획률 +50%" },
+  ultraball:   { name: "울트라볼",       type: "ball",   ballKey: "UltraBall",   desc: "전투 전용 — 포획률 +100%" },
+  masterball:  { name: "마스터볼",       type: "ball",   ballKey: "MasterBall",  desc: "전투 전용 — 확정 포획" },
+  potion:      { name: "상처약",         type: "potion", heal: 20,               desc: "HP 20 회복" },
+  superPotion: { name: "좋은 상처약",    type: "potion", heal: 50,               desc: "HP 50 회복" },
+  hyperPotion: { name: "굉장한 상처약",  type: "potion", heal: 200,              desc: "HP 200 회복" },
+};
+
+function getItemName(key: string)  { return ITEM_META[key]?.name ?? key; }
+function getItemDesc(key: string)  { return ITEM_META[key]?.desc ?? ""; }
+function isUsable(key: string)     { return ITEM_META[key]?.type === "potion"; }
+
+// ── 포션 아트 (텍스트) ──────────────────────────────────────────
+function makePotionArt(heal: number): string {
+  const hp = `+${heal} HP`;
+  return [
+    `${DIM}     .─.${R}`,
+    `${DIM}    ( · )${R}`,
+    `${DIM}  ┌──────┐${R}`,
+    `${GRN}  │${BLD} ${hp.padStart(4).padEnd(5)} ${R}${GRN}│${R}`,
+    `${DIM}  │      │${R}`,
+    `${DIM}  └──────┘${R}`,
+  ].join("\n");
 }
 
-export async function inventoryCommand() {
-  while (true) {
-    clearScreen();
+// ── stdin 유틸 ──────────────────────────────────────────────────
+function enterRaw() {
+  process.stdin.setRawMode(true);
+  process.stdin.resume();
+  process.stdin.setEncoding("utf8");
+}
 
-    const res = await apiGet("/api/game/inventory");
-    if (!res.ok) {
-      console.error(`오류: ${res.data.error}`);
-      await selectAction("", [{ name: "← 돌아가기", value: "back" }]);
-      return;
-    }
-    const inv = res.data.inventory as Record<string, number>;
-    const items = Object.entries(inv).filter(([, count]) => count > 0);
+function waitKey(): Promise<string> {
+  return new Promise((resolve) => {
+    const handler = (chunk: string) => { process.stdin.removeListener("data", handler); resolve(chunk); };
+    process.stdin.once("data", handler);
+  });
+}
 
-    console.log("  인벤토리");
-    console.log("  " + "─".repeat(30));
-
-    if (items.length === 0) {
-      console.log("  인벤토리가 비어 있습니다.");
-      console.log();
-      await selectAction("", [{ name: "← 돌아가기", value: "back" }]);
-      return;
-    }
-
-    for (const [item, count] of items) {
-      console.log(`  ${item.padEnd(15)} x${count}`);
-    }
-    console.log();
-
-    const healItems = items.filter(([k]) => k.toLowerCase().includes("potion"));
-
-    if (healItems.length === 0) {
-      console.log("  사용 가능한 회복 아이템이 없습니다.");
-      console.log();
-      await selectAction("", [{ name: "← 돌아가기", value: "back" }]);
-      return;
-    }
-
-    const choices = healItems.map(([k, v]) => ({
-      name: `${k} (x${v}) 사용하기`,
-      value: k,
-    }));
-    choices.push({ name: "← 돌아가기", value: "__back__" });
-
-    const selected = await selectAction("아이템을 사용하시겠습니까?", choices);
-    if (selected === "__back__") return;
-
-    // 파티 조회
-    const partyRes = await apiGet("/api/game/party");
-    if (!partyRes.ok) {
-      console.error(`  파티 조회 오류: ${partyRes.data.error}`);
-      await selectAction("", [{ name: "← 돌아가기", value: "back" }]);
-      continue;
-    }
-    const party = partyRes.data.party as Array<{
-      uid: string;
-      species: string;
-      level: number;
-      hp: number;
-      maxHp: number;
-    }>;
-
-    const injured = party.filter((p) => p.hp < p.maxHp);
-    if (injured.length === 0) {
-      console.log("\n  회복이 필요한 포켓몬이 없습니다.");
-      await selectAction("", [{ name: "← 돌아가기", value: "back" }]);
-      continue;
-    }
-
-    const targetChoices = injured.map((p) => ({
-      name: `${p.species} Lv.${p.level} HP:${p.hp}/${p.maxHp}`,
-      value: p.uid,
-    }));
-    targetChoices.push({ name: "← 돌아가기", value: "__back__" });
-
-    const target = await selectAction("회복할 포켓몬을 선택하세요:", targetChoices);
-    if (target === "__back__") continue;
-
-    await useItemCommand(selected, target);
+// ── 레이아웃 유틸 ───────────────────────────────────────────────
+function visualWidth(s: string): number {
+  let w = 0;
+  for (const ch of stripAnsi(s)) {
+    const c = ch.codePointAt(0) ?? 0;
+    w += (c >= 0x1100 && c <= 0x115F) || (c >= 0x2E80 && c <= 0xA4CF) ||
+         (c >= 0xAC00 && c <= 0xD7AF) || (c >= 0xF900 && c <= 0xFAFF) ||
+         (c >= 0xFF01 && c <= 0xFF60) ? 2 : 1;
   }
+  return w;
+}
+
+function padRight(s: string, width: number): string {
+  return s + " ".repeat(Math.max(0, width - visualWidth(s)));
+}
+
+const LEFT_W = 26;
+const GAP    = "    ";
+
+function mergeSideBySide(leftLines: string[], rightLines: string[]): string[] {
+  const rows = Math.max(leftLines.length, rightLines.length);
+  const out: string[] = [];
+  for (let i = 0; i < rows; i++) {
+    const l = padRight(leftLines[i] ?? "", LEFT_W);
+    const r = rightLines[i] ?? "";
+    out.push(`  ${l}${GAP}${r}`);
+  }
+  return out;
+}
+
+function redraw(lines: string[], lineCount: number, first: boolean): number {
+  let out = "\x1b[?25l";
+  if (first) { out += "\x1b[2J\x1b[H"; }
+  else if (lineCount > 0) { out += `\x1b[${lineCount}A\x1b[0J`; }
+  out += lines.join("\n") + "\n\x1b[?25h";
+  process.stdout.write(out);
+  return lines.length;
+}
+
+// ── 아트 캐시 ───────────────────────────────────────────────────
+const artCache = new Map<string, string | null>();
+
+async function getCachedArt(key: string, fetcher: () => Promise<string | null>): Promise<string | null> {
+  if (artCache.has(key)) return artCache.get(key)!;
+  const art = await fetcher();
+  artCache.set(key, art);
+  return art;
+}
+
+function artToLines(art: string | null): string[] {
+  return art ? art.trimEnd().split("\n") : [];
+}
+
+// ── Items 화면 ──────────────────────────────────────────────────
+function buildItemsLines(
+  items: [string, number][],
+  idx: number,
+  art: string | null,
+  msg: string,
+): string[] {
+  // 왼쪽: 이름 + 개수만 (태그 없음)
+  const left: string[] = [];
+  for (let i = 0; i < items.length; i++) {
+    const [key, count] = items[i];
+    const active = i === idx;
+    const cursor = active ? `${CYN}❯${R}` : " ";
+    const name   = active ? `${BLD}${getItemName(key)}${R}` : `${DIM}${getItemName(key)}${R}`;
+    left.push(`${cursor} ${padRight(name, 16)} ${DIM}×${count}${R}`);
+  }
+
+  // 오른쪽: 아트만
+  const right = artToLines(art);
+
+  // 선택 아이템 설명 (아트 아래 별도)
+  const selKey  = items[idx]?.[0] ?? "";
+  const desc    = selKey ? `${DIM}${getItemDesc(selKey)}${R}` : "";
+
+  const lines: string[] = [
+    "",
+    `  ${BLD}인벤토리${R}`,
+    "  " + "─".repeat(50),
+    "",
+    ...mergeSideBySide(left, right),
+    "",
+  ];
+  if (desc) { lines.push(`  ${desc}`); lines.push(""); }
+  if (msg)  { lines.push(`  ${msg}`);  lines.push(""); }
+  lines.push(`  ${DIM}↑↓ 탐색   Enter 사용   Esc 뒤로${R}`);
+  return lines;
+}
+
+// ── Targets 화면 ───────────────────────────────────────────────
+type PartyMon = { uid: string; species: string; level: number; hp: number; maxHp: number };
+
+function buildTargetsLines(
+  itemKey: string,
+  itemCount: number,
+  targets: PartyMon[],
+  idx: number,
+  art: string | null,
+  msg: string,
+): string[] {
+  const left: string[] = [];
+  left.push(`${YEL}── 파티 포켓몬 ──${R}`);
+  for (let i = 0; i < targets.length; i++) {
+    const p      = targets[i];
+    const active = i === idx;
+    const cursor = active ? `${CYN}❯${R}` : " ";
+    const name   = active ? `${BLD}${p.species}${R}` : p.species;
+    const ratio  = p.hp / p.maxHp;
+    const hpCol  = ratio <= 0.25 ? RED : ratio <= 0.5 ? YEL : GRN;
+    left.push(`${cursor} ${padRight(name, 14)} ${hpCol}${renderHpBar(p.hp, p.maxHp, 8)}${R}`);
+  }
+
+  const right = artToLines(art);
+
+  const lines: string[] = [
+    "",
+    `  ${BLD}${getItemName(itemKey)}${R} ${DIM}사용 (×${itemCount} 보유)${R}`,
+    "  " + "─".repeat(50),
+    "",
+    ...mergeSideBySide(left, right),
+    "",
+  ];
+  if (msg) { lines.push(`  ${msg}`); lines.push(""); }
+  lines.push(`  ${DIM}↑↓ 탐색   Enter 사용   Esc 뒤로${R}`);
+  return lines;
+}
+
+// ── 메인 ───────────────────────────────────────────────────────
+export async function inventoryCommand() {
+  enterRaw();
+
+  type Mode = "items" | "targets";
+  let mode: Mode    = "items";
+  let itemIdx       = 0;
+  let targetIdx     = 0;
+  let selectedItem  = "";
+  let msg           = "";
+  let lineCount     = 0;
+  let first         = true;
+  let currentArt: string | null = null;
+  let lastArtKey    = "";
+
+  // 인벤토리 & 파티 데이터
+  let inv: Record<string, number> = {};
+  let party: PartyMon[]           = [];
+  let targets: PartyMon[]         = [];
+
+  async function refreshInv() {
+    const res = await apiGet("/api/game/inventory");
+    if (res.ok) inv = res.data.inventory as Record<string, number>;
+  }
+  async function refreshParty() {
+    const res = await apiGet("/api/game/party");
+    if (res.ok) party = res.data.party as PartyMon[];
+  }
+
+  await Promise.all([refreshInv(), refreshParty()]);
+
+  while (true) {
+    const items = Object.entries(inv).filter(([, c]) => c > 0);
+
+    // ── items 모드 ──
+    if (mode === "items") {
+      itemIdx = Math.min(itemIdx, Math.max(0, items.length - 1));
+
+      const artKey = items[itemIdx]?.[0] ?? "";
+      if (artKey !== lastArtKey) {
+        const meta = ITEM_META[artKey];
+        if (meta?.type === "ball" && meta.ballKey) {
+          currentArt = await getCachedArt(artKey, () => fetchBallArt(meta.ballKey!));
+        } else if (meta?.type === "potion" && meta.heal !== undefined) {
+          currentArt = makePotionArt(meta.heal);
+          artCache.set(artKey, currentArt);
+        } else {
+          currentArt = null;
+        }
+        lastArtKey = artKey;
+      }
+
+      const lines = buildItemsLines(items, itemIdx, currentArt, msg);
+      lineCount = redraw(lines, lineCount, first);
+      first = false;
+      msg = "";
+
+      const key = await waitKey();
+      if (key === "\x03") { process.stdout.write("\x1b[?25h"); process.exit(0); }
+      else if (key === "\x1b" || key === "q") break;
+      else if (key === "\x1b[A" && itemIdx > 0) { itemIdx--; }
+      else if (key === "\x1b[B" && itemIdx < items.length - 1) { itemIdx++; }
+      else if (key === "\r") {
+        const [selKey, selCount] = items[itemIdx] ?? [];
+        if (!selKey) continue;
+        if (!isUsable(selKey)) {
+          msg = `${DIM}몬스터볼은 전투 중에만 사용할 수 있습니다.${R}`;
+          continue;
+        }
+        // 포션 → 타겟 선택 모드
+        await refreshParty();
+        targets = party.filter((p) => p.hp < p.maxHp);
+        if (targets.length === 0) {
+          msg = `${DIM}회복이 필요한 포켓몬이 없습니다.${R}`;
+          continue;
+        }
+        selectedItem = selKey;
+        targetIdx    = 0;
+        lastArtKey   = "";
+        currentArt   = null;
+        mode         = "targets";
+        first        = true;
+      }
+    }
+
+    // ── targets 모드 ──
+    else {
+      targetIdx = Math.min(targetIdx, Math.max(0, targets.length - 1));
+
+      const artKey = targets[targetIdx]?.species ?? "";
+      if (artKey !== lastArtKey) {
+        currentArt = await getCachedArt(artKey, () => fetchArt(artKey));
+        lastArtKey = artKey;
+      }
+
+      const selCount = inv[selectedItem] ?? 0;
+      const lines = buildTargetsLines(selectedItem, selCount, targets, targetIdx, currentArt, msg);
+      lineCount = redraw(lines, lineCount, first);
+      first = false;
+      msg = "";
+
+      const key = await waitKey();
+      if (key === "\x03") { process.stdout.write("\x1b[?25h"); process.exit(0); }
+      else if (key === "\x1b" || key === "q") {
+        mode = "items"; lastArtKey = ""; currentArt = null; first = true;
+      }
+      else if (key === "\x1b[A" && targetIdx > 0) { targetIdx--; }
+      else if (key === "\x1b[B" && targetIdx < targets.length - 1) { targetIdx++; }
+      else if (key === "\r") {
+        const target = targets[targetIdx];
+        if (!target) continue;
+        const res = await apiPost("/api/shop/use", { item: selectedItem, pokemonUid: target.uid });
+        if (res.ok) {
+          msg = `${GRN}✓ ${target.species}에게 ${getItemName(selectedItem)} 사용!${R}`;
+          await Promise.all([refreshInv(), refreshParty()]);
+          targets = party.filter((p) => p.hp < p.maxHp);
+          if (targets.length === 0) {
+            mode = "items"; lastArtKey = ""; currentArt = null; first = true;
+          } else {
+            targetIdx = Math.min(targetIdx, targets.length - 1);
+          }
+        } else {
+          msg = `${RED}✗ ${res.data.error}${R}`;
+        }
+      }
+    }
+  }
+
+  process.stdout.write("\x1b[?25h");
 }
