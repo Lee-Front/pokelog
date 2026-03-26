@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "bin": {
-    "pokelog": "dist/packages/cli/src/index.js",
+    "pokelog": "pokelog.mjs",
     "pokelog-admin": "dist/packages/cli/src/admin-entry.js"
   },
   "scripts": {

@@ -35,9 +35,6 @@ export async function joinCommand(url: string) {
     console.log(`\nJoined server: ${meta.displayName}`);
     console.log(`URL: ${url}`);
     console.log(`Current server set to: ${meta.serverName}`);
-    console.log(`\nNext steps:`);
-    console.log(`  pokelog login`);
-    console.log(`  pokelog register`);
   } catch {
     console.error("서버에 연결할 수 없습니다. URL을 확인하세요.");
   }
