@@ -27,6 +27,7 @@ export async function pokemonCommand(uid: string) {
     caughtAt: string;
   };
 
+  process.stdout.write("\x1b[2J\x1b[H");
   const art = await fetchArt(p.species);
 
   const name    = p.nickname ? `${p.nickname} ${DIM}(${p.species})${R}` : p.species;

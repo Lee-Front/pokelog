@@ -33,14 +33,20 @@ export async function pokedexCommand() {
   });
   choices.push({ name: "← 돌아가기", value: "__back__" });
 
-  const selected = await selectAction("포켓몬을 선택하세요:", choices);
-  if (selected === "__back__") return;
+  while (true) {
+    process.stdout.write("\x1b[2J\x1b[H");
+    console.log(`  포켓몬 도감 (${pokedex.length}종)`);
+    console.log("  " + "─".repeat(30));
 
-  // 해당 종의 보유 포켓몬 중 하나 보여주기
-  const match = allPokemon.find((p) => p.species === selected);
-  if (match) {
-    await pokemonCommand(match.uid);
-  } else {
-    console.log(`${selected} — 도감에 등록되었지만 현재 보유하고 있지 않습니다.`);
+    const selected = await selectAction("포켓몬을 선택하세요:", choices);
+    if (selected === "__back__") return;
+
+    // 해당 종의 보유 포켓몬 중 하나 보여주기
+    const match = allPokemon.find((p) => p.species === selected);
+    if (match) {
+      await pokemonCommand(match.uid);
+    } else {
+      console.log(`${selected} — 도감에 등록되었지만 현재 보유하고 있지 않습니다.`);
+    }
   }
 }
