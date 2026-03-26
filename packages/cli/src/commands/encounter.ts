@@ -226,8 +226,9 @@ function buildSelectLines(
     const level  = `${DIM}Lv.${p.level}${R}`;
     const ratio  = p.hp / p.maxHp;
     const hpCol  = ratio <= 0.25 ? RED : ratio <= 0.5 ? YEL : GRN;
-    const bar    = renderHpBar(p.hp, p.maxHp, 10);
-    left.push(`${cur} ${padRight(name, 14)} ${padRight(level, 7)} ${hpCol}${bar}${R}`);
+    const filled = Math.round(ratio * 10);
+    const bar    = `${hpCol}${"█".repeat(filled)}${"░".repeat(10 - filled)}${R}`;
+    left.push(`${cur} ${padRight(name, 14)} ${padRight(level, 7)} ${bar}`);
   }
 
   const right = artToLines(art);
@@ -256,9 +257,10 @@ function buildMenuPanel(menuCursor: number): string[] {
     i === menuCursor ? `${CYN}[ ${BLD}${a}${R}${CYN} ]${R}` : `${DIM}[ ${a} ]${R}`
   );
   return [
-    `  ${items.join("   ")}`,
+    `  ${items[0]}   ${items[1]}`,
+    `  ${items[2]}   ${items[3]}`,
     "",
-    `  ${DIM}←→ 선택   Enter 결정${R}`,
+    `  ${DIM}↑↓←→ 선택   Enter 결정${R}`,
   ];
 }
 
@@ -353,11 +355,9 @@ function buildPartyPanel(
 
     const cur = active ? `${CYN}❯${R}` : " ";
     let name: string;
-    let extra = "";
 
     if (isActive) {
-      name  = `${DIM}${p.species}${R}`;
-      extra = ` ${DIM}[출전 중]${R}`;
+      name = active ? `${YEL}${BLD}${p.species}${R}` : `${YEL}${p.species}${R}`;
     } else if (fainted) {
       name = `${DIM}${p.species}${R}`;
     } else {
@@ -367,11 +367,12 @@ function buildPartyPanel(
     const level = `${DIM}Lv.${p.level}${R}`;
     const ratio  = p.maxHp > 0 ? p.hp / p.maxHp : 0;
     const hpCol  = fainted ? DIM : ratio <= 0.25 ? RED : ratio <= 0.5 ? YEL : GRN;
+    const filled = Math.round(ratio * 10);
     const bar    = fainted
-      ? `${DIM}${renderHpBar(0, p.maxHp, 10)}${R}`
-      : `${hpCol}${renderHpBar(p.hp, p.maxHp, 10)}${R}`;
+      ? `${DIM}${"░".repeat(10)}${R}`
+      : `${hpCol}${"█".repeat(filled)}${"░".repeat(10 - filled)}${R}`;
 
-    left.push(`${cur} ${padRight(name, 14)} ${padRight(level, 7)} ${bar}${extra}`);
+    left.push(`${cur} ${padRight(name, 14)} ${padRight(level, 7)} ${bar}`);
   }
 
   const right = artToLines(art);
@@ -648,8 +649,10 @@ export async function encounterCommand(
 
     // ── 메뉴 모드 ──────────────────────────────────────────────
     if (subMode === "menu") {
-      if (key === "\x1b[D") { menuCursor = (menuCursor - 1 + MENU_ACTIONS.length) % MENU_ACTIONS.length; }
-      else if (key === "\x1b[C") { menuCursor = (menuCursor + 1) % MENU_ACTIONS.length; }
+      if (key === "\x1b[D") { if (menuCursor % 2 > 0) menuCursor--; }
+      else if (key === "\x1b[C") { if (menuCursor % 2 < 1) menuCursor++; }
+      else if (key === "\x1b[A") { if (menuCursor >= 2) menuCursor -= 2; }
+      else if (key === "\x1b[B") { if (menuCursor < 2) menuCursor += 2; }
       else if (key === "\r") {
         const action = MENU_ACTIONS[menuCursor];
         if (action === "싸운다") {
