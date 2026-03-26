@@ -1,7 +1,7 @@
 import { apiGet, apiPost } from "../api-client.js";
-import { fetchBallArt } from "../ui/display.js";
+import { fetchBallArt, stripAnsi } from "../ui/display.js";
 
-type FullShopItem = {
+type ShopItem = {
   name: string;
   price: number;
   catchBonus?: number;
@@ -10,11 +10,19 @@ type FullShopItem = {
 };
 
 const CATEGORIES = [
-  { name: "몬스터볼", keys: ["pokeball", "safariball", "greatball", "ultraball", "masterball"] },
-  { name: "상처약",   keys: ["potion", "superPotion", "hyperPotion"] },
+  { label: "몬스터볼", keys: ["pokeball", "safariball", "greatball", "ultraball", "masterball"] },
+  { label: "상처약",   keys: ["potion", "superPotion", "hyperPotion"] },
 ];
 
 const BALL_KEYS = new Set(["pokeball", "safariball", "greatball", "ultraball", "masterball"]);
+// ball key → art file name
+const BALL_ART_KEY: Record<string, string> = {
+  pokeball:   "MonsterBall",
+  safariball: "SafariBall",
+  greatball:  "GreatBall",
+  ultraball:  "UltraBall",
+  masterball: "MasterBall",
+};
 
 const DIM = "\x1b[90m";
 const R   = "\x1b[0m";
@@ -24,27 +32,16 @@ const GRN = "\x1b[32m";
 const RED = "\x1b[31m";
 const CYN = "\x1b[36m";
 
-function clearScreen() {
-  process.stdout.write("\x1b[2J\x1b[H");
-}
-
+// ── stdin 유틸 ──────────────────────────────────────────────────
 function enterRaw() {
   process.stdin.setRawMode(true);
   process.stdin.resume();
   process.stdin.setEncoding("utf8");
 }
 
-function exitRaw() {
-  try { process.stdin.setRawMode(false); } catch { /* ignore */ }
-  process.stdin.pause();
-}
-
 function waitKey(): Promise<string> {
   return new Promise((resolve) => {
-    const handler = (chunk: string) => {
-      process.stdin.removeListener("data", handler);
-      resolve(chunk);
-    };
+    const handler = (chunk: string) => { process.stdin.removeListener("data", handler); resolve(chunk); };
     process.stdin.once("data", handler);
   });
 }
@@ -52,227 +49,227 @@ function waitKey(): Promise<string> {
 function rawNumberInput(label: string): Promise<number | null> {
   return new Promise((resolve) => {
     let buf = "";
-    const redraw = () => process.stdout.write(`\r  ${label} ${buf}\x1b[K`);
+    const paint = () => process.stdout.write(`\r  ${label} ${buf}\x1b[K`);
     process.stdout.write("\n");
-    redraw();
-
+    paint();
     const handler = (chunk: string) => {
-      if (chunk === "\x03") { exitRaw(); process.exit(0); }
-      else if (chunk === "\x1b") {
-        process.stdin.removeListener("data", handler);
-        process.stdout.write("\n");
-        resolve(null);
-      } else if (chunk === "\r") {
-        process.stdin.removeListener("data", handler);
-        process.stdout.write("\n");
-        const n = parseInt(buf, 10);
-        resolve(Number.isFinite(n) && n > 0 ? n : null);
-      } else if ((chunk === "\x7f" || chunk === "\x08") && buf.length > 0) {
-        buf = buf.slice(0, -1);
-        redraw();
-      } else if (/^\d$/.test(chunk) && buf.length < 5) {
-        buf += chunk;
-        redraw();
-      }
+      if (chunk === "\x03") { process.exit(0); }
+      else if (chunk === "\x1b") { process.stdin.removeListener("data", handler); process.stdout.write("\n"); resolve(null); }
+      else if (chunk === "\r")   { process.stdin.removeListener("data", handler); process.stdout.write("\n"); const n = parseInt(buf, 10); resolve(Number.isFinite(n) && n > 0 ? n : null); }
+      else if ((chunk === "\x7f" || chunk === "\x08") && buf.length > 0) { buf = buf.slice(0, -1); paint(); }
+      else if (/^\d$/.test(chunk) && buf.length < 5) { buf += chunk; paint(); }
     };
     process.stdin.on("data", handler);
   });
 }
 
-// ── 카테고리 선택 ──────────────────────────────────────────────────
-async function rawSelectCategory(
-  categories: typeof CATEGORIES,
+// ── 레이아웃 유틸 ───────────────────────────────────────────────
+function visualWidth(s: string): number {
+  let w = 0;
+  for (const ch of stripAnsi(s)) {
+    const c = ch.codePointAt(0) ?? 0;
+    w += (c >= 0x1100 && c <= 0x115F) || (c >= 0x2E80 && c <= 0xA4CF) ||
+         (c >= 0xAC00 && c <= 0xD7AF) || (c >= 0xF900 && c <= 0xFAFF) ||
+         (c >= 0xFF01 && c <= 0xFF60) ? 2 : 1;
+  }
+  return w;
+}
+
+function padRight(s: string, width: number): string {
+  return s + " ".repeat(Math.max(0, width - visualWidth(s)));
+}
+
+const LEFT_W = 38;
+const GAP    = "    ";
+
+function artToLines(art: string | null): string[] {
+  return art ? art.trimEnd().split("\n") : [];
+}
+
+function mergeSideBySide(leftLines: string[], rightLines: string[]): string[] {
+  const rows = Math.max(leftLines.length, rightLines.length);
+  const out: string[] = [];
+  for (let i = 0; i < rows; i++) {
+    const l = padRight(leftLines[i] ?? "", LEFT_W);
+    const r = rightLines[i] ?? "";
+    out.push(`  ${l}${GAP}${r}`);
+  }
+  return out;
+}
+
+// ── 포션 아트 ───────────────────────────────────────────────────
+function makePotionArt(healAmount: number): string {
+  const hp = `+${healAmount} HP`;
+  return [
+    `${DIM}     .─.${R}`,
+    `${DIM}    ( · )${R}`,
+    `${DIM}  ┌──────┐${R}`,
+    `${GRN}  │${BLD} ${hp.padStart(4).padEnd(5)} ${R}${GRN}│${R}`,
+    `${DIM}  │      │${R}`,
+    `${DIM}  └──────┘${R}`,
+  ].join("\n");
+}
+
+// ── 아트 캐시 ───────────────────────────────────────────────────
+const artCache = new Map<string, string | null>();
+
+async function getArt(itemKey: string, item: ShopItem): Promise<string | null> {
+  if (artCache.has(itemKey)) return artCache.get(itemKey)!;
+  let art: string | null = null;
+  if (BALL_KEYS.has(itemKey)) {
+    art = await fetchBallArt(BALL_ART_KEY[itemKey] ?? itemKey);
+  } else if (item.healAmount) {
+    art = makePotionArt(item.healAmount);
+  }
+  artCache.set(itemKey, art);
+  return art;
+}
+
+// ── 화면 그리기 ─────────────────────────────────────────────────
+function buildLines(
+  catIdx: number,
+  itemIdx: number,
+  catItems: { key: string; item: ShopItem }[],
+  art: string | null,
   points: number,
-): Promise<number | null> {
-  let idx = 0;
-  const total = categories.length;
-  let lineCount = 0;
-
-  const draw = (first: boolean) => {
-    const lines: string[] = [
-      "",
-      `  상점   ${DIM}보유 포인트: ${YEL}${points}P${R}`,
-      "  " + "─".repeat(28),
-      "",
-    ];
-    for (let i = 0; i < total; i++) {
-      const cursor = i === idx ? `${CYN}❯${R}` : " ";
-      lines.push(`  ${cursor} ${categories[i].name}`);
-    }
-    lines.push(`    ${DIM}─────────────${R}`);
-    const exitCursor = idx === total ? `${CYN}❯${R}` : " ";
-    lines.push(`  ${exitCursor} ${DIM}← 돌아가기${R}`);
-    lines.push("");
-    lines.push(`  ${DIM}↑ ↓ 탐색    Enter 선택${R}`);
-
-    let out = "\x1b[?25l"; // hide cursor while drawing
-    if (first) {
-      out += "\x1b[2J\x1b[H";
-      lineCount = 0;
-    } else if (lineCount > 0) {
-      out += `\x1b[${lineCount}A\x1b[0J`;
-    }
-    out += lines.join("\n") + "\n";
-    out += "\x1b[?25h"; // restore cursor
-    process.stdout.write(out);
-    lineCount = lines.length;
-  };
-
-  draw(true);
-
-  while (true) {
-    const key = await waitKey();
-    if (key === "\x03") { exitRaw(); process.exit(0); }
-    else if (key === "\x1b[A") { idx = (idx - 1 + total + 1) % (total + 1); draw(false); }
-    else if (key === "\x1b[B") { idx = (idx + 1) % (total + 1); draw(false); }
-    else if (key === "\r") {
-      if (idx === total) return null;
-      return idx;
-    } else if (key === "\x1b" || key === "q") {
-      return null;
-    }
-  }
-}
-
-// ── 캐러셀 ────────────────────────────────────────────────────────
-async function runCarousel(
-  keys: string[],
-  items: Record<string, FullShopItem>,
   inventory: Record<string, number>,
-  initialPoints: number,
-): Promise<void> {
-  const available = keys.filter((k) => items[k]);
-  if (available.length === 0) return;
+  msg: string,
+): string[] {
+  // 카테고리 탭
+  const tabs = CATEGORIES.map((c, i) => {
+    if (i === catIdx) return `${CYN}${BLD}${c.label}${R}`;
+    return `${DIM}${c.label}${R}`;
+  }).join(`  ${DIM}·${R}  `);
 
-  const arts = await Promise.all(
-    available.map((k) => (BALL_KEYS.has(k) ? fetchBallArt(k) : Promise.resolve(null))),
-  );
-
-  let idx    = 0;
-  let points = initialPoints;
-  let lineCount = 0;
-
-  const draw = (first: boolean) => {
-    const key   = available[idx];
-    const item  = items[key];
-    const owned = inventory[key] ?? 0;
-    const art   = arts[idx];
-
-    const lines: string[] = [""];
-    lines.push(`  ${DIM}← ${idx + 1} / ${available.length} →    보유 포인트: ${YEL}${points}P${R}`);
-    lines.push("");
-
-    if (art) {
-      for (const line of art.trimEnd().split("\n")) lines.push(`    ${line}`);
-    } else if (item.healAmount) {
-      for (let i = 0; i < 3; i++) lines.push("");
-      lines.push(`           ${GRN}+${item.healAmount} HP${R}`);
-      for (let i = 0; i < 4; i++) lines.push("");
-    } else {
-      for (let i = 0; i < 8; i++) lines.push("");
-    }
-
-    lines.push("");
-    lines.push(`  ${BLD}${item.name}${R}`);
-
-    const extras: string[] = [];
-    if (item.guaranteedCatch)            extras.push(`${GRN}★ 확정 포획${R}`);
-    else if ((item.catchBonus ?? 0) > 0) extras.push(`${DIM}포획보너스 +${Math.round(item.catchBonus! * 100)}%${R}`);
-    if (item.healAmount)                 extras.push(`${DIM}회복 ${item.healAmount}HP${R}`);
-
-    lines.push(`  가격:  ${YEL}${item.price}P${R}   ${extras.join("   ")}`);
-    lines.push(`  보유:  ${owned}개`);
-    lines.push("");
-    lines.push(`  ${DIM}← → 탐색    Enter 구매    Esc 뒤로${R}`);
-
-    let out = "\x1b[?25l"; // hide cursor while drawing
-    if (first) {
-      out += "\x1b[2J\x1b[H";
-      lineCount = 0;
-    } else if (lineCount > 0) {
-      out += `\x1b[${lineCount}A\x1b[0J`;
-    }
-    out += lines.join("\n") + "\n";
-    out += "\x1b[?25h"; // restore cursor
-    process.stdout.write(out);
-    lineCount = lines.length;
-  };
-
-  draw(true);
-
-  while (true) {
-    const key = await waitKey();
-
-    if (key === "\x03") { exitRaw(); process.exit(0); }
-    else if (key === "\x1b[D") { idx = (idx - 1 + available.length) % available.length; draw(false); }
-    else if (key === "\x1b[C") { idx = (idx + 1) % available.length; draw(false); }
-    else if (key === "\r") {
-      const currentKey  = available[idx];
-      const currentItem = items[currentKey];
-
-      draw(false);
-      const qty = await rawNumberInput("수량:");
-
-      if (qty !== null) {
-        const res = await apiPost("/api/shop/buy", { item: currentKey, quantity: qty });
-        if (res.ok) {
-          points = res.data.points as number;
-          inventory[currentKey] = (inventory[currentKey] ?? 0) + qty;
-          process.stdout.write(`  ${GRN}✓ ${currentItem.name} ${qty}개 구매!${R}\n`);
-        } else {
-          process.stdout.write(`  ${RED}✗ ${res.data.error}${R}\n`);
-        }
-        await new Promise((r) => setTimeout(r, 700));
-      }
-
-      draw(true);  // full clear after Enter flow (number input added untracked lines)
-    } else if (key === "\x1b" || key === "q") {
-      return;
-    }
+  // 왼쪽: 이름 + 가격 + 보유 수량
+  const left: string[] = [];
+  for (let i = 0; i < catItems.length; i++) {
+    const { key, item } = catItems[i];
+    const active = i === itemIdx;
+    const cursor = active ? `${CYN}❯${R}` : " ";
+    const name   = active ? `${BLD}${item.name}${R}` : `${DIM}${item.name}${R}`;
+    const price  = `${YEL}${item.price}P${R}`;
+    const owned  = inventory[key] ?? 0;
+    left.push(`${cursor} ${padRight(name, 16)} ${padRight(price, 8)} ${DIM}보유 ${owned}${R}`);
   }
+
+  // 오른쪽: 아트
+  const right = artToLines(art);
+
+  // 선택 아이템 설명
+  const sel = catItems[itemIdx];
+  const descParts: string[] = [];
+  if (sel) {
+    if (sel.item.guaranteedCatch)             descParts.push(`${GRN}★ 확정 포획${R}`);
+    else if ((sel.item.catchBonus ?? 0) > 0)  descParts.push(`포획률 +${Math.round(sel.item.catchBonus! * 100)}%`);
+    if (sel.item.healAmount)                  descParts.push(`HP +${sel.item.healAmount} 회복`);
+  }
+  const desc = descParts.length ? `${DIM}${descParts.join("   ")}${R}` : "";
+
+  const lines: string[] = [
+    "",
+    `  ${BLD}상점${R}   ${tabs}   ${DIM}포인트: ${YEL}${points}P${R}`,
+    "  " + "─".repeat(52),
+    "",
+    ...mergeSideBySide(left, right),
+    "",
+  ];
+  if (desc) { lines.push(`  ${desc}`); lines.push(""); }
+  if (msg)  { lines.push(`  ${msg}`);  lines.push(""); }
+  lines.push(`  ${DIM}↑↓ 아이템   ←→ 카테고리   Enter 구매   Esc 뒤로${R}`);
+  return lines;
 }
 
-// ── 메인 진입점 ───────────────────────────────────────────────────
+function redraw(lines: string[], lineCount: number, first: boolean): number {
+  let out = "\x1b[?25l";
+  if (first) { out += "\x1b[2J\x1b[H"; }
+  else if (lineCount > 0) { out += `\x1b[${lineCount}A\x1b[0J`; }
+  out += lines.join("\n") + "\n\x1b[?25h";
+  process.stdout.write(out);
+  return lines.length;
+}
+
+// ── 메인 ───────────────────────────────────────────────────────
 export async function shopCommand() {
   enterRaw();
-  await shopLoop();
-  // raw mode는 끄지 않음 — inquirer가 자체적으로 setRawMode(true/false)를
-  // 관리하므로, 여기서 setRawMode(false)하면 그 사이 창구에서 키입력이
-  // OS 버퍼에 쌓여 엔터 전까지 안 먹히는 버그가 생긴다
-}
 
-async function shopLoop() {
+  // 데이터 로드
+  const [shopRes, invRes] = await Promise.all([apiGet("/api/shop"), apiGet("/api/game/inventory")]);
+  if (!shopRes.ok) {
+    process.stdout.write(`\n  오류: ${shopRes.data.error}\n`);
+    return;
+  }
+
+  const shopItems = shopRes.data.items as Record<string, ShopItem>;
+  let points      = shopRes.data.points as number;
+  let inventory   = invRes.ok ? (invRes.data.inventory as Record<string, number>) : {};
+
+  let catIdx   = 0;
+  let itemIdx  = 0;
+  let msg      = "";
+  let lineCount = 0;
+  let first    = true;
+  let currentArt: string | null = null;
+  let lastItemKey = "";
+
+  // 카테고리별 아이템 배열 빌드
+  function getCatItems(ci: number) {
+    return CATEGORIES[ci].keys
+      .filter((k) => shopItems[k])
+      .map((k) => ({ key: k, item: shopItems[k] }));
+  }
+
   while (true) {
-    const [shopRes, invRes] = await Promise.all([
-      apiGet("/api/shop"),
-      apiGet("/api/game/inventory"),
-    ]);
+    const catItems = getCatItems(catIdx);
+    itemIdx = Math.min(itemIdx, Math.max(0, catItems.length - 1));
 
-    if (!shopRes.ok) {
-      clearScreen();
-      process.stdout.write(`\n  오류: ${shopRes.data.error}\n\n  아무 키나 누르세요...\n`);
-      await waitKey();
-      return;
+    // 아트 fetch (캐시)
+    const selKey = catItems[itemIdx]?.key ?? "";
+    if (selKey !== lastItemKey) {
+      currentArt = selKey ? await getArt(selKey, catItems[itemIdx].item) : null;
+      lastItemKey = selKey;
     }
 
-    const items     = shopRes.data.items as Record<string, FullShopItem>;
-    const points    = shopRes.data.points as number;
-    const inventory = invRes.ok ? (invRes.data.inventory as Record<string, number>) : {};
+    const lines = buildLines(catIdx, itemIdx, catItems, currentArt, points, inventory, msg);
+    lineCount = redraw(lines, lineCount, first);
+    first = false;
+    msg = "";
 
-    const available = CATEGORIES.filter((c) => c.keys.some((k) => items[k]));
+    const key = await waitKey();
 
-    const catIdx = await rawSelectCategory(available, points);
-    if (catIdx === null) return;
+    if (key === "\x03") { process.stdout.write("\x1b[?25h"); process.exit(0); }
+    else if (key === "\x1b" || key === "q") break;
+    else if (key === "\x1b[A") { if (itemIdx > 0) itemIdx--; }
+    else if (key === "\x1b[B") { if (itemIdx < catItems.length - 1) itemIdx++; }
+    else if (key === "\x1b[D") { catIdx = (catIdx - 1 + CATEGORIES.length) % CATEGORIES.length; itemIdx = 0; lastItemKey = ""; }
+    else if (key === "\x1b[C") { catIdx = (catIdx + 1) % CATEGORIES.length; itemIdx = 0; lastItemKey = ""; }
+    else if (key === "\r") {
+      const sel = catItems[itemIdx];
+      if (!sel) continue;
 
-    await runCarousel(available[catIdx].keys, items, inventory, points);
+      // 수량 입력 (화면 아래에 인라인으로)
+      const qty = await rawNumberInput("구매 수량:");
+      first = true; // 수량 입력 후 전체 재그리기
+
+      if (qty !== null) {
+        const res = await apiPost("/api/shop/buy", { item: sel.key, quantity: qty });
+        if (res.ok) {
+          points = res.data.points as number;
+          inventory[sel.key] = (inventory[sel.key] ?? 0) + qty;
+          msg = `${GRN}✓ ${sel.item.name} ${qty}개 구매! 잔여: ${points}P${R}`;
+        } else {
+          msg = `${RED}✗ ${res.data.error}${R}`;
+        }
+      }
+    }
   }
+
+  process.stdout.write("\x1b[?25h");
+  // raw mode 끄지 않음 — inquirer stdin 충돌 방지
 }
 
 export async function buyCommand(item: string, quantity: number) {
   const res = await apiPost("/api/shop/buy", { item, quantity });
-  if (res.ok) {
-    console.log(`${item} ${quantity}개 구매 완료! (남은 포인트: ${res.data.points}P)`);
-  } else {
-    console.error(`오류: ${res.data.error}`);
-  }
+  if (res.ok) console.log(`${item} ${quantity}개 구매 완료! (남은 포인트: ${res.data.points}P)`);
+  else        console.error(`오류: ${res.data.error}`);
 }
