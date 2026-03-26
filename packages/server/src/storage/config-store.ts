@@ -1,8 +1,7 @@
 import path from "node:path";
 import { readJson, writeJson } from "./json-store.js";
 import type { ServerConfig } from "../../../../shared/types.js";
-
-const DATA_DIR = process.env.POKELOG_DATA_DIR || "pokelog-data";
+import { DATA_DIR } from "../paths.js";
 const CONFIG_PATH = path.join(DATA_DIR, "config.json");
 
 export const DEFAULT_CONFIG: ServerConfig = {
@@ -39,12 +38,14 @@ export const DEFAULT_CONFIG: ServerConfig = {
   },
   shop: {
     items: {
-      pokeball: { name: "Poke Ball", price: 100, catchBonus: 0 },
-      greatball: { name: "Great Ball", price: 300, catchBonus: 0.15 },
-      ultraball: { name: "Ultra Ball", price: 800, catchBonus: 0.3 },
-      potion: { name: "Potion", price: 150, healAmount: 20 },
-      superPotion: { name: "Super Potion", price: 400, healAmount: 50 },
-      hyperPotion: { name: "Hyper Potion", price: 800, healAmount: 120 },
+      pokeball:   { name: "몬스터볼",  price: 100,   catchBonus: 0 },
+      safariball: { name: "사파리볼",  price: 250,   catchBonus: 0.1 },
+      greatball:  { name: "수퍼볼",    price: 350,   catchBonus: 0.2 },
+      ultraball:  { name: "하이퍼볼",  price: 900,   catchBonus: 0.35 },
+      masterball: { name: "마스터볼",  price: 50000, catchBonus: 0, guaranteedCatch: true },
+      potion:       { name: "상처약",      price: 150, healAmount: 20 },
+      superPotion:  { name: "좋은 상처약", price: 400, healAmount: 50 },
+      hyperPotion:  { name: "고급 상처약", price: 800, healAmount: 120 },
     },
   },
 };

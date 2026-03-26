@@ -2,8 +2,7 @@ import path from "node:path";
 import fs from "node:fs/promises";
 import { readJson, writeJson } from "./json-store.js";
 import type { UserData } from "../../../../shared/types.js";
-
-const DATA_DIR = process.env.POKELOG_DATA_DIR || "pokelog-data";
+import { DATA_DIR } from "../paths.js";
 
 function userPath(userId: string): string {
   return path.join(DATA_DIR, "users", `${userId}.json`);

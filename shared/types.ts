@@ -119,6 +119,7 @@ export interface ShopItem {
   price: number;
   catchBonus?: number;
   healAmount?: number;
+  guaranteedCatch?: boolean;
 }
 
 // === Server Meta ===

@@ -173,9 +173,9 @@ adminRoutes.post("/test/commit", async (req, res) => {
 
     let encounterInfo: { species: string; level: number } | null = null;
     if (encounterResult.encountered) {
+      const { projectPath } = await import("../paths.js");
       const fs = await import("node:fs");
-      const path = await import("node:path");
-      const regionPath = path.default.resolve(process.cwd(), "data/regions/default.json");
+      const regionPath = projectPath("data/regions/default.json");
       const regionData = JSON.parse(fs.default.readFileSync(regionPath, "utf-8"));
       const pick = selectWildPokemon(regionData);
       const wildPokemon = createWildPokemon(pick.species, pick.level);
@@ -231,9 +231,9 @@ adminRoutes.post("/test/encounter", async (req, res) => {
     let wildSpecies = species;
     let wildLevel = level;
     if (!wildSpecies) {
+      const { projectPath } = await import("../paths.js");
       const fs = await import("node:fs");
-      const path = await import("node:path");
-      const regionPath = path.default.resolve(process.cwd(), "data/regions/default.json");
+      const regionPath = projectPath("data/regions/default.json");
       const regionData = JSON.parse(fs.default.readFileSync(regionPath, "utf-8"));
       const pick = selectWildPokemon(regionData);
       wildSpecies = pick.species;
@@ -316,6 +316,23 @@ adminRoutes.post("/test/give-pokemon", async (req, res) => {
     res.json({ ok: true, pokemon: { uid: pokemon.uid, species, level: pokemon.level } });
   } catch (err) {
     console.error(err);
+    res.status(500).json({ error: "서버 오류" });
+  }
+});
+
+// 전투 상태 초기화
+adminRoutes.post("/test/clear-battle", async (req, res) => {
+  try {
+    const { userId } = req.body;
+    if (!userId) return res.status(400).json({ error: "userId 필요" });
+
+    const user = await getUser(userId);
+    if (!user) return res.status(404).json({ error: "유저 없음" });
+
+    user.battleState = null;
+    await saveUser(user);
+    res.json({ ok: true });
+  } catch {
     res.status(500).json({ error: "서버 오류" });
   }
 });

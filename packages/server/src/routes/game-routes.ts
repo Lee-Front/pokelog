@@ -24,6 +24,7 @@ gameRoutes.get("/status", async (req: AuthRequest, res: Response) => {
     const todayLogs = user.log.filter((l) => l.timestamp.startsWith(today));
 
     res.json({
+      nickname: user.account.nickname,
       points: user.points,
       totalExp: user.totalExp,
       combo: user.combo,
@@ -174,6 +175,33 @@ gameRoutes.get("/storage", async (req: AuthRequest, res: Response) => {
     res.json({ storage: user.storage });
   } catch (err) {
     console.error("Storage error:", err);
+    res.status(500).json({ error: "서버 오류가 발생했습니다" });
+  }
+});
+
+gameRoutes.post("/heal", async (req: AuthRequest, res: Response) => {
+  try {
+    const user = await getUser(req.userId!);
+    if (!user) {
+      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+      return;
+    }
+
+    const partyPokemon = user.party
+      .map((uid) => user.pokemon.find((p) => p.uid === uid))
+      .filter(Boolean);
+
+    for (const p of partyPokemon) {
+      p!.hp = p!.maxHp;
+      for (const move of p!.moves) {
+        move.pp = move.maxPp;
+      }
+    }
+
+    await saveUser(user);
+    res.json({ healed: partyPokemon.length });
+  } catch (err) {
+    console.error("Heal error:", err);
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
   }
 });

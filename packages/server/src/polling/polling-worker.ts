@@ -9,11 +9,9 @@ import {
 import { processCommit } from "./commit-processor.js";
 import path from "node:path";
 import fs from "node:fs/promises";
+import { DATA_DIR } from "../paths.js";
 
-const REPOS_DIR = path.join(
-  process.env.POKELOG_DATA_DIR || "pokelog-data",
-  "repos",
-);
+const REPOS_DIR = path.join(DATA_DIR, "repos");
 
 function repoLocalDir(url: string): string {
   // Convert URL to safe directory name

@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { readFileSync } from "node:fs";
-import path from "node:path";
-import type { AuthRequest } from "../middleware/auth-middleware.js";
+import { projectPath } from "../paths.js";
+import { authMiddleware, type AuthRequest } from "../middleware/auth-middleware.js";
 import { getUser, saveUser } from "../storage/user-store.js";
 import { getConfig } from "../storage/config-store.js";
 import { calculateDamage, determineTurnOrder } from "../game/battle.js";
@@ -10,13 +10,14 @@ import { createPokemon } from "../game/pokemon-factory.js";
 import type { MoveData, SpeciesData, BattleState } from "../../../../shared/types.js";
 
 const router = Router();
+router.use(authMiddleware);
 
 let movesCache: MoveData[] | null = null;
 let speciesCache: SpeciesData[] | null = null;
 
 function loadMoves(): MoveData[] {
   if (!movesCache) {
-    const filePath = path.resolve(process.cwd(), "data/moves/moves.json");
+    const filePath = projectPath("data/moves/moves.json");
     movesCache = JSON.parse(readFileSync(filePath, "utf-8")) as MoveData[];
   }
   return movesCache;
@@ -24,7 +25,7 @@ function loadMoves(): MoveData[] {
 
 function loadSpecies(): SpeciesData[] {
   if (!speciesCache) {
-    const filePath = path.resolve(process.cwd(), "data/pokemon/species.json");
+    const filePath = projectPath("data/pokemon/species.json");
     speciesCache = JSON.parse(readFileSync(filePath, "utf-8")) as SpeciesData[];
   }
   return speciesCache;
@@ -68,6 +69,15 @@ function wildAttack(
   return { damage: result.damage, moveId: chosen.id, message: result.message, missed: result.missed };
 }
 
+function hasAlivePartyMembers(user: { party: string[]; pokemon: Array<{ uid: string; hp: number }> }, excludeUid: string): boolean {
+  return user.party
+    .filter((uid) => uid !== excludeUid)
+    .some((uid) => {
+      const p = user.pokemon.find((pk) => pk.uid === uid);
+      return p != null && p.hp > 0;
+    });
+}
+
 router.post("/start", async (req, res) => {
   try {
     const { userId } = req as AuthRequest;
@@ -84,10 +94,7 @@ router.post("/start", async (req, res) => {
       return;
     }
 
-    if (user.battleState) {
-      res.status(400).json({ error: "이미 전투 중입니다" });
-      return;
-    }
+
 
     const event = user.pendingEvents.find((e) => e.id === eventId);
     if (!event) {
@@ -205,6 +212,11 @@ router.post("/action", async (req, res) => {
 
         if (myPokemon.hp <= 0) {
           log.push(`${myPokemon.species}이(가) 쓰러졌다!`);
+          if (hasAlivePartyMembers(user, myPokemon.uid)) {
+            await saveUser(user);
+            res.json({ log, battleState: battle, result: "fainted" });
+            return;
+          }
           user.battleState = null;
           await saveUser(user);
           res.json({ log, battleState: null, result: "lose" });
@@ -222,6 +234,11 @@ router.post("/action", async (req, res) => {
 
         if (myPokemon.hp <= 0) {
           log.push(`${myPokemon.species}이(가) 쓰러졌다!`);
+          if (hasAlivePartyMembers(user, myPokemon.uid)) {
+            await saveUser(user);
+            res.json({ log, battleState: battle, result: "fainted" });
+            return;
+          }
           user.battleState = null;
           await saveUser(user);
           res.json({ log, battleState: null, result: "lose" });
@@ -261,6 +278,7 @@ router.post("/action", async (req, res) => {
       const config = await getConfig();
       const ballItem = config.shop.items[ballType];
       const catchBonus = ballItem?.catchBonus ?? 0;
+      const guaranteedCatch = ballItem?.guaranteedCatch ?? false;
 
       user.inventory[ballType] -= 1;
       if (user.inventory[ballType] <= 0) {
@@ -268,7 +286,7 @@ router.post("/action", async (req, res) => {
       }
 
       const baseCatchRate = getCatchRate(battle.wild.species);
-      const caught = attemptCapture(catchBonus, battle.wild.hp, battle.wild.maxHp, baseCatchRate);
+      const caught = guaranteedCatch || attemptCapture(catchBonus, battle.wild.hp, battle.wild.maxHp, baseCatchRate);
 
       if (caught) {
         log.push(`야생 ${battle.wild.species}을(를) 잡았다!`);
@@ -306,6 +324,11 @@ router.post("/action", async (req, res) => {
 
       if (myPokemon.hp <= 0) {
         log.push(`${myPokemon.species}이(가) 쓰러졌다!`);
+        if (hasAlivePartyMembers(user, myPokemon.uid)) {
+          await saveUser(user);
+          res.json({ log, battleState: battle, result: "fainted" });
+          return;
+        }
         user.battleState = null;
         await saveUser(user);
         res.json({ log, battleState: null, result: "lose" });
@@ -360,6 +383,11 @@ router.post("/action", async (req, res) => {
 
       if (myPokemon.hp <= 0) {
         log.push(`${myPokemon.species}이(가) 쓰러졌다!`);
+        if (hasAlivePartyMembers(user, myPokemon.uid)) {
+          await saveUser(user);
+          res.json({ log, battleState: battle, result: "fainted" });
+          return;
+        }
         user.battleState = null;
         await saveUser(user);
         res.json({ log, battleState: null, result: "lose" });
@@ -386,24 +414,32 @@ router.post("/action", async (req, res) => {
         return;
       }
 
+      const forced = data?.forced === true;
       battle.myPokemonUid = newUid;
       log.push(`${newPokemon.species}(으)로 교체했다!`);
 
-      // Wild attacks after switch
-      const wildResult = wildAttack(
-        battle.wild.species, battle.wild.level, battle.wild.stats,
-        battle.wild.moves, newPokemon.stats, newPokemon.species,
-      );
-      newPokemon.hp = Math.max(0, newPokemon.hp - wildResult.damage);
-      log.push(`야생 ${battle.wild.species}의 공격! ${wildResult.damage} 데미지!`);
-      if (wildResult.message) log.push(wildResult.message);
+      if (!forced) {
+        // Wild attacks after voluntary switch
+        const wildResult = wildAttack(
+          battle.wild.species, battle.wild.level, battle.wild.stats,
+          battle.wild.moves, newPokemon.stats, newPokemon.species,
+        );
+        newPokemon.hp = Math.max(0, newPokemon.hp - wildResult.damage);
+        log.push(`야생 ${battle.wild.species}의 공격! ${wildResult.damage} 데미지!`);
+        if (wildResult.message) log.push(wildResult.message);
 
-      if (newPokemon.hp <= 0) {
-        log.push(`${newPokemon.species}이(가) 쓰러졌다!`);
-        user.battleState = null;
-        await saveUser(user);
-        res.json({ log, battleState: null, result: "lose" });
-        return;
+        if (newPokemon.hp <= 0) {
+          log.push(`${newPokemon.species}이(가) 쓰러졌다!`);
+          if (hasAlivePartyMembers(user, newPokemon.uid)) {
+            await saveUser(user);
+            res.json({ log, battleState: battle, result: "fainted" });
+            return;
+          }
+          user.battleState = null;
+          await saveUser(user);
+          res.json({ log, battleState: null, result: "lose" });
+          return;
+        }
       }
 
       await saveUser(user);

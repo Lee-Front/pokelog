@@ -1,8 +1,7 @@
 import path from "node:path";
 import { readJson, writeJson } from "./json-store.js";
 import type { SyncState } from "../../../../shared/types.js";
-
-const DATA_DIR = process.env.POKELOG_DATA_DIR || "pokelog-data";
+import { DATA_DIR } from "../paths.js";
 const SYNC_STATE_PATH = path.join(DATA_DIR, "sync-state.json");
 
 const DEFAULT_SYNC_STATE: SyncState = {

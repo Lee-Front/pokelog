@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
-import path from "node:path";
 import crypto from "node:crypto";
+import { projectPath } from "../paths.js";
 import type {
   SpeciesData,
   MoveData,
@@ -15,7 +15,7 @@ let movesCache: MoveData[] | null = null;
 
 function loadSpecies(): SpeciesData[] {
   if (!speciesCache) {
-    const filePath = path.resolve(process.cwd(), "data/pokemon/species.json");
+    const filePath = projectPath("data/pokemon/species.json");
     speciesCache = JSON.parse(readFileSync(filePath, "utf-8")) as SpeciesData[];
   }
   return speciesCache;
@@ -23,7 +23,7 @@ function loadSpecies(): SpeciesData[] {
 
 function loadMoves(): MoveData[] {
   if (!movesCache) {
-    const filePath = path.resolve(process.cwd(), "data/moves/moves.json");
+    const filePath = projectPath("data/moves/moves.json");
     movesCache = JSON.parse(readFileSync(filePath, "utf-8")) as MoveData[];
   }
   return movesCache;

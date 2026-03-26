@@ -9,10 +9,10 @@ import type { CommitInfo } from "./git-client.js";
 import type { RegionData } from "../../../../shared/types.js";
 import crypto from "node:crypto";
 import fs from "node:fs";
-import path from "node:path";
+import { projectPath } from "../paths.js";
 
 function loadRegionData(): RegionData {
-  const regionPath = path.resolve(process.cwd(), "data/regions/default.json");
+  const regionPath = projectPath("data/regions/default.json");
   return JSON.parse(fs.readFileSync(regionPath, "utf-8"));
 }
 
