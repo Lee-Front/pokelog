@@ -60,9 +60,10 @@ async function getCachedArt(species: string): Promise<string | null> {
 }
 
 // ── 화면 그리기 ─────────────────────────────────────────────────
-const PARTY_W   = 22;
-const STORAGE_W = 22;
-const GAP       = "   ";
+const PARTY_W        = 22;
+const STORAGE_W      = 22;
+const GAP            = "   ";
+const STORAGE_VISIBLE = 6; // 보관함 한 번에 표시할 줄 수 (파티와 동일)
 
 function artToLines(art: string | null): string[] {
   return art ? art.trimEnd().split("\n") : [];
@@ -74,12 +75,15 @@ function buildLines(
   panel: "party" | "storage",
   pi: number,
   si: number,
+  scroll: number,
   art: string | null,
   msg: string,
 ): string[] {
-  // 파티 열
+  // 파티 열 (6줄 고정)
   const partyLines: string[] = [];
-  const partyHdr = panel === "party" ? `${CYN}${BLD}── 파티 (${party.length}/6) ──${R}` : `${YEL}── 파티 (${party.length}/6) ──${R}`;
+  const partyHdr = panel === "party"
+    ? `${CYN}${BLD}── 파티 (${party.length}/6) ──${R}`
+    : `${YEL}── 파티 (${party.length}/6) ──${R}`;
   partyLines.push(partyHdr);
   for (let i = 0; i < 6; i++) {
     const p = party[i];
@@ -93,19 +97,39 @@ function buildLines(
     }
   }
 
-  // 보관함 열
+  // 보관함 열 (STORAGE_VISIBLE줄 고정, 스크롤)
   const storageLines: string[] = [];
-  const storHdr = panel === "storage" ? `${CYN}${BLD}── 보관함 (${storage.length}마리) ──${R}` : `${DIM}── 보관함 (${storage.length}마리) ──${R}`;
+  const storEnd   = Math.min(scroll + STORAGE_VISIBLE, storage.length);
+  const hdrLabel  = storage.length === 0
+    ? `보관함 (비어있음)`
+    : storage.length <= STORAGE_VISIBLE
+    ? `보관함 (${storage.length}마리)`
+    : `보관함 ${scroll + 1}-${storEnd}/${storage.length}`;
+  const storHdr = panel === "storage"
+    ? `${CYN}${BLD}── ${hdrLabel} ──${R}`
+    : `${DIM}── ${hdrLabel} ──${R}`;
   storageLines.push(storHdr);
+
   if (storage.length === 0) {
     storageLines.push(`  ${DIM}비어 있습니다.${R}`);
+    for (let i = 1; i < STORAGE_VISIBLE; i++) storageLines.push("");
   } else {
-    for (let i = 0; i < storage.length; i++) {
-      const p = storage[i];
-      const active = panel === "storage" && i === si;
-      const cur = active ? `${CYN}❯${R}` : " ";
-      const name = active ? `${BLD}${p.species}${R}` : p.species;
+    for (let i = 0; i < STORAGE_VISIBLE; i++) {
+      const absIdx = scroll + i;
+      if (absIdx >= storage.length) { storageLines.push(""); continue; }
+      const p      = storage[absIdx];
+      const active = panel === "storage" && absIdx === si;
+      const cur    = active ? `${CYN}❯${R}` : " ";
+      const name   = active ? `${BLD}${p.species}${R}` : p.species;
       storageLines.push(`${cur} ${padEnd(name, 13)} ${DIM}Lv.${p.level}${R}`);
+    }
+    // 스크롤 인디케이터 (헤더에 범위 표시됨, 추가 힌트)
+    if (scroll > 0 && storEnd < storage.length) {
+      storageLines.push(`  ${DIM}▲▼ 스크롤${R}`);
+    } else if (scroll > 0) {
+      storageLines.push(`  ${DIM}▲ 위에 더 있음${R}`);
+    } else if (storEnd < storage.length) {
+      storageLines.push(`  ${DIM}▼ 아래 더 있음${R}`);
     }
   }
 
@@ -166,11 +190,12 @@ export async function storageCommand() {
   enterRaw();
 
   let panel: "party" | "storage" = "party";
-  let pi = 0;
-  let si = 0;
-  let msg = "";
+  let pi     = 0;
+  let si     = 0;
+  let scroll = 0; // 보관함 스크롤 오프셋
+  let msg    = "";
   let lineCount = 0;
-  let first = true;
+  let first  = true;
   let currentArt: string | null = null;
   let lastSpecies: string | null = null;
 
@@ -181,8 +206,9 @@ export async function storageCommand() {
     const { party, storage } = data;
 
     // 커서 범위 보정
-    if (panel === "party") pi = Math.min(pi, Math.max(0, party.length - 1));
-    if (panel === "storage") si = Math.min(si, Math.max(0, storage.length - 1));
+    pi = Math.min(pi, 5);
+    si = Math.min(si, Math.max(0, storage.length - 1));
+    scroll = Math.max(0, Math.min(scroll, Math.max(0, storage.length - STORAGE_VISIBLE)));
 
     // 선택된 포켓몬 아트 fetch (캐시 활용)
     const species = getSelectedSpecies(party, storage, panel, pi, si);
@@ -194,7 +220,7 @@ export async function storageCommand() {
       lastSpecies = null;
     }
 
-    const lines = buildLines(party, storage, panel, pi, si, currentArt, msg);
+    const lines = buildLines(party, storage, panel, pi, si, scroll, currentArt, msg);
     lineCount = redraw(lines, lineCount, first);
     first = false;
     msg = "";
@@ -205,19 +231,35 @@ export async function storageCommand() {
     else if (key === "\x1b" || key === "q") break;
 
     else if (key === "\x1b[A") {
-      if (panel === "party" && pi > 0) pi--;
-      else if (panel === "storage" && si > 0) si--;
+      if (panel === "party" && pi > 0) {
+        pi--;
+      } else if (panel === "storage" && si > 0) {
+        si--;
+        if (si < scroll) scroll = si;
+      }
     }
     else if (key === "\x1b[B") {
-      if (panel === "party" && pi < party.length - 1) pi++;
-      else if (panel === "storage" && si < storage.length - 1) si++;
+      if (panel === "party" && pi < 5) {
+        pi++;
+      } else if (panel === "storage" && si < storage.length - 1) {
+        si++;
+        if (si >= scroll + STORAGE_VISIBLE) scroll = si - STORAGE_VISIBLE + 1;
+      }
     }
     else if (key === "\x1b[D") {
-      panel = "party";
-      pi = Math.min(pi, Math.max(0, party.length - 1));
+      if (panel === "storage") {
+        panel = "party";
+        // 시각적 같은 행으로 이동 (scroll 유지)
+        const visualRow = si - scroll;
+        pi = Math.min(visualRow, 5);
+      }
     }
     else if (key === "\x1b[C") {
-      if (storage.length > 0) panel = "storage";
+      if (panel === "party" && storage.length > 0) {
+        panel = "storage";
+        // 파티 커서와 같은 시각 행으로 이동
+        si = Math.min(scroll + pi, storage.length - 1);
+      }
     }
     else if (key === "\r") {
       if (panel === "party") {
