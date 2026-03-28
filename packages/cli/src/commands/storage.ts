@@ -60,22 +60,12 @@ async function getCachedArt(species: string): Promise<string | null> {
 }
 
 // ── 화면 그리기 ─────────────────────────────────────────────────
-const LEFT_W = 26;
-const GAP    = "    ";
+const PARTY_W   = 22;
+const STORAGE_W = 22;
+const GAP       = "   ";
 
 function artToLines(art: string | null): string[] {
   return art ? art.trimEnd().split("\n") : [];
-}
-
-function mergeSideBySide(leftLines: string[], rightLines: string[]): string[] {
-  const rows = Math.max(leftLines.length, rightLines.length);
-  const out: string[] = [];
-  for (let i = 0; i < rows; i++) {
-    const l = padEnd(leftLines[i] ?? "", LEFT_W);
-    const r = rightLines[i] ?? "";
-    out.push(`  ${l}${GAP}${r}`);
-  }
-  return out;
 }
 
 function buildLines(
@@ -87,46 +77,57 @@ function buildLines(
   art: string | null,
   msg: string,
 ): string[] {
-  const left: string[] = [];
-
-  // 파티 섹션
-  left.push(`${YEL}── 파티 (${party.length}/6) ──${R}`);
+  // 파티 열
+  const partyLines: string[] = [];
+  const partyHdr = panel === "party" ? `${CYN}${BLD}── 파티 (${party.length}/6) ──${R}` : `${YEL}── 파티 (${party.length}/6) ──${R}`;
+  partyLines.push(partyHdr);
   for (let i = 0; i < 6; i++) {
     const p = party[i];
     const active = panel === "party" && i === pi;
     const cur = active ? `${CYN}❯${R}` : " ";
     if (p) {
       const name = active ? `${BLD}${p.species}${R}` : p.species;
-      left.push(`${cur} ${padEnd(name, 13)} ${DIM}Lv.${p.level}${R}`);
+      partyLines.push(`${cur} ${padEnd(name, 13)} ${DIM}Lv.${p.level}${R}`);
     } else {
-      left.push(`${cur} ${DIM}(빈 슬롯)${R}`);
+      partyLines.push(`${cur} ${DIM}(빈 슬롯)${R}`);
     }
   }
 
-  left.push("");
-
-  // 보관함 섹션
-  left.push(`${DIM}── 보관함 (${storage.length}마리) ──${R}`);
+  // 보관함 열
+  const storageLines: string[] = [];
+  const storHdr = panel === "storage" ? `${CYN}${BLD}── 보관함 (${storage.length}마리) ──${R}` : `${DIM}── 보관함 (${storage.length}마리) ──${R}`;
+  storageLines.push(storHdr);
   if (storage.length === 0) {
-    left.push(`  ${DIM}비어 있습니다.${R}`);
+    storageLines.push(`  ${DIM}비어 있습니다.${R}`);
   } else {
     for (let i = 0; i < storage.length; i++) {
       const p = storage[i];
       const active = panel === "storage" && i === si;
       const cur = active ? `${CYN}❯${R}` : " ";
       const name = active ? `${BLD}${p.species}${R}` : p.species;
-      left.push(`${cur} ${padEnd(name, 13)} ${DIM}Lv.${p.level}${R}`);
+      storageLines.push(`${cur} ${padEnd(name, 13)} ${DIM}Lv.${p.level}${R}`);
     }
   }
 
-  const right = artToLines(art);
+  // 이미지 열
+  const artLines = artToLines(art);
+
+  // 3열 병합
+  const rows = Math.max(partyLines.length, storageLines.length, artLines.length);
+  const merged: string[] = [];
+  for (let i = 0; i < rows; i++) {
+    const l = padEnd(partyLines[i]   ?? "", PARTY_W);
+    const m = padEnd(storageLines[i] ?? "", STORAGE_W);
+    const r = artLines[i] ?? "";
+    merged.push(`  ${l}${GAP}${m}${GAP}${r}`);
+  }
 
   const lines: string[] = [
     "",
     `  ${BLD}보관함 관리${R}   ${DIM}파티 ${party.length}/6  ·  보관함 ${storage.length}마리${R}`,
     "  " + "─".repeat(50),
     "",
-    ...mergeSideBySide(left, right),
+    ...merged,
     "",
   ];
 
