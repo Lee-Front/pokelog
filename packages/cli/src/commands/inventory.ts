@@ -116,41 +116,58 @@ function artToLines(art: string | null): string[] {
   return art ? art.trimEnd().split("\n") : [];
 }
 
+// ── 카테고리 ────────────────────────────────────────────────────
+const CATEGORIES = [
+  { label: "몬스터볼", keys: ["pokeball", "safariball", "greatball", "ultraball", "masterball"] },
+  { label: "상처약",   keys: ["potion", "superPotion", "hyperPotion"] },
+];
+
 // ── Items 화면 ──────────────────────────────────────────────────
 function buildItemsLines(
+  catIdx: number,
   items: [string, number][],
   idx: number,
   art: string | null,
   msg: string,
 ): string[] {
-  // 왼쪽: 이름 + 개수만 (태그 없음)
+  // 카테고리 탭
+  const tabs = CATEGORIES.map((c, i) =>
+    i === catIdx ? `${CYN}${BLD}${c.label}${R}` : `${DIM}${c.label}${R}`
+  ).join(`  ${DIM}·${R}  `);
+
+  // 왼쪽: 이름 + 개수
   const left: string[] = [];
-  for (let i = 0; i < items.length; i++) {
-    const [key, count] = items[i];
-    const active = i === idx;
-    const cursor = active ? `${CYN}❯${R}` : " ";
-    const name   = active ? `${BLD}${getItemName(key)}${R}` : `${DIM}${getItemName(key)}${R}`;
-    left.push(`${cursor} ${padRight(name, 16)} ${DIM}×${count}${R}`);
+  if (items.length === 0) {
+    left.push(`  ${DIM}보유한 아이템이 없습니다.${R}`);
+  } else {
+    for (let i = 0; i < items.length; i++) {
+      const [key, count] = items[i];
+      const active = i === idx;
+      const cursor = active ? `${CYN}❯${R}` : " ";
+      const name   = active ? `${BLD}${getItemName(key)}${R}` : getItemName(key);
+      left.push(`${cursor} ${padRight(name, 16)} ${DIM}×${count}${R}`);
+    }
   }
 
-  // 오른쪽: 아트만
+  // 오른쪽: 아트
   const right = artToLines(art);
 
-  // 선택 아이템 설명 (아트 아래 별도)
-  const selKey  = items[idx]?.[0] ?? "";
-  const desc    = selKey ? `${DIM}${getItemDesc(selKey)}${R}` : "";
+  // 선택 아이템 설명
+  const selKey = items[idx]?.[0] ?? "";
+  const desc   = selKey ? `${DIM}${getItemDesc(selKey)}${R}` : "";
 
   const lines: string[] = [
     "",
     `  ${BLD}인벤토리${R}`,
     "  " + "─".repeat(50),
+    `  ${DIM}↑↓ 탐색   ←→ 카테고리   Enter 사용   Esc 뒤로${R}`,
+    `  ← ${tabs}  →`,
     "",
     ...mergeSideBySide(left, right),
     "",
   ];
   if (desc) { lines.push(`  ${desc}`); lines.push(""); }
-  if (msg)  { lines.push(`  ${msg}`);  lines.push(""); }
-  lines.push(`  ${DIM}↑↓ 탐색   Enter 사용   Esc 뒤로${R}`);
+  if (msg)  { lines.push(`  ${msg}`); }
   return lines;
 }
 
@@ -183,12 +200,12 @@ function buildTargetsLines(
     "",
     `  ${BLD}${getItemName(itemKey)}${R} ${DIM}사용 (×${itemCount} 보유)${R}`,
     "  " + "─".repeat(50),
+    `  ${DIM}↑↓ 탐색   Enter 사용   Esc 뒤로${R}`,
     "",
     ...mergeSideBySide(left, right),
     "",
   ];
-  if (msg) { lines.push(`  ${msg}`); lines.push(""); }
-  lines.push(`  ${DIM}↑↓ 탐색   Enter 사용   Esc 뒤로${R}`);
+  if (msg) { lines.push(`  ${msg}`); }
   return lines;
 }
 
@@ -198,6 +215,7 @@ export async function inventoryCommand() {
 
   type Mode = "items" | "targets";
   let mode: Mode    = "items";
+  let catIdx        = 0;
   let itemIdx       = 0;
   let targetIdx     = 0;
   let selectedItem  = "";
@@ -224,13 +242,16 @@ export async function inventoryCommand() {
   await Promise.all([refreshInv(), refreshParty()]);
 
   while (true) {
-    const items = Object.entries(inv).filter(([, c]) => c > 0);
-
     // ── items 모드 ──
     if (mode === "items") {
-      itemIdx = Math.min(itemIdx, Math.max(0, items.length - 1));
+      // 현재 카테고리 아이템만 필터
+      const catKeys    = CATEGORIES[catIdx].keys;
+      const catItems   = Object.entries(inv)
+        .filter(([k, c]) => catKeys.includes(k) && c > 0) as [string, number][];
 
-      const artKey = items[itemIdx]?.[0] ?? "";
+      itemIdx = Math.min(itemIdx, Math.max(0, catItems.length - 1));
+
+      const artKey = catItems[itemIdx]?.[0] ?? "";
       if (artKey !== lastArtKey) {
         const meta = ITEM_META[artKey];
         if (meta?.type === "ball" && meta.ballKey) {
@@ -244,7 +265,7 @@ export async function inventoryCommand() {
         lastArtKey = artKey;
       }
 
-      const lines = buildItemsLines(items, itemIdx, currentArt, msg);
+      const lines = buildItemsLines(catIdx, catItems, itemIdx, currentArt, msg);
       lineCount = redraw(lines, lineCount, first);
       first = false;
       msg = "";
@@ -252,10 +273,18 @@ export async function inventoryCommand() {
       const key = await waitKey();
       if (key === "\x03") { process.stdout.write("\x1b[?25h"); process.exit(0); }
       else if (key === "\x1b" || key === "q") break;
+      else if (key === "\x1b[D") {
+        catIdx = (catIdx - 1 + CATEGORIES.length) % CATEGORIES.length;
+        itemIdx = 0; lastArtKey = ""; currentArt = null; first = true;
+      }
+      else if (key === "\x1b[C") {
+        catIdx = (catIdx + 1) % CATEGORIES.length;
+        itemIdx = 0; lastArtKey = ""; currentArt = null; first = true;
+      }
       else if (key === "\x1b[A" && itemIdx > 0) { itemIdx--; }
-      else if (key === "\x1b[B" && itemIdx < items.length - 1) { itemIdx++; }
+      else if (key === "\x1b[B" && itemIdx < catItems.length - 1) { itemIdx++; }
       else if (key === "\r") {
-        const [selKey, selCount] = items[itemIdx] ?? [];
+        const [selKey] = catItems[itemIdx] ?? [];
         if (!selKey) continue;
         if (!isUsable(selKey)) {
           msg = `${DIM}몬스터볼은 전투 중에만 사용할 수 있습니다.${R}`;
