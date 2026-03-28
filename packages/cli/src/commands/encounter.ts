@@ -46,7 +46,7 @@ function padRight(s: string, width: number): string {
   return s + " ".repeat(Math.max(0, width - visualWidth(s)));
 }
 
-const LEFT_W = 38;
+const LEFT_W = 46;
 const GAP    = "    ";
 
 function artToLines(art: string | null): string[] {
@@ -226,8 +226,8 @@ function buildSelectLines(
     const level  = `${DIM}Lv.${p.level}${R}`;
     const ratio  = p.hp / p.maxHp;
     const hpCol  = ratio <= 0.25 ? RED : ratio <= 0.5 ? YEL : GRN;
-    const filled = Math.round(ratio * 5);
-    const bar    = `${hpCol}${"█".repeat(filled)}${"░".repeat(5 - filled)}${R}`;
+    const filled = Math.round(ratio * 10);
+    const bar    = `${hpCol}${"█".repeat(filled)}${"░".repeat(10 - filled)}${R}`;
     const hpNum  = `${DIM}${p.hp}/${p.maxHp}${R}`;
     left.push(`${cur} ${padRight(name, 14)} ${padRight(level, 7)} ${bar} ${hpNum}`);
   }
