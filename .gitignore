@@ -3,3 +3,4 @@ dist/
 pokelog-data/
 .pokelog/
 *.js.map
+.env.local
