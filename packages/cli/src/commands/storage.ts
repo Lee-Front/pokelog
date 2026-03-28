@@ -60,45 +60,22 @@ async function getCachedArt(species: string): Promise<string | null> {
 }
 
 // ── 화면 그리기 ─────────────────────────────────────────────────
-const COL = 22; // 각 패널 시각 너비
-const GAP = "   "; // 패널 사이 간격
+const LEFT_W = 26;
+const GAP    = "    ";
 
-function buildPanelLines(
-  party: PokemonEntry[],
-  storage: PokemonEntry[],
-  panel: "party" | "storage",
-  pi: number,
-  si: number,
-): { left: string[]; right: string[] } {
-  const left: string[] = [];
-  left.push(`${YEL}── 파티 (${party.length}/6) ──${R}`);
-  for (let i = 0; i < 6; i++) {
-    const p = party[i];
-    const active = panel === "party" && i === pi;
-    const cursor = active ? `${CYN}❯${R}` : " ";
-    if (p) {
-      const name = active ? `${BLD}${p.species}${R}` : p.species;
-      left.push(`${cursor} ${padEnd(name, 13)} ${DIM}Lv.${p.level}${R}`);
-    } else {
-      left.push(`${cursor} ${DIM}(빈 슬롯)${R}`);
-    }
+function artToLines(art: string | null): string[] {
+  return art ? art.trimEnd().split("\n") : [];
+}
+
+function mergeSideBySide(leftLines: string[], rightLines: string[]): string[] {
+  const rows = Math.max(leftLines.length, rightLines.length);
+  const out: string[] = [];
+  for (let i = 0; i < rows; i++) {
+    const l = padEnd(leftLines[i] ?? "", LEFT_W);
+    const r = rightLines[i] ?? "";
+    out.push(`  ${l}${GAP}${r}`);
   }
-
-  const right: string[] = [];
-  right.push(`${DIM}── 보관함 (${storage.length}마리) ──${R}`);
-  if (storage.length === 0) {
-    right.push(`${DIM}비어 있습니다.${R}`);
-  } else {
-    for (let i = 0; i < storage.length; i++) {
-      const p = storage[i];
-      const active = panel === "storage" && i === si;
-      const cursor = active ? `${CYN}❯${R}` : " ";
-      const name = active ? `${BLD}${p.species}${R}` : p.species;
-      right.push(`${cursor} ${padEnd(name, 13)} ${DIM}Lv.${p.level}${R}`);
-    }
-  }
-
-  return { left, right };
+  return out;
 }
 
 function buildLines(
@@ -108,38 +85,51 @@ function buildLines(
   pi: number,
   si: number,
   art: string | null,
-  selectedSpecies: string | null,
   msg: string,
 ): string[] {
-  const { left, right } = buildPanelLines(party, storage, panel, pi, si);
-  const rows = Math.max(left.length, right.length);
+  const left: string[] = [];
 
-  const lines: string[] = [""];
-
-  // ── 아트 미리보기 (위) ──
-  if (art && selectedSpecies) {
-    lines.push(`  ${DIM}${selectedSpecies}${R}`);
-    for (const l of art.trimEnd().split("\n")) lines.push(`  ${l}`);
-    lines.push("");
-  } else if (selectedSpecies) {
-    // 아트 없어도 이름은 표시
-    lines.push(`  ${DIM}${selectedSpecies}${R}`);
-    lines.push("");
+  // 파티 섹션
+  left.push(`${YEL}── 파티 (${party.length}/6) ──${R}`);
+  for (let i = 0; i < 6; i++) {
+    const p = party[i];
+    const active = panel === "party" && i === pi;
+    const cur = active ? `${CYN}❯${R}` : " ";
+    if (p) {
+      const name = active ? `${BLD}${p.species}${R}` : p.species;
+      left.push(`${cur} ${padEnd(name, 13)} ${DIM}Lv.${p.level}${R}`);
+    } else {
+      left.push(`${cur} ${DIM}(빈 슬롯)${R}`);
+    }
   }
 
-  // ── 헤더 ──
-  lines.push(`  ${BLD}보관함 관리${R}   ${DIM}파티 ${party.length}/6  ·  보관함 ${storage.length}마리${R}`);
-  lines.push("  " + "─".repeat(50));
-  lines.push("");
+  left.push("");
 
-  // ── 2열 패널 ──
-  for (let i = 0; i < rows; i++) {
-    const l = padEnd(left[i]  ?? "", COL);
-    const m = right[i] ?? "";
-    lines.push(`  ${l}${GAP}${m}`);
+  // 보관함 섹션
+  left.push(`${DIM}── 보관함 (${storage.length}마리) ──${R}`);
+  if (storage.length === 0) {
+    left.push(`  ${DIM}비어 있습니다.${R}`);
+  } else {
+    for (let i = 0; i < storage.length; i++) {
+      const p = storage[i];
+      const active = panel === "storage" && i === si;
+      const cur = active ? `${CYN}❯${R}` : " ";
+      const name = active ? `${BLD}${p.species}${R}` : p.species;
+      left.push(`${cur} ${padEnd(name, 13)} ${DIM}Lv.${p.level}${R}`);
+    }
   }
 
-  lines.push("");
+  const right = artToLines(art);
+
+  const lines: string[] = [
+    "",
+    `  ${BLD}보관함 관리${R}   ${DIM}파티 ${party.length}/6  ·  보관함 ${storage.length}마리${R}`,
+    "  " + "─".repeat(50),
+    "",
+    ...mergeSideBySide(left, right),
+    "",
+  ];
+
   if (msg) { lines.push(`  ${msg}`); lines.push(""); }
   lines.push(`  ${DIM}↑↓ 이동   ←→ 패널 전환   Enter 이동   Esc 뒤로${R}`);
   return lines;
@@ -147,9 +137,14 @@ function buildLines(
 
 function redraw(lines: string[], lineCount: number, first: boolean): number {
   let out = "\x1b[?25l";
-  if (first) { out += "\x1b[2J\x1b[H"; }
-  else if (lineCount > 0) { out += `\x1b[${lineCount}A\x1b[0J`; }
-  out += lines.join("\n") + "\n\x1b[?25h";
+  if (first || lineCount !== lines.length) {
+    out += "\x1b[2J\x1b[H";
+    out += lines.join("\n") + "\n";
+  } else {
+    out += `\x1b[${lineCount}A`;
+    out += lines.map(l => "\r" + l + "\x1b[K").join("\n") + "\n";
+  }
+  out += "\x1b[?25h";
   process.stdout.write(out);
   return lines.length;
 }
@@ -198,7 +193,7 @@ export async function storageCommand() {
       lastSpecies = null;
     }
 
-    const lines = buildLines(party, storage, panel, pi, si, currentArt, species, msg);
+    const lines = buildLines(party, storage, panel, pi, si, currentArt, msg);
     lineCount = redraw(lines, lineCount, first);
     first = false;
     msg = "";
