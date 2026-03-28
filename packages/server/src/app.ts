@@ -12,7 +12,7 @@ import { adminRoutes } from "./routes/admin-routes.js";
 
 export function createApp() {
   const app = express();
-  app.use(express.json());
+  app.use(express.json({ limit: "1mb" }));
 
   // 서버 메타데이터 (인증 불필요)
   app.get("/api/meta", async (_req, res) => {
