@@ -68,10 +68,10 @@ function redraw(lines: string[], lineCount: number, first: boolean): number {
   let out = "\x1b[?25l";
   if (first || lineCount !== lines.length) {
     out += "\x1b[2J\x1b[H";
-    out += lines.join("\n") + "\n";
+    out += lines.map(l => l + "\x1b[0m").join("\n") + "\n";
   } else {
     out += `\x1b[${lineCount}A`;
-    out += lines.map(l => "\r" + l + "\x1b[K").join("\n") + "\n";
+    out += lines.map(l => "\r" + l + "\x1b[0m\x1b[K").join("\n") + "\n";
   }
   out += "\x1b[?25h";
   process.stdout.write(out);
@@ -132,7 +132,7 @@ async function playBallThrowAnimation(
     let out = "\x1b[?25l";
     if (lineCount > 0) {
       out += `\x1b[${lineCount}A`;
-      out += lines.map(l => "\r" + l + "\x1b[K").join("\n") + "\n";
+      out += lines.map(l => "\r" + l + "\x1b[0m\x1b[K").join("\n") + "\n";
     } else {
       out += "\x1b[2J\x1b[H";
       out += content + "\n";
