@@ -7,6 +7,7 @@ import { attemptCapture, getCatchRate } from "../game/capture.js";
 import { createPokemon } from "../game/pokemon-factory.js";
 import { getMoveById, getSpeciesByName } from "../game/data-loader.js";
 import type { BattleState } from "../../../../shared/types.js";
+import { decrementItem, healPokemon } from "../game/inventory-utils.js";
 
 const router = Router();
 router.use(authMiddleware);
@@ -251,10 +252,7 @@ router.post("/action", async (req, res) => {
       const catchBonus = ballItem?.catchBonus ?? 0;
       const guaranteedCatch = ballItem?.guaranteedCatch ?? false;
 
-      user.inventory[ballType] -= 1;
-      if (user.inventory[ballType] <= 0) {
-        delete user.inventory[ballType];
-      }
+      decrementItem(user.inventory, ballType);
 
       const baseCatchRate = getCatchRate(battle.wild.species);
       const caught = guaranteedCatch || attemptCapture(catchBonus, battle.wild.hp, battle.wild.maxHp, baseCatchRate);
@@ -335,12 +333,8 @@ router.post("/action", async (req, res) => {
         return;
       }
 
-      user.inventory[itemId] -= 1;
-      if (user.inventory[itemId] <= 0) {
-        delete user.inventory[itemId];
-      }
-
-      target.hp = Math.min(target.maxHp, target.hp + shopItem.healAmount);
+      decrementItem(user.inventory, itemId);
+      healPokemon(target, shopItem.healAmount);
       log.push(`${shopItem.name}을(를) 사용했다! HP가 ${shopItem.healAmount} 회복되었다!`);
 
       // Wild attacks after using item

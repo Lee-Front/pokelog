@@ -3,6 +3,7 @@ import type { AuthRequest } from "../middleware/auth-middleware.js";
 import { getUser, saveUser } from "../storage/user-store.js";
 import { getConfig } from "../storage/config-store.js";
 import { authMiddleware } from "../middleware/auth-middleware.js";
+import { decrementItem, incrementItem, healPokemon } from "../game/inventory-utils.js";
 
 const router = Router();
 router.use(authMiddleware);
@@ -55,7 +56,7 @@ router.post("/buy", async (req, res) => {
     }
 
     user.points -= totalCost;
-    user.inventory[item] = (user.inventory[item] || 0) + quantity;
+    incrementItem(user.inventory, item, quantity);
     await saveUser(user);
 
     res.json({
@@ -108,12 +109,8 @@ router.post("/use", async (req, res) => {
       return;
     }
 
-    user.inventory[item] -= 1;
-    if (user.inventory[item] <= 0) {
-      delete user.inventory[item];
-    }
-
-    pokemon.hp = Math.min(pokemon.maxHp, pokemon.hp + shopItem.healAmount);
+    decrementItem(user.inventory, item);
+    healPokemon(pokemon, shopItem.healAmount);
     await saveUser(user);
 
     res.json({

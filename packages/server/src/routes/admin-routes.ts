@@ -9,6 +9,7 @@ import { selectWildPokemon } from "../game/encounter.js";
 import { createWildPokemon, createPokemon } from "../game/pokemon-factory.js";
 import { getRegion } from "../game/data-loader.js";
 import { createEncounterEvent } from "../game/event-factory.js";
+import { incrementItem } from "../game/inventory-utils.js";
 import type { ServerConfig } from "../../../../shared/types.js";
 
 import { adminMiddleware } from "../middleware/admin-middleware.js";
@@ -273,7 +274,7 @@ adminRoutes.post("/test/give-item", async (req, res) => {
     const user = await getUser(userId);
     if (!user) return res.status(404).json({ error: "유저 없음" });
 
-    user.inventory[item] = (user.inventory[item] || 0) + (quantity || 1);
+    incrementItem(user.inventory, item, quantity || 1);
     await saveUser(user);
     res.json({ ok: true, inventory: user.inventory });
   } catch {

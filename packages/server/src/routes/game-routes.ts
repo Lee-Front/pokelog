@@ -4,6 +4,7 @@ import { authMiddleware, type AuthRequest } from "../middleware/auth-middleware.
 import { getUser, saveUser } from "../storage/user-store.js";
 import { getAllSpecies } from "../game/pokemon-factory.js";
 import { getRegion } from "../game/data-loader.js";
+import { healPokemon } from "../game/inventory-utils.js";
 const MAX_PARTY_SIZE = 6;
 
 export const gameRoutes = Router();
@@ -210,10 +211,7 @@ gameRoutes.post("/heal", async (req: AuthRequest, res: Response) => {
       .filter(Boolean);
 
     for (const p of partyPokemon) {
-      p!.hp = p!.maxHp;
-      for (const move of p!.moves) {
-        move.pp = move.maxPp;
-      }
+      healPokemon(p!);
     }
 
     await saveUser(user);
