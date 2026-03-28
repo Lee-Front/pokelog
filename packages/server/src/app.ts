@@ -5,9 +5,9 @@ import { getConfig } from "./storage/config-store.js";
 import { authRoutes } from "./routes/auth-routes.js";
 import { userRoutes } from "./routes/user-routes.js";
 import { gameRoutes } from "./routes/game-routes.js";
-import shopRoutes from "./routes/shop-routes.js";
-import battleRoutes from "./routes/battle-routes.js";
-import socialRoutes from "./routes/social-routes.js";
+import { shopRoutes } from "./routes/shop-routes.js";
+import { battleRoutes } from "./routes/battle-routes.js";
+import { socialRoutes } from "./routes/social-routes.js";
 import { adminRoutes } from "./routes/admin-routes.js";
 
 export function createApp() {

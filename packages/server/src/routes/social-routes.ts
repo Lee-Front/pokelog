@@ -1,9 +1,9 @@
 import { Router } from "express";
 import { getAllUsers } from "../storage/user-store.js";
 
-const router = Router();
+export const socialRoutes = Router();
 
-router.get("/ranking", async (req, res) => {
+socialRoutes.get("/ranking", async (req, res) => {
   try {
     const by = (req.query.by as string) || "exp";
     const users = await getAllUsers();
@@ -40,7 +40,7 @@ router.get("/ranking", async (req, res) => {
   }
 });
 
-router.get("/profile/:nickname", async (req, res) => {
+socialRoutes.get("/profile/:nickname", async (req, res) => {
   try {
     const { nickname } = req.params;
     const users = await getAllUsers();
@@ -66,4 +66,3 @@ router.get("/profile/:nickname", async (req, res) => {
   }
 });
 
-export default router;

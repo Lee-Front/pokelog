@@ -10,8 +10,8 @@ import { getMoveById, getSpeciesByName } from "../game/data-loader.js";
 import type { BattleState, OwnedPokemon, UserData } from "../../../../shared/types.js";
 import { decrementItem, healPokemon } from "../game/inventory-utils.js";
 
-const router = Router();
-router.use(authMiddleware);
+export const battleRoutes = Router();
+battleRoutes.use(authMiddleware);
 
 function getTypes(species: string): string[] {
   return getSpeciesByName(species)?.types ?? [];
@@ -84,7 +84,7 @@ function doWildAttackAndCheck(
   return handleFainted(user, myPokemon, battle, log, res);
 }
 
-router.post("/start", async (req, res) => {
+battleRoutes.post("/start", async (req, res) => {
   try {
     const { userId } = req as AuthRequest;
     const { eventId, pokemonUid } = req.body;
@@ -314,7 +314,7 @@ async function handleRun(
   res.json({ log, battleState: null, result: "run" });
 }
 
-router.post("/action", async (req, res) => {
+battleRoutes.post("/action", async (req, res) => {
   try {
     const { userId } = req as AuthRequest;
     const { action, data } = req.body;
@@ -345,7 +345,7 @@ router.post("/action", async (req, res) => {
   }
 });
 
-router.get("/state", async (req, res) => {
+battleRoutes.get("/state", async (req, res) => {
   try {
     const { userId } = req as AuthRequest;
     const user = await getUser(userId!);
@@ -361,4 +361,3 @@ router.get("/state", async (req, res) => {
   }
 });
 
-export default router;

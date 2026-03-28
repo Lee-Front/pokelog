@@ -5,10 +5,10 @@ import { getConfig } from "../storage/config-store.js";
 import { authMiddleware } from "../middleware/auth-middleware.js";
 import { decrementItem, incrementItem, healPokemon } from "../game/inventory-utils.js";
 
-const router = Router();
-router.use(authMiddleware);
+export const shopRoutes = Router();
+shopRoutes.use(authMiddleware);
 
-router.get("/", async (req, res) => {
+shopRoutes.get("/", async (req, res) => {
   try {
     const { userId } = req as AuthRequest;
     const user = await getUser(userId!);
@@ -25,7 +25,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-router.post("/buy", async (req, res) => {
+shopRoutes.post("/buy", async (req, res) => {
   try {
     const { userId } = req as AuthRequest;
     const { item, quantity } = req.body;
@@ -70,7 +70,7 @@ router.post("/buy", async (req, res) => {
   }
 });
 
-router.post("/use", async (req, res) => {
+shopRoutes.post("/use", async (req, res) => {
   try {
     const { userId } = req as AuthRequest;
     const { item, pokemonUid } = req.body;
@@ -123,4 +123,3 @@ router.post("/use", async (req, res) => {
   }
 });
 
-export default router;
