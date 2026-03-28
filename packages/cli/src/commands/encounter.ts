@@ -386,10 +386,10 @@ function buildPartyPanel(
     "",
     `  ${BLD}포켓몬 교체${R}`,
     "  " + "─".repeat(50),
+    `  ${escHint}`,
     "",
     ...mergeSideBySide(left, right),
     "",
-    `  ${escHint}`,
   ];
   return lines;
 }
@@ -533,12 +533,16 @@ export async function encounterCommand(
     }
     lines.push("");
     lines.push(`  ${DIM}${"─".repeat(48)}${R}`);
+    // 항상 3줄 고정 → 라인 수 변화 없이 line-by-line overwrite 유지
     const recent = battleLog.slice(-3);
-    if (recent.length === 0) {
-      lines.push(`  ${DIM}전투 시작!${R}`);
-    } else {
-      for (const msg of recent) lines.push(`  ${msg}`);
-    }
+    const logLines = recent.length === 0
+      ? [`  ${DIM}전투 시작!${R}`, "", ""]
+      : [
+          recent[0] ? `  ${recent[0]}` : "",
+          recent[1] ? `  ${recent[1]}` : "",
+          recent[2] ? `  ${recent[2]}` : "",
+        ];
+    for (const l of logLines) lines.push(l);
     lines.push(`  ${DIM}${"─".repeat(48)}${R}`);
     lines.push("");
     return lines;
