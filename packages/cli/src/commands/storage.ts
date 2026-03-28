@@ -126,13 +126,13 @@ function buildLines(
     "",
     `  ${BLD}보관함 관리${R}   ${DIM}파티 ${party.length}/6  ·  보관함 ${storage.length}마리${R}`,
     "  " + "─".repeat(50),
+    `  ${DIM}↑↓ 이동   ←→ 패널 전환   Enter 이동   Esc 뒤로${R}`,
     "",
     ...merged,
     "",
   ];
 
-  if (msg) { lines.push(`  ${msg}`); lines.push(""); }
-  lines.push(`  ${DIM}↑↓ 이동   ←→ 패널 전환   Enter 이동   Esc 뒤로${R}`);
+  if (msg) { lines.push(`  ${msg}`); }
   return lines;
 }
 
