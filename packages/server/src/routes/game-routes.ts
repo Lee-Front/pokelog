@@ -50,6 +50,12 @@ gameRoutes.get("/events", async (req: AuthRequest, res: Response) => {
       (e) => new Date(e.expiresAt) > now,
     );
 
+    // 만료된 이벤트 정리
+    if (activeEvents.length !== user.pendingEvents.length) {
+      user.pendingEvents = activeEvents;
+      await saveUser(user);
+    }
+
     res.json({ events: activeEvents });
   } catch (err) {
     console.error("Events error:", err);

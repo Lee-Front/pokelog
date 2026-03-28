@@ -33,7 +33,7 @@ export const DEFAULT_CONFIG: ServerConfig = {
     encounter: {
       baseChance: 0.3,
       ceilingBytes: 5000,
-      timeLimitHours: 24,
+      timeLimitHours: 168,
     },
   },
   shop: {
