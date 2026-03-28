@@ -4,6 +4,7 @@ import { calculateReward } from "../game/reward.js";
 import { judgeCombo, getComboMultiplier } from "../game/combo.js";
 import { checkEncounter, selectWildPokemon } from "../game/encounter.js";
 import { createWildPokemon } from "../game/pokemon-factory.js";
+import { checkLevelUp, checkEvolution, calculateStatsForLevel } from "../game/growth.js";
 import { getCommitByteChanges } from "./git-client.js";
 import type { CommitInfo } from "./git-client.js";
 import { getRegion } from "../game/data-loader.js";
@@ -55,6 +56,23 @@ export async function processCommit(
       const pokemon = user.pokemon.find((p) => p.uid === uid);
       if (pokemon) {
         pokemon.exp += expPerPokemon;
+        const result = checkLevelUp(pokemon);
+        if (result.leveled) {
+          pokemon.level = result.newLevel;
+          const newStats = calculateStatsForLevel(pokemon.species, result.newLevel);
+          pokemon.maxHp = newStats.maxHp;
+          pokemon.hp = Math.min(pokemon.hp, pokemon.maxHp);
+          pokemon.stats = newStats.stats;
+          const evolved = checkEvolution(pokemon.species, result.newLevel);
+          if (evolved) {
+            pokemon.species = evolved;
+            if (!user.pokedex.includes(evolved)) user.pokedex.push(evolved);
+            const evoStats = calculateStatsForLevel(evolved, result.newLevel);
+            pokemon.maxHp = evoStats.maxHp;
+            pokemon.hp = Math.min(pokemon.hp, pokemon.maxHp);
+            pokemon.stats = evoStats.stats;
+          }
+        }
       }
     }
   }

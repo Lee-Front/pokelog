@@ -10,6 +10,7 @@ import { createWildPokemon, createPokemon } from "../game/pokemon-factory.js";
 import { getRegion } from "../game/data-loader.js";
 import { createEncounterEvent } from "../game/event-factory.js";
 import { incrementItem } from "../game/inventory-utils.js";
+import { checkLevelUp, checkEvolution, calculateStatsForLevel } from "../game/growth.js";
 import type { ServerConfig } from "../../../../shared/types.js";
 
 import { adminMiddleware } from "../middleware/admin-middleware.js";
@@ -162,7 +163,26 @@ adminRoutes.post("/test/commit", async (req, res) => {
       const expPerPoke = Math.floor(reward.exp / user.party.length);
       for (const uid of user.party) {
         const poke = user.pokemon.find((p) => p.uid === uid);
-        if (poke) poke.exp += expPerPoke;
+        if (poke) {
+          poke.exp += expPerPoke;
+          const result = checkLevelUp(poke);
+          if (result.leveled) {
+            poke.level = result.newLevel;
+            const newStats = calculateStatsForLevel(poke.species, result.newLevel);
+            poke.maxHp = newStats.maxHp;
+            poke.hp = Math.min(poke.hp, poke.maxHp);
+            poke.stats = newStats.stats;
+            const evolved = checkEvolution(poke.species, result.newLevel);
+            if (evolved) {
+              poke.species = evolved;
+              if (!user.pokedex.includes(evolved)) user.pokedex.push(evolved);
+              const evoStats = calculateStatsForLevel(evolved, result.newLevel);
+              poke.maxHp = evoStats.maxHp;
+              poke.hp = Math.min(poke.hp, poke.maxHp);
+              poke.stats = evoStats.stats;
+            }
+          }
+        }
       }
     }
 
