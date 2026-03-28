@@ -1,19 +1,15 @@
 import { DIM, RED, GRN, YEL, BLU, CYN, BLD, R } from "../ui/colors.js";
 import { apiPost, apiGet } from "../api-client.js";
 import { fetchBallArt, stripAnsi, redraw } from "../ui/display.js";
+import { enterRaw, waitKey } from "../ui/raw-mode.js";
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function waitKey(): Promise<void> {
-  return new Promise((resolve) => {
-    process.stdin.setRawMode(true);
-    process.stdin.resume();
-    process.stdin.setEncoding("utf8");
-    const handler = () => { process.stdin.removeListener("data", handler); resolve(); };
-    process.stdin.once("data", handler);
-  });
+async function waitAnyKey(): Promise<void> {
+  enterRaw();
+  await waitKey();
 }
 
 // ─── 빈 슬롯 ────────────────────────────────────────────────────
@@ -142,6 +138,6 @@ export async function healCommand() {
   await playHealAnimation(party.length, ballArt, emptyArt);
   await healPromise;
 
-  await waitKey();
+  await waitAnyKey();
   process.stdout.write("\x1b[?25h");
 }

@@ -2,26 +2,11 @@ import { DIM, RED, GRN, YEL, BLU, CYN, BLD, R } from "../ui/colors.js";
 import { apiGet, apiPut } from "../api-client.js";
 import { fetchArt, stripAnsi, redraw } from "../ui/display.js";
 import { pokemonCommand } from "./pokemon.js";
+import { enterRaw, waitKey } from "../ui/raw-mode.js";
 
 type PartyMon = { uid: string; species: string; level: number; hp: number; maxHp: number };
 
 // ── stdin 유틸 ──────────────────────────────────────────────────
-function enterRaw() {
-  process.stdin.setRawMode(true);
-  process.stdin.resume();
-  process.stdin.setEncoding("utf8");
-}
-
-function waitKey(): Promise<string> {
-  return new Promise((resolve) => {
-    const handler = (chunk: string) => {
-      process.stdin.removeListener("data", handler);
-      resolve(chunk);
-    };
-    process.stdin.once("data", handler);
-  });
-}
-
 // ── 레이아웃 유틸 ───────────────────────────────────────────────
 function visualWidth(s: string): number {
   let w = 0;

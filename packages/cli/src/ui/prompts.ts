@@ -1,5 +1,6 @@
 import { stripAnsi } from "./display.js";
 import { DIM, CYN, R } from "./colors.js";
+import { enterRaw, waitKey } from "./raw-mode.js";
 
 // ── 자체 raw-mode UI (inquirer abort가 stdin에 EOF를 push하여 영구 차단하므로 직접 구현) ──
 
@@ -19,24 +20,8 @@ function isSeparator<T>(item: SelectItem<T>): item is SeparatorItem {
   return "separator" in item;
 }
 
-function enterRaw() {
-  if (process.stdin.isTTY) process.stdin.setRawMode(true);
-  process.stdin.resume();
-  process.stdin.setEncoding("utf8");
-}
-
 function leaveRaw() {
   // raw mode / pause는 건드리지 않음 — 메인 루프 input()이 관리
-}
-
-function waitKey(): Promise<string> {
-  return new Promise((resolve) => {
-    const handler = (chunk: string) => {
-      process.stdin.removeListener("data", handler);
-      resolve(chunk);
-    };
-    process.stdin.once("data", handler);
-  });
 }
 
 /**

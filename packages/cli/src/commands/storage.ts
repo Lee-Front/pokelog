@@ -1,6 +1,7 @@
 import { DIM, RED, GRN, YEL, BLU, CYN, BLD, R } from "../ui/colors.js";
 import { apiGet, apiPost } from "../api-client.js";
 import { fetchArt, redraw } from "../ui/display.js";
+import { enterRaw, waitKey } from "../ui/raw-mode.js";
 
 type PokemonEntry = { uid: string; species: string; level: number; hp: number; maxHp: number };
 
@@ -19,20 +20,6 @@ function visualWidth(s: string): number {
 
 function padEnd(s: string, width: number): string {
   return s + " ".repeat(Math.max(0, width - visualWidth(s)));
-}
-
-// ── stdin 유틸 ──────────────────────────────────────────────────
-function enterRaw() {
-  process.stdin.setRawMode(true);
-  process.stdin.resume();
-  process.stdin.setEncoding("utf8");
-}
-
-function waitKey(): Promise<string> {
-  return new Promise((resolve) => {
-    const handler = (chunk: string) => { process.stdin.removeListener("data", handler); resolve(chunk); };
-    process.stdin.once("data", handler);
-  });
 }
 
 // ── 데이터 fetch ────────────────────────────────────────────────

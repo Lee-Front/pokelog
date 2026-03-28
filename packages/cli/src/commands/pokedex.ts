@@ -1,24 +1,9 @@
 import { DIM, RED, GRN, YEL, BLU, CYN, BLD, R } from "../ui/colors.js";
 import { apiGet } from "../api-client.js";
 import { fetchArt, stripAnsi, redraw } from "../ui/display.js";
+import { enterRaw, waitKey } from "../ui/raw-mode.js";
 
 type SpeciesEntry = { id: number; species: string; name: string };
-
-function enterRaw() {
-  process.stdin.setRawMode(true);
-  process.stdin.resume();
-  process.stdin.setEncoding("utf8");
-}
-
-function waitKey(): Promise<string> {
-  return new Promise((resolve) => {
-    const handler = (chunk: string) => {
-      process.stdin.removeListener("data", handler);
-      resolve(chunk);
-    };
-    process.stdin.once("data", handler);
-  });
-}
 
 function visualWidth(s: string): number {
   let w = 0;

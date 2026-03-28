@@ -1,24 +1,9 @@
 import { DIM, RED, GRN, YEL, BLU, CYN, BLD, R } from "../ui/colors.js";
 import { apiPost, apiGet } from "../api-client.js";
 import { fetchArt, fetchBallArt, renderHpBar, sideBySide, stripAnsi, redraw } from "../ui/display.js";
+import { enterRaw, waitKey } from "../ui/raw-mode.js";
 
 // ── stdin 유틸 ──────────────────────────────────────────────────
-function enterRaw() {
-  process.stdin.setRawMode(true);
-  process.stdin.resume();
-  process.stdin.setEncoding("utf8");
-}
-
-function waitKey(): Promise<string> {
-  return new Promise((resolve) => {
-    const handler = (chunk: string) => {
-      process.stdin.removeListener("data", handler);
-      resolve(chunk);
-    };
-    process.stdin.once("data", handler);
-  });
-}
-
 function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }

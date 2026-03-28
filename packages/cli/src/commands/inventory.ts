@@ -1,6 +1,7 @@
 import { DIM, RED, GRN, YEL, BLU, CYN, BLD, R } from "../ui/colors.js";
 import { apiGet, apiPost } from "../api-client.js";
 import { fetchArt, fetchBallArt, renderHpBar, stripAnsi, redraw } from "../ui/display.js";
+import { enterRaw, waitKey } from "../ui/raw-mode.js";
 
 // ── 아이템 메타데이터 ───────────────────────────────────────────
 const ITEM_META: Record<string, {
@@ -35,20 +36,6 @@ function makePotionArt(heal: number): string {
     `${DIM}  │      │${R}`,
     `${DIM}  └──────┘${R}`,
   ].join("\n");
-}
-
-// ── stdin 유틸 ──────────────────────────────────────────────────
-function enterRaw() {
-  process.stdin.setRawMode(true);
-  process.stdin.resume();
-  process.stdin.setEncoding("utf8");
-}
-
-function waitKey(): Promise<string> {
-  return new Promise((resolve) => {
-    const handler = (chunk: string) => { process.stdin.removeListener("data", handler); resolve(chunk); };
-    process.stdin.once("data", handler);
-  });
 }
 
 // ── 레이아웃 유틸 ───────────────────────────────────────────────

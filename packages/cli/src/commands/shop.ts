@@ -1,6 +1,7 @@
 import { DIM, RED, GRN, YEL, BLU, CYN, BLD, R } from "../ui/colors.js";
 import { apiGet, apiPost } from "../api-client.js";
 import { fetchBallArt, stripAnsi, redraw } from "../ui/display.js";
+import { enterRaw, waitKey } from "../ui/raw-mode.js";
 
 type ShopItem = {
   name: string;
@@ -24,20 +25,6 @@ const BALL_ART_KEY: Record<string, string> = {
   ultraball:  "UltraBall",
   masterball: "MasterBall",
 };
-
-// ── stdin 유틸 ──────────────────────────────────────────────────
-function enterRaw() {
-  process.stdin.setRawMode(true);
-  process.stdin.resume();
-  process.stdin.setEncoding("utf8");
-}
-
-function waitKey(): Promise<string> {
-  return new Promise((resolve) => {
-    const handler = (chunk: string) => { process.stdin.removeListener("data", handler); resolve(chunk); };
-    process.stdin.once("data", handler);
-  });
-}
 
 function rawNumberInput(label: string): Promise<number | null> {
   return new Promise((resolve) => {
