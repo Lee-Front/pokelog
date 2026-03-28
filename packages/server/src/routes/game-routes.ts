@@ -1,22 +1,10 @@
 import { Router } from "express";
 import type { Response } from "express";
-import { readFileSync } from "node:fs";
 import { authMiddleware, type AuthRequest } from "../middleware/auth-middleware.js";
 import { getUser, saveUser } from "../storage/user-store.js";
 import { getAllSpecies } from "../game/pokemon-factory.js";
-import { projectPath } from "../paths.js";
-import type { RegionData } from "../../../../shared/types.js";
+import { getRegion } from "../game/data-loader.js";
 const MAX_PARTY_SIZE = 6;
-
-function getCurrentRegionName(): string {
-  try {
-    const regionPath = projectPath("data/regions/default.json");
-    const data: RegionData = JSON.parse(readFileSync(regionPath, "utf-8"));
-    return data.name;
-  } catch {
-    return "default";
-  }
-}
 
 export const gameRoutes = Router();
 gameRoutes.use(authMiddleware);
@@ -44,7 +32,7 @@ gameRoutes.get("/status", async (req: AuthRequest, res: Response) => {
       combo: user.combo,
       pendingEventCount: pendingCount,
       todayLog: todayLogs,
-      region: getCurrentRegionName(),
+      region: getRegion("default").name,
     });
   } catch (err) {
     console.error("Status error:", err);

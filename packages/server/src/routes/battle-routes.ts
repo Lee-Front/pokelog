@@ -1,44 +1,15 @@
 import { Router } from "express";
-import { readFileSync } from "node:fs";
-import { projectPath } from "../paths.js";
 import { authMiddleware, type AuthRequest } from "../middleware/auth-middleware.js";
 import { getUser, saveUser } from "../storage/user-store.js";
 import { getConfig } from "../storage/config-store.js";
 import { calculateDamage, determineTurnOrder } from "../game/battle.js";
 import { attemptCapture, getCatchRate } from "../game/capture.js";
 import { createPokemon } from "../game/pokemon-factory.js";
-import type { MoveData, SpeciesData, BattleState } from "../../../../shared/types.js";
+import { getMoveById, getSpeciesByName } from "../game/data-loader.js";
+import type { BattleState } from "../../../../shared/types.js";
 
 const router = Router();
 router.use(authMiddleware);
-
-let movesCache: MoveData[] | null = null;
-let speciesCache: SpeciesData[] | null = null;
-
-function loadMoves(): MoveData[] {
-  if (!movesCache) {
-    const filePath = projectPath("data/moves/moves.json");
-    movesCache = JSON.parse(readFileSync(filePath, "utf-8")) as MoveData[];
-  }
-  return movesCache;
-}
-
-function loadSpecies(): SpeciesData[] {
-  if (!speciesCache) {
-    const filePath = projectPath("data/pokemon/species.json");
-    speciesCache = JSON.parse(readFileSync(filePath, "utf-8")) as SpeciesData[];
-  }
-  return speciesCache;
-}
-
-function getMoveData(moveId: string): MoveData | undefined {
-  return loadMoves().find((m) => m.id === moveId);
-}
-
-function getSpeciesTypes(species: string): string[] {
-  const data = loadSpecies().find((s) => s.species === species);
-  return data?.types ?? [];
-}
 
 function wildAttack(
   wildSpecies: string,
@@ -52,7 +23,7 @@ function wildAttack(
   if (availableMoves.length === 0) return { damage: 0, moveId: null, message: "야생 포켓몬이 발버둥쳤다!" };
 
   const chosen = availableMoves[Math.floor(Math.random() * availableMoves.length)];
-  const moveData = getMoveData(chosen.id);
+  const moveData = getMoveById(chosen.id);
   if (!moveData) return { damage: 0, moveId: chosen.id, message: "" };
 
   chosen.pp -= 1;
@@ -62,8 +33,8 @@ function wildAttack(
     wildStats,
     targetStats,
     moveData,
-    getSpeciesTypes(wildSpecies),
-    getSpeciesTypes(targetSpecies),
+    getSpeciesByName(wildSpecies)?.types ?? [],
+    getSpeciesByName(targetSpecies)?.types ?? [],
   );
 
   return { damage: result.damage, moveId: chosen.id, message: result.message, missed: result.missed };
@@ -173,7 +144,7 @@ router.post("/action", async (req, res) => {
         return;
       }
 
-      const moveData = getMoveData(moveId);
+      const moveData = getMoveById(moveId);
       if (!moveData) {
         res.status(400).json({ error: "기술 데이터를 찾을 수 없습니다" });
         return;
@@ -186,7 +157,7 @@ router.post("/action", async (req, res) => {
         myMove.pp -= 1;
         const playerResult = calculateDamage(
           myPokemon.level, myPokemon.stats, battle.wild.stats, moveData,
-          getSpeciesTypes(myPokemon.species), getSpeciesTypes(battle.wild.species),
+          getSpeciesByName(myPokemon.species)?.types ?? [], getSpeciesByName(battle.wild.species)?.types ?? [],
         );
         battle.wild.hp = Math.max(0, battle.wild.hp - playerResult.damage);
         log.push(`${myPokemon.species}의 ${moveData.name}! ${playerResult.missed ? "빗나갔다!" : `${playerResult.damage} 데미지!`}`);
@@ -249,7 +220,7 @@ router.post("/action", async (req, res) => {
         myMove.pp -= 1;
         const playerResult = calculateDamage(
           myPokemon.level, myPokemon.stats, battle.wild.stats, moveData,
-          getSpeciesTypes(myPokemon.species), getSpeciesTypes(battle.wild.species),
+          getSpeciesByName(myPokemon.species)?.types ?? [], getSpeciesByName(battle.wild.species)?.types ?? [],
         );
         battle.wild.hp = Math.max(0, battle.wild.hp - playerResult.damage);
         log.push(`${myPokemon.species}의 ${moveData.name}! ${playerResult.missed ? "빗나갔다!" : `${playerResult.damage} 데미지!`}`);

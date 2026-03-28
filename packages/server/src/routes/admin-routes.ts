@@ -7,6 +7,7 @@ import { calculateReward } from "../game/reward.js";
 import { judgeCombo, getComboMultiplier } from "../game/combo.js";
 import { selectWildPokemon } from "../game/encounter.js";
 import { createWildPokemon, createPokemon } from "../game/pokemon-factory.js";
+import { getRegion } from "../game/data-loader.js";
 import type { ServerConfig } from "../../../../shared/types.js";
 
 import { adminMiddleware } from "../middleware/admin-middleware.js";
@@ -176,10 +177,7 @@ adminRoutes.post("/test/commit", async (req, res) => {
 
     let encounterInfo: { species: string; level: number } | null = null;
     if (encounterResult.encountered) {
-      const { projectPath } = await import("../paths.js");
-      const fs = await import("node:fs");
-      const regionPath = projectPath("data/regions/default.json");
-      const regionData = JSON.parse(fs.default.readFileSync(regionPath, "utf-8"));
+      const regionData = getRegion("default");
       const pick = selectWildPokemon(regionData);
       const wildPokemon = createWildPokemon(pick.species, pick.level);
 
@@ -234,10 +232,7 @@ adminRoutes.post("/test/encounter", async (req, res) => {
     let wildSpecies = species;
     let wildLevel = level;
     if (!wildSpecies) {
-      const { projectPath } = await import("../paths.js");
-      const fs = await import("node:fs");
-      const regionPath = projectPath("data/regions/default.json");
-      const regionData = JSON.parse(fs.default.readFileSync(regionPath, "utf-8"));
+      const regionData = getRegion("default");
       const pick = selectWildPokemon(regionData);
       wildSpecies = pick.species;
       wildLevel = pick.level;

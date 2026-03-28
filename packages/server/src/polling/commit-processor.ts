@@ -6,15 +6,8 @@ import { checkEncounter, selectWildPokemon } from "../game/encounter.js";
 import { createWildPokemon } from "../game/pokemon-factory.js";
 import { getCommitByteChanges } from "./git-client.js";
 import type { CommitInfo } from "./git-client.js";
-import type { RegionData } from "../../../../shared/types.js";
+import { getRegion } from "../game/data-loader.js";
 import crypto from "node:crypto";
-import fs from "node:fs";
-import { projectPath } from "../paths.js";
-
-function loadRegionData(): RegionData {
-  const regionPath = projectPath("data/regions/default.json");
-  return JSON.parse(fs.readFileSync(regionPath, "utf-8"));
-}
 
 export async function processCommit(
   commit: CommitInfo,
@@ -77,7 +70,7 @@ export async function processCommit(
   user.encounterCeiling.accumulatedBytes = encounterResult.newCeiling;
 
   if (encounterResult.encountered) {
-    const regionData = loadRegionData();
+    const regionData = getRegion("default");
     const wildInfo = selectWildPokemon(regionData);
     const wildPokemon = createWildPokemon(wildInfo.species, wildInfo.level);
 

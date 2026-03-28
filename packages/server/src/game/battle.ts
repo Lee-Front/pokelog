@@ -1,23 +1,5 @@
-import { readFileSync } from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { getTypeChart } from "./data-loader.js";
 import type { PokemonStats, MoveData } from "../../../../shared/types.js";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const PROJECT_ROOT = path.resolve(__dirname, "../../../..");
-
-type TypeChart = Record<string, Record<string, number>>;
-
-let typeChartCache: TypeChart | null = null;
-
-function loadTypeChart(): TypeChart {
-  if (!typeChartCache) {
-    const filePath = path.resolve(PROJECT_ROOT, "data/types/type-chart.json");
-    typeChartCache = JSON.parse(readFileSync(filePath, "utf-8")) as TypeChart;
-  }
-  return typeChartCache;
-}
 
 export interface DamageResult {
   damage: number;
@@ -34,7 +16,7 @@ export function calculateDamage(
   attackerTypes: string[],
   defenderTypes: string[],
 ): DamageResult {
-  const typeChart = loadTypeChart();
+  const typeChart = getTypeChart();
 
   // Accuracy check
   const accuracyRoll = Math.random() * 100;
@@ -94,9 +76,4 @@ export function determineTurnOrder(mySpeed: number, wildSpeed: number): "player"
   if (mySpeed > wildSpeed) return "player";
   if (wildSpeed > mySpeed) return "wild";
   return Math.random() < 0.5 ? "player" : "wild";
-}
-
-/** Clear caches (useful for testing) */
-export function _clearCache(): void {
-  typeChartCache = null;
 }

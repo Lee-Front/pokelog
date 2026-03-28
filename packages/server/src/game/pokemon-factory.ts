@@ -1,6 +1,5 @@
-import { readFileSync } from "node:fs";
 import crypto from "node:crypto";
-import { projectPath } from "../paths.js";
+import { getSpecies, getSpeciesByName, getMoves, getMoveById, getAllSpeciesList } from "./data-loader.js";
 import type {
   SpeciesData,
   MoveData,
@@ -9,25 +8,6 @@ import type {
   PokemonMove,
   PokemonStats,
 } from "../../../../shared/types.js";
-
-let speciesCache: SpeciesData[] | null = null;
-let movesCache: MoveData[] | null = null;
-
-function loadSpecies(): SpeciesData[] {
-  if (!speciesCache) {
-    const filePath = projectPath("data/pokemon/species.json");
-    speciesCache = JSON.parse(readFileSync(filePath, "utf-8")) as SpeciesData[];
-  }
-  return speciesCache;
-}
-
-function loadMoves(): MoveData[] {
-  if (!movesCache) {
-    const filePath = projectPath("data/moves/moves.json");
-    movesCache = JSON.parse(readFileSync(filePath, "utf-8")) as MoveData[];
-  }
-  return movesCache;
-}
 
 function calcHp(baseHp: number, level: number): number {
   return Math.floor(((baseHp * 2 * level) / 100) + level + 10);
@@ -50,7 +30,7 @@ function buildStats(species: SpeciesData, level: number): { maxHp: number; stats
 }
 
 function buildMoves(species: SpeciesData, level: number): PokemonMove[] {
-  const allMoves = loadMoves();
+  const allMoves = getMoves();
   const moveMap = new Map(allMoves.map((m) => [m.id, m]));
 
   // Collect all moves learnable at or below current level
@@ -83,8 +63,7 @@ function buildMoves(species: SpeciesData, level: number): PokemonMove[] {
 }
 
 export function createPokemon(species: string, level: number): OwnedPokemon {
-  const allSpecies = loadSpecies();
-  const speciesData = allSpecies.find((s) => s.species === species);
+  const speciesData = getSpeciesByName(species);
   if (!speciesData) {
     throw new Error(`Unknown species: ${species}`);
   }
@@ -107,8 +86,7 @@ export function createPokemon(species: string, level: number): OwnedPokemon {
 }
 
 export function createWildPokemon(species: string, level: number): WildPokemon {
-  const allSpecies = loadSpecies();
-  const speciesData = allSpecies.find((s) => s.species === species);
+  const speciesData = getSpeciesByName(species);
   if (!speciesData) {
     throw new Error(`Unknown species: ${species}`);
   }
@@ -127,11 +105,5 @@ export function createWildPokemon(species: string, level: number): WildPokemon {
 }
 
 export function getAllSpecies(): Array<{ id: number; species: string; name: string }> {
-  return loadSpecies().map((s) => ({ id: s.id, species: s.species, name: s.name }));
-}
-
-/** Clear caches (useful for testing) */
-export function _clearCache(): void {
-  speciesCache = null;
-  movesCache = null;
+  return getAllSpeciesList();
 }

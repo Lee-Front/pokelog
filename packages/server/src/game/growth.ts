@@ -1,30 +1,5 @@
-import { readFileSync } from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-import type { SpeciesData, EvolutionData, OwnedPokemon, PokemonStats } from "../../../../shared/types.js";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const PROJECT_ROOT = path.resolve(__dirname, "../../../..");
-
-let speciesCache: SpeciesData[] | null = null;
-let evolutionCache: Record<string, EvolutionData> | null = null;
-
-function loadSpecies(): SpeciesData[] {
-  if (!speciesCache) {
-    const filePath = path.resolve(PROJECT_ROOT, "data/pokemon/species.json");
-    speciesCache = JSON.parse(readFileSync(filePath, "utf-8")) as SpeciesData[];
-  }
-  return speciesCache;
-}
-
-function loadEvolution(): Record<string, EvolutionData> {
-  if (!evolutionCache) {
-    const filePath = path.resolve(PROJECT_ROOT, "data/pokemon/evolution.json");
-    evolutionCache = JSON.parse(readFileSync(filePath, "utf-8")) as Record<string, EvolutionData>;
-  }
-  return evolutionCache;
-}
+import { getSpeciesByName, getEvolutions } from "./data-loader.js";
+import type { OwnedPokemon, PokemonStats } from "../../../../shared/types.js";
 
 export function getExpForLevel(level: number): number {
   return level ** 3;
@@ -35,8 +10,7 @@ export function checkLevelUp(pokemon: OwnedPokemon): {
   newLevel: number;
   newMoves: string[];
 } {
-  const allSpecies = loadSpecies();
-  const speciesData = allSpecies.find((s) => s.species === pokemon.species);
+  const speciesData = getSpeciesByName(pokemon.species);
 
   let currentLevel = pokemon.level;
   const newMoves: string[] = [];
@@ -64,8 +38,7 @@ export function calculateStatsForLevel(
   species: string,
   level: number,
 ): { hp: number; maxHp: number; stats: PokemonStats } {
-  const allSpecies = loadSpecies();
-  const speciesData = allSpecies.find((s) => s.species === species);
+  const speciesData = getSpeciesByName(species);
   if (!speciesData) {
     throw new Error(`Unknown species: ${species}`);
   }
@@ -83,7 +56,7 @@ export function calculateStatsForLevel(
 }
 
 export function checkEvolution(species: string, level: number): string | null {
-  const evolution = loadEvolution();
+  const evolution = getEvolutions();
   const evo = evolution[species];
 
   if (!evo || !evo.evolvesTo || !evo.condition) {
@@ -95,10 +68,4 @@ export function checkEvolution(species: string, level: number): string | null {
   }
 
   return null;
-}
-
-/** Clear caches (useful for testing) */
-export function _clearCache(): void {
-  speciesCache = null;
-  evolutionCache = null;
 }
