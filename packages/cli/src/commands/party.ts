@@ -3,32 +3,14 @@ import { apiGet, apiPut } from "../api-client.js";
 import { fetchArt, stripAnsi, redraw } from "../ui/display.js";
 import { pokemonCommand } from "./pokemon.js";
 import { enterRaw, waitKey } from "../ui/raw-mode.js";
+import { visualWidth, padRight, artToLines } from "../ui/text.js";
 
 type PartyMon = { uid: string; species: string; level: number; hp: number; maxHp: number };
 
 // ── stdin 유틸 ──────────────────────────────────────────────────
 // ── 레이아웃 유틸 ───────────────────────────────────────────────
-function visualWidth(s: string): number {
-  let w = 0;
-  for (const ch of stripAnsi(s)) {
-    const c = ch.codePointAt(0) ?? 0;
-    w += (c >= 0x1100 && c <= 0x115F) || (c >= 0x2E80 && c <= 0xA4CF) ||
-         (c >= 0xAC00 && c <= 0xD7AF) || (c >= 0xF900 && c <= 0xFAFF) ||
-         (c >= 0xFF01 && c <= 0xFF60) ? 2 : 1;
-  }
-  return w;
-}
-
-function padRight(s: string, width: number): string {
-  return s + " ".repeat(Math.max(0, width - visualWidth(s)));
-}
-
 const LEFT_W = 26;
 const GAP    = "    ";
-
-function artToLines(art: string | null): string[] {
-  return art ? art.trimEnd().split("\n") : [];
-}
 
 function buildLines(party: PartyMon[], cursor: number, art: string | null): string[] {
   const left: string[] = [];

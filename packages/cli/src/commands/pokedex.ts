@@ -2,23 +2,9 @@ import { DIM, RED, GRN, YEL, BLU, CYN, BLD, R } from "../ui/colors.js";
 import { apiGet } from "../api-client.js";
 import { fetchArt, stripAnsi, redraw } from "../ui/display.js";
 import { enterRaw, waitKey } from "../ui/raw-mode.js";
+import { visualWidth, padRight, artToLines } from "../ui/text.js";
 
 type SpeciesEntry = { id: number; species: string; name: string };
-
-function visualWidth(s: string): number {
-  let w = 0;
-  for (const ch of stripAnsi(s)) {
-    const c = ch.codePointAt(0) ?? 0;
-    w += (c >= 0x1100 && c <= 0x115F) || (c >= 0x2E80 && c <= 0xA4CF) ||
-         (c >= 0xAC00 && c <= 0xD7AF) || (c >= 0xF900 && c <= 0xFAFF) ||
-         (c >= 0xFF01 && c <= 0xFF60) ? 2 : 1;
-  }
-  return w;
-}
-
-function padRight(s: string, width: number): string {
-  return s + " ".repeat(Math.max(0, width - visualWidth(s)));
-}
 
 // ANSI 색상 제거 후 회색 적용 → 실루엣 효과
 function silhouetteArt(art: string): string {
@@ -26,10 +12,6 @@ function silhouetteArt(art: string): string {
     .split("\n")
     .map(l => `${DIM}${l.replace(/\x1b\[[0-9;]*m/g, "")}${R}`)
     .join("\n");
-}
-
-function artToLines(art: string | null): string[] {
-  return art ? art.trimEnd().split("\n") : [];
 }
 
 const LIST_W  = 28;   // 좌측 목록 패널 시각폭

@@ -2,6 +2,7 @@ import { DIM, RED, GRN, YEL, BLU, CYN, BLD, R } from "../ui/colors.js";
 import { apiGet, apiPost } from "../api-client.js";
 import { fetchArt, fetchBallArt, renderHpBar, stripAnsi, redraw } from "../ui/display.js";
 import { enterRaw, waitKey } from "../ui/raw-mode.js";
+import { visualWidth, padRight, artToLines, mergeSideBySide } from "../ui/text.js";
 
 // ── 아이템 메타데이터 ───────────────────────────────────────────
 const ITEM_META: Record<string, {
@@ -39,34 +40,8 @@ function makePotionArt(heal: number): string {
 }
 
 // ── 레이아웃 유틸 ───────────────────────────────────────────────
-function visualWidth(s: string): number {
-  let w = 0;
-  for (const ch of stripAnsi(s)) {
-    const c = ch.codePointAt(0) ?? 0;
-    w += (c >= 0x1100 && c <= 0x115F) || (c >= 0x2E80 && c <= 0xA4CF) ||
-         (c >= 0xAC00 && c <= 0xD7AF) || (c >= 0xF900 && c <= 0xFAFF) ||
-         (c >= 0xFF01 && c <= 0xFF60) ? 2 : 1;
-  }
-  return w;
-}
-
-function padRight(s: string, width: number): string {
-  return s + " ".repeat(Math.max(0, width - visualWidth(s)));
-}
-
 const LEFT_W = 26;
 const GAP    = "    ";
-
-function mergeSideBySide(leftLines: string[], rightLines: string[]): string[] {
-  const rows = Math.max(leftLines.length, rightLines.length);
-  const out: string[] = [];
-  for (let i = 0; i < rows; i++) {
-    const l = padRight(leftLines[i] ?? "", LEFT_W);
-    const r = rightLines[i] ?? "";
-    out.push(`  ${l}${GAP}${r}`);
-  }
-  return out;
-}
 
 // ── 아트 캐시 ───────────────────────────────────────────────────
 const artCache = new Map<string, string | null>();
@@ -76,10 +51,6 @@ async function getCachedArt(key: string, fetcher: () => Promise<string | null>):
   const art = await fetcher();
   artCache.set(key, art);
   return art;
-}
-
-function artToLines(art: string | null): string[] {
-  return art ? art.trimEnd().split("\n") : [];
 }
 
 // ── 카테고리 ────────────────────────────────────────────────────

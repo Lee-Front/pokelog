@@ -2,25 +2,9 @@ import { DIM, RED, GRN, YEL, BLU, CYN, BLD, R } from "../ui/colors.js";
 import { apiGet, apiPost } from "../api-client.js";
 import { fetchArt, redraw } from "../ui/display.js";
 import { enterRaw, waitKey } from "../ui/raw-mode.js";
+import { visualWidth, padRight, artToLines, stripAnsi } from "../ui/text.js";
 
 type PokemonEntry = { uid: string; species: string; level: number; hp: number; maxHp: number };
-
-function stripAnsi(s: string) { return s.replace(/\x1b\[[0-9;]*m/g, ""); }
-
-function visualWidth(s: string): number {
-  let w = 0;
-  for (const ch of stripAnsi(s)) {
-    const c = ch.codePointAt(0) ?? 0;
-    w += (c >= 0x1100 && c <= 0x115F) || (c >= 0x2E80 && c <= 0xA4CF) ||
-         (c >= 0xAC00 && c <= 0xD7AF) || (c >= 0xF900 && c <= 0xFAFF) ||
-         (c >= 0xFF01 && c <= 0xFF60) ? 2 : 1;
-  }
-  return w;
-}
-
-function padEnd(s: string, width: number): string {
-  return s + " ".repeat(Math.max(0, width - visualWidth(s)));
-}
 
 // ── 데이터 fetch ────────────────────────────────────────────────
 async function fetchData(): Promise<{ party: PokemonEntry[]; storage: PokemonEntry[] } | null> {
@@ -45,10 +29,6 @@ const STORAGE_W      = 22;
 const GAP            = "   ";
 const STORAGE_VISIBLE = 6; // 보관함 한 번에 표시할 줄 수 (파티와 동일)
 
-function artToLines(art: string | null): string[] {
-  return art ? art.trimEnd().split("\n") : [];
-}
-
 function buildLines(
   party: PokemonEntry[],
   storage: PokemonEntry[],
@@ -71,7 +51,7 @@ function buildLines(
     const cur = active ? `${CYN}❯${R}` : " ";
     if (p) {
       const name = active ? `${BLD}${p.species}${R}` : p.species;
-      partyLines.push(`${cur} ${padEnd(name, 13)} ${DIM}Lv.${p.level}${R}`);
+      partyLines.push(`${cur} ${padRight(name, 13)} ${DIM}Lv.${p.level}${R}`);
     } else {
       partyLines.push(`${cur} ${DIM}(빈 슬롯)${R}`);
     }
@@ -101,7 +81,7 @@ function buildLines(
       const active = panel === "storage" && absIdx === si;
       const cur    = active ? `${CYN}❯${R}` : " ";
       const name   = active ? `${BLD}${p.species}${R}` : p.species;
-      storageLines.push(`${cur} ${padEnd(name, 13)} ${DIM}Lv.${p.level}${R}`);
+      storageLines.push(`${cur} ${padRight(name, 13)} ${DIM}Lv.${p.level}${R}`);
     }
     // 스크롤 인디케이터 (헤더에 범위 표시됨, 추가 힌트)
     if (scroll > 0 && storEnd < storage.length) {
@@ -120,8 +100,8 @@ function buildLines(
   const rows = Math.max(partyLines.length, storageLines.length, artLines.length);
   const merged: string[] = [];
   for (let i = 0; i < rows; i++) {
-    const l = padEnd(partyLines[i]   ?? "", PARTY_W);
-    const m = padEnd(storageLines[i] ?? "", STORAGE_W);
+    const l = padRight(partyLines[i]   ?? "", PARTY_W);
+    const m = padRight(storageLines[i] ?? "", STORAGE_W);
     const r = artLines[i] ?? "";
     merged.push(`  ${l}${GAP}${m}${GAP}${r}`);
   }

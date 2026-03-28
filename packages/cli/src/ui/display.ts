@@ -1,4 +1,5 @@
 import { DIM, RED, GRN, YEL, BLU, CYN, BLD, R } from "./colors.js";
+import { stripAnsi } from "./text.js";
 import { getServerUrl, getCurrentServer, getToken } from "../config.js";
 import { apiGet } from "../api-client.js";
 
@@ -77,9 +78,7 @@ export function renderBox(lines: string[]): void {
   console.log(bot);
 }
 
-export function stripAnsi(str: string): string {
-  return str.replace(/\x1b\[[0-9;]*m/g, "");
-}
+export { stripAnsi } from "./text.js";
 
 export function sideBySide(leftArt: string, rightArt: string, gap: number = 4): string {
   const leftLines = leftArt.replace(/\r/g, "").split("\n");
