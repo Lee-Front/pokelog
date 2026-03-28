@@ -226,9 +226,10 @@ function buildSelectLines(
     const level  = `${DIM}Lv.${p.level}${R}`;
     const ratio  = p.hp / p.maxHp;
     const hpCol  = ratio <= 0.25 ? RED : ratio <= 0.5 ? YEL : GRN;
-    const filled = Math.round(ratio * 10);
-    const bar    = `${hpCol}${"█".repeat(filled)}${"░".repeat(10 - filled)}${R}`;
-    left.push(`${cur} ${padRight(name, 14)} ${padRight(level, 7)} ${bar}`);
+    const filled = Math.round(ratio * 5);
+    const bar    = `${hpCol}${"█".repeat(filled)}${"░".repeat(5 - filled)}${R}`;
+    const hpNum  = `${DIM}${p.hp}/${p.maxHp}${R}`;
+    left.push(`${cur} ${padRight(name, 14)} ${padRight(level, 7)} ${bar} ${hpNum}`);
   }
 
   const right = artToLines(art);
