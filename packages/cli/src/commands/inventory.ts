@@ -1,5 +1,5 @@
 import { apiGet, apiPost } from "../api-client.js";
-import { fetchArt, fetchBallArt, renderHpBar, stripAnsi } from "../ui/display.js";
+import { fetchArt, fetchBallArt, renderHpBar, stripAnsi, redraw } from "../ui/display.js";
 
 const DIM = "\x1b[90m";
 const YEL = "\x1b[1m\x1b[33m";
@@ -86,20 +86,6 @@ function mergeSideBySide(leftLines: string[], rightLines: string[]): string[] {
     out.push(`  ${l}${GAP}${r}`);
   }
   return out;
-}
-
-function redraw(lines: string[], lineCount: number, first: boolean): number {
-  let out = "\x1b[?25l";
-  if (first || lineCount !== lines.length) {
-    out += "\x1b[2J\x1b[H";
-    out += lines.map(l => l + "\x1b[0m").join("\n") + "\n";
-  } else {
-    out += `\x1b[${lineCount}A`;
-    out += lines.map(l => "\r" + l + "\x1b[0m\x1b[K").join("\n") + "\n";
-  }
-  out += "\x1b[?25h";
-  process.stdout.write(out);
-  return lines.length;
 }
 
 // ── 아트 캐시 ───────────────────────────────────────────────────

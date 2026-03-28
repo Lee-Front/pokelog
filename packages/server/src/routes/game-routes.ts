@@ -1,8 +1,22 @@
 import { Router } from "express";
 import type { Response } from "express";
+import { readFileSync } from "node:fs";
 import { authMiddleware, type AuthRequest } from "../middleware/auth-middleware.js";
 import { getUser, saveUser } from "../storage/user-store.js";
+import { getAllSpecies } from "../game/pokemon-factory.js";
+import { projectPath } from "../paths.js";
+import type { RegionData } from "../../../../shared/types.js";
 const MAX_PARTY_SIZE = 6;
+
+function getCurrentRegionName(): string {
+  try {
+    const regionPath = projectPath("data/regions/default.json");
+    const data: RegionData = JSON.parse(readFileSync(regionPath, "utf-8"));
+    return data.name;
+  } catch {
+    return "default";
+  }
+}
 
 export const gameRoutes = Router();
 gameRoutes.use(authMiddleware);
@@ -30,6 +44,7 @@ gameRoutes.get("/status", async (req: AuthRequest, res: Response) => {
       combo: user.combo,
       pendingEventCount: pendingCount,
       todayLog: todayLogs,
+      region: getCurrentRegionName(),
     });
   } catch (err) {
     console.error("Status error:", err);
@@ -148,7 +163,16 @@ gameRoutes.get("/pokedex", async (req: AuthRequest, res: Response) => {
       return;
     }
 
-    res.json({ pokedex: user.pokedex });
+    const caughtSpecies = new Set([
+      ...user.pokemon.map((p) => p.species),
+      ...user.storage.map((p) => p.species),
+    ]);
+
+    res.json({
+      seen: user.pokedex,
+      caught: [...caughtSpecies],
+      allSpecies: getAllSpecies(),
+    });
   } catch (err) {
     console.error("Pokedex error:", err);
     res.status(500).json({ error: "서버 오류가 발생했습니다" });

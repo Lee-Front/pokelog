@@ -103,34 +103,44 @@ export function sideBySide(leftArt: string, rightArt: string, gap: number = 4): 
 
 // ── 2줄 헤더 시스템 ──
 
-type ScreenName =
-  | "status" | "events" | "party" | "shop" | "inventory"
-  | "storage" | "pokedex" | "ranking" | "battle" | "profile"
-  | "servers" | "whereami";
-
 interface HeaderData {
   serverName: string;
   nickname: string;
+  region: string;
   pendingEvents: number;
   points: number;
   leadPokemon: string | null;
   leadLevel: number;
   partyCount: number;
-  battleActive: boolean;
 }
 
 let cachedHeaderData: HeaderData | null = null;
 
-export async function fetchHeaderData(): Promise<HeaderData | null> {
-  const token = await getToken();
-  if (!token) return null;
+export function invalidateHeaderCache(): void {
+  cachedHeaderData = null;
+}
 
+export async function fetchHeaderData(): Promise<HeaderData> {
   const server = await getCurrentServer();
   const serverName = server?.name || "?";
 
+  const fallback: HeaderData = {
+    serverName,
+    nickname: "?",
+    region: "-",
+    pendingEvents: 0,
+    points: 0,
+    leadPokemon: null,
+    leadLevel: 0,
+    partyCount: 0,
+  };
+
+  const token = await getToken();
+  if (!token) return cachedHeaderData ?? fallback;
+
   try {
     const res = await apiGet("/api/game/status");
-    if (!res.ok) return null;
+    if (!res.ok) return cachedHeaderData ?? fallback;
     const d = res.data;
 
     const partyRes = await apiGet("/api/game/party");
@@ -142,16 +152,16 @@ export async function fetchHeaderData(): Promise<HeaderData | null> {
     cachedHeaderData = {
       serverName,
       nickname: (d.nickname as string) || "?",
+      region: (d.region as string) || "default",
       pendingEvents: (d.pendingEventCount as number) || 0,
       points: (d.points as number) || 0,
       leadPokemon: lead ? lead.species : null,
       leadLevel: lead ? lead.level : 0,
       partyCount: party.length,
-      battleActive: false,
     };
     return cachedHeaderData;
   } catch {
-    return cachedHeaderData;
+    return cachedHeaderData ?? fallback;
   }
 }
 
@@ -161,37 +171,43 @@ const YELLOW = "\x1b[33m";
 const GREEN = "\x1b[32m";
 const R = "\x1b[0m";
 
-export async function printHeader(screen: ScreenName | string | null): Promise<void> {
+export async function printHeader(screen: string | null): Promise<void> {
   const data = await fetchHeaderData();
-  if (!data) return;
 
-  // 1줄: 고정 맥락
-  const screenPart = screen ? `   ${DIM}screen:${R} ${GREEN}${screen}${R}` : "";
-  const line1 = `${DIM}server:${R} ${CYAN}${data.serverName}${R}   ${DIM}trainer:${R} ${YELLOW}${data.nickname}${R}${screenPart}`;
-
-  // 2줄: 화면별 가변
-  let line2: string;
-  switch (screen) {
-    case "events":
-      line2 = `${DIM}encounters:${R} ${data.pendingEvents}   ${DIM}battle:${R} ${data.battleActive ? "전투 중" : "-"}`;
-      break;
-    case "party":
-      line2 = `${DIM}party:${R} ${data.partyCount}/6   ${DIM}lead:${R} ${data.leadPokemon ? `${data.leadPokemon} Lv.${data.leadLevel}` : "-"}`;
-      break;
-    case "shop":
-    case "inventory":
-      line2 = `${DIM}points:${R} ${data.points}P`;
-      break;
-    case "battle":
-      line2 = `${DIM}lead:${R} ${data.leadPokemon ? `${data.leadPokemon} Lv.${data.leadLevel}` : "-"}`;
-      break;
-    default:
-      // status, storage, pokedex, ranking, profile, etc.
-      line2 = `${DIM}encounters:${R} ${data.pendingEvents}   ${DIM}points:${R} ${data.points}P   ${DIM}lead:${R} ${data.leadPokemon ? `${data.leadPokemon} Lv.${data.leadLevel}` : "-"}`;
-      break;
-  }
+  const line1 = `${DIM}server:${R} ${CYAN}${data.serverName}${R}   ${DIM}trainer:${R} ${YELLOW}${data.nickname}${R}   ${DIM}location:${R} ${GREEN}${data.region}${R}`;
+  const line2 = `${DIM}encounters:${R} ${data.pendingEvents}   ${DIM}points:${R} ${data.points}P   ${DIM}lead:${R} ${data.leadPokemon ? `${data.leadPokemon} Lv.${data.leadLevel}` : "-"}`;
 
   console.log(`  ${line1}`);
   console.log(`  ${line2}`);
   console.log();
+}
+
+/**
+ * 깜빡임 없는 화면 다시 그리기 (공통 유틸)
+ *
+ * - first=true  : 전체 지우기 후 새로 그림
+ * - first=false : 이전 줄로 커서 이동 후 line-by-line 덮어쓰기
+ *   - 줄 수가 늘어난 경우 → 아래로 자연스럽게 확장
+ *   - 줄 수가 줄어든 경우 → 남은 이전 줄을 지우고 커서 재조정
+ *
+ * @returns 새로운 lineCount (다음 호출 시 전달)
+ */
+export function redraw(lines: string[], lineCount: number, first: boolean): number {
+  let out = "\x1b[?25l"; // 커서 숨기기
+  if (first) {
+    out += "\x1b[2J\x1b[H";
+    out += lines.map(l => l + "\x1b[0m").join("\n") + "\n";
+  } else {
+    if (lineCount > 0) out += `\x1b[${lineCount}A`;
+    out += lines.map(l => "\r" + l + "\x1b[0m\x1b[K").join("\n") + "\n";
+    // 줄 수가 줄었을 경우 남은 이전 줄 지우고 커서 재조정
+    if (lines.length < lineCount) {
+      const extra = lineCount - lines.length;
+      for (let i = 0; i < extra; i++) out += "\r\x1b[K\n";
+      out += `\x1b[${extra}A`;
+    }
+  }
+  out += "\x1b[?25h"; // 커서 보이기
+  process.stdout.write(out);
+  return lines.length;
 }

@@ -1,52 +1,179 @@
 import { apiGet } from "../api-client.js";
-import { selectAction } from "../ui/prompts.js";
-import { pokemonCommand } from "./pokemon.js";
+import { fetchArt, stripAnsi, redraw } from "../ui/display.js";
 
-export async function pokedexCommand() {
-  const res = await apiGet("/api/game/pokedex");
-  if (!res.ok) {
-    console.error(`오류: ${res.data.error}`);
-    return;
+const DIM = "\x1b[90m";
+const GRN = "\x1b[32m";
+const CYN = "\x1b[36m";
+const BLD = "\x1b[1m";
+const R   = "\x1b[0m";
+
+type SpeciesEntry = { id: number; species: string; name: string };
+
+function enterRaw() {
+  process.stdin.setRawMode(true);
+  process.stdin.resume();
+  process.stdin.setEncoding("utf8");
+}
+
+function waitKey(): Promise<string> {
+  return new Promise((resolve) => {
+    const handler = (chunk: string) => {
+      process.stdin.removeListener("data", handler);
+      resolve(chunk);
+    };
+    process.stdin.once("data", handler);
+  });
+}
+
+function visualWidth(s: string): number {
+  let w = 0;
+  for (const ch of stripAnsi(s)) {
+    const c = ch.codePointAt(0) ?? 0;
+    w += (c >= 0x1100 && c <= 0x115F) || (c >= 0x2E80 && c <= 0xA4CF) ||
+         (c >= 0xAC00 && c <= 0xD7AF) || (c >= 0xF900 && c <= 0xFAFF) ||
+         (c >= 0xFF01 && c <= 0xFF60) ? 2 : 1;
   }
-  const pokedex = res.data.pokedex as string[];
+  return w;
+}
 
-  if (pokedex.length === 0) {
-    console.log("도감이 비어 있습니다.");
-    return;
-  }
+function padRight(s: string, width: number): string {
+  return s + " ".repeat(Math.max(0, width - visualWidth(s)));
+}
 
-  console.log(`  포켓몬 도감 (${pokedex.length}종)`);
-  console.log("  " + "─".repeat(30));
+// ANSI 색상 제거 후 회색 적용 → 실루엣 효과
+function silhouetteArt(art: string): string {
+  return art
+    .split("\n")
+    .map(l => `${DIM}${l.replace(/\x1b\[[0-9;]*m/g, "")}${R}`)
+    .join("\n");
+}
 
-  // 보유 포켓몬 목록도 가져와서 매칭
-  const pokemonRes = await apiGet("/api/game/party");
-  const storageRes = await apiGet("/api/game/storage");
-  const allPokemon = [
-    ...((pokemonRes.data?.party as Array<{ uid: string; species: string; level: number }>) || []),
-    ...((storageRes.data?.storage as Array<{ uid: string; species: string; level: number }>) || []),
+function artToLines(art: string | null): string[] {
+  return art ? art.trimEnd().split("\n") : [];
+}
+
+const LIST_W  = 28;   // 좌측 목록 패널 시각폭
+const GAP     = "   ";
+const VISIBLE = 14;   // 목록 표시 줄 수
+
+function buildLines(
+  allSpecies: SpeciesEntry[],
+  cursor: number,
+  scroll: number,
+  seenSet: Set<string>,
+  caughtSet: Set<string>,
+  art: string | null,
+  isSeen: boolean,
+): string[] {
+  // ── 좌측: 목록 + 통계 + 힌트 ─────────────────────────────────
+  const left: string[] = [
+    `${BLD}포켓몬 도감${R}  ${DIM}(${allSpecies.length}종)${R}`,
+    "─".repeat(LIST_W),
   ];
 
-  const choices = pokedex.map((species) => {
-    const owned = allPokemon.filter((p) => p.species === species);
-    const info = owned.length > 0 ? ` (보유: ${owned.length}마리)` : "";
-    return { name: `${species}${info}`, value: species };
-  });
-  choices.push({ name: "← 돌아가기", value: "__back__" });
+  const end = Math.min(scroll + VISIBLE, allSpecies.length);
+  for (let i = scroll; i < end; i++) {
+    const entry  = allSpecies[i];
+    const seen   = seenSet.has(entry.species);
+    const caught = caughtSet.has(entry.species);
+    const active = i === cursor;
+
+    const cur     = active ? `${CYN}❯${R}` : " ";
+    const num     = `${DIM}${String(entry.id).padStart(3, "0")}${R}`;
+    const nameStr = seen ? entry.name : "???";
+    const name    = active
+      ? `${CYN}${BLD}${nameStr}${R}`
+      : seen
+        ? nameStr
+        : `${DIM}${nameStr}${R}`;
+    const mark = caught ? ` ${GRN}✓${R}` : "";
+
+    left.push(`${cur} ${num} ${padRight(name, 14)}${mark}`);
+  }
+
+  // 목록 패딩
+  while (left.length < 2 + VISIBLE) left.push("");
+
+  left.push("─".repeat(LIST_W));
+  left.push(`  ${DIM}발견${R}  ${BLD}${seenSet.size}${R}종   ${DIM}포획${R}  ${BLD}${caughtSet.size}${R}종`);
+  left.push(`  ${DIM}↑↓ 탐색   Esc 뒤로${R}`);
+
+  // ── 우측: 아트 ───────────────────────────────────────────────
+  const displayArt = art
+    ? (isSeen ? artToLines(art) : artToLines(silhouetteArt(art)))
+    : [];
+
+  // ── 병합 ──────────────────────────────────────────────────
+  const rows = Math.max(left.length, displayArt.length);
+  const lines: string[] = [];
+  for (let i = 0; i < rows; i++) {
+    const l = padRight(left[i] ?? "", LIST_W);
+    const r = displayArt[i] ?? "";
+    lines.push(`  ${l}${GAP}${r}`);
+  }
+  return lines;
+}
+
+export async function pokedexCommand() {
+  enterRaw();
+
+  const res = await apiGet("/api/game/pokedex");
+  if (!res.ok) {
+    process.stdout.write(`\n  오류: ${(res.data as { error: string }).error}\n`);
+    return;
+  }
+
+  const { seen, caught, allSpecies } = res.data as {
+    seen: string[];
+    caught: string[];
+    allSpecies: SpeciesEntry[];
+  };
+
+  allSpecies.sort((a, b) => a.id - b.id);
+
+  const seenSet   = new Set(seen);
+  const caughtSet = new Set(caught);
+
+  const artCache  = new Map<string, string | null>();
+  let cursor      = 0;
+  let scroll      = 0;
+  let first       = true;
+  let lineCount   = 0;
+  let currentArt: string | null = null;
+  let lastSpecies = "";
 
   while (true) {
-    process.stdout.write("\x1b[2J\x1b[H");
-    console.log(`  포켓몬 도감 (${pokedex.length}종)`);
-    console.log("  " + "─".repeat(30));
+    const entry  = allSpecies[cursor];
+    const isSeen = seenSet.has(entry.species);
 
-    const selected = await selectAction("포켓몬을 선택하세요:", choices);
-    if (selected === "__back__") return;
+    if (entry.species !== lastSpecies) {
+      if (!artCache.has(entry.species)) {
+        artCache.set(entry.species, await fetchArt(entry.species));
+      }
+      currentArt  = artCache.get(entry.species) ?? null;
+      lastSpecies = entry.species;
+    }
 
-    // 해당 종의 보유 포켓몬 중 하나 보여주기
-    const match = allPokemon.find((p) => p.species === selected);
-    if (match) {
-      await pokemonCommand(match.uid);
-    } else {
-      console.log(`${selected} — 도감에 등록되었지만 현재 보유하고 있지 않습니다.`);
+    const lines = buildLines(allSpecies, cursor, scroll, seenSet, caughtSet, currentArt, isSeen);
+    lineCount = redraw(lines, lineCount, first);
+    first = false;
+
+    const key = await waitKey();
+    if (key === "\x03") { process.stdout.write("\x1b[?25h"); process.exit(0); }
+    if (key === "\x1b" || key === "q") break;
+
+    if (key === "\x1b[A") {
+      if (cursor > 0) {
+        cursor--;
+        if (cursor < scroll) scroll = cursor;
+      }
+    } else if (key === "\x1b[B") {
+      if (cursor < allSpecies.length - 1) {
+        cursor++;
+        if (cursor >= scroll + VISIBLE) scroll = cursor - VISIBLE + 1;
+      }
     }
   }
+
+  process.stdout.write("\x1b[?25h\x1b[2J\x1b[H");
 }

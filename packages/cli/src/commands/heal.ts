@@ -1,5 +1,5 @@
 import { apiPost, apiGet } from "../api-client.js";
-import { fetchBallArt, stripAnsi } from "../ui/display.js";
+import { fetchBallArt, stripAnsi, redraw } from "../ui/display.js";
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -73,20 +73,6 @@ function buildFrame(
   lines.push("");
   lines.push(`  ${status}`);
   return lines;
-}
-
-function redraw(lines: string[], lineCount: number, first: boolean): number {
-  let out = "\x1b[?25l";
-  if (first) {
-    out += "\x1b[2J\x1b[H";
-    out += lines.map(l => l + "\x1b[0m").join("\n") + "\n";
-  } else if (lineCount > 0) {
-    out += `\x1b[${lineCount}A`;
-    out += lines.map((l) => "\r" + l + "\x1b[0m\x1b[K").join("\n") + "\n";
-  }
-  out += "\x1b[?25h";
-  process.stdout.write(out);
-  return lines.length;
 }
 
 // ─── 애니메이션 ─────────────────────────────────────────────────

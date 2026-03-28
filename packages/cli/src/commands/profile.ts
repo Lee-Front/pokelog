@@ -1,5 +1,5 @@
 import { apiGet, apiPut, apiPost, apiDelete } from "../api-client.js";
-import { inputPrompt } from "../ui/prompts.js";
+import { invalidateHeaderCache, printHeader } from "../ui/display.js";
 
 export async function profileCommand(nickname?: string) {
   const path = nickname ? `/api/social/profile/${encodeURIComponent(nickname)}` : "/api/user/profile";
@@ -15,12 +15,19 @@ export async function profileCommand(nickname?: string) {
   }
 }
 
-export async function nicknameCommand(name: string) {
+export async function nicknameCommand(name?: string) {
+  if (!name) {
+    const { rawInput } = await import("../ui/prompts.js");
+    const result = await rawInput("새 닉네임: ");
+    if (!result || !result.trim()) return;
+    name = result.trim();
+  }
   const res = await apiPut("/api/user/nickname", { nickname: name });
   if (res.ok) {
-    console.log(`닉네임 변경 완료: ${name}`);
+    console.log(`  닉네임 변경 완료: ${name}`);
+    invalidateHeaderCache();
   } else {
-    console.error(`오류: ${res.data.error}`);
+    console.error(`  오류: ${res.data.error}`);
   }
 }
 

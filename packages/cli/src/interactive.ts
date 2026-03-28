@@ -8,14 +8,13 @@ import { pokedexCommand } from "./commands/pokedex.js";
 import { inventoryCommand } from "./commands/inventory.js";
 import { shopCommand } from "./commands/shop.js";
 import { rankingCommand } from "./commands/ranking.js";
-import { profileCommand, nicknameCommand } from "./commands/profile.js";
+import { nicknameCommand } from "./commands/profile.js";
 import { registerCommand, loginCommand, logoutCommand } from "./commands/auth.js";
 import { debugCommand } from "./commands/debug.js";
 import { joinCommand } from "./commands/join.js";
 import { serversCommand } from "./commands/servers.js";
 import { useCommand } from "./commands/use.js";
 import { leaveCommand } from "./commands/leave.js";
-import { whereamiCommand } from "./commands/whereami.js";
 import { hasNoServers, getCurrentServerName, getCurrentServer, getToken, clearToken } from "./config.js";
 import { printHeader } from "./ui/display.js";
 
@@ -62,20 +61,14 @@ const HELP_PAGES: Record<string, Array<{ cmd: string; desc: string }>> = {
   ],
   "서버 관리": [
     { cmd: "join <url>",   desc: "서버에 참가" },
-    { cmd: "servers",      desc: "참가한 서버 목록" },
-    { cmd: "use <name>",   desc: "서버 전환" },
-    { cmd: "leave <name>", desc: "서버에서 나가기" },
-    { cmd: "whereami",     desc: "현재 서버 정보" },
+    { cmd: "servers",      desc: "서버 목록 / 전환" },
+    { cmd: "leave",        desc: "서버에서 나가기" },
   ],
   "계정": [
-    { cmd: "profile [nickname]", desc: "프로필" },
-    { cmd: "nickname <name>",    desc: "닉네임 변경" },
-    { cmd: "login",    desc: "로그인" },
-    { cmd: "logout",   desc: "로그아웃" },
-    { cmd: "register", desc: "회원가입" },
-  ],
-  "개발/디버그": [
-    { cmd: "debug", desc: "테스트 메뉴 (커밋, 조우, 지급 등)" },
+    { cmd: "nickname",  desc: "닉네임 변경" },
+    { cmd: "login",     desc: "로그인" },
+    { cmd: "logout",    desc: "로그아웃" },
+    { cmd: "register",  desc: "회원가입" },
   ],
   "기타": [
     { cmd: "clear", desc: "화면 지우기" },
@@ -85,36 +78,32 @@ const HELP_PAGES: Record<string, Array<{ cmd: string; desc: string }>> = {
 };
 
 async function printHelp() {
-  const { select, Separator } = await import("@inquirer/prompts");
-  const { withEscape } = await import("./ui/prompts.js");
+  const { rawSelect, separator } = await import("./ui/prompts.js");
   const DIM = "\x1b[90m";
   const R = "\x1b[0m";
 
-  type HelpChoice = { name: string; value: string };
-  const choices: Array<HelpChoice | InstanceType<typeof Separator>> = [];
+  const items: Array<{ name: string; value: string } | { separator: string }> = [];
 
   for (const [category, entries] of Object.entries(HELP_PAGES)) {
-    choices.push(new Separator(`\x1b[33m  ── ${category} ──\x1b[0m`));
+    items.push(separator(`\x1b[33m  ── ${category} ──\x1b[0m`));
     for (const { cmd, desc } of entries) {
       const needsArgs = cmd.includes("<");
       const cmdPart = cmd.padEnd(24);
       const name = needsArgs
         ? `  ${DIM}${cmdPart}${desc}${R}`
         : `  ${cmdPart}${DIM}${desc}${R}`;
-      choices.push({ name, value: cmd });
+      items.push({ name, value: cmd });
     }
   }
-  choices.push(new Separator(" "));
-  choices.push({ name: "← 닫기", value: "__close__" });
+  items.push(separator(" "));
+  items.push({ name: "← 닫기", value: "__close__" });
 
   let lastValue: string | undefined;
   while (true) {
-    const result = await withEscape((signal) =>
-      (select as any)(
-        { message: "명령어 목록  ↑↓ 스크롤  Esc 닫기", choices, pageSize: 12, loop: false, default: lastValue },
-        { signal }
-      )
-    ) as string | null;
+    const result = await rawSelect("명령어 목록  ↑↓ 스크롤  Esc 닫기", items, {
+      pageSize: 16,
+      default: lastValue,
+    });
 
     if (!result || result === "__close__") return;
 
@@ -127,10 +116,8 @@ async function printHelp() {
     }
 
     await executeCommand(baseCmd);
-    clearScreen();
     return;
   }
-  clearScreen();
 }
 
 function resolveCommand(input: string): string | { ambiguous: string[] } {
@@ -154,7 +141,7 @@ async function executeCommand(line: string): Promise<boolean> {
   if (!cmd) return true;
 
   clearScreen();
-  await printHeader(cmd as any);
+  await printHeader(cmd);
 
   switch (cmd) {
     // 서버 관리
@@ -165,19 +152,12 @@ async function executeCommand(line: string): Promise<boolean> {
     case "servers":
       await serversCommand();
       break;
-    case "server":
-      await whereamiCommand();
-      break;
     case "use":
       if (args[0]) await useCommand(args[0]);
-      else console.log("사용법: use <name>");
+      else await serversCommand();
       break;
     case "leave":
-      if (args[0]) await leaveCommand(args[0]);
-      else console.log("사용법: leave <name>");
-      break;
-    case "whereami":
-      await whereamiCommand();
+      await leaveCommand();
       break;
 
     // 게임
@@ -208,12 +188,8 @@ async function executeCommand(line: string): Promise<boolean> {
     case "ranking":
       await rankingCommand(args[0] || "exp");
       break;
-    case "profile":
-      await profileCommand(args[0]);
-      break;
     case "nickname":
-      if (args[0]) await nicknameCommand(args[0]);
-      else console.log("사용법: nickname <name>");
+      await nicknameCommand(args[0]);
       break;
     case "login":
       await loginCommand();
@@ -227,10 +203,6 @@ async function executeCommand(line: string): Promise<boolean> {
     case "debug":
       await debugCommand();
       break;
-    case "clear":
-      clearScreen();
-      await printHeader(null);
-      break;
     case "help":
       await printHelp();
       break;
@@ -240,6 +212,12 @@ async function executeCommand(line: string): Promise<boolean> {
       return false;
     default:
       console.log(`알 수 없는 명령어: ${cmd} (help로 명령어 목록 확인)`);
+  }
+
+  // 명령 실행 후 화면 정리 + 헤더 복원
+  if (cmd !== "quit" && cmd !== "exit") {
+    clearScreen();
+    await printHeader(null);
   }
 
   return true;
@@ -282,14 +260,14 @@ async function printServerGuide(): Promise<boolean> {
 const AUTH_COMMANDS = new Set([
   "encounters", "party", "pokedex",
   "inventory", "heal", "shop", "storage",
-  "ranking", "profile", "nickname", "logout", "debug",
+  "ranking", "nickname", "logout", "debug",
 ]);
 
 const ALL_COMMANDS = [
   "encounters", "party", "pokedex",
   "inventory", "heal", "shop", "storage", "ranking",
-  "join", "servers", "server", "use", "leave", "whereami",
-  "profile", "nickname", "login", "logout", "register",
+  "join", "servers", "use", "leave",
+  "nickname", "login", "logout", "register",
   "debug", "clear", "help", "quit", "exit",
 ];
 
@@ -312,12 +290,6 @@ export async function interactiveMode() {
   let loggedIn = !!(await getToken());
 
   while (true) {
-    // 로그인 상태면 헤더 표시
-    if (loggedIn) {
-      clearScreen();
-      await printHeader(null);
-    }
-
     const promptStr = await getPrompt();
     let line: string;
     try {
@@ -363,8 +335,9 @@ export async function interactiveMode() {
       console.error("오류:", err);
     }
 
-    // 로그인 전이면 항상 타이틀 복귀
-    if (!loggedIn) {
+    // 로그인 전이면 타이틀 복귀 (서버/인증 명령 제외)
+    const NO_BANNER_CMDS = new Set(["servers", "server", "join", "use", "leave", "whereami", "login", "register", "help"]);
+    if (!loggedIn && !NO_BANNER_CMDS.has(cmd)) {
       clearScreen();
       await printBanner();
       printWelcomeGuide();

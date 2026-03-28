@@ -126,6 +126,10 @@ export function createWildPokemon(species: string, level: number): WildPokemon {
   };
 }
 
+export function getAllSpecies(): Array<{ id: number; species: string; name: string }> {
+  return loadSpecies().map((s) => ({ id: s.id, species: s.species, name: s.name }));
+}
+
 /** Clear caches (useful for testing) */
 export function _clearCache(): void {
   speciesCache = null;

@@ -1,5 +1,5 @@
 import { apiPost, apiGet } from "../api-client.js";
-import { fetchArt, fetchBallArt, renderHpBar, sideBySide, stripAnsi } from "../ui/display.js";
+import { fetchArt, fetchBallArt, renderHpBar, sideBySide, stripAnsi, redraw } from "../ui/display.js";
 
 const DIM = "\x1b[90m";
 const YEL = "\x1b[1m\x1b[33m";
@@ -64,20 +64,6 @@ function mergeSideBySide(leftLines: string[], rightLines: string[]): string[] {
   return out;
 }
 
-function redraw(lines: string[], lineCount: number, first: boolean): number {
-  let out = "\x1b[?25l";
-  if (first || lineCount !== lines.length) {
-    out += "\x1b[2J\x1b[H";
-    out += lines.map(l => l + "\x1b[0m").join("\n") + "\n";
-  } else {
-    out += `\x1b[${lineCount}A`;
-    out += lines.map(l => "\r" + l + "\x1b[0m\x1b[K").join("\n") + "\n";
-  }
-  out += "\x1b[?25h";
-  process.stdout.write(out);
-  return lines.length;
-}
-
 // ── 아트 유틸 ───────────────────────────────────────────────────
 function tintArt(art: string, color: string): string {
   return art
@@ -94,14 +80,21 @@ function buildBattleScene(
   myArt: string,
   rightArt: string,
 ): string {
-  const myLabel   = `  ${myPoke.species} Lv.${myPoke.level}`;
-  const wildLabel = `  ${wild.species} Lv.${wild.level}`;
+  const myLabel   = `      ${myPoke.species} Lv.${myPoke.level}`;
   const myHp      = `  HP: ${renderHpBar(myPoke.hp, myPoke.maxHp, 12)}`;
   const wildHp    = `  HP: ${renderHpBar(wild.hp, wild.maxHp, 12)}`;
-  const indentArt = (s: string) => s.split("\n").map(l => "    " + l).join("\n");
+  const shiftLeft = (s: string) => s.split("\n").map(l => "    " + l).join("\n");
+  const indentArt = (s: string) => s.split("\n").map(l => "          " + l).join("\n");
+
+  // HP바 색상 부분 시작 컬럼 = myHp 시각폭 + gap(6) + "  HP: "(6)
+  const hpBarCol = stripAnsi(myHp).length + 6 + 6;
+  // 이름 시작점을 HP바 색상과 동일하게: myLabel 시각폭 + gap(2) + prefix = hpBarCol
+  const namePrefixLen = Math.max(0, hpBarCol - stripAnsi(myLabel).length - 2);
+  const wildLabelStr  = " ".repeat(namePrefixLen) + `${wild.species} Lv.${wild.level}`;
+
   return [
-    sideBySide(myLabel, "        " + wildLabel, 6),
-    sideBySide(myArt, indentArt(rightArt), 6),
+    sideBySide(myLabel, wildLabelStr, 2),
+    sideBySide(shiftLeft(myArt), indentArt(rightArt), 2),
     sideBySide(myHp, wildHp, 6),
   ].join("\n");
 }
@@ -519,7 +512,6 @@ export async function encounterCommand(
 
   function buildSceneLines(): string[] {
     const lines: string[] = [];
-    lines.push("");
     if (myPoke && wildArt && myArt) {
       const scene = buildBattleScene(myPoke, wildState, myArt, wildArt);
       for (const l of scene.split("\n")) lines.push(l);
@@ -663,12 +655,10 @@ export async function encounterCommand(
         if (action === "싸운다") {
           subMode = "fight";
           fightCursor = 0;
-          first = true;
         } else if (action === "가방") {
           subMode = "bag";
           bagCat = 0;
           bagCursor = 0;
-          first = true;
         } else if (action === "포켓몬") {
           subMode = "party";
           partyForced = false;
@@ -696,7 +686,6 @@ export async function encounterCommand(
           }
           stateStale = true;
           subMode    = "menu";
-          first      = true;
         }
       }
     }
@@ -708,7 +697,7 @@ export async function encounterCommand(
       const col = fightCursor % rowSize;
       const moveCount = myPokeMoves.length;
 
-      if (key === "\x1b" || key === "q") { subMode = "menu"; first = true; }
+      if (key === "\x1b" || key === "q") { subMode = "menu"; }
       else if (key === "\x1b[A") {
         const newRow = row - 1;
         if (newRow >= 0) fightCursor = newRow * rowSize + col;
@@ -750,7 +739,6 @@ export async function encounterCommand(
         }
         stateStale = true;
         subMode    = "menu";
-        first      = true;
       }
     }
 
@@ -761,7 +749,7 @@ export async function encounterCommand(
         .filter(k => (inventory[k] ?? 0) > 0)
         .map(k => [k, inventory[k]] as [string, number]);
 
-      if (key === "\x1b" || key === "q") { subMode = "menu"; first = true; }
+      if (key === "\x1b" || key === "q") { subMode = "menu"; }
       else if (key === "\x1b[D") {
         bagCat    = (bagCat - 1 + BAG_CATEGORIES.length) % BAG_CATEGORIES.length;
         bagCursor = 0;
@@ -816,7 +804,6 @@ export async function encounterCommand(
           inventory[itemKey] = Math.max(0, (inventory[itemKey] ?? 1) - 1);
           stateStale = true;
           subMode    = "menu";
-          first      = true;
         } else {
           // 포션 사용
           if (!myPoke) continue;
@@ -845,7 +832,6 @@ export async function encounterCommand(
           inventory[itemKey] = Math.max(0, (inventory[itemKey] ?? 1) - 1);
           stateStale = true;
           subMode    = "menu";
-          first      = true;
         }
       }
     }
