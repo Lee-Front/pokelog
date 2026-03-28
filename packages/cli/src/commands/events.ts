@@ -50,10 +50,10 @@ function buildEventsLines(
     "",
     `  ${BLD}야생 조우${R}`,
     "  " + "─".repeat(50),
+    `  ${DIM}↑↓ 탐색   Enter 전투   Esc 뒤로${R}`,
     "",
     ...mergeSideBySide(left, right),
     "",
-    `  ${DIM}↑↓ 탐색   Enter 전투   Esc 뒤로${R}`,
   ];
   return lines;
 }

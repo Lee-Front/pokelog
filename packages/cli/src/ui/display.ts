@@ -112,6 +112,7 @@ interface HeaderData {
   leadPokemon: string | null;
   leadLevel: number;
   partyCount: number;
+  online: boolean;
 }
 
 let cachedHeaderData: HeaderData | null = null;
@@ -133,6 +134,7 @@ export async function fetchHeaderData(): Promise<HeaderData> {
     leadPokemon: null,
     leadLevel: 0,
     partyCount: 0,
+    online: false,
   };
 
   const token = await getToken();
@@ -140,7 +142,10 @@ export async function fetchHeaderData(): Promise<HeaderData> {
 
   try {
     const res = await apiGet("/api/game/status");
-    if (!res.ok) return cachedHeaderData ?? fallback;
+    if (!res.ok) {
+      if (res.status === 0) return { ...fallback, online: false };
+      return cachedHeaderData ?? fallback;
+    }
     const d = res.data;
 
     const partyRes = await apiGet("/api/game/party");
@@ -158,6 +163,7 @@ export async function fetchHeaderData(): Promise<HeaderData> {
       leadPokemon: lead ? lead.species : null,
       leadLevel: lead ? lead.level : 0,
       partyCount: party.length,
+      online: true,
     };
     return cachedHeaderData;
   } catch {
@@ -172,8 +178,11 @@ const GREEN = "\x1b[32m";
 export async function printHeader(screen: string | null): Promise<void> {
   const data = await fetchHeaderData();
 
-  const line1 = `${DIM}server:${R} ${CYAN}${data.serverName}${R}   ${DIM}trainer:${R} ${YELLOW}${data.nickname}${R}   ${DIM}location:${R} ${GREEN}${data.region}${R}`;
-  const line2 = `${DIM}encounters:${R} ${data.pendingEvents}   ${DIM}points:${R} ${data.points}P   ${DIM}lead:${R} ${data.leadPokemon ? `${data.leadPokemon} Lv.${data.leadLevel}` : "-"}`;
+  const status = data.online ? `${GRN}●${R}` : `${RED}● 오프라인${R}`;
+  const line1 = `${DIM}server:${R} ${CYAN}${data.serverName}${R} ${status}   ${DIM}trainer:${R} ${YELLOW}${data.nickname}${R}   ${DIM}location:${R} ${GREEN}${data.region}${R}`;
+  const line2 = data.online
+    ? `${DIM}encounters:${R} ${data.pendingEvents}   ${DIM}points:${R} ${data.points}P   ${DIM}lead:${R} ${data.leadPokemon ? `${data.leadPokemon} Lv.${data.leadLevel}` : "-"}`
+    : `${RED}서버에 연결할 수 없습니다.${R}`;
 
   console.log(`  ${line1}`);
   console.log(`  ${line2}`);

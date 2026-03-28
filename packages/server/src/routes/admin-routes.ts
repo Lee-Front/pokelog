@@ -77,8 +77,12 @@ adminRoutes.put("/config", async (req, res) => {
     const { key, value } = req.body;
     if (!key) return res.status(400).json({ error: "key가 필요합니다" });
 
+    const DANGEROUS_KEYS = new Set(["__proto__", "constructor", "prototype"]);
     const config = await getConfig();
     const keys = key.split(".");
+    if (keys.some((k: string) => DANGEROUS_KEYS.has(k))) {
+      return res.status(400).json({ error: "허용되지 않는 키입니다" });
+    }
     let obj: Record<string, unknown> = config as unknown as Record<string, unknown>;
     for (let i = 0; i < keys.length - 1; i++) {
       obj = obj[keys[i]] as Record<string, unknown>;

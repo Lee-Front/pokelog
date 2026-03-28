@@ -23,12 +23,13 @@ export function artToLines(art: string | null): string[] {
 }
 
 export function mergeSideBySide(
-  leftLines: string[], rightLines: string[], leftWidth = 20, gap = "    "
+  leftLines: string[], rightLines: string[], leftWidth?: number, gap = "    "
 ): string[] {
+  const actualWidth = leftWidth ?? Math.max(0, ...leftLines.map(l => visualWidth(l)));
   const rows = Math.max(leftLines.length, rightLines.length);
   const out: string[] = [];
   for (let i = 0; i < rows; i++) {
-    const l = padRight(leftLines[i] ?? "", leftWidth);
+    const l = padRight(leftLines[i] ?? "", actualWidth);
     const r = rightLines[i] ?? "";
     out.push(`  ${l}${gap}${r}`);
   }

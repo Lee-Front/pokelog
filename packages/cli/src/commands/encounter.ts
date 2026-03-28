@@ -182,10 +182,10 @@ function buildSelectLines(
     "",
     `  ${BLD}── 출전 포켓몬 선택 ──${R}`,
     "  " + "─".repeat(50),
+    `  ${DIM}↑↓ 탐색   Enter 출전   Esc 뒤로${R}`,
     "",
     ...mergeSideBySide(left, right),
     "",
-    `  ${DIM}↑↓ 탐색   Enter 출전   Esc 뒤로${R}`,
   ];
   return lines;
 }

@@ -1,4 +1,4 @@
-import { input } from "@inquirer/prompts";
+import { rawInput } from "./ui/prompts.js";
 import { statusCommand } from "./commands/status.js";
 import { eventsCommand } from "./commands/events.js";
 import { partyCommand } from "./commands/party.js";
@@ -291,12 +291,7 @@ export async function interactiveMode() {
 
   while (true) {
     const promptStr = await getPrompt();
-    let line: string;
-    try {
-      line = await input({ message: promptStr });
-    } catch {
-      break;
-    }
+    const line = await rawInput(promptStr) ?? "";
     if (!line) continue;
 
     // 명령어 축약 해석

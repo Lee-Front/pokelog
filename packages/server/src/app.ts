@@ -1,5 +1,6 @@
 import express from "express";
 import fs from "node:fs";
+import path from "node:path";
 import { projectPath } from "./paths.js";
 import { getConfig } from "./storage/config-store.js";
 import { authRoutes } from "./routes/auth-routes.js";
@@ -20,28 +21,29 @@ export function createApp() {
     res.json(config.meta);
   });
 
+  // 아트 파일 읽기 헬퍼 — 경로 순회 방어 포함
+  const BALL_ART_DIR = projectPath("data/colorscripts/small/ball");
+  const POKEMON_ART_DIR = projectPath("data/colorscripts/small/regular");
+
+  function safeReadArt(baseDir: string, name: string): string | null {
+    const sanitized = name.replace(/[^a-zA-Z0-9-]/g, "");
+    const resolved = path.resolve(baseDir, sanitized);
+    if (!resolved.startsWith(baseDir + path.sep) && resolved !== baseDir) return null;
+    try { return fs.readFileSync(resolved, "utf-8"); } catch { return null; }
+  }
+
   // 볼 ANSI 아트 API — /:species보다 먼저 등록해야 매칭됨
   app.get("/api/art/ball/:name", (req, res) => {
-    const name = req.params.name.replace(/[^a-zA-Z0-9-]/g, "");
-    const artPath = projectPath("data/colorscripts/small/ball", name);
-    try {
-      const art = fs.readFileSync(artPath, "utf-8");
-      res.type("text/plain").send(art);
-    } catch {
-      res.status(404).send("");
-    }
+    const art = safeReadArt(BALL_ART_DIR, req.params.name);
+    if (art) res.type("text/plain").send(art);
+    else res.status(404).send("");
   });
 
   // 포켓몬 ANSI 아트 API (인증 불필요)
   app.get("/api/art/:species", (req, res) => {
-    const species = req.params.species.replace(/[^a-zA-Z0-9-]/g, "");
-    const artPath = projectPath("data/colorscripts/small/regular", species);
-    try {
-      const art = fs.readFileSync(artPath, "utf-8");
-      res.type("text/plain").send(art);
-    } catch {
-      res.status(404).send("");
-    }
+    const art = safeReadArt(POKEMON_ART_DIR, req.params.species);
+    if (art) res.type("text/plain").send(art);
+    else res.status(404).send("");
   });
 
   app.use("/api/auth", authRoutes);

@@ -121,13 +121,13 @@ function buildLines(
     "",
     `  ${BLD}상점${R}   ${tabs}   ${DIM}포인트: ${YEL}${points}P${R}`,
     "  " + "─".repeat(52),
+    `  ${DIM}↑↓ 아이템   ←→ 카테고리   Enter 구매   Esc 뒤로${R}`,
     "",
     ...mergeSideBySide(left, right),
     "",
   ];
   if (desc) { lines.push(`  ${desc}`); lines.push(""); }
   if (msg)  { lines.push(`  ${msg}`);  lines.push(""); }
-  lines.push(`  ${DIM}↑↓ 아이템   ←→ 카테고리   Enter 구매   Esc 뒤로${R}`);
   return lines;
 }
 

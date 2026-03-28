@@ -27,11 +27,8 @@ function buildLines(
   art: string | null,
   isSeen: boolean,
 ): string[] {
-  // ── 좌측: 목록 + 통계 + 힌트 ─────────────────────────────────
-  const left: string[] = [
-    `${BLD}포켓몬 도감${R}  ${DIM}(${allSpecies.length}종)${R}`,
-    "─".repeat(LIST_W),
-  ];
+  // ── 좌측: 목록 + 통계 ────────────────────────────────────────
+  const left: string[] = [];
 
   const end = Math.min(scroll + VISIBLE, allSpecies.length);
   for (let i = scroll; i < end; i++) {
@@ -58,7 +55,6 @@ function buildLines(
 
   left.push("─".repeat(LIST_W));
   left.push(`  ${DIM}발견${R}  ${BLD}${seenSet.size}${R}종   ${DIM}포획${R}  ${BLD}${caughtSet.size}${R}종`);
-  left.push(`  ${DIM}↑↓ 탐색   Esc 뒤로${R}`);
 
   // ── 우측: 아트 ───────────────────────────────────────────────
   const displayArt = art
@@ -67,13 +63,22 @@ function buildLines(
 
   // ── 병합 ──────────────────────────────────────────────────
   const rows = Math.max(left.length, displayArt.length);
-  const lines: string[] = [];
+  const merged: string[] = [];
   for (let i = 0; i < rows; i++) {
     const l = padRight(left[i] ?? "", LIST_W);
     const r = displayArt[i] ?? "";
-    lines.push(`  ${l}${GAP}${r}`);
+    merged.push(`  ${l}${GAP}${r}`);
   }
-  return lines;
+
+  return [
+    "",
+    `  ${BLD}포켓몬 도감${R}  ${DIM}(${allSpecies.length}종)${R}`,
+    "  " + "─".repeat(50),
+    `  ${DIM}↑↓ 탐색   Esc 뒤로${R}`,
+    "",
+    ...merged,
+    "",
+  ];
 }
 
 export async function pokedexCommand() {
