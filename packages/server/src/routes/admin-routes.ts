@@ -9,7 +9,10 @@ import { selectWildPokemon } from "../game/encounter.js";
 import { createWildPokemon, createPokemon } from "../game/pokemon-factory.js";
 import type { ServerConfig } from "../../../../shared/types.js";
 
+import { adminMiddleware } from "../middleware/admin-middleware.js";
+
 export const adminRoutes = Router();
+adminRoutes.use(adminMiddleware);
 
 const startTime = Date.now();
 
