@@ -8,6 +8,7 @@ import { judgeCombo, getComboMultiplier } from "../game/combo.js";
 import { selectWildPokemon } from "../game/encounter.js";
 import { createWildPokemon, createPokemon } from "../game/pokemon-factory.js";
 import { getRegion } from "../game/data-loader.js";
+import { createEncounterEvent } from "../game/event-factory.js";
 import type { ServerConfig } from "../../../../shared/types.js";
 
 import { adminMiddleware } from "../middleware/admin-middleware.js";
@@ -181,13 +182,7 @@ adminRoutes.post("/test/commit", async (req, res) => {
       const pick = selectWildPokemon(regionData);
       const wildPokemon = createWildPokemon(pick.species, pick.level);
 
-      const event = {
-        id: `evt-${crypto.randomUUID()}`,
-        type: "wild_encounter" as const,
-        pokemon: wildPokemon,
-        createdAt: new Date().toISOString(),
-        expiresAt: new Date(Date.now() + config.rewards.encounter.timeLimitHours * 3600000).toISOString(),
-      };
+      const event = createEncounterEvent(wildPokemon, config.rewards.encounter.timeLimitHours);
       user.pendingEvents.push(event);
       encounterInfo = { species: pick.species, level: pick.level };
     }
@@ -241,13 +236,7 @@ adminRoutes.post("/test/encounter", async (req, res) => {
 
     const wildPokemon = createWildPokemon(wildSpecies, wildLevel);
 
-    const event = {
-      id: `evt-${crypto.randomUUID()}`,
-      type: "wild_encounter" as const,
-      pokemon: wildPokemon,
-      createdAt: new Date().toISOString(),
-      expiresAt: new Date(Date.now() + config.rewards.encounter.timeLimitHours * 3600000).toISOString(),
-    };
+    const event = createEncounterEvent(wildPokemon, config.rewards.encounter.timeLimitHours);
     user.pendingEvents.push(event);
     await saveUser(user);
 

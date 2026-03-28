@@ -7,7 +7,7 @@ import { createWildPokemon } from "../game/pokemon-factory.js";
 import { getCommitByteChanges } from "./git-client.js";
 import type { CommitInfo } from "./git-client.js";
 import { getRegion } from "../game/data-loader.js";
-import crypto from "node:crypto";
+import { createEncounterEvent } from "../game/event-factory.js";
 
 export async function processCommit(
   commit: CommitInfo,
@@ -74,15 +74,7 @@ export async function processCommit(
     const wildInfo = selectWildPokemon(regionData);
     const wildPokemon = createWildPokemon(wildInfo.species, wildInfo.level);
 
-    const event = {
-      id: `evt-${crypto.randomUUID()}`,
-      type: "wild_encounter" as const,
-      pokemon: wildPokemon,
-      createdAt: new Date().toISOString(),
-      expiresAt: new Date(
-        Date.now() + config.rewards.encounter.timeLimitHours * 3600000,
-      ).toISOString(),
-    };
+    const event = createEncounterEvent(wildPokemon, config.rewards.encounter.timeLimitHours);
     user.pendingEvents.push(event);
   }
 
