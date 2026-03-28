@@ -1,11 +1,7 @@
+import { DIM, RED, GRN, YEL, BLU, CYN, BLD, R } from "../ui/colors.js";
 import { apiGet, apiPut } from "../api-client.js";
 import { fetchArt, stripAnsi, redraw } from "../ui/display.js";
 import { pokemonCommand } from "./pokemon.js";
-
-const DIM = "\x1b[90m";
-const CYN = "\x1b[36m";
-const BLD = "\x1b[1m";
-const R   = "\x1b[0m";
 
 type PartyMon = { uid: string; species: string; level: number; hp: number; maxHp: number };
 

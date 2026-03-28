@@ -1,5 +1,6 @@
 import { getServers, getCurrentServer, switchServer } from "../config.js";
 import { rawSelect, separator } from "../ui/prompts.js";
+import { DIM, CYN, YEL, BLD, R } from "../ui/colors.js";
 
 export async function serversCommand() {
   const servers = await getServers();
@@ -10,12 +11,6 @@ export async function serversCommand() {
     console.log("  join <url> 로 서버에 참가하세요.");
     return;
   }
-
-  const DIM = "\x1b[90m";
-  const CYN = "\x1b[36m";
-  const YEL = "\x1b[33m";
-  const BLD = "\x1b[1m";
-  const R   = "\x1b[0m";
 
   const items: Array<{ name: string; value: string } | { separator: string }> = [];
 

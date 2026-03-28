@@ -1,5 +1,6 @@
 import { getServers, getCurrentServer, removeServer } from "../config.js";
 import { rawSelect, separator } from "../ui/prompts.js";
+import { DIM, RED, YEL, BLD, R } from "../ui/colors.js";
 
 export async function leaveCommand() {
   const servers = await getServers();
@@ -9,12 +10,6 @@ export async function leaveCommand() {
     console.log("  참가한 서버가 없습니다.");
     return;
   }
-
-  const DIM = "\x1b[90m";
-  const RED = "\x1b[31m";
-  const YEL = "\x1b[33m";
-  const BLD = "\x1b[1m";
-  const R   = "\x1b[0m";
 
   const items: Array<{ name: string; value: string } | { separator: string }> = [];
 

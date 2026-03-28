@@ -1,3 +1,4 @@
+import { DIM, RED, GRN, YEL, BLU, CYN, BLD, R } from "./colors.js";
 import { getServerUrl, getCurrentServer, getToken } from "../config.js";
 import { apiGet } from "../api-client.js";
 
@@ -165,11 +166,9 @@ export async function fetchHeaderData(): Promise<HeaderData> {
   }
 }
 
-const DIM = "\x1b[90m";
 const CYAN = "\x1b[36m";
 const YELLOW = "\x1b[33m";
 const GREEN = "\x1b[32m";
-const R = "\x1b[0m";
 
 export async function printHeader(screen: string | null): Promise<void> {
   const data = await fetchHeaderData();

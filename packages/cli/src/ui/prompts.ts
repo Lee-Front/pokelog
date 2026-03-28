@@ -1,4 +1,5 @@
 import { stripAnsi } from "./display.js";
+import { DIM, CYN, R } from "./colors.js";
 
 // ── 자체 raw-mode UI (inquirer abort가 stdin에 EOF를 push하여 영구 차단하므로 직접 구현) ──
 
@@ -83,9 +84,6 @@ export async function rawSelect<T>(
 
     // 화면 그리기
     const lines: string[] = [];
-    const DIM = "\x1b[90m";
-    const CYN = "\x1b[36m";
-    const R = "\x1b[0m";
 
     lines.push(`${DIM}?${R} ${message}`);
 

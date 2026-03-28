@@ -1,3 +1,4 @@
+import { DIM, RED, GRN, YEL, BLU, CYN, BLD, R } from "../ui/colors.js";
 import { apiGet, apiPost } from "../api-client.js";
 import { fetchBallArt, stripAnsi, redraw } from "../ui/display.js";
 
@@ -23,14 +24,6 @@ const BALL_ART_KEY: Record<string, string> = {
   ultraball:  "UltraBall",
   masterball: "MasterBall",
 };
-
-const DIM = "\x1b[90m";
-const R   = "\x1b[0m";
-const YEL = "\x1b[1m\x1b[33m";
-const BLD = "\x1b[1m";
-const GRN = "\x1b[32m";
-const RED = "\x1b[31m";
-const CYN = "\x1b[36m";
 
 // ── stdin 유틸 ──────────────────────────────────────────────────
 function enterRaw() {

@@ -1,14 +1,7 @@
+import { DIM, RED, GRN, YEL, BLU, CYN, BLD, R } from "../ui/colors.js";
 import { apiGet } from "../api-client.js";
 import { fetchArt, stripAnsi, redraw } from "../ui/display.js";
 import { encounterCommand } from "./encounter.js";
-
-const DIM = "\x1b[90m";
-const YEL = "\x1b[1m\x1b[33m";
-const GRN = "\x1b[32m";
-const RED = "\x1b[31m";
-const CYN = "\x1b[36m";
-const BLD = "\x1b[1m";
-const R   = "\x1b[0m";
 
 // ── stdin 유틸 ──────────────────────────────────────────────────
 function enterRaw() {

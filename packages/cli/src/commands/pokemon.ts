@@ -1,12 +1,7 @@
+import { DIM, RED, GRN, YEL, BLU, CYN, BLD, R } from "../ui/colors.js";
 import { apiGet } from "../api-client.js";
 import { fetchArt, renderHpBar, sideBySide, stripAnsi } from "../ui/display.js";
 import { selectAction } from "../ui/prompts.js";
-
-const DIM = "\x1b[90m";
-const BLD = "\x1b[1m";
-const GRN = "\x1b[32m";
-const YEL = "\x1b[33m";
-const R   = "\x1b[0m";
 
 export async function pokemonCommand(uid: string) {
   const res = await apiGet(`/api/game/pokemon/${uid}`);

@@ -1,3 +1,4 @@
+import { DIM, RED, GRN, YEL, BLU, CYN, BLD, R } from "../ui/colors.js";
 import { apiPost, apiGet } from "../api-client.js";
 import { fetchBallArt, stripAnsi, redraw } from "../ui/display.js";
 
@@ -14,12 +15,6 @@ function waitKey(): Promise<void> {
     process.stdin.once("data", handler);
   });
 }
-
-const R   = "\x1b[0m";
-const DIM = "\x1b[90m";
-const GRN = "\x1b[32m";
-const YEL = "\x1b[33m";
-const BLD = "\x1b[1m";
 
 // ─── 빈 슬롯 ────────────────────────────────────────────────────
 function makeEmptySlot(): string[] {
