@@ -9,13 +9,17 @@
 
 사용자가 자신의 외부 서비스(GitHub, Notion, Jira, Slack 등)를 직접 연동하고 관리할 수 있는 UI 및 백엔드 기능. 커밋/문서 편집/이슈 완료 등의 활동이 포켓몬 경험치와 야생 조우 이벤트로 변환된다.
 
+최종 범위는 Git, Notion, Jira, Slack 전체를 포함하지만 구현은 순차적으로 진행한다.
+우선순위는 `git -> notion -> jira -> slack` 이며, **Phase 1은 Git 연동**이다.
+
 ---
 
 ## 배경 및 문제
 
 기존 구조의 한계:
 - 레포 등록이 admin API 전용 → 유저가 직접 연동 불가
-- 이메일 매칭(`match git <email>`)이 연동 설정과 분리되어 UX가 불편
+- 이메일 매칭(`match git <email>`)이 레포 설정과 분리되어 UX가 불편
+- 개인 레포와 팀 레포를 같은 방식으로 다루기 어려움
 - 서버 운영자가 유저마다 다른 레포를 미리 알 수 없음
 
 ---
@@ -32,14 +36,27 @@ webhook 방식이 성능상 최선이나, 개인 PC 환경(공인 IP 없음, 방
 기존 admin 등록 방식 폐기. 각 유저의 데이터에 `integrations` 필드를 두고, 폴링 워커가 전체 유저의 integrations를 수집해 중복 제거 후 처리.
 기존 `config.polling.repos` (admin 전용) 및 `POST /api/admin/repo` 엔드포인트는 폐기.
 
-### 이메일 매칭: 연동 설정 내 통합
+### Git 식별 방식: 레포 중심 + 선택적 이메일 필터
 
-기존 `user.account.matchings.git.emails`를 integrations 내부로 흡수.
-토큰 기반 연동 시 이메일 자동 감지, URL 기반 연동 시 직접 입력.
+Git 계열 연동의 기본 단위는 "계정"이 아니라 **레포지토리**다.
+
+- 개인 레포처럼 레포 전체 활동이 곧 내 활동인 경우:
+  이메일 필터 없이 레포 전체 커밋을 집계
+- 팀 레포처럼 여러 사람이 함께 쓰는 경우:
+  해당 레포에 대해 이메일 필터를 지정해 내 커밋만 집계
+
+즉 Git 연동은 `repoUrl + optional emails[]` 구조를 갖는다.
+
+토큰 기반 연동 시 이메일 자동 감지 기능을 제공할 수 있고, URL 기반 연동 시 이메일을 직접 입력할 수 있다.
 
 ### 이메일 중복 정책
 
-동일 이메일을 여러 유저가 등록할 수 없음. 연동 추가 시 서버에서 중복 체크 → 이미 다른 유저가 등록한 이메일이면 거부.
+같은 레포를 여러 유저가 등록하는 것은 허용한다.
+
+단, **같은 레포에서 같은 이메일을 서로 다른 유저가 등록하는 것은 금지**한다.
+연동 추가 또는 수정 시 서버에서 중복 체크 → 이미 다른 유저가 같은 `repoUrl + email` 조합을 등록했으면 거부.
+
+이메일이 비어 있는 "전체 집계" 모드의 경우, 같은 레포를 여러 유저가 모두 전체 집계로 등록하면 보상이 중복 지급될 수 있으므로 UI에서 명확히 경고한다.
 
 ### 토큰 보안
 
@@ -52,13 +69,14 @@ API 토큰 등 민감한 값은 유저 JSON에 평문 저장.
 
 | 서비스 | 연동 방식 | 감시 범위 |
 |--------|-----------|-----------|
-| GitHub / GitLab | Personal Access Token | 계정 전체 레포 + 전체 브랜치 |
+| GitHub / GitLab | Personal Access Token 또는 레포 선택 | 선택한 레포 전체 브랜치 |
 | Git (public URL) | 레포 URL 직접 입력 | 해당 레포 전체 브랜치 |
 | Notion | Integration Token | 연결된 페이지 전체 |
 | Jira | API Token + 서버 URL | 할당된 프로젝트 전체 |
 | Slack | Bot Token | 지정 채널 |
 
-> Private Git 레포(SSH/HTTPS+토큰) 지원은 이번 범위에서 제외. Public URL만 지원.
+> Git Phase 1에서는 Public URL 기반 등록을 우선 지원한다.
+> GitHub / GitLab 토큰 연동은 이후 단계에서 레포 선택과 이메일 자동 감지 기능으로 확장한다.
 > 구조는 확장 가능하게 설계. 새 서비스 추가 시 provider 모듈과 보상 config만 추가하면 됨.
 
 ---
@@ -73,7 +91,6 @@ interface Integration {
   provider: "github" | "gitlab" | "git" | "notion" | "jira" | "slack";
   label: string;        // 표시용 이름 (예: "github.com/myuser")
   config: Record<string, string>;  // 토큰, URL 등 provider별 설정값
-  emails: string[];     // 커밋 author email (git 계열만 사용)
   status: "untested" | "testing" | "ok" | "error";
   lastError?: string;
   failCount: number;    // 연속 실패 횟수 (3회 초과 시 폴링 일시 중단)
@@ -83,6 +100,25 @@ interface Integration {
 ```
 
 `UserData`에 `integrations: Integration[]` 필드 추가 (shared/types.ts).
+
+Git 계열 provider는 아래 확장 필드를 사용한다.
+
+```typescript
+interface GitIntegration extends Integration {
+  provider: "github" | "gitlab" | "git";
+  config: {
+    repoUrl: string;
+    authMode?: "public" | "token";
+    token?: string;
+  };
+  emails?: string[]; // 비어 있으면 해당 레포 전체 커밋 집계
+}
+```
+
+판정 규칙:
+
+- `emails`가 비어 있거나 없으면 해당 레포의 모든 커밋을 내 활동으로 인정
+- `emails`가 있으면 `author email`이 포함된 커밋만 내 활동으로 인정
 
 ### 서버 보상 config (`config.rewards`)
 
@@ -120,6 +156,7 @@ interface Integration {
 
 - 인터랙티브 모드: `connect` 명령어 (help 메뉴에 추가)
 - CLI 직접 실행: `pokelog connect`
+- Phase 1에서는 Git provider만 먼저 노출하고, 다른 provider는 준비중 상태로 보여줄 수 있음
 
 ### 화면 1: 서비스 목록
 
@@ -130,36 +167,36 @@ interface Integration {
 
   ❯ GitHub / GitLab   ● 연동됨 (2개)
     Git (URL)         ○ 미연동
-    Notion            ● 연동됨 (1개)
-    Jira              ○ 미연동
-    Slack             ✗ 오류
+    Notion            준비중
+    Jira              준비중
+    Slack             준비중
 ```
 
-### 화면 2: 서비스 상세 (예: GitHub)
+### 화면 2: 서비스 상세 (예: Git)
 
 ```
-  GitHub / GitLab
+  Git 연동
   ──────────────────────────────────────────────────
   ↑↓ 탐색   Enter 선택   D 삭제   T 테스트   Esc 뒤로
 
   ❯ [+ 새 토큰 추가]
-    github.com/alice   ✓ 정상    마지막 확인 5분 전
-    gitlab.com/alice   ✗ 오류    토큰 만료 (3회 실패)
+    team-repo          ✓ 정상    전체 집계
+    company-api        ✓ 정상    alice@co.com, alice@users.noreply.github.com
 ```
 
 - D 삭제: "정말 삭제할까요? (Y/N)" 확인 후 진행
 - T 테스트: 10초 타임아웃, 타임아웃 시 "연결 시간 초과" 표시
 - 오류 3회 이상 연속 실패 항목은 자동 폴링 중단, 수동 테스트로만 재활성화
 
-### 화면 3: 추가 입력 (예: GitHub 토큰 추가)
+### 화면 3: 추가 입력 (예: Git 레포 추가)
 
 ```
-  GitHub 토큰 추가
+  Git 레포 추가
   ──────────────────────────────────────────────────
   ↑↓ 탐색   Esc 취소
 
-  Personal Access Token (repo 권한 필요):
-  > ghp_xxxxxxxxxxxx▌
+  Repository URL:
+  > https://github.com/org/team-repo.git▌
 
   [Enter] 테스트 연결 시작
 ```
@@ -167,8 +204,11 @@ interface Integration {
 테스트 연결 중:
 ```
   [연결 테스트 중...]   (Esc로 취소)
-  ✓ github.com/alice 확인됨
-  ✓ 이메일 alice@example.com 자동 감지됨
+  ✓ repository 확인됨
+
+  이 레포 전체 커밋을 내 활동으로 집계할까요?
+  [예] 전체 집계
+  [아니오] 이메일 필터 지정
 
   [Enter] 저장
 ```
@@ -176,8 +216,13 @@ interface Integration {
 Git URL 수동 입력 시 흐름:
 1. URL 입력 (필수)
 2. 테스트 연결 (git ls-remote로 접근 가능 여부 확인)
-3. 커밋 author 이메일 입력 (필수, 미입력 시 저장 불가)
-4. 저장
+3. "전체 집계" 여부 선택
+4. 전체 집계가 아니면 커밋 author 이메일 1개 이상 입력
+5. 저장
+
+팀 레포에서 전체 집계를 선택하는 경우 경고 문구를 노출:
+
+> 이 설정은 해당 레포의 모든 작성자 커밋을 내 활동으로 집계합니다.
 
 ---
 
@@ -189,6 +234,7 @@ Git URL 수동 입력 시 흐름:
 |--------|------|------|
 | GET | `/api/user/integrations` | 내 연동 목록 조회 |
 | POST | `/api/user/integrations` | 연동 추가 |
+| PATCH | `/api/user/integrations/:id` | 연동 수정 (이메일 필터 포함) |
 | DELETE | `/api/user/integrations/:id` | 연동 삭제 |
 | POST | `/api/user/integrations/:id/test` | 연동 테스트 |
 
@@ -204,7 +250,11 @@ Git URL 수동 입력 시 흐름:
 ```
 전체 유저 순회
   → integrations 수집
-  → git 계열: URL 중복 제거 후 fetch → 커밋 email로 유저 매칭 → 보상 계산
+  → git 계열: repoUrl 중복 제거 후 fetch
+             → integration별로 이메일 필터 적용
+             → 전체 집계면 레포 전체 커밋 인정
+             → 이메일 필터가 있으면 author email 기준으로 매칭
+             → 보상 계산
   → notion: 유저별 토큰으로 변경 감지 → 보상 계산
   → jira: 유저별 토큰으로 이슈 상태 변경 감지 → 보상 계산
   → slack: 유저별 토큰으로 채널 메시지 감지 → 쿨다운/일일상한 적용 → 보상 계산
@@ -235,6 +285,7 @@ for each user:
     create Integration {
       provider: "git",
       label: "legacy",
+      config: { repoUrl: "" },
       emails: user.account.matchings.git.emails,
       status: "untested",
       ...
@@ -251,7 +302,12 @@ for each user:
 ## 보상 계산
 
 ### Git 계열
-기존 로직 유지 (바이트 변화량 기반). `config.rewards.git.commit`은 바이트당 배율에 곱해지는 기본 보상 계수.
+기존 로직 유지 (바이트 변화량 기반).
+
+- 레포 전체 집계 integration: 해당 레포의 모든 커밋 반영
+- 이메일 필터 integration: `author email` 일치 커밋만 반영
+
+`config.rewards.git.commit`은 바이트당 배율에 곱해지는 기본 보상 계수.
 
 ### 기타 서비스
 이벤트 종류별 고정 보상값. Slack은 `cooldownMinutes`, `dailyMax` 적용.
@@ -267,6 +323,7 @@ for each user:
 
 ## 미결 사항
 
+- admin repo 기반 polling과 integrations 기반 polling의 병행 기간 운영 방식
 - Private Git 레포 지원 (SSH 키 또는 HTTPS 토큰) — 장기 과제
 - GitHub App / OAuth 방식 지원 — 장기 과제
 - 토큰 암호화 저장 — 장기 과제

@@ -57,6 +57,7 @@ authRoutes.post("/register", async (req: Request, res: Response) => {
       battleState: null,
       storage: [],
       log: [],
+      integrations: [],
     };
 
     await saveUser(userData);

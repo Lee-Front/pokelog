@@ -5,11 +5,14 @@ import {
   fetchRepo,
   getNewCommits,
   getLatestHash,
+  listRemoteBranches,
 } from "./git-client.js";
 import { processCommit } from "./commit-processor.js";
 import path from "node:path";
 import fs from "node:fs/promises";
 import { DATA_DIR } from "../paths.js";
+import { getAllUsers, isGitIntegration, normalizeRepoUrl, saveUser } from "../storage/user-store.js";
+import { pollNotionIntegration } from "../integrations/notion-polling.js";
 
 const REPOS_DIR = path.join(DATA_DIR, "repos");
 
@@ -33,22 +36,42 @@ async function ensureBareClone(url: string): Promise<string> {
 export async function pollAllRepos(): Promise<void> {
   const config = await getConfig();
   const syncState = await getSyncState();
+  const users = await getAllUsers();
+  const integrationRepoUrls = new Set<string>();
 
-  for (const repo of config.polling.repos) {
+  for (const user of users) {
+    for (const integration of user.integrations) {
+      if (!isGitIntegration(integration)) continue;
+      if (integration.failCount >= 3 || integration.status === "error") continue;
+      if (!integration.config.repoUrl?.trim()) continue;
+      integrationRepoUrls.add(normalizeRepoUrl(integration.config.repoUrl));
+    }
+  }
+
+  const reposToPoll = [
+    ...config.polling.repos.map((repo) => ({ url: repo.url, branches: repo.branches, source: "admin" as const })),
+    ...[...integrationRepoUrls]
+      .filter((url) => !config.polling.repos.some((repo) => normalizeRepoUrl(repo.url) === url))
+      .map((url) => ({ url, branches: null as string[] | null, source: "integration" as const })),
+  ];
+
+  for (const repo of reposToPoll) {
     try {
       const repoDir = await ensureBareClone(repo.url);
       await fetchRepo(repoDir);
+
+      const branches = repo.branches ?? await listRemoteBranches(repoDir);
 
       if (!syncState.repos[repo.url]) {
         syncState.repos[repo.url] = {};
       }
 
-      for (const branch of repo.branches) {
+      for (const branch of branches) {
         const lastHash = syncState.repos[repo.url][branch] || null;
         const commits = await getNewCommits(repoDir, branch, lastHash);
 
         for (const commit of commits) {
-          await processCommit(commit, repoDir);
+          await processCommit(commit, repoDir, repo.url);
         }
 
         // Update sync state to latest
@@ -59,6 +82,29 @@ export async function pollAllRepos(): Promise<void> {
       }
     } catch (err) {
       console.error(`Error polling ${repo.url}:`, err);
+    }
+  }
+
+  for (const user of users) {
+    for (const integration of user.integrations) {
+      if (integration.provider !== "notion" || !("config" in integration)) continue;
+      if (integration.failCount >= 3 || integration.status === "error") continue;
+      try {
+        await pollNotionIntegration(user, integration, syncState);
+        integration.status = "ok";
+        integration.failCount = 0;
+        integration.lastCheckedAt = new Date().toISOString();
+        delete integration.lastError;
+      } catch (err) {
+        integration.status = "error";
+        integration.failCount += 1;
+        integration.lastCheckedAt = new Date().toISOString();
+        integration.lastError = err instanceof Error ? err.message : "Notion polling failed";
+        await saveUser(user);
+        console.error(`Error polling Notion integration ${integration.id}:`, err);
+        continue;
+      }
+      await saveUser(user);
     }
   }
 

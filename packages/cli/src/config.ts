@@ -24,6 +24,7 @@ interface CliConfig {
 
 interface AuthStore {
   tokens: Record<string, { accessToken: string; savedAt: string }>;
+  adminKeys?: Record<string, { key: string; savedAt: string }>;
 }
 
 // === Internal ===
@@ -85,9 +86,9 @@ async function saveConfig(config: CliConfig): Promise<void> {
 async function loadAuth(): Promise<AuthStore> {
   try {
     const raw = JSON.parse(await fs.readFile(AUTH_PATH, "utf-8"));
-    return (raw.tokens ? raw : { tokens: {} }) as AuthStore;
+    return (raw.tokens ? raw : { tokens: {}, adminKeys: {} }) as AuthStore;
   } catch {
-    return { tokens: {} };
+    return { tokens: {}, adminKeys: {} };
   }
 }
 
@@ -187,6 +188,32 @@ export async function clearToken(): Promise<void> {
   if (!server) return;
   const auth = await loadAuth();
   delete auth.tokens[server.id];
+  await saveAuth(auth);
+}
+
+export async function getAdminKey(): Promise<string | null> {
+  const server = await getCurrentServer();
+  if (!server) return null;
+  const auth = await loadAuth();
+  return auth.adminKeys?.[server.id]?.key || null;
+}
+
+export async function saveAdminKey(key: string): Promise<void> {
+  const server = await getCurrentServer();
+  if (!server) return;
+  const auth = await loadAuth();
+  auth.adminKeys = auth.adminKeys ?? {};
+  auth.adminKeys[server.id] = { key, savedAt: new Date().toISOString() };
+  await saveAuth(auth);
+}
+
+export async function clearAdminKey(): Promise<void> {
+  const server = await getCurrentServer();
+  if (!server) return;
+  const auth = await loadAuth();
+  if (auth.adminKeys) {
+    delete auth.adminKeys[server.id];
+  }
   await saveAuth(auth);
 }
 

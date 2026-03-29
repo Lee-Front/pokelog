@@ -1,11 +1,12 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env.POKELOG_JWT_SECRET;
-if (!JWT_SECRET) {
+const jwtSecret = process.env.POKELOG_JWT_SECRET;
+if (!jwtSecret) {
   console.error("FATAL: POKELOG_JWT_SECRET environment variable is required");
   process.exit(1);
 }
+const JWT_SECRET: string = jwtSecret;
 const SALT_ROUNDS = 10;
 
 export async function hashPassword(password: string): Promise<string> {
@@ -22,7 +23,12 @@ export function issueToken(userId: string): string {
 
 export function verifyToken(token: string): { userId: string } | null {
   try {
-    return jwt.verify(token, JWT_SECRET) as { userId: string };
+    const decoded = jwt.verify(token, JWT_SECRET);
+    if (typeof decoded === "string" || !decoded || typeof decoded !== "object") {
+      return null;
+    }
+    const userId = "userId" in decoded ? decoded.userId : null;
+    return typeof userId === "string" ? { userId } : null;
   } catch {
     return null;
   }

@@ -13,6 +13,22 @@ export interface CommitInfo {
   message: string;
 }
 
+export async function testRepoAccess(url: string): Promise<{ ok: boolean; branches: string[]; error?: string }> {
+  try {
+    const { stdout } = await exec("git", ["ls-remote", "--heads", url]);
+    const branches = stdout
+      .trim()
+      .split("\n")
+      .map((line) => line.trim().split(/\s+/)[1] || "")
+      .filter(Boolean)
+      .map((ref) => ref.replace("refs/heads/", ""));
+    return { ok: true, branches };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "repository access failed";
+    return { ok: false, branches: [], error: message };
+  }
+}
+
 /** Clone a bare repo. targetDir should be under pokelog-data/repos/ */
 export async function cloneBareRepo(
   url: string,
@@ -148,5 +164,22 @@ export async function getLatestHash(
     return stdout.trim() || null;
   } catch {
     return null;
+  }
+}
+
+export async function listRemoteBranches(repoDir: string): Promise<string[]> {
+  try {
+    const { stdout } = await exec(
+      "git",
+      ["for-each-ref", "--format=%(refname:strip=3)", "refs/remotes/origin"],
+      { cwd: repoDir },
+    );
+    return stdout
+      .trim()
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0 && line !== "HEAD");
+  } catch {
+    return [];
   }
 }

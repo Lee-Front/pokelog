@@ -3,6 +3,70 @@ export interface GitMatching {
   emails: string[];
 }
 
+export type IntegrationProvider =
+  | "github"
+  | "gitlab"
+  | "git"
+  | "notion"
+  | "jira"
+  | "slack";
+
+export type IntegrationStatus = "untested" | "testing" | "ok" | "error";
+
+export interface IntegrationBase {
+  id: string;
+  provider: IntegrationProvider;
+  label: string;
+  status: IntegrationStatus;
+  lastError?: string;
+  failCount: number;
+  addedAt: string;
+  lastCheckedAt?: string;
+}
+
+export interface GitIntegration extends IntegrationBase {
+  provider: "github" | "gitlab" | "git";
+  config: {
+    repoUrl: string;
+    authMode?: "public" | "token";
+    token?: string;
+  };
+  emails?: string[];
+}
+
+export interface NotionIntegration extends IntegrationBase {
+  provider: "notion";
+  config: {
+    token: string;
+  };
+}
+
+export interface JiraIntegration extends IntegrationBase {
+  provider: "jira";
+  config: {
+    baseUrl: string;
+    email: string;
+    apiToken: string;
+    projectKey?: string;
+  };
+}
+
+export interface SlackIntegration extends IntegrationBase {
+  provider: "slack";
+  config: {
+    botToken: string;
+    teamId?: string;
+    channelId?: string;
+  };
+}
+
+export type Integration =
+  | GitIntegration
+  | NotionIntegration
+  | JiraIntegration
+  | SlackIntegration
+  | IntegrationBase;
+
 export interface UserAccount {
   id: string;
   password: string;
@@ -94,6 +158,7 @@ export interface UserData {
   battleState: BattleState | null;
   storage: OwnedPokemon[];
   log: LogEntry[];
+  integrations: Integration[];
 }
 
 // === Config ===
@@ -122,6 +187,29 @@ export interface ShopItem {
   guaranteedCatch?: boolean;
 }
 
+export interface IntegrationRewardRule {
+  enabled: boolean;
+  points: number;
+  exp?: number;
+  cooldownMinutes?: number;
+  dailyMax?: number;
+}
+
+export interface IntegrationEventDefinition {
+  key: string;
+  label: string;
+  description: string;
+  recommended: boolean;
+  experimental?: boolean;
+}
+
+export interface IntegrationRewardRules {
+  git: Record<string, IntegrationRewardRule>;
+  notion: Record<string, IntegrationRewardRule>;
+  jira: Record<string, IntegrationRewardRule>;
+  slack: Record<string, IntegrationRewardRule>;
+}
+
 // === Server Meta ===
 export interface ServerMeta {
   serverId: string;
@@ -143,6 +231,7 @@ export interface ServerConfig {
     pointsPerByte: number;
     combo: ComboConfig;
     encounter: EncounterConfig;
+    integrations: IntegrationRewardRules;
   };
   shop: {
     items: Record<string, ShopItem>;
@@ -152,6 +241,15 @@ export interface ServerConfig {
 // === Sync State ===
 export interface SyncState {
   repos: Record<string, Record<string, string>>;
+  integrations?: {
+    notion?: Record<string, Record<string, {
+      createdTime: string;
+      lastEditedTime: string;
+      archived: boolean;
+      parentType: string;
+      statusValue?: string;
+    }>>;
+  };
 }
 
 // === Game Data (Static) ===

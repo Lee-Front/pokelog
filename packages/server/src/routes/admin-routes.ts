@@ -12,6 +12,7 @@ import { createEncounterEvent } from "../game/event-factory.js";
 import { incrementItem } from "../game/inventory-utils.js";
 import { checkLevelUp, checkEvolution, calculateStatsForLevel } from "../game/growth.js";
 import type { ServerConfig } from "../../../../shared/types.js";
+import { INTEGRATION_EVENT_CATALOG } from "../integrations/event-catalog.js";
 
 import { adminMiddleware } from "../middleware/admin-middleware.js";
 
@@ -68,6 +69,18 @@ adminRoutes.get("/config", async (_req, res) => {
     res.json(config);
   } catch {
     res.status(500).json({ error: "서버 오류" });
+  }
+});
+
+adminRoutes.get("/config/integration-events", async (_req, res) => {
+  try {
+    const config = await getConfig();
+    res.json({
+      catalog: INTEGRATION_EVENT_CATALOG,
+      rules: config.rewards.integrations,
+    });
+  } catch {
+    res.status(500).json({ error: "?ì’•ì¾­ ?ã…»ìªŸ" });
   }
 });
 

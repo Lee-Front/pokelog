@@ -1,83 +1,74 @@
 #!/usr/bin/env node
 import { Command } from "commander";
-import { joinCommand } from "./commands/join.js";
-import { serversCommand } from "./commands/servers.js";
-import { useCommand } from "./commands/use.js";
-import { leaveCommand } from "./commands/leave.js";
-import { whereamiCommand } from "./commands/whereami.js";
 import { registerCommand, loginCommand, logoutCommand } from "./commands/auth.js";
-import { profileCommand, nicknameCommand, matchCommand, unmatchCommand } from "./commands/profile.js";
-import { statusCommand } from "./commands/status.js";
-import { eventsCommand } from "./commands/events.js";
+import { connectCommand } from "./commands/connect.js";
 import { encounterCommand } from "./commands/encounter.js";
-import { partyCommand, partySetCommand } from "./commands/party.js";
-import { storageCommand, withdrawCommand, depositCommand } from "./commands/storage.js";
-import { pokemonCommand } from "./commands/pokemon.js";
-import { pokedexCommand } from "./commands/pokedex.js";
+import { eventsCommand } from "./commands/events.js";
+import { historyCommand } from "./commands/history.js";
 import { inventoryCommand } from "./commands/inventory.js";
-import { shopCommand, buyCommand } from "./commands/shop.js";
-import { useItemCommand } from "./commands/use-item.js";
+import { joinCommand } from "./commands/join.js";
+import { leaveCommand } from "./commands/leave.js";
+import { nicknameCommand, profileCommand, matchCommand, unmatchCommand } from "./commands/profile.js";
+import { partyCommand, partySetCommand } from "./commands/party.js";
+import { pokedexCommand } from "./commands/pokedex.js";
+import { pokemonCommand } from "./commands/pokemon.js";
 import { rankingCommand } from "./commands/ranking.js";
+import { serversCommand } from "./commands/servers.js";
+import { shopCommand, buyCommand } from "./commands/shop.js";
+import { statusCommand } from "./commands/status.js";
+import { storageCommand, withdrawCommand, depositCommand } from "./commands/storage.js";
+import { useItemCommand } from "./commands/use-item.js";
+import { useCommand } from "./commands/use.js";
+import { whereamiCommand } from "./commands/whereami.js";
 import { interactiveMode } from "./interactive.js";
 
-// 인자 없이 실행하면 인터랙티브 모드
 if (process.argv.length <= 2) {
   interactiveMode().then(() => process.exit(0));
 } else {
+  const program = new Command();
+  program.name("pokelog").description("PokeLog CLI").version("0.1.0");
 
-const program = new Command();
-program.name("pokelog").description("커밋으로 포켓몬을 키우는 개발자 동기부여 CLI").version("0.1.0");
+  program.command("join <url>").description("join server").action(joinCommand);
+  program.command("servers").description("list servers").action(serversCommand);
+  program.command("use <name>").description("switch server").action(useCommand);
+  program.command("leave <name>").description("leave server").action(leaveCommand);
+  program.command("whereami").description("show current server").action(whereamiCommand);
 
-// Server management
-program.command("join <url>").description("서버에 참가").action(joinCommand);
-program.command("servers").description("참가한 서버 목록").action(serversCommand);
-program.command("use <name>").description("활성 서버 전환").action(useCommand);
-program.command("leave <name>").description("서버에서 나가기").action(leaveCommand);
-program.command("whereami").description("현재 서버 정보").action(whereamiCommand);
+  program.command("register").description("register").action(registerCommand);
+  program.command("login").description("login").action(loginCommand);
+  program.command("logout").description("logout").action(logoutCommand);
 
-// Auth
-program.command("register").description("회원가입").action(registerCommand);
-program.command("login").description("로그인").action(loginCommand);
-program.command("logout").description("로그아웃").action(logoutCommand);
+  program.command("profile [nickname]").description("show profile").action(profileCommand);
+  program.command("nickname <name>").description("change nickname").action(nicknameCommand);
+  program.command("match <app> <identifier>").description("legacy match").action(matchCommand);
+  program.command("unmatch <app> <identifier>").description("legacy unmatch").action(unmatchCommand);
 
-// Profile
-program.command("profile [nickname]").description("프로필 확인").action(profileCommand);
-program.command("nickname <name>").description("닉네임 변경").action(nicknameCommand);
-program.command("match <app> <identifier>").description("매칭 정보 추가").action(matchCommand);
-program.command("unmatch <app> <identifier>").description("매칭 정보 제거").action(unmatchCommand);
+  program.command("status").description("show status").action(statusCommand);
+  program.command("events").description("show events").action(eventsCommand);
+  program.command("encounter <id>").description("open encounter").action(encounterCommand);
+  program.command("history").description("show reward history").option("--limit <n>", "recent row count", "20").action((opts) => historyCommand(parseInt(opts.limit, 10) || 20));
 
-// Game
-program.command("status").description("현황 요약").action(statusCommand);
-program.command("events").description("미확인 이벤트 목록").action(eventsCommand);
-program.command("encounter <id>").description("야생 조우 진입").action(encounterCommand);
+  const partyCmd = program.command("party").description("show party");
+  partyCmd.action(partyCommand);
+  partyCmd.command("set <uids...>").description("set party").action(partySetCommand);
 
-// Party
-const partyCmd = program.command("party").description("파티 확인");
-partyCmd.action(partyCommand);
-partyCmd.command("set <uids...>").description("파티 편성").action(partySetCommand);
+  const storageCmd = program.command("storage").description("show storage");
+  storageCmd.action(storageCommand);
+  storageCmd.command("withdraw <uid>").description("withdraw pokemon").action(withdrawCommand);
+  storageCmd.command("deposit <uid>").description("deposit pokemon").action(depositCommand);
 
-// Storage
-const storageCmd = program.command("storage").description("보관함 확인");
-storageCmd.action(storageCommand);
-storageCmd.command("withdraw <uid>").description("보관함에서 파티로").action(withdrawCommand);
-storageCmd.command("deposit <uid>").description("파티에서 보관함으로").action(depositCommand);
+  program.command("pokemon <uid>").description("pokemon detail").action(pokemonCommand);
+  program.command("pokedex").description("show pokedex").action(pokedexCommand);
+  program.command("inventory").description("show inventory").action(inventoryCommand);
 
-// Pokemon
-program.command("pokemon <uid>").description("포켓몬 상세 정보").action(pokemonCommand);
-program.command("pokedex").description("도감").action(pokedexCommand);
-program.command("inventory").description("인벤토리").action(inventoryCommand);
+  program.command("shop").description("shop").action(shopCommand);
+  program.command("buy <item> [quantity]").description("buy item").action((item, qty) => buyCommand(item, parseInt(qty || "1", 10)));
+  program.command("use-item <item> <pokemonUid>").description("use item").action(useItemCommand);
 
-// Shop
-program.command("shop").description("상점").action(shopCommand);
-program.command("buy <item> [quantity]").description("아이템 구매").action((item, qty) => buyCommand(item, parseInt(qty || "1", 10)));
-program.command("use-item <item> <pokemonUid>").description("아이템 사용").action(useItemCommand);
+  program.command("ranking").description("show ranking").option("--by <criteria>", "ranking field", "exp").action((opts) => rankingCommand(opts.by));
+  program.command("connect").description("manage integrations").action(connectCommand);
 
-// Social
-program.command("ranking").description("랭킹").option("--by <criteria>", "정렬 기준", "exp").action((opts) => rankingCommand(opts.by));
+  program.command("init").description("[deprecated] use join instead").requiredOption("--server <url>", "server url").action((opts) => joinCommand(opts.server));
 
-// Deprecated (하위 호환)
-program.command("init").description("[deprecated] pokelog join <url> 을 사용하세요").requiredOption("--server <url>", "서버 URL").action((opts) => joinCommand(opts.server));
-
-program.parse();
-
-} // end else (non-interactive)
+  program.parse();
+}

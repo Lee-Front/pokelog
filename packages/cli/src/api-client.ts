@@ -1,4 +1,4 @@
-import { getServerUrl, getToken } from "./config.js";
+import { getServerUrl, getToken, getAdminKey } from "./config.js";
 
 async function request(
   method: string,
@@ -14,6 +14,10 @@ async function request(
   const token = await getToken();
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (token) headers["Authorization"] = `Bearer ${token}`;
+  if (path.startsWith("/api/admin")) {
+    const adminKey = (await getAdminKey()) || process.env.POKELOG_ADMIN_KEY || null;
+    if (adminKey) headers["x-admin-key"] = adminKey;
+  }
 
   let res: Response;
   try {
@@ -45,6 +49,10 @@ export async function apiPost(path: string, body?: unknown) {
 
 export async function apiPut(path: string, body?: unknown) {
   return request("PUT", path, body);
+}
+
+export async function apiPatch(path: string, body?: unknown) {
+  return request("PATCH", path, body);
 }
 
 export async function apiDelete(path: string, body?: unknown) {

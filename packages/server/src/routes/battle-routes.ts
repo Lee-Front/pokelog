@@ -151,16 +151,19 @@ async function handleFight(
   const moveData = getMoveById(moveId);
   if (!moveData) { res.status(400).json({ error: "기술 데이터를 찾을 수 없습니다" }); return; }
 
+  const selectedMove = myMove;
+  const selectedMoveData = moveData;
+
   const turnOrder = determineTurnOrder(myPokemon.stats.speed, battle.wild.stats.speed);
 
   function playerAttack() {
-    myMove.pp -= 1;
+    selectedMove.pp -= 1;
     const result = calculateDamage(
-      myPokemon.level, myPokemon.stats, battle.wild.stats, moveData,
+      myPokemon.level, myPokemon.stats, battle.wild.stats, selectedMoveData,
       getTypes(myPokemon.species), getTypes(battle.wild.species),
     );
     battle.wild.hp = Math.max(0, battle.wild.hp - result.damage);
-    log.push(`${myPokemon.species}의 ${moveData.name}! ${result.missed ? "빗나갔다!" : `${result.damage} 데미지!`}`);
+    log.push(`${myPokemon.species}의 ${selectedMoveData.name}! ${result.missed ? "빗나갔다!" : `${result.damage} 데미지!`}`);
     if (result.message) log.push(result.message);
   }
 
@@ -360,4 +363,3 @@ battleRoutes.get("/state", async (req, res) => {
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
   }
 });
-

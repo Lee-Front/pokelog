@@ -2,6 +2,7 @@ import path from "node:path";
 import { readJson, writeJson } from "./json-store.js";
 import type { ServerConfig } from "../../../../shared/types.js";
 import { DATA_DIR } from "../paths.js";
+import { DEFAULT_INTEGRATION_REWARD_RULES, mergeIntegrationRewardRules } from "../integrations/event-catalog.js";
 const CONFIG_PATH = path.join(DATA_DIR, "config.json");
 
 export const DEFAULT_CONFIG: ServerConfig = {
@@ -35,6 +36,7 @@ export const DEFAULT_CONFIG: ServerConfig = {
       ceilingBytes: 5000,
       timeLimitHours: 168,
     },
+    integrations: DEFAULT_INTEGRATION_REWARD_RULES,
   },
   shop: {
     items: {
@@ -52,7 +54,45 @@ export const DEFAULT_CONFIG: ServerConfig = {
 
 export async function getConfig(): Promise<ServerConfig> {
   const config = await readJson<ServerConfig>(CONFIG_PATH);
-  return config ?? { ...DEFAULT_CONFIG };
+  if (!config) {
+    return { ...DEFAULT_CONFIG };
+  }
+
+  return {
+    ...DEFAULT_CONFIG,
+    ...config,
+    meta: {
+      ...DEFAULT_CONFIG.meta,
+      ...config.meta,
+      featureFlags: {
+        ...DEFAULT_CONFIG.meta.featureFlags,
+        ...config.meta?.featureFlags,
+      },
+    },
+    polling: {
+      ...DEFAULT_CONFIG.polling,
+      ...config.polling,
+      repos: config.polling?.repos ?? DEFAULT_CONFIG.polling.repos,
+    },
+    rewards: {
+      ...DEFAULT_CONFIG.rewards,
+      ...config.rewards,
+      combo: {
+        ...DEFAULT_CONFIG.rewards.combo,
+        ...config.rewards?.combo,
+      },
+      encounter: {
+        ...DEFAULT_CONFIG.rewards.encounter,
+        ...config.rewards?.encounter,
+      },
+      integrations: mergeIntegrationRewardRules(config.rewards?.integrations),
+    },
+    shop: {
+      ...DEFAULT_CONFIG.shop,
+      ...config.shop,
+      items: config.shop?.items ?? DEFAULT_CONFIG.shop.items,
+    },
+  };
 }
 
 export async function saveConfig(config: ServerConfig): Promise<void> {

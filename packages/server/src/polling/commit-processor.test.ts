@@ -3,7 +3,7 @@ import type { CommitInfo } from "./git-client.js";
 
 // Mock all dependencies before importing the module under test
 vi.mock("../storage/user-store.js", () => ({
-  findUserByEmail: vi.fn(),
+  getUsersForRepoCommit: vi.fn(),
   saveUser: vi.fn(),
 }));
 
@@ -34,14 +34,14 @@ vi.mock("../game/pokemon-factory.js", () => ({
 }));
 
 import { processCommit } from "./commit-processor.js";
-import { findUserByEmail, saveUser } from "../storage/user-store.js";
+import { getUsersForRepoCommit, saveUser } from "../storage/user-store.js";
 import { getConfig } from "../storage/config-store.js";
 import { getCommitByteChanges } from "./git-client.js";
 import { calculateReward } from "../game/reward.js";
 import { judgeCombo, getComboMultiplier } from "../game/combo.js";
 import { checkEncounter } from "../game/encounter.js";
 
-const mockFindUser = vi.mocked(findUserByEmail);
+const mockGetUsersForRepoCommit = vi.mocked(getUsersForRepoCommit);
 const mockSaveUser = vi.mocked(saveUser);
 const mockGetConfig = vi.mocked(getConfig);
 const mockGetBytes = vi.mocked(getCommitByteChanges);
@@ -82,6 +82,7 @@ function makeUser() {
     battleState: null,
     storage: [],
     log: [],
+    integrations: [],
   };
 }
 
@@ -114,23 +115,23 @@ describe("commit-processor", () => {
 
   it("skips merge commits (parentCount >= 2)", async () => {
     const commit = makeCommit({ parentCount: 2 });
-    await processCommit(commit, "/fake/repo");
-    expect(mockFindUser).not.toHaveBeenCalled();
+    await processCommit(commit, "/fake/repo", "https://example.com/repo.git");
+    expect(mockGetUsersForRepoCommit).not.toHaveBeenCalled();
   });
 
   it("skips if no matching user found", async () => {
     const commit = makeCommit();
-    mockFindUser.mockResolvedValue(null);
-    await processCommit(commit, "/fake/repo");
+    mockGetUsersForRepoCommit.mockResolvedValue([]);
+    await processCommit(commit, "/fake/repo", "https://example.com/repo.git");
     expect(mockGetConfig).not.toHaveBeenCalled();
   });
 
   it("skips if bytes are 0", async () => {
     const commit = makeCommit();
-    mockFindUser.mockResolvedValue(makeUser() as any);
+    mockGetUsersForRepoCommit.mockResolvedValue([makeUser() as any]);
     mockGetConfig.mockResolvedValue(makeConfig() as any);
     mockGetBytes.mockResolvedValue(0);
-    await processCommit(commit, "/fake/repo");
+    await processCommit(commit, "/fake/repo", "https://example.com/repo.git");
     expect(mockSaveUser).not.toHaveBeenCalled();
   });
 
@@ -139,7 +140,7 @@ describe("commit-processor", () => {
     const user = makeUser();
     const config = makeConfig();
 
-    mockFindUser.mockResolvedValue(user as any);
+    mockGetUsersForRepoCommit.mockResolvedValue([user as any]);
     mockGetConfig.mockResolvedValue(config as any);
     mockGetBytes.mockResolvedValue(500);
     mockJudgeCombo.mockReturnValue({
@@ -153,7 +154,7 @@ describe("commit-processor", () => {
       newCeiling: 500,
     });
 
-    await processCommit(commit, "/fake/repo");
+    await processCommit(commit, "/fake/repo", "https://example.com/repo.git");
 
     expect(mockSaveUser).toHaveBeenCalledOnce();
     const savedUser = mockSaveUser.mock.calls[0][0] as any;
@@ -175,7 +176,7 @@ describe("commit-processor", () => {
       { uid: "poke-2", exp: 0 },
     ];
 
-    mockFindUser.mockResolvedValue(user as any);
+    mockGetUsersForRepoCommit.mockResolvedValue([user as any]);
     mockGetConfig.mockResolvedValue(makeConfig() as any);
     mockGetBytes.mockResolvedValue(100);
     mockJudgeCombo.mockReturnValue({
@@ -189,7 +190,7 @@ describe("commit-processor", () => {
       newCeiling: 100,
     });
 
-    await processCommit(commit, "/fake/repo");
+    await processCommit(commit, "/fake/repo", "https://example.com/repo.git");
 
     const savedUser = mockSaveUser.mock.calls[0][0] as any;
     expect(savedUser.pokemon[0].exp).toBe(50); // 100 / 2
