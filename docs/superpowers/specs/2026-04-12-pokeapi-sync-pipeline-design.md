@@ -58,6 +58,8 @@ data/                           ← 변환 결과 (git 추적)
 
 ### CLI
 
+package.json에 추가: `"sync:pokeapi": "node scripts/sync-pokeapi.mjs"`
+
 ```bash
 npm run sync:pokeapi                     # 전체 동기화
 npm run sync:pokeapi -- --only species   # 종만
@@ -320,8 +322,10 @@ interface ItemData {
 
 - sync 스크립트는 항상 공식값 산출: `rawCaptureRate / 255`
 - `data/pokemon/catch-rate-overrides.json`에 운영자가 종별 커스텀 값 지정 가능
-- 런타임(`data-loader.ts`)에서 override가 있으면 우선 적용
+- `data-loader.ts`가 species 데이터를 로드할 때 overrides를 merge하여 `catchRate` 필드를 덮어씀
+- 이후 `capture.ts` 등 소비자는 변경 없이 기존처럼 `catchRate`를 읽으면 됨
 - sync 스크립트는 overrides 파일을 절대 건드리지 않음
+- overrides 파일이 없으면 초기 상태는 `{}` (빈 객체)
 
 ```json
 // data/pokemon/catch-rate-overrides.json (예시)
@@ -344,17 +348,18 @@ interface ItemData {
 | Phase | 파일 | 변경 내용 |
 |-------|------|----------|
 | 1 | `shared/types.ts` | EvolutionBranch/EvolutionCondition 신규, SpeciesData 필드 추가, MoveData 필드 추가 (신규 필드는 optional), AbilityData/NatureData/ItemData 신규, OwnedPokemon optional 필드 추가 |
-| 2 | `data-loader.ts` | `getEvolutions()` 리턴 타입 변경, `getAbilities()`/`getNatures()`/`getItems()` 로더 추가, catch-rate-overrides 로드 + merge 로직 |
-| 3 | `growth.ts` | `checkEvolution()` — branches 배열 순회, trigger별 조건 평가 |
-| 3 | `capture.ts` | `getCatchRate()` — overrides 우선 적용 로직 |
-| 3 | `admin-routes.ts` | 공통 진화 처리 함수 호출로 교체 |
-| 3 | `commit-processor.ts` | 공통 진화 처리 함수 호출로 교체 |
+| 2+3 | `data-loader.ts` | `getEvolutions()` 리턴 타입 변경, `getAbilities()`/`getNatures()`/`getItems()` 로더 추가, catch-rate-overrides 로드 시 species 데이터에 merge |
+| 2+3 | `growth.ts` | `checkEvolution(pokemon: OwnedPokemon): string \| null` — branches 배열 순회, trigger별 조건 평가. 현재 지원 조건: level, item, friendship, timeOfDay. 미지원 조건(location, partySpecies 등)은 무시하고 경고 로그 |
+| 2+3 | `admin-routes.ts` | 공통 진화 처리 함수 호출로 교체 |
+| 2+3 | `commit-processor.ts` | 공통 진화 처리 함수 호출로 교체 |
+
+> **주의**: Phase 2와 3은 원자적으로 같이 진행해야 한다. `getEvolutions()` 리턴 타입을 변경하면 소비자(`growth.ts` 등)도 동시에 수정하지 않으면 컴파일이 깨진다.
 | 4 | `pokemon-factory.ts` | friendship 초기값 (`baseHappiness`), abilityId 랜덤 배정 |
 | 4 | `user-store.ts` | `normalizeUserData()`에서 새 OwnedPokemon 필드 기본값 처리 |
 | 5 | `data-loader.test.ts` | 새 스키마 fixture 및 assertion |
 | 5 | `growth.test.ts` | `checkEvolution` 테스트 업데이트 |
 | 5 | `battle.test.ts` | MoveData fixture에 optional 신규 필드 |
-| 5 | `capture.test.ts` | catchRate/overrides 관련 assertion |
+| 5 | `capture.test.ts` | catchRate overrides 적용 검증 (data-loader 경유) |
 
 ### 별도 태스크 (이 설계 범위 밖)
 
