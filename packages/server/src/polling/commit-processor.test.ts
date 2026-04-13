@@ -76,6 +76,7 @@ function makeUser() {
     encounterCeiling: { accumulatedBytes: 0 },
     party: [],
     pokemon: [],
+    eggs: [],
     pokedex: [],
     inventory: {},
     pendingEvents: [],

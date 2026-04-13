@@ -51,7 +51,7 @@ describe("attemptCapture", () => {
 describe("getCatchRate", () => {
   it("returns catch rate for known species", () => {
     const rate = getCatchRate("bulbasaur");
-    expect(rate).toBe(0.12);
+    expect(rate).toBeCloseTo(45 / 255);
   });
 
   it("returns default 0.1 for unknown species", () => {

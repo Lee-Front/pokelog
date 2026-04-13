@@ -1,16 +1,8958 @@
 {
-  "bulbasaur": { "evolvesTo": "ivysaur", "condition": { "type": "level", "level": 16 } },
-  "ivysaur": { "evolvesTo": "venusaur", "condition": { "type": "level", "level": 32 } },
-  "charmander": { "evolvesTo": "charmeleon", "condition": { "type": "level", "level": 16 } },
-  "charmeleon": { "evolvesTo": "charizard", "condition": { "type": "level", "level": 36 } },
-  "squirtle": { "evolvesTo": "wartortle", "condition": { "type": "level", "level": 16 } },
-  "wartortle": { "evolvesTo": "blastoise", "condition": { "type": "level", "level": 36 } },
-  "pidgey": { "evolvesTo": "pidgeotto", "condition": { "type": "level", "level": 18 } },
-  "rattata": { "evolvesTo": "raticate", "condition": { "type": "level", "level": 20 } },
-  "pikachu": { "evolvesTo": "raichu", "condition": { "type": "item", "item": "thunder-stone" } },
-  "caterpie": { "evolvesTo": null, "condition": null },
-  "weedle": { "evolvesTo": null, "condition": null },
-  "geodude": { "evolvesTo": null, "condition": null },
-  "magikarp": { "evolvesTo": null, "condition": null },
-  "dratini": { "evolvesTo": null, "condition": null }
+  "abomasnow": {
+    "branches": []
+  },
+  "abra": {
+    "branches": [
+      {
+        "id": "abra-kadabra-1",
+        "targetSpecies": "kadabra",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 16
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "absol": {
+    "branches": []
+  },
+  "accelgor": {
+    "branches": []
+  },
+  "aegislash": {
+    "branches": []
+  },
+  "aerodactyl": {
+    "branches": []
+  },
+  "aggron": {
+    "branches": []
+  },
+  "aipom": {
+    "branches": [
+      {
+        "id": "aipom-ambipom-1",
+        "targetSpecies": "ambipom",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "known-move",
+            "moveId": "double-hit"
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "alakazam": {
+    "branches": []
+  },
+  "alcremie": {
+    "branches": []
+  },
+  "alomomola": {
+    "branches": []
+  },
+  "altaria": {
+    "branches": []
+  },
+  "amaura": {
+    "branches": [
+      {
+        "id": "amaura-aurorus-1",
+        "targetSpecies": "aurorus",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 39
+          },
+          {
+            "type": "time",
+            "value": "night"
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "ambipom": {
+    "branches": []
+  },
+  "amoonguss": {
+    "branches": []
+  },
+  "ampharos": {
+    "branches": []
+  },
+  "anorith": {
+    "branches": [
+      {
+        "id": "anorith-armaldo-1",
+        "targetSpecies": "armaldo",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 40
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "appletun": {
+    "branches": []
+  },
+  "applin": {
+    "branches": [
+      {
+        "id": "applin-flapple-1",
+        "targetSpecies": "flapple",
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "tart-apple"
+          }
+        ],
+        "consumeItem": "tart-apple"
+      },
+      {
+        "id": "applin-appletun-1",
+        "targetSpecies": "appletun",
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "sweet-apple"
+          }
+        ],
+        "consumeItem": "sweet-apple"
+      },
+      {
+        "id": "applin-dipplin-1",
+        "targetSpecies": "dipplin",
+        "trigger": "other",
+        "conditions": [],
+        "consumeItem": null
+      }
+    ]
+  },
+  "araquanid": {
+    "branches": []
+  },
+  "arbok": {
+    "branches": []
+  },
+  "arcanine": {
+    "branches": []
+  },
+  "arceus": {
+    "branches": []
+  },
+  "archen": {
+    "branches": [
+      {
+        "id": "archen-archeops-1",
+        "targetSpecies": "archeops",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 37
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "archeops": {
+    "branches": []
+  },
+  "arctovish": {
+    "branches": []
+  },
+  "arctozolt": {
+    "branches": []
+  },
+  "ariados": {
+    "branches": []
+  },
+  "armaldo": {
+    "branches": []
+  },
+  "aromatisse": {
+    "branches": []
+  },
+  "aron": {
+    "branches": [
+      {
+        "id": "aron-lairon-1",
+        "targetSpecies": "lairon",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 32
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "arrokuda": {
+    "branches": [
+      {
+        "id": "arrokuda-barraskewda-1",
+        "targetSpecies": "barraskewda",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 26
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "articuno": {
+    "branches": []
+  },
+  "audino": {
+    "branches": []
+  },
+  "aurorus": {
+    "branches": []
+  },
+  "avalugg": {
+    "branches": []
+  },
+  "axew": {
+    "branches": [
+      {
+        "id": "axew-fraxure-1",
+        "targetSpecies": "fraxure",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 38
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "azelf": {
+    "branches": []
+  },
+  "azumarill": {
+    "branches": []
+  },
+  "azurill": {
+    "branches": [
+      {
+        "id": "azurill-marill-1",
+        "targetSpecies": "marill",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "friendship",
+            "min": 160
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "bagon": {
+    "branches": [
+      {
+        "id": "bagon-shelgon-1",
+        "targetSpecies": "shelgon",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 30
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "baltoy": {
+    "branches": [
+      {
+        "id": "baltoy-claydol-1",
+        "targetSpecies": "claydol",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 36
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "banette": {
+    "branches": []
+  },
+  "barbaracle": {
+    "branches": []
+  },
+  "barboach": {
+    "branches": [
+      {
+        "id": "barboach-whiscash-1",
+        "targetSpecies": "whiscash",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 30
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "barraskewda": {
+    "branches": []
+  },
+  "basculegion": {
+    "branches": []
+  },
+  "basculin": {
+    "branches": [
+      {
+        "id": "basculin-basculegion-1",
+        "targetSpecies": "basculegion",
+        "trigger": "other",
+        "conditions": [
+          {
+            "type": "extra",
+            "key": "min_damage_taken",
+            "value": 294
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "bastiodon": {
+    "branches": []
+  },
+  "bayleef": {
+    "branches": [
+      {
+        "id": "bayleef-meganium-1",
+        "targetSpecies": "meganium",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 32
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "beartic": {
+    "branches": []
+  },
+  "beautifly": {
+    "branches": []
+  },
+  "beedrill": {
+    "branches": []
+  },
+  "beheeyem": {
+    "branches": []
+  },
+  "beldum": {
+    "branches": [
+      {
+        "id": "beldum-metang-1",
+        "targetSpecies": "metang",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 20
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "bellossom": {
+    "branches": []
+  },
+  "bellsprout": {
+    "branches": [
+      {
+        "id": "bellsprout-weepinbell-1",
+        "targetSpecies": "weepinbell",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 21
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "bergmite": {
+    "branches": [
+      {
+        "id": "bergmite-avalugg-1",
+        "targetSpecies": "avalugg",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 37
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "bewear": {
+    "branches": []
+  },
+  "bibarel": {
+    "branches": []
+  },
+  "bidoof": {
+    "branches": [
+      {
+        "id": "bidoof-bibarel-1",
+        "targetSpecies": "bibarel",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 15
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "binacle": {
+    "branches": [
+      {
+        "id": "binacle-barbaracle-1",
+        "targetSpecies": "barbaracle",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 39
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "bisharp": {
+    "branches": [
+      {
+        "id": "bisharp-kingambit-1",
+        "targetSpecies": "kingambit",
+        "trigger": "other",
+        "conditions": [],
+        "consumeItem": null
+      }
+    ]
+  },
+  "blacephalon": {
+    "branches": []
+  },
+  "blastoise": {
+    "branches": []
+  },
+  "blaziken": {
+    "branches": []
+  },
+  "blipbug": {
+    "branches": [
+      {
+        "id": "blipbug-dottler-1",
+        "targetSpecies": "dottler",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 10
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "blissey": {
+    "branches": []
+  },
+  "blitzle": {
+    "branches": [
+      {
+        "id": "blitzle-zebstrika-1",
+        "targetSpecies": "zebstrika",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 27
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "boldore": {
+    "branches": [
+      {
+        "id": "boldore-gigalith-1",
+        "targetSpecies": "gigalith",
+        "trigger": "trade",
+        "conditions": [],
+        "consumeItem": null
+      }
+    ]
+  },
+  "boltund": {
+    "branches": []
+  },
+  "bonsly": {
+    "branches": [
+      {
+        "id": "bonsly-sudowoodo-1",
+        "targetSpecies": "sudowoodo",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "known-move",
+            "moveId": "mimic"
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "bouffalant": {
+    "branches": []
+  },
+  "bounsweet": {
+    "branches": [
+      {
+        "id": "bounsweet-steenee-1",
+        "targetSpecies": "steenee",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 18
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "braixen": {
+    "branches": [
+      {
+        "id": "braixen-delphox-1",
+        "targetSpecies": "delphox",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 36
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "braviary": {
+    "branches": []
+  },
+  "breloom": {
+    "branches": []
+  },
+  "brionne": {
+    "branches": [
+      {
+        "id": "brionne-primarina-1",
+        "targetSpecies": "primarina",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 34
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "bronzong": {
+    "branches": []
+  },
+  "bronzor": {
+    "branches": [
+      {
+        "id": "bronzor-bronzong-1",
+        "targetSpecies": "bronzong",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 33
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "bruxish": {
+    "branches": []
+  },
+  "budew": {
+    "branches": [
+      {
+        "id": "budew-roselia-1",
+        "targetSpecies": "roselia",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "friendship",
+            "min": 160
+          },
+          {
+            "type": "time",
+            "value": "day"
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "buizel": {
+    "branches": [
+      {
+        "id": "buizel-floatzel-1",
+        "targetSpecies": "floatzel",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 26
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "bulbasaur": {
+    "branches": [
+      {
+        "id": "bulbasaur-ivysaur-1",
+        "targetSpecies": "ivysaur",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 16
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "buneary": {
+    "branches": [
+      {
+        "id": "buneary-lopunny-1",
+        "targetSpecies": "lopunny",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "friendship",
+            "min": 160
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "bunnelby": {
+    "branches": [
+      {
+        "id": "bunnelby-diggersby-1",
+        "targetSpecies": "diggersby",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 20
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "burmy": {
+    "branches": [
+      {
+        "id": "burmy-wormadam-1",
+        "targetSpecies": "wormadam",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 20
+          },
+          {
+            "type": "gender",
+            "value": "female"
+          }
+        ],
+        "consumeItem": null
+      },
+      {
+        "id": "burmy-mothim-1",
+        "targetSpecies": "mothim",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 20
+          },
+          {
+            "type": "gender",
+            "value": "male"
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "butterfree": {
+    "branches": []
+  },
+  "buzzwole": {
+    "branches": []
+  },
+  "cacnea": {
+    "branches": [
+      {
+        "id": "cacnea-cacturne-1",
+        "targetSpecies": "cacturne",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 32
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "cacturne": {
+    "branches": []
+  },
+  "calyrex": {
+    "branches": []
+  },
+  "camerupt": {
+    "branches": []
+  },
+  "carbink": {
+    "branches": []
+  },
+  "carkol": {
+    "branches": [
+      {
+        "id": "carkol-coalossal-1",
+        "targetSpecies": "coalossal",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 34
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "carnivine": {
+    "branches": []
+  },
+  "carracosta": {
+    "branches": []
+  },
+  "carvanha": {
+    "branches": [
+      {
+        "id": "carvanha-sharpedo-1",
+        "targetSpecies": "sharpedo",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 30
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "cascoon": {
+    "branches": [
+      {
+        "id": "cascoon-dustox-1",
+        "targetSpecies": "dustox",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 10
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "castform": {
+    "branches": []
+  },
+  "caterpie": {
+    "branches": [
+      {
+        "id": "caterpie-metapod-1",
+        "targetSpecies": "metapod",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 7
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "celebi": {
+    "branches": []
+  },
+  "celesteela": {
+    "branches": []
+  },
+  "centiskorch": {
+    "branches": []
+  },
+  "chandelure": {
+    "branches": []
+  },
+  "chansey": {
+    "branches": [
+      {
+        "id": "chansey-blissey-1",
+        "targetSpecies": "blissey",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "friendship",
+            "min": 160
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "charizard": {
+    "branches": []
+  },
+  "charjabug": {
+    "branches": [
+      {
+        "id": "charjabug-vikavolt-1",
+        "targetSpecies": "vikavolt",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "location",
+            "location": "vast-poni-canyon"
+          }
+        ],
+        "consumeItem": null
+      },
+      {
+        "id": "charjabug-vikavolt-2",
+        "targetSpecies": "vikavolt",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "location",
+            "location": "blush-mountain"
+          }
+        ],
+        "consumeItem": null
+      },
+      {
+        "id": "charjabug-vikavolt-3",
+        "targetSpecies": "vikavolt",
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "thunder-stone"
+          }
+        ],
+        "consumeItem": "thunder-stone"
+      }
+    ]
+  },
+  "charmander": {
+    "branches": [
+      {
+        "id": "charmander-charmeleon-1",
+        "targetSpecies": "charmeleon",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 16
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "charmeleon": {
+    "branches": [
+      {
+        "id": "charmeleon-charizard-1",
+        "targetSpecies": "charizard",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 36
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "chatot": {
+    "branches": []
+  },
+  "cherrim": {
+    "branches": []
+  },
+  "cherubi": {
+    "branches": [
+      {
+        "id": "cherubi-cherrim-1",
+        "targetSpecies": "cherrim",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 25
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "chesnaught": {
+    "branches": []
+  },
+  "chespin": {
+    "branches": [
+      {
+        "id": "chespin-quilladin-1",
+        "targetSpecies": "quilladin",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 16
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "chewtle": {
+    "branches": [
+      {
+        "id": "chewtle-drednaw-1",
+        "targetSpecies": "drednaw",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 22
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "chikorita": {
+    "branches": [
+      {
+        "id": "chikorita-bayleef-1",
+        "targetSpecies": "bayleef",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 16
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "chimchar": {
+    "branches": [
+      {
+        "id": "chimchar-monferno-1",
+        "targetSpecies": "monferno",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 14
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "chimecho": {
+    "branches": []
+  },
+  "chinchou": {
+    "branches": [
+      {
+        "id": "chinchou-lanturn-1",
+        "targetSpecies": "lanturn",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 27
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "chingling": {
+    "branches": [
+      {
+        "id": "chingling-chimecho-1",
+        "targetSpecies": "chimecho",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "friendship",
+            "min": 220
+          },
+          {
+            "type": "time",
+            "value": "night"
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "cinccino": {
+    "branches": []
+  },
+  "cinderace": {
+    "branches": []
+  },
+  "clamperl": {
+    "branches": [
+      {
+        "id": "clamperl-huntail-1",
+        "targetSpecies": "huntail",
+        "trigger": "trade",
+        "conditions": [
+          {
+            "type": "held-item",
+            "item": "deep-sea-tooth"
+          }
+        ],
+        "consumeItem": null
+      },
+      {
+        "id": "clamperl-gorebyss-1",
+        "targetSpecies": "gorebyss",
+        "trigger": "trade",
+        "conditions": [
+          {
+            "type": "held-item",
+            "item": "deep-sea-scale"
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "clauncher": {
+    "branches": [
+      {
+        "id": "clauncher-clawitzer-1",
+        "targetSpecies": "clawitzer",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 37
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "clawitzer": {
+    "branches": []
+  },
+  "claydol": {
+    "branches": []
+  },
+  "clefable": {
+    "branches": []
+  },
+  "clefairy": {
+    "branches": [
+      {
+        "id": "clefairy-clefable-1",
+        "targetSpecies": "clefable",
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "moon-stone"
+          }
+        ],
+        "consumeItem": "moon-stone"
+      }
+    ]
+  },
+  "cleffa": {
+    "branches": [
+      {
+        "id": "cleffa-clefairy-1",
+        "targetSpecies": "clefairy",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "friendship",
+            "min": 160
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "clobbopus": {
+    "branches": [
+      {
+        "id": "clobbopus-grapploct-1",
+        "targetSpecies": "grapploct",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "known-move",
+            "moveId": "taunt"
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "cloyster": {
+    "branches": []
+  },
+  "coalossal": {
+    "branches": []
+  },
+  "cobalion": {
+    "branches": []
+  },
+  "cofagrigus": {
+    "branches": []
+  },
+  "combee": {
+    "branches": [
+      {
+        "id": "combee-vespiquen-1",
+        "targetSpecies": "vespiquen",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 21
+          },
+          {
+            "type": "gender",
+            "value": "female"
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "combusken": {
+    "branches": [
+      {
+        "id": "combusken-blaziken-1",
+        "targetSpecies": "blaziken",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 36
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "comfey": {
+    "branches": []
+  },
+  "conkeldurr": {
+    "branches": []
+  },
+  "copperajah": {
+    "branches": []
+  },
+  "corphish": {
+    "branches": [
+      {
+        "id": "corphish-crawdaunt-1",
+        "targetSpecies": "crawdaunt",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 30
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "corsola": {
+    "branches": [
+      {
+        "id": "corsola-cursola-1",
+        "targetSpecies": "cursola",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 38
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "corviknight": {
+    "branches": []
+  },
+  "corvisquire": {
+    "branches": [
+      {
+        "id": "corvisquire-corviknight-1",
+        "targetSpecies": "corviknight",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 38
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "cosmoem": {
+    "branches": [
+      {
+        "id": "cosmoem-solgaleo-1",
+        "targetSpecies": "solgaleo",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 53
+          }
+        ],
+        "consumeItem": null
+      },
+      {
+        "id": "cosmoem-lunala-1",
+        "targetSpecies": "lunala",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 53
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "cosmog": {
+    "branches": [
+      {
+        "id": "cosmog-cosmoem-1",
+        "targetSpecies": "cosmoem",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 43
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "cottonee": {
+    "branches": [
+      {
+        "id": "cottonee-whimsicott-1",
+        "targetSpecies": "whimsicott",
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "sun-stone"
+          }
+        ],
+        "consumeItem": "sun-stone"
+      }
+    ]
+  },
+  "crabominable": {
+    "branches": []
+  },
+  "crabrawler": {
+    "branches": [
+      {
+        "id": "crabrawler-crabominable-1",
+        "targetSpecies": "crabominable",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "location",
+            "location": "mount-lanakila"
+          }
+        ],
+        "consumeItem": null
+      },
+      {
+        "id": "crabrawler-crabominable-2",
+        "targetSpecies": "crabominable",
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "ice-stone"
+          }
+        ],
+        "consumeItem": "ice-stone"
+      }
+    ]
+  },
+  "cradily": {
+    "branches": []
+  },
+  "cramorant": {
+    "branches": []
+  },
+  "cranidos": {
+    "branches": [
+      {
+        "id": "cranidos-rampardos-1",
+        "targetSpecies": "rampardos",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 30
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "crawdaunt": {
+    "branches": []
+  },
+  "cresselia": {
+    "branches": []
+  },
+  "croagunk": {
+    "branches": [
+      {
+        "id": "croagunk-toxicroak-1",
+        "targetSpecies": "toxicroak",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 37
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "crobat": {
+    "branches": []
+  },
+  "croconaw": {
+    "branches": [
+      {
+        "id": "croconaw-feraligatr-1",
+        "targetSpecies": "feraligatr",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 30
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "crustle": {
+    "branches": []
+  },
+  "cryogonal": {
+    "branches": []
+  },
+  "cubchoo": {
+    "branches": [
+      {
+        "id": "cubchoo-beartic-1",
+        "targetSpecies": "beartic",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 37
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "cubone": {
+    "branches": [
+      {
+        "id": "cubone-marowak-1",
+        "targetSpecies": "marowak",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 28
+          }
+        ],
+        "consumeItem": null
+      },
+      {
+        "id": "cubone-marowak-2",
+        "targetSpecies": "marowak",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 28
+          },
+          {
+            "type": "time",
+            "value": "night"
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "cufant": {
+    "branches": [
+      {
+        "id": "cufant-copperajah-1",
+        "targetSpecies": "copperajah",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 34
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "cursola": {
+    "branches": []
+  },
+  "cutiefly": {
+    "branches": [
+      {
+        "id": "cutiefly-ribombee-1",
+        "targetSpecies": "ribombee",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 25
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "cyndaquil": {
+    "branches": [
+      {
+        "id": "cyndaquil-quilava-1",
+        "targetSpecies": "quilava",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 14
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "darkrai": {
+    "branches": []
+  },
+  "darmanitan": {
+    "branches": []
+  },
+  "dartrix": {
+    "branches": [
+      {
+        "id": "dartrix-decidueye-1",
+        "targetSpecies": "decidueye",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 34
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "darumaka": {
+    "branches": [
+      {
+        "id": "darumaka-darmanitan-1",
+        "targetSpecies": "darmanitan",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 35
+          }
+        ],
+        "consumeItem": null
+      },
+      {
+        "id": "darumaka-darmanitan-2",
+        "targetSpecies": "darmanitan",
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "ice-stone"
+          }
+        ],
+        "consumeItem": "ice-stone"
+      }
+    ]
+  },
+  "decidueye": {
+    "branches": []
+  },
+  "dedenne": {
+    "branches": []
+  },
+  "deerling": {
+    "branches": [
+      {
+        "id": "deerling-sawsbuck-1",
+        "targetSpecies": "sawsbuck",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 34
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "deino": {
+    "branches": [
+      {
+        "id": "deino-zweilous-1",
+        "targetSpecies": "zweilous",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 50
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "delcatty": {
+    "branches": []
+  },
+  "delibird": {
+    "branches": []
+  },
+  "delphox": {
+    "branches": []
+  },
+  "deoxys": {
+    "branches": []
+  },
+  "dewgong": {
+    "branches": []
+  },
+  "dewott": {
+    "branches": [
+      {
+        "id": "dewott-samurott-1",
+        "targetSpecies": "samurott",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 36
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "dewpider": {
+    "branches": [
+      {
+        "id": "dewpider-araquanid-1",
+        "targetSpecies": "araquanid",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 22
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "dhelmise": {
+    "branches": []
+  },
+  "dialga": {
+    "branches": []
+  },
+  "diancie": {
+    "branches": []
+  },
+  "diggersby": {
+    "branches": []
+  },
+  "diglett": {
+    "branches": [
+      {
+        "id": "diglett-dugtrio-1",
+        "targetSpecies": "dugtrio",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 26
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "ditto": {
+    "branches": []
+  },
+  "dodrio": {
+    "branches": []
+  },
+  "doduo": {
+    "branches": [
+      {
+        "id": "doduo-dodrio-1",
+        "targetSpecies": "dodrio",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 31
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "donphan": {
+    "branches": []
+  },
+  "dottler": {
+    "branches": [
+      {
+        "id": "dottler-orbeetle-1",
+        "targetSpecies": "orbeetle",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 30
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "doublade": {
+    "branches": [
+      {
+        "id": "doublade-aegislash-1",
+        "targetSpecies": "aegislash",
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "dusk-stone"
+          }
+        ],
+        "consumeItem": "dusk-stone"
+      }
+    ]
+  },
+  "dracovish": {
+    "branches": []
+  },
+  "dracozolt": {
+    "branches": []
+  },
+  "dragalge": {
+    "branches": []
+  },
+  "dragapult": {
+    "branches": []
+  },
+  "dragonair": {
+    "branches": [
+      {
+        "id": "dragonair-dragonite-1",
+        "targetSpecies": "dragonite",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 55
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "dragonite": {
+    "branches": []
+  },
+  "drakloak": {
+    "branches": [
+      {
+        "id": "drakloak-dragapult-1",
+        "targetSpecies": "dragapult",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 60
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "drampa": {
+    "branches": []
+  },
+  "drapion": {
+    "branches": []
+  },
+  "dratini": {
+    "branches": [
+      {
+        "id": "dratini-dragonair-1",
+        "targetSpecies": "dragonair",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 30
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "drednaw": {
+    "branches": []
+  },
+  "dreepy": {
+    "branches": [
+      {
+        "id": "dreepy-drakloak-1",
+        "targetSpecies": "drakloak",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 50
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "drifblim": {
+    "branches": []
+  },
+  "drifloon": {
+    "branches": [
+      {
+        "id": "drifloon-drifblim-1",
+        "targetSpecies": "drifblim",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 28
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "drilbur": {
+    "branches": [
+      {
+        "id": "drilbur-excadrill-1",
+        "targetSpecies": "excadrill",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 31
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "drizzile": {
+    "branches": [
+      {
+        "id": "drizzile-inteleon-1",
+        "targetSpecies": "inteleon",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 35
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "drowzee": {
+    "branches": [
+      {
+        "id": "drowzee-hypno-1",
+        "targetSpecies": "hypno",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 26
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "druddigon": {
+    "branches": []
+  },
+  "dubwool": {
+    "branches": []
+  },
+  "ducklett": {
+    "branches": [
+      {
+        "id": "ducklett-swanna-1",
+        "targetSpecies": "swanna",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 35
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "dugtrio": {
+    "branches": []
+  },
+  "dunsparce": {
+    "branches": [
+      {
+        "id": "dunsparce-dudunsparce-1",
+        "targetSpecies": "dudunsparce",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "known-move",
+            "moveId": "hyper-drill"
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "duosion": {
+    "branches": [
+      {
+        "id": "duosion-reuniclus-1",
+        "targetSpecies": "reuniclus",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 41
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "duraludon": {
+    "branches": [
+      {
+        "id": "duraludon-archaludon-1",
+        "targetSpecies": "archaludon",
+        "trigger": "other",
+        "conditions": [],
+        "consumeItem": null
+      }
+    ]
+  },
+  "durant": {
+    "branches": []
+  },
+  "dusclops": {
+    "branches": [
+      {
+        "id": "dusclops-dusknoir-1",
+        "targetSpecies": "dusknoir",
+        "trigger": "trade",
+        "conditions": [
+          {
+            "type": "held-item",
+            "item": "reaper-cloth"
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "dusknoir": {
+    "branches": []
+  },
+  "duskull": {
+    "branches": [
+      {
+        "id": "duskull-dusclops-1",
+        "targetSpecies": "dusclops",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 37
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "dustox": {
+    "branches": []
+  },
+  "dwebble": {
+    "branches": [
+      {
+        "id": "dwebble-crustle-1",
+        "targetSpecies": "crustle",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 34
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "eelektrik": {
+    "branches": [
+      {
+        "id": "eelektrik-eelektross-1",
+        "targetSpecies": "eelektross",
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "thunder-stone"
+          }
+        ],
+        "consumeItem": "thunder-stone"
+      }
+    ]
+  },
+  "eelektross": {
+    "branches": []
+  },
+  "eevee": {
+    "branches": [
+      {
+        "id": "eevee-vaporeon-1",
+        "targetSpecies": "vaporeon",
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "water-stone"
+          }
+        ],
+        "consumeItem": "water-stone"
+      },
+      {
+        "id": "eevee-jolteon-1",
+        "targetSpecies": "jolteon",
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "thunder-stone"
+          }
+        ],
+        "consumeItem": "thunder-stone"
+      },
+      {
+        "id": "eevee-flareon-1",
+        "targetSpecies": "flareon",
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "fire-stone"
+          }
+        ],
+        "consumeItem": "fire-stone"
+      },
+      {
+        "id": "eevee-espeon-1",
+        "targetSpecies": "espeon",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "friendship",
+            "min": 160
+          },
+          {
+            "type": "time",
+            "value": "day"
+          }
+        ],
+        "consumeItem": null
+      },
+      {
+        "id": "eevee-umbreon-1",
+        "targetSpecies": "umbreon",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "friendship",
+            "min": 160
+          },
+          {
+            "type": "time",
+            "value": "night"
+          }
+        ],
+        "consumeItem": null
+      },
+      {
+        "id": "eevee-leafeon-1",
+        "targetSpecies": "leafeon",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "location",
+            "location": "eterna-forest"
+          }
+        ],
+        "consumeItem": null
+      },
+      {
+        "id": "eevee-leafeon-2",
+        "targetSpecies": "leafeon",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "location",
+            "location": "pinwheel-forest"
+          }
+        ],
+        "consumeItem": null
+      },
+      {
+        "id": "eevee-leafeon-3",
+        "targetSpecies": "leafeon",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "location",
+            "location": "kalos-route-20"
+          }
+        ],
+        "consumeItem": null
+      },
+      {
+        "id": "eevee-leafeon-4",
+        "targetSpecies": "leafeon",
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "leaf-stone"
+          }
+        ],
+        "consumeItem": "leaf-stone"
+      },
+      {
+        "id": "eevee-glaceon-1",
+        "targetSpecies": "glaceon",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "location",
+            "location": "sinnoh-route-217"
+          }
+        ],
+        "consumeItem": null
+      },
+      {
+        "id": "eevee-glaceon-2",
+        "targetSpecies": "glaceon",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "location",
+            "location": "twist-mountain"
+          }
+        ],
+        "consumeItem": null
+      },
+      {
+        "id": "eevee-glaceon-3",
+        "targetSpecies": "glaceon",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "location",
+            "location": "frost-cavern"
+          }
+        ],
+        "consumeItem": null
+      },
+      {
+        "id": "eevee-glaceon-4",
+        "targetSpecies": "glaceon",
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "ice-stone"
+          }
+        ],
+        "consumeItem": "ice-stone"
+      },
+      {
+        "id": "eevee-sylveon-1",
+        "targetSpecies": "sylveon",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "known-move-type",
+            "moveType": "fairy"
+          },
+          {
+            "type": "extra",
+            "key": "min_affection",
+            "value": 2
+          }
+        ],
+        "consumeItem": null
+      },
+      {
+        "id": "eevee-sylveon-2",
+        "targetSpecies": "sylveon",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "friendship",
+            "min": 160
+          },
+          {
+            "type": "known-move-type",
+            "moveType": "fairy"
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "eiscue": {
+    "branches": []
+  },
+  "ekans": {
+    "branches": [
+      {
+        "id": "ekans-arbok-1",
+        "targetSpecies": "arbok",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 22
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "eldegoss": {
+    "branches": []
+  },
+  "electabuzz": {
+    "branches": [
+      {
+        "id": "electabuzz-electivire-1",
+        "targetSpecies": "electivire",
+        "trigger": "trade",
+        "conditions": [
+          {
+            "type": "held-item",
+            "item": "electirizer"
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "electivire": {
+    "branches": []
+  },
+  "electrike": {
+    "branches": [
+      {
+        "id": "electrike-manectric-1",
+        "targetSpecies": "manectric",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 26
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "electrode": {
+    "branches": []
+  },
+  "elekid": {
+    "branches": [
+      {
+        "id": "elekid-electabuzz-1",
+        "targetSpecies": "electabuzz",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 30
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "elgyem": {
+    "branches": [
+      {
+        "id": "elgyem-beheeyem-1",
+        "targetSpecies": "beheeyem",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 42
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "emboar": {
+    "branches": []
+  },
+  "emolga": {
+    "branches": []
+  },
+  "empoleon": {
+    "branches": []
+  },
+  "enamorus": {
+    "branches": []
+  },
+  "entei": {
+    "branches": []
+  },
+  "escavalier": {
+    "branches": []
+  },
+  "espeon": {
+    "branches": []
+  },
+  "espurr": {
+    "branches": [
+      {
+        "id": "espurr-meowstic-1",
+        "targetSpecies": "meowstic",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 25
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "eternatus": {
+    "branches": []
+  },
+  "excadrill": {
+    "branches": []
+  },
+  "exeggcute": {
+    "branches": [
+      {
+        "id": "exeggcute-exeggutor-1",
+        "targetSpecies": "exeggutor",
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "leaf-stone"
+          }
+        ],
+        "consumeItem": "leaf-stone"
+      }
+    ]
+  },
+  "exeggutor": {
+    "branches": []
+  },
+  "exploud": {
+    "branches": []
+  },
+  "falinks": {
+    "branches": []
+  },
+  "farfetchd": {
+    "branches": [
+      {
+        "id": "farfetchd-sirfetchd-1",
+        "targetSpecies": "sirfetchd",
+        "trigger": "other",
+        "conditions": [],
+        "consumeItem": null
+      }
+    ]
+  },
+  "fearow": {
+    "branches": []
+  },
+  "feebas": {
+    "branches": [
+      {
+        "id": "feebas-milotic-1",
+        "targetSpecies": "milotic",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "extra",
+            "key": "min_beauty",
+            "value": 170
+          }
+        ],
+        "consumeItem": null
+      },
+      {
+        "id": "feebas-milotic-2",
+        "targetSpecies": "milotic",
+        "trigger": "trade",
+        "conditions": [
+          {
+            "type": "held-item",
+            "item": "prism-scale"
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "fennekin": {
+    "branches": [
+      {
+        "id": "fennekin-braixen-1",
+        "targetSpecies": "braixen",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 16
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "feraligatr": {
+    "branches": []
+  },
+  "ferroseed": {
+    "branches": [
+      {
+        "id": "ferroseed-ferrothorn-1",
+        "targetSpecies": "ferrothorn",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 40
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "ferrothorn": {
+    "branches": []
+  },
+  "finneon": {
+    "branches": [
+      {
+        "id": "finneon-lumineon-1",
+        "targetSpecies": "lumineon",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 31
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "flaaffy": {
+    "branches": [
+      {
+        "id": "flaaffy-ampharos-1",
+        "targetSpecies": "ampharos",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 30
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "flabebe": {
+    "branches": [
+      {
+        "id": "flabebe-floette-1",
+        "targetSpecies": "floette",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 19
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "flapple": {
+    "branches": []
+  },
+  "flareon": {
+    "branches": []
+  },
+  "fletchinder": {
+    "branches": [
+      {
+        "id": "fletchinder-talonflame-1",
+        "targetSpecies": "talonflame",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 35
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "fletchling": {
+    "branches": [
+      {
+        "id": "fletchling-fletchinder-1",
+        "targetSpecies": "fletchinder",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 17
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "floatzel": {
+    "branches": []
+  },
+  "floette": {
+    "branches": [
+      {
+        "id": "floette-florges-1",
+        "targetSpecies": "florges",
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "shiny-stone"
+          }
+        ],
+        "consumeItem": "shiny-stone"
+      }
+    ]
+  },
+  "florges": {
+    "branches": []
+  },
+  "flygon": {
+    "branches": []
+  },
+  "fomantis": {
+    "branches": [
+      {
+        "id": "fomantis-lurantis-1",
+        "targetSpecies": "lurantis",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 34
+          },
+          {
+            "type": "time",
+            "value": "day"
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "foongus": {
+    "branches": [
+      {
+        "id": "foongus-amoonguss-1",
+        "targetSpecies": "amoonguss",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 39
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "forretress": {
+    "branches": []
+  },
+  "fraxure": {
+    "branches": [
+      {
+        "id": "fraxure-haxorus-1",
+        "targetSpecies": "haxorus",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 48
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "frillish": {
+    "branches": [
+      {
+        "id": "frillish-jellicent-1",
+        "targetSpecies": "jellicent",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 40
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "froakie": {
+    "branches": [
+      {
+        "id": "froakie-frogadier-1",
+        "targetSpecies": "frogadier",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 16
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "frogadier": {
+    "branches": [
+      {
+        "id": "frogadier-greninja-1",
+        "targetSpecies": "greninja",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 36
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "froslass": {
+    "branches": []
+  },
+  "frosmoth": {
+    "branches": []
+  },
+  "furfrou": {
+    "branches": []
+  },
+  "furret": {
+    "branches": []
+  },
+  "gabite": {
+    "branches": [
+      {
+        "id": "gabite-garchomp-1",
+        "targetSpecies": "garchomp",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 48
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "gallade": {
+    "branches": []
+  },
+  "galvantula": {
+    "branches": []
+  },
+  "garbodor": {
+    "branches": []
+  },
+  "garchomp": {
+    "branches": []
+  },
+  "gardevoir": {
+    "branches": []
+  },
+  "gastly": {
+    "branches": [
+      {
+        "id": "gastly-haunter-1",
+        "targetSpecies": "haunter",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 25
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "gastrodon": {
+    "branches": []
+  },
+  "genesect": {
+    "branches": []
+  },
+  "gengar": {
+    "branches": []
+  },
+  "geodude": {
+    "branches": [
+      {
+        "id": "geodude-graveler-1",
+        "targetSpecies": "graveler",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 25
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "gible": {
+    "branches": [
+      {
+        "id": "gible-gabite-1",
+        "targetSpecies": "gabite",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 24
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "gigalith": {
+    "branches": []
+  },
+  "girafarig": {
+    "branches": [
+      {
+        "id": "girafarig-farigiraf-1",
+        "targetSpecies": "farigiraf",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "known-move",
+            "moveId": "twin-beam"
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "giratina": {
+    "branches": []
+  },
+  "glaceon": {
+    "branches": []
+  },
+  "glalie": {
+    "branches": []
+  },
+  "glameow": {
+    "branches": [
+      {
+        "id": "glameow-purugly-1",
+        "targetSpecies": "purugly",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 38
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "glastrier": {
+    "branches": []
+  },
+  "gligar": {
+    "branches": [
+      {
+        "id": "gligar-gliscor-1",
+        "targetSpecies": "gliscor",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "held-item",
+            "item": "razor-fang"
+          },
+          {
+            "type": "time",
+            "value": "night"
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "gliscor": {
+    "branches": []
+  },
+  "gloom": {
+    "branches": [
+      {
+        "id": "gloom-vileplume-1",
+        "targetSpecies": "vileplume",
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "leaf-stone"
+          }
+        ],
+        "consumeItem": "leaf-stone"
+      },
+      {
+        "id": "gloom-bellossom-1",
+        "targetSpecies": "bellossom",
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "sun-stone"
+          }
+        ],
+        "consumeItem": "sun-stone"
+      }
+    ]
+  },
+  "gogoat": {
+    "branches": []
+  },
+  "golbat": {
+    "branches": [
+      {
+        "id": "golbat-crobat-1",
+        "targetSpecies": "crobat",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "friendship",
+            "min": 160
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "goldeen": {
+    "branches": [
+      {
+        "id": "goldeen-seaking-1",
+        "targetSpecies": "seaking",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 33
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "golduck": {
+    "branches": []
+  },
+  "golem": {
+    "branches": []
+  },
+  "golett": {
+    "branches": [
+      {
+        "id": "golett-golurk-1",
+        "targetSpecies": "golurk",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 43
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "golisopod": {
+    "branches": []
+  },
+  "golurk": {
+    "branches": []
+  },
+  "goodra": {
+    "branches": []
+  },
+  "goomy": {
+    "branches": [
+      {
+        "id": "goomy-sliggoo-1",
+        "targetSpecies": "sliggoo",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 40
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "gorebyss": {
+    "branches": []
+  },
+  "gossifleur": {
+    "branches": [
+      {
+        "id": "gossifleur-eldegoss-1",
+        "targetSpecies": "eldegoss",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 20
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "gothita": {
+    "branches": [
+      {
+        "id": "gothita-gothorita-1",
+        "targetSpecies": "gothorita",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 32
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "gothitelle": {
+    "branches": []
+  },
+  "gothorita": {
+    "branches": [
+      {
+        "id": "gothorita-gothitelle-1",
+        "targetSpecies": "gothitelle",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 41
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "gourgeist": {
+    "branches": []
+  },
+  "granbull": {
+    "branches": []
+  },
+  "grapploct": {
+    "branches": []
+  },
+  "graveler": {
+    "branches": [
+      {
+        "id": "graveler-golem-1",
+        "targetSpecies": "golem",
+        "trigger": "trade",
+        "conditions": [],
+        "consumeItem": null
+      }
+    ]
+  },
+  "greedent": {
+    "branches": []
+  },
+  "greninja": {
+    "branches": []
+  },
+  "grimer": {
+    "branches": [
+      {
+        "id": "grimer-muk-1",
+        "targetSpecies": "muk",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 38
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "grimmsnarl": {
+    "branches": []
+  },
+  "grookey": {
+    "branches": [
+      {
+        "id": "grookey-thwackey-1",
+        "targetSpecies": "thwackey",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 16
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "grotle": {
+    "branches": [
+      {
+        "id": "grotle-torterra-1",
+        "targetSpecies": "torterra",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 32
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "groudon": {
+    "branches": []
+  },
+  "grovyle": {
+    "branches": [
+      {
+        "id": "grovyle-sceptile-1",
+        "targetSpecies": "sceptile",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 36
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "growlithe": {
+    "branches": [
+      {
+        "id": "growlithe-arcanine-1",
+        "targetSpecies": "arcanine",
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "fire-stone"
+          }
+        ],
+        "consumeItem": "fire-stone"
+      }
+    ]
+  },
+  "grubbin": {
+    "branches": [
+      {
+        "id": "grubbin-charjabug-1",
+        "targetSpecies": "charjabug",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 20
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "grumpig": {
+    "branches": []
+  },
+  "gulpin": {
+    "branches": [
+      {
+        "id": "gulpin-swalot-1",
+        "targetSpecies": "swalot",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 26
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "gumshoos": {
+    "branches": []
+  },
+  "gurdurr": {
+    "branches": [
+      {
+        "id": "gurdurr-conkeldurr-1",
+        "targetSpecies": "conkeldurr",
+        "trigger": "trade",
+        "conditions": [],
+        "consumeItem": null
+      }
+    ]
+  },
+  "guzzlord": {
+    "branches": []
+  },
+  "gyarados": {
+    "branches": []
+  },
+  "hakamo-o": {
+    "branches": [
+      {
+        "id": "hakamo-o-kommo-o-1",
+        "targetSpecies": "kommo-o",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 45
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "happiny": {
+    "branches": [
+      {
+        "id": "happiny-chansey-1",
+        "targetSpecies": "chansey",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "held-item",
+            "item": "oval-stone"
+          },
+          {
+            "type": "time",
+            "value": "day"
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "hariyama": {
+    "branches": []
+  },
+  "hatenna": {
+    "branches": [
+      {
+        "id": "hatenna-hattrem-1",
+        "targetSpecies": "hattrem",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 32
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "hatterene": {
+    "branches": []
+  },
+  "hattrem": {
+    "branches": [
+      {
+        "id": "hattrem-hatterene-1",
+        "targetSpecies": "hatterene",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 42
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "haunter": {
+    "branches": [
+      {
+        "id": "haunter-gengar-1",
+        "targetSpecies": "gengar",
+        "trigger": "trade",
+        "conditions": [],
+        "consumeItem": null
+      }
+    ]
+  },
+  "hawlucha": {
+    "branches": []
+  },
+  "haxorus": {
+    "branches": []
+  },
+  "heatmor": {
+    "branches": []
+  },
+  "heatran": {
+    "branches": []
+  },
+  "heliolisk": {
+    "branches": []
+  },
+  "helioptile": {
+    "branches": [
+      {
+        "id": "helioptile-heliolisk-1",
+        "targetSpecies": "heliolisk",
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "sun-stone"
+          }
+        ],
+        "consumeItem": "sun-stone"
+      }
+    ]
+  },
+  "heracross": {
+    "branches": []
+  },
+  "herdier": {
+    "branches": [
+      {
+        "id": "herdier-stoutland-1",
+        "targetSpecies": "stoutland",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 32
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "hippopotas": {
+    "branches": [
+      {
+        "id": "hippopotas-hippowdon-1",
+        "targetSpecies": "hippowdon",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 34
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "hippowdon": {
+    "branches": []
+  },
+  "hitmonchan": {
+    "branches": []
+  },
+  "hitmonlee": {
+    "branches": []
+  },
+  "hitmontop": {
+    "branches": []
+  },
+  "ho-oh": {
+    "branches": []
+  },
+  "honchkrow": {
+    "branches": []
+  },
+  "honedge": {
+    "branches": [
+      {
+        "id": "honedge-doublade-1",
+        "targetSpecies": "doublade",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 35
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "hoopa": {
+    "branches": []
+  },
+  "hoothoot": {
+    "branches": [
+      {
+        "id": "hoothoot-noctowl-1",
+        "targetSpecies": "noctowl",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 20
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "hoppip": {
+    "branches": [
+      {
+        "id": "hoppip-skiploom-1",
+        "targetSpecies": "skiploom",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 18
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "horsea": {
+    "branches": [
+      {
+        "id": "horsea-seadra-1",
+        "targetSpecies": "seadra",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 32
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "houndoom": {
+    "branches": []
+  },
+  "houndour": {
+    "branches": [
+      {
+        "id": "houndour-houndoom-1",
+        "targetSpecies": "houndoom",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 24
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "huntail": {
+    "branches": []
+  },
+  "hydreigon": {
+    "branches": []
+  },
+  "hypno": {
+    "branches": []
+  },
+  "igglybuff": {
+    "branches": [
+      {
+        "id": "igglybuff-jigglypuff-1",
+        "targetSpecies": "jigglypuff",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "friendship",
+            "min": 160
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "illumise": {
+    "branches": []
+  },
+  "impidimp": {
+    "branches": [
+      {
+        "id": "impidimp-morgrem-1",
+        "targetSpecies": "morgrem",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 32
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "incineroar": {
+    "branches": []
+  },
+  "indeedee": {
+    "branches": []
+  },
+  "infernape": {
+    "branches": []
+  },
+  "inkay": {
+    "branches": [
+      {
+        "id": "inkay-malamar-1",
+        "targetSpecies": "malamar",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 30
+          },
+          {
+            "type": "extra",
+            "key": "turn_upside_down",
+            "value": true
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "inteleon": {
+    "branches": []
+  },
+  "ivysaur": {
+    "branches": [
+      {
+        "id": "ivysaur-venusaur-1",
+        "targetSpecies": "venusaur",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 32
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "jangmo-o": {
+    "branches": [
+      {
+        "id": "jangmo-o-hakamo-o-1",
+        "targetSpecies": "hakamo-o",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 35
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "jellicent": {
+    "branches": []
+  },
+  "jigglypuff": {
+    "branches": [
+      {
+        "id": "jigglypuff-wigglytuff-1",
+        "targetSpecies": "wigglytuff",
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "moon-stone"
+          }
+        ],
+        "consumeItem": "moon-stone"
+      }
+    ]
+  },
+  "jirachi": {
+    "branches": []
+  },
+  "jolteon": {
+    "branches": []
+  },
+  "joltik": {
+    "branches": [
+      {
+        "id": "joltik-galvantula-1",
+        "targetSpecies": "galvantula",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 36
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "jumpluff": {
+    "branches": []
+  },
+  "jynx": {
+    "branches": []
+  },
+  "kabuto": {
+    "branches": [
+      {
+        "id": "kabuto-kabutops-1",
+        "targetSpecies": "kabutops",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 40
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "kabutops": {
+    "branches": []
+  },
+  "kadabra": {
+    "branches": [
+      {
+        "id": "kadabra-alakazam-1",
+        "targetSpecies": "alakazam",
+        "trigger": "trade",
+        "conditions": [],
+        "consumeItem": null
+      }
+    ]
+  },
+  "kakuna": {
+    "branches": [
+      {
+        "id": "kakuna-beedrill-1",
+        "targetSpecies": "beedrill",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 10
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "kangaskhan": {
+    "branches": []
+  },
+  "karrablast": {
+    "branches": [
+      {
+        "id": "karrablast-escavalier-1",
+        "targetSpecies": "escavalier",
+        "trigger": "trade",
+        "conditions": [
+          {
+            "type": "extra",
+            "key": "trade_species",
+            "value": {
+              "name": "shelmet",
+              "url": "https://pokeapi.co/api/v2/pokemon-species/616/"
+            }
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "kartana": {
+    "branches": []
+  },
+  "kecleon": {
+    "branches": []
+  },
+  "keldeo": {
+    "branches": []
+  },
+  "kingdra": {
+    "branches": []
+  },
+  "kingler": {
+    "branches": []
+  },
+  "kirlia": {
+    "branches": [
+      {
+        "id": "kirlia-gardevoir-1",
+        "targetSpecies": "gardevoir",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 30
+          }
+        ],
+        "consumeItem": null
+      },
+      {
+        "id": "kirlia-gallade-1",
+        "targetSpecies": "gallade",
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "dawn-stone"
+          },
+          {
+            "type": "gender",
+            "value": "male"
+          }
+        ],
+        "consumeItem": "dawn-stone"
+      }
+    ]
+  },
+  "klang": {
+    "branches": [
+      {
+        "id": "klang-klinklang-1",
+        "targetSpecies": "klinklang",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 49
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "kleavor": {
+    "branches": []
+  },
+  "klefki": {
+    "branches": []
+  },
+  "klink": {
+    "branches": [
+      {
+        "id": "klink-klang-1",
+        "targetSpecies": "klang",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 38
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "klinklang": {
+    "branches": []
+  },
+  "koffing": {
+    "branches": [
+      {
+        "id": "koffing-weezing-1",
+        "targetSpecies": "weezing",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 35
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "komala": {
+    "branches": []
+  },
+  "kommo-o": {
+    "branches": []
+  },
+  "krabby": {
+    "branches": [
+      {
+        "id": "krabby-kingler-1",
+        "targetSpecies": "kingler",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 28
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "kricketot": {
+    "branches": [
+      {
+        "id": "kricketot-kricketune-1",
+        "targetSpecies": "kricketune",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 10
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "kricketune": {
+    "branches": []
+  },
+  "krokorok": {
+    "branches": [
+      {
+        "id": "krokorok-krookodile-1",
+        "targetSpecies": "krookodile",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 40
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "krookodile": {
+    "branches": []
+  },
+  "kubfu": {
+    "branches": [
+      {
+        "id": "kubfu-urshifu-1",
+        "targetSpecies": "urshifu",
+        "trigger": "other",
+        "conditions": [],
+        "consumeItem": null
+      },
+      {
+        "id": "kubfu-urshifu-2",
+        "targetSpecies": "urshifu",
+        "trigger": "other",
+        "conditions": [],
+        "consumeItem": null
+      }
+    ]
+  },
+  "kyogre": {
+    "branches": []
+  },
+  "kyurem": {
+    "branches": []
+  },
+  "lairon": {
+    "branches": [
+      {
+        "id": "lairon-aggron-1",
+        "targetSpecies": "aggron",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 42
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "lampent": {
+    "branches": [
+      {
+        "id": "lampent-chandelure-1",
+        "targetSpecies": "chandelure",
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "dusk-stone"
+          }
+        ],
+        "consumeItem": "dusk-stone"
+      }
+    ]
+  },
+  "landorus": {
+    "branches": []
+  },
+  "lanturn": {
+    "branches": []
+  },
+  "lapras": {
+    "branches": []
+  },
+  "larvesta": {
+    "branches": [
+      {
+        "id": "larvesta-volcarona-1",
+        "targetSpecies": "volcarona",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 59
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "larvitar": {
+    "branches": [
+      {
+        "id": "larvitar-pupitar-1",
+        "targetSpecies": "pupitar",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 30
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "latias": {
+    "branches": []
+  },
+  "latios": {
+    "branches": []
+  },
+  "leafeon": {
+    "branches": []
+  },
+  "leavanny": {
+    "branches": []
+  },
+  "ledian": {
+    "branches": []
+  },
+  "ledyba": {
+    "branches": [
+      {
+        "id": "ledyba-ledian-1",
+        "targetSpecies": "ledian",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 18
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "lickilicky": {
+    "branches": []
+  },
+  "lickitung": {
+    "branches": [
+      {
+        "id": "lickitung-lickilicky-1",
+        "targetSpecies": "lickilicky",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "known-move",
+            "moveId": "rollout"
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "liepard": {
+    "branches": []
+  },
+  "lileep": {
+    "branches": [
+      {
+        "id": "lileep-cradily-1",
+        "targetSpecies": "cradily",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 40
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "lilligant": {
+    "branches": []
+  },
+  "lillipup": {
+    "branches": [
+      {
+        "id": "lillipup-herdier-1",
+        "targetSpecies": "herdier",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 16
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "linoone": {
+    "branches": [
+      {
+        "id": "linoone-obstagoon-1",
+        "targetSpecies": "obstagoon",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 35
+          },
+          {
+            "type": "time",
+            "value": "night"
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "litleo": {
+    "branches": [
+      {
+        "id": "litleo-pyroar-1",
+        "targetSpecies": "pyroar",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 35
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "litten": {
+    "branches": [
+      {
+        "id": "litten-torracat-1",
+        "targetSpecies": "torracat",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 17
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "litwick": {
+    "branches": [
+      {
+        "id": "litwick-lampent-1",
+        "targetSpecies": "lampent",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 41
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "lombre": {
+    "branches": [
+      {
+        "id": "lombre-ludicolo-1",
+        "targetSpecies": "ludicolo",
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "water-stone"
+          }
+        ],
+        "consumeItem": "water-stone"
+      }
+    ]
+  },
+  "lopunny": {
+    "branches": []
+  },
+  "lotad": {
+    "branches": [
+      {
+        "id": "lotad-lombre-1",
+        "targetSpecies": "lombre",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 14
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "loudred": {
+    "branches": [
+      {
+        "id": "loudred-exploud-1",
+        "targetSpecies": "exploud",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 40
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "lucario": {
+    "branches": []
+  },
+  "ludicolo": {
+    "branches": []
+  },
+  "lugia": {
+    "branches": []
+  },
+  "lumineon": {
+    "branches": []
+  },
+  "lunala": {
+    "branches": []
+  },
+  "lunatone": {
+    "branches": []
+  },
+  "lurantis": {
+    "branches": []
+  },
+  "luvdisc": {
+    "branches": []
+  },
+  "luxio": {
+    "branches": [
+      {
+        "id": "luxio-luxray-1",
+        "targetSpecies": "luxray",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 30
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "luxray": {
+    "branches": []
+  },
+  "lycanroc": {
+    "branches": []
+  },
+  "machamp": {
+    "branches": []
+  },
+  "machoke": {
+    "branches": [
+      {
+        "id": "machoke-machamp-1",
+        "targetSpecies": "machamp",
+        "trigger": "trade",
+        "conditions": [],
+        "consumeItem": null
+      }
+    ]
+  },
+  "machop": {
+    "branches": [
+      {
+        "id": "machop-machoke-1",
+        "targetSpecies": "machoke",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 28
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "magby": {
+    "branches": [
+      {
+        "id": "magby-magmar-1",
+        "targetSpecies": "magmar",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 30
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "magcargo": {
+    "branches": []
+  },
+  "magearna": {
+    "branches": []
+  },
+  "magikarp": {
+    "branches": [
+      {
+        "id": "magikarp-gyarados-1",
+        "targetSpecies": "gyarados",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 20
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "magmar": {
+    "branches": [
+      {
+        "id": "magmar-magmortar-1",
+        "targetSpecies": "magmortar",
+        "trigger": "trade",
+        "conditions": [
+          {
+            "type": "held-item",
+            "item": "magmarizer"
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "magmortar": {
+    "branches": []
+  },
+  "magnemite": {
+    "branches": [
+      {
+        "id": "magnemite-magneton-1",
+        "targetSpecies": "magneton",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 30
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "magneton": {
+    "branches": [
+      {
+        "id": "magneton-magnezone-1",
+        "targetSpecies": "magnezone",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "location",
+            "location": "mt-coronet"
+          }
+        ],
+        "consumeItem": null
+      },
+      {
+        "id": "magneton-magnezone-2",
+        "targetSpecies": "magnezone",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "location",
+            "location": "chargestone-cave"
+          }
+        ],
+        "consumeItem": null
+      },
+      {
+        "id": "magneton-magnezone-3",
+        "targetSpecies": "magnezone",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "location",
+            "location": "kalos-route-13"
+          }
+        ],
+        "consumeItem": null
+      },
+      {
+        "id": "magneton-magnezone-4",
+        "targetSpecies": "magnezone",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "location",
+            "location": "blush-mountain"
+          }
+        ],
+        "consumeItem": null
+      },
+      {
+        "id": "magneton-magnezone-5",
+        "targetSpecies": "magnezone",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "location",
+            "location": "vast-poni-canyon"
+          }
+        ],
+        "consumeItem": null
+      },
+      {
+        "id": "magneton-magnezone-6",
+        "targetSpecies": "magnezone",
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "thunder-stone"
+          }
+        ],
+        "consumeItem": "thunder-stone"
+      }
+    ]
+  },
+  "magnezone": {
+    "branches": []
+  },
+  "makuhita": {
+    "branches": [
+      {
+        "id": "makuhita-hariyama-1",
+        "targetSpecies": "hariyama",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 24
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "malamar": {
+    "branches": []
+  },
+  "mamoswine": {
+    "branches": []
+  },
+  "manaphy": {
+    "branches": []
+  },
+  "mandibuzz": {
+    "branches": []
+  },
+  "manectric": {
+    "branches": []
+  },
+  "mankey": {
+    "branches": [
+      {
+        "id": "mankey-primeape-1",
+        "targetSpecies": "primeape",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 28
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "mantine": {
+    "branches": []
+  },
+  "mantyke": {
+    "branches": [
+      {
+        "id": "mantyke-mantine-1",
+        "targetSpecies": "mantine",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "party-member",
+            "species": "remoraid"
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "maractus": {
+    "branches": []
+  },
+  "mareanie": {
+    "branches": [
+      {
+        "id": "mareanie-toxapex-1",
+        "targetSpecies": "toxapex",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 38
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "mareep": {
+    "branches": [
+      {
+        "id": "mareep-flaaffy-1",
+        "targetSpecies": "flaaffy",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 15
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "marill": {
+    "branches": [
+      {
+        "id": "marill-azumarill-1",
+        "targetSpecies": "azumarill",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 18
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "marowak": {
+    "branches": []
+  },
+  "marshadow": {
+    "branches": []
+  },
+  "marshtomp": {
+    "branches": [
+      {
+        "id": "marshtomp-swampert-1",
+        "targetSpecies": "swampert",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 36
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "masquerain": {
+    "branches": []
+  },
+  "mawile": {
+    "branches": []
+  },
+  "medicham": {
+    "branches": []
+  },
+  "meditite": {
+    "branches": [
+      {
+        "id": "meditite-medicham-1",
+        "targetSpecies": "medicham",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 37
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "meganium": {
+    "branches": []
+  },
+  "melmetal": {
+    "branches": []
+  },
+  "meloetta": {
+    "branches": []
+  },
+  "meltan": {
+    "branches": []
+  },
+  "meowstic": {
+    "branches": []
+  },
+  "meowth": {
+    "branches": [
+      {
+        "id": "meowth-persian-1",
+        "targetSpecies": "persian",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 28
+          }
+        ],
+        "consumeItem": null
+      },
+      {
+        "id": "meowth-persian-2",
+        "targetSpecies": "persian",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "friendship",
+            "min": 160
+          }
+        ],
+        "consumeItem": null
+      },
+      {
+        "id": "meowth-perrserker-1",
+        "targetSpecies": "perrserker",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 28
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "mesprit": {
+    "branches": []
+  },
+  "metagross": {
+    "branches": []
+  },
+  "metang": {
+    "branches": [
+      {
+        "id": "metang-metagross-1",
+        "targetSpecies": "metagross",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 45
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "metapod": {
+    "branches": [
+      {
+        "id": "metapod-butterfree-1",
+        "targetSpecies": "butterfree",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 10
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "mew": {
+    "branches": []
+  },
+  "mewtwo": {
+    "branches": []
+  },
+  "mienfoo": {
+    "branches": [
+      {
+        "id": "mienfoo-mienshao-1",
+        "targetSpecies": "mienshao",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 50
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "mienshao": {
+    "branches": []
+  },
+  "mightyena": {
+    "branches": []
+  },
+  "milcery": {
+    "branches": [
+      {
+        "id": "milcery-alcremie-1",
+        "targetSpecies": "alcremie",
+        "trigger": "other",
+        "conditions": [],
+        "consumeItem": null
+      }
+    ]
+  },
+  "milotic": {
+    "branches": []
+  },
+  "miltank": {
+    "branches": []
+  },
+  "mime-jr": {
+    "branches": [
+      {
+        "id": "mime-jr-mr-mime-1",
+        "targetSpecies": "mr-mime",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "known-move",
+            "moveId": "mimic"
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "mimikyu": {
+    "branches": []
+  },
+  "minccino": {
+    "branches": [
+      {
+        "id": "minccino-cinccino-1",
+        "targetSpecies": "cinccino",
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "shiny-stone"
+          }
+        ],
+        "consumeItem": "shiny-stone"
+      }
+    ]
+  },
+  "minior": {
+    "branches": []
+  },
+  "minun": {
+    "branches": []
+  },
+  "misdreavus": {
+    "branches": [
+      {
+        "id": "misdreavus-mismagius-1",
+        "targetSpecies": "mismagius",
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "dusk-stone"
+          }
+        ],
+        "consumeItem": "dusk-stone"
+      }
+    ]
+  },
+  "mismagius": {
+    "branches": []
+  },
+  "moltres": {
+    "branches": []
+  },
+  "monferno": {
+    "branches": [
+      {
+        "id": "monferno-infernape-1",
+        "targetSpecies": "infernape",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 36
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "morelull": {
+    "branches": [
+      {
+        "id": "morelull-shiinotic-1",
+        "targetSpecies": "shiinotic",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 24
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "morgrem": {
+    "branches": [
+      {
+        "id": "morgrem-grimmsnarl-1",
+        "targetSpecies": "grimmsnarl",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 42
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "morpeko": {
+    "branches": []
+  },
+  "mothim": {
+    "branches": []
+  },
+  "mr-mime": {
+    "branches": [
+      {
+        "id": "mr-mime-mr-rime-1",
+        "targetSpecies": "mr-rime",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 42
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "mr-rime": {
+    "branches": []
+  },
+  "mudbray": {
+    "branches": [
+      {
+        "id": "mudbray-mudsdale-1",
+        "targetSpecies": "mudsdale",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 30
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "mudkip": {
+    "branches": [
+      {
+        "id": "mudkip-marshtomp-1",
+        "targetSpecies": "marshtomp",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 16
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "mudsdale": {
+    "branches": []
+  },
+  "muk": {
+    "branches": []
+  },
+  "munchlax": {
+    "branches": [
+      {
+        "id": "munchlax-snorlax-1",
+        "targetSpecies": "snorlax",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "friendship",
+            "min": 160
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "munna": {
+    "branches": [
+      {
+        "id": "munna-musharna-1",
+        "targetSpecies": "musharna",
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "moon-stone"
+          }
+        ],
+        "consumeItem": "moon-stone"
+      }
+    ]
+  },
+  "murkrow": {
+    "branches": [
+      {
+        "id": "murkrow-honchkrow-1",
+        "targetSpecies": "honchkrow",
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "dusk-stone"
+          }
+        ],
+        "consumeItem": "dusk-stone"
+      }
+    ]
+  },
+  "musharna": {
+    "branches": []
+  },
+  "naganadel": {
+    "branches": []
+  },
+  "natu": {
+    "branches": [
+      {
+        "id": "natu-xatu-1",
+        "targetSpecies": "xatu",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 25
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "necrozma": {
+    "branches": []
+  },
+  "nickit": {
+    "branches": [
+      {
+        "id": "nickit-thievul-1",
+        "targetSpecies": "thievul",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 18
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "nidoking": {
+    "branches": []
+  },
+  "nidoqueen": {
+    "branches": []
+  },
+  "nidoran-f": {
+    "branches": [
+      {
+        "id": "nidoran-f-nidorina-1",
+        "targetSpecies": "nidorina",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 16
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "nidoran-m": {
+    "branches": [
+      {
+        "id": "nidoran-m-nidorino-1",
+        "targetSpecies": "nidorino",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 16
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "nidorina": {
+    "branches": [
+      {
+        "id": "nidorina-nidoqueen-1",
+        "targetSpecies": "nidoqueen",
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "moon-stone"
+          }
+        ],
+        "consumeItem": "moon-stone"
+      }
+    ]
+  },
+  "nidorino": {
+    "branches": [
+      {
+        "id": "nidorino-nidoking-1",
+        "targetSpecies": "nidoking",
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "moon-stone"
+          }
+        ],
+        "consumeItem": "moon-stone"
+      }
+    ]
+  },
+  "nihilego": {
+    "branches": []
+  },
+  "nincada": {
+    "branches": [
+      {
+        "id": "nincada-ninjask-1",
+        "targetSpecies": "ninjask",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 20
+          }
+        ],
+        "consumeItem": null
+      },
+      {
+        "id": "nincada-shedinja-1",
+        "targetSpecies": "shedinja",
+        "trigger": "other",
+        "conditions": [],
+        "consumeItem": null
+      }
+    ]
+  },
+  "ninetales": {
+    "branches": []
+  },
+  "ninjask": {
+    "branches": []
+  },
+  "noctowl": {
+    "branches": []
+  },
+  "noibat": {
+    "branches": [
+      {
+        "id": "noibat-noivern-1",
+        "targetSpecies": "noivern",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 48
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "noivern": {
+    "branches": []
+  },
+  "nosepass": {
+    "branches": [
+      {
+        "id": "nosepass-probopass-1",
+        "targetSpecies": "probopass",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "location",
+            "location": "mt-coronet"
+          }
+        ],
+        "consumeItem": null
+      },
+      {
+        "id": "nosepass-probopass-2",
+        "targetSpecies": "probopass",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "location",
+            "location": "chargestone-cave"
+          }
+        ],
+        "consumeItem": null
+      },
+      {
+        "id": "nosepass-probopass-3",
+        "targetSpecies": "probopass",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "location",
+            "location": "kalos-route-13"
+          }
+        ],
+        "consumeItem": null
+      },
+      {
+        "id": "nosepass-probopass-4",
+        "targetSpecies": "probopass",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "location",
+            "location": "blush-mountain"
+          }
+        ],
+        "consumeItem": null
+      },
+      {
+        "id": "nosepass-probopass-5",
+        "targetSpecies": "probopass",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "location",
+            "location": "vast-poni-canyon"
+          }
+        ],
+        "consumeItem": null
+      },
+      {
+        "id": "nosepass-probopass-6",
+        "targetSpecies": "probopass",
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "thunder-stone"
+          }
+        ],
+        "consumeItem": "thunder-stone"
+      }
+    ]
+  },
+  "numel": {
+    "branches": [
+      {
+        "id": "numel-camerupt-1",
+        "targetSpecies": "camerupt",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 33
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "nuzleaf": {
+    "branches": [
+      {
+        "id": "nuzleaf-shiftry-1",
+        "targetSpecies": "shiftry",
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "leaf-stone"
+          }
+        ],
+        "consumeItem": "leaf-stone"
+      }
+    ]
+  },
+  "obstagoon": {
+    "branches": []
+  },
+  "octillery": {
+    "branches": []
+  },
+  "oddish": {
+    "branches": [
+      {
+        "id": "oddish-gloom-1",
+        "targetSpecies": "gloom",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 21
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "omanyte": {
+    "branches": [
+      {
+        "id": "omanyte-omastar-1",
+        "targetSpecies": "omastar",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 40
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "omastar": {
+    "branches": []
+  },
+  "onix": {
+    "branches": [
+      {
+        "id": "onix-steelix-1",
+        "targetSpecies": "steelix",
+        "trigger": "trade",
+        "conditions": [
+          {
+            "type": "held-item",
+            "item": "metal-coat"
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "oranguru": {
+    "branches": []
+  },
+  "orbeetle": {
+    "branches": []
+  },
+  "oricorio": {
+    "branches": []
+  },
+  "oshawott": {
+    "branches": [
+      {
+        "id": "oshawott-dewott-1",
+        "targetSpecies": "dewott",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 17
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "overqwil": {
+    "branches": []
+  },
+  "pachirisu": {
+    "branches": []
+  },
+  "palkia": {
+    "branches": []
+  },
+  "palossand": {
+    "branches": []
+  },
+  "palpitoad": {
+    "branches": [
+      {
+        "id": "palpitoad-seismitoad-1",
+        "targetSpecies": "seismitoad",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 36
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "pancham": {
+    "branches": [
+      {
+        "id": "pancham-pangoro-1",
+        "targetSpecies": "pangoro",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 32
+          },
+          {
+            "type": "party-member",
+            "pokemonType": "dark"
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "pangoro": {
+    "branches": []
+  },
+  "panpour": {
+    "branches": [
+      {
+        "id": "panpour-simipour-1",
+        "targetSpecies": "simipour",
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "water-stone"
+          }
+        ],
+        "consumeItem": "water-stone"
+      }
+    ]
+  },
+  "pansage": {
+    "branches": [
+      {
+        "id": "pansage-simisage-1",
+        "targetSpecies": "simisage",
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "leaf-stone"
+          }
+        ],
+        "consumeItem": "leaf-stone"
+      }
+    ]
+  },
+  "pansear": {
+    "branches": [
+      {
+        "id": "pansear-simisear-1",
+        "targetSpecies": "simisear",
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "fire-stone"
+          }
+        ],
+        "consumeItem": "fire-stone"
+      }
+    ]
+  },
+  "paras": {
+    "branches": [
+      {
+        "id": "paras-parasect-1",
+        "targetSpecies": "parasect",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 24
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "parasect": {
+    "branches": []
+  },
+  "passimian": {
+    "branches": []
+  },
+  "patrat": {
+    "branches": [
+      {
+        "id": "patrat-watchog-1",
+        "targetSpecies": "watchog",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 20
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "pawniard": {
+    "branches": [
+      {
+        "id": "pawniard-bisharp-1",
+        "targetSpecies": "bisharp",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 52
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "pelipper": {
+    "branches": []
+  },
+  "perrserker": {
+    "branches": []
+  },
+  "persian": {
+    "branches": []
+  },
+  "petilil": {
+    "branches": [
+      {
+        "id": "petilil-lilligant-1",
+        "targetSpecies": "lilligant",
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "sun-stone"
+          }
+        ],
+        "consumeItem": "sun-stone"
+      }
+    ]
+  },
+  "phanpy": {
+    "branches": [
+      {
+        "id": "phanpy-donphan-1",
+        "targetSpecies": "donphan",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 25
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "phantump": {
+    "branches": [
+      {
+        "id": "phantump-trevenant-1",
+        "targetSpecies": "trevenant",
+        "trigger": "trade",
+        "conditions": [],
+        "consumeItem": null
+      }
+    ]
+  },
+  "pheromosa": {
+    "branches": []
+  },
+  "phione": {
+    "branches": [
+      {
+        "id": "phione-manaphy-1",
+        "targetSpecies": "manaphy",
+        "trigger": "other",
+        "conditions": [],
+        "consumeItem": null
+      }
+    ]
+  },
+  "pichu": {
+    "branches": [
+      {
+        "id": "pichu-pikachu-1",
+        "targetSpecies": "pikachu",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "friendship",
+            "min": 220
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "pidgeot": {
+    "branches": []
+  },
+  "pidgeotto": {
+    "branches": [
+      {
+        "id": "pidgeotto-pidgeot-1",
+        "targetSpecies": "pidgeot",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 36
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "pidgey": {
+    "branches": [
+      {
+        "id": "pidgey-pidgeotto-1",
+        "targetSpecies": "pidgeotto",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 18
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "pidove": {
+    "branches": [
+      {
+        "id": "pidove-tranquill-1",
+        "targetSpecies": "tranquill",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 21
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "pignite": {
+    "branches": [
+      {
+        "id": "pignite-emboar-1",
+        "targetSpecies": "emboar",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 36
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "pikachu": {
+    "branches": [
+      {
+        "id": "pikachu-raichu-1",
+        "targetSpecies": "raichu",
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "thunder-stone"
+          }
+        ],
+        "consumeItem": "thunder-stone"
+      }
+    ]
+  },
+  "pikipek": {
+    "branches": [
+      {
+        "id": "pikipek-trumbeak-1",
+        "targetSpecies": "trumbeak",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 14
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "piloswine": {
+    "branches": [
+      {
+        "id": "piloswine-mamoswine-1",
+        "targetSpecies": "mamoswine",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "known-move",
+            "moveId": "ancient-power"
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "pincurchin": {
+    "branches": []
+  },
+  "pineco": {
+    "branches": [
+      {
+        "id": "pineco-forretress-1",
+        "targetSpecies": "forretress",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 31
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "pinsir": {
+    "branches": []
+  },
+  "piplup": {
+    "branches": [
+      {
+        "id": "piplup-prinplup-1",
+        "targetSpecies": "prinplup",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 16
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "plusle": {
+    "branches": []
+  },
+  "poipole": {
+    "branches": [
+      {
+        "id": "poipole-naganadel-1",
+        "targetSpecies": "naganadel",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "known-move",
+            "moveId": "dragon-pulse"
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "politoed": {
+    "branches": []
+  },
+  "poliwag": {
+    "branches": [
+      {
+        "id": "poliwag-poliwhirl-1",
+        "targetSpecies": "poliwhirl",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 25
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "poliwhirl": {
+    "branches": [
+      {
+        "id": "poliwhirl-poliwrath-1",
+        "targetSpecies": "poliwrath",
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "water-stone"
+          }
+        ],
+        "consumeItem": "water-stone"
+      },
+      {
+        "id": "poliwhirl-politoed-1",
+        "targetSpecies": "politoed",
+        "trigger": "trade",
+        "conditions": [
+          {
+            "type": "held-item",
+            "item": "kings-rock"
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "poliwrath": {
+    "branches": []
+  },
+  "polteageist": {
+    "branches": []
+  },
+  "ponyta": {
+    "branches": [
+      {
+        "id": "ponyta-rapidash-1",
+        "targetSpecies": "rapidash",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 40
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "poochyena": {
+    "branches": [
+      {
+        "id": "poochyena-mightyena-1",
+        "targetSpecies": "mightyena",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 18
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "popplio": {
+    "branches": [
+      {
+        "id": "popplio-brionne-1",
+        "targetSpecies": "brionne",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 17
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "porygon": {
+    "branches": [
+      {
+        "id": "porygon-porygon2-1",
+        "targetSpecies": "porygon2",
+        "trigger": "trade",
+        "conditions": [
+          {
+            "type": "held-item",
+            "item": "up-grade"
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "porygon-z": {
+    "branches": []
+  },
+  "porygon2": {
+    "branches": [
+      {
+        "id": "porygon2-porygon-z-1",
+        "targetSpecies": "porygon-z",
+        "trigger": "trade",
+        "conditions": [
+          {
+            "type": "held-item",
+            "item": "dubious-disc"
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "primarina": {
+    "branches": []
+  },
+  "primeape": {
+    "branches": [
+      {
+        "id": "primeape-annihilape-1",
+        "targetSpecies": "annihilape",
+        "trigger": "other",
+        "conditions": [
+          {
+            "type": "extra",
+            "key": "min_move_count",
+            "value": 20
+          },
+          {
+            "type": "extra",
+            "key": "used_move",
+            "value": {
+              "name": "rage-fist",
+              "url": "https://pokeapi.co/api/v2/move/889/"
+            }
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "prinplup": {
+    "branches": [
+      {
+        "id": "prinplup-empoleon-1",
+        "targetSpecies": "empoleon",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 36
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "probopass": {
+    "branches": []
+  },
+  "psyduck": {
+    "branches": [
+      {
+        "id": "psyduck-golduck-1",
+        "targetSpecies": "golduck",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 33
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "pumpkaboo": {
+    "branches": [
+      {
+        "id": "pumpkaboo-gourgeist-1",
+        "targetSpecies": "gourgeist",
+        "trigger": "trade",
+        "conditions": [],
+        "consumeItem": null
+      }
+    ]
+  },
+  "pupitar": {
+    "branches": [
+      {
+        "id": "pupitar-tyranitar-1",
+        "targetSpecies": "tyranitar",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 55
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "purrloin": {
+    "branches": [
+      {
+        "id": "purrloin-liepard-1",
+        "targetSpecies": "liepard",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 20
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "purugly": {
+    "branches": []
+  },
+  "pyroar": {
+    "branches": []
+  },
+  "pyukumuku": {
+    "branches": []
+  },
+  "quagsire": {
+    "branches": []
+  },
+  "quilava": {
+    "branches": [
+      {
+        "id": "quilava-typhlosion-1",
+        "targetSpecies": "typhlosion",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 36
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "quilladin": {
+    "branches": [
+      {
+        "id": "quilladin-chesnaught-1",
+        "targetSpecies": "chesnaught",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 36
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "qwilfish": {
+    "branches": [
+      {
+        "id": "qwilfish-overqwil-1",
+        "targetSpecies": "overqwil",
+        "trigger": "other",
+        "conditions": [
+          {
+            "type": "extra",
+            "key": "min_move_count",
+            "value": 20
+          },
+          {
+            "type": "extra",
+            "key": "used_move",
+            "value": {
+              "name": "barb-barrage",
+              "url": "https://pokeapi.co/api/v2/move/839/"
+            }
+          }
+        ],
+        "consumeItem": null
+      },
+      {
+        "id": "qwilfish-overqwil-2",
+        "targetSpecies": "overqwil",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "known-move",
+            "moveId": "barb-barrage"
+          }
+        ],
+        "consumeItem": null
+      },
+      {
+        "id": "qwilfish-overqwil-3",
+        "targetSpecies": "overqwil",
+        "trigger": "other",
+        "conditions": [
+          {
+            "type": "extra",
+            "key": "min_move_count",
+            "value": 20
+          },
+          {
+            "type": "extra",
+            "key": "used_move",
+            "value": {
+              "name": "barb-barrage",
+              "url": "https://pokeapi.co/api/v2/move/839/"
+            }
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "raboot": {
+    "branches": [
+      {
+        "id": "raboot-cinderace-1",
+        "targetSpecies": "cinderace",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 35
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "raichu": {
+    "branches": []
+  },
+  "raikou": {
+    "branches": []
+  },
+  "ralts": {
+    "branches": [
+      {
+        "id": "ralts-kirlia-1",
+        "targetSpecies": "kirlia",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 20
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "rampardos": {
+    "branches": []
+  },
+  "rapidash": {
+    "branches": []
+  },
+  "raticate": {
+    "branches": []
+  },
+  "rattata": {
+    "branches": [
+      {
+        "id": "rattata-raticate-1",
+        "targetSpecies": "raticate",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 20
+          }
+        ],
+        "consumeItem": null
+      },
+      {
+        "id": "rattata-raticate-2",
+        "targetSpecies": "raticate",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 20
+          },
+          {
+            "type": "time",
+            "value": "night"
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "rayquaza": {
+    "branches": []
+  },
+  "regice": {
+    "branches": []
+  },
+  "regidrago": {
+    "branches": []
+  },
+  "regieleki": {
+    "branches": []
+  },
+  "regigigas": {
+    "branches": []
+  },
+  "regirock": {
+    "branches": []
+  },
+  "registeel": {
+    "branches": []
+  },
+  "relicanth": {
+    "branches": []
+  },
+  "remoraid": {
+    "branches": [
+      {
+        "id": "remoraid-octillery-1",
+        "targetSpecies": "octillery",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 25
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "reshiram": {
+    "branches": []
+  },
+  "reuniclus": {
+    "branches": []
+  },
+  "rhydon": {
+    "branches": [
+      {
+        "id": "rhydon-rhyperior-1",
+        "targetSpecies": "rhyperior",
+        "trigger": "trade",
+        "conditions": [
+          {
+            "type": "held-item",
+            "item": "protector"
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "rhyhorn": {
+    "branches": [
+      {
+        "id": "rhyhorn-rhydon-1",
+        "targetSpecies": "rhydon",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 42
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "rhyperior": {
+    "branches": []
+  },
+  "ribombee": {
+    "branches": []
+  },
+  "rillaboom": {
+    "branches": []
+  },
+  "riolu": {
+    "branches": [
+      {
+        "id": "riolu-lucario-1",
+        "targetSpecies": "lucario",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "friendship",
+            "min": 160
+          },
+          {
+            "type": "time",
+            "value": "day"
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "rockruff": {
+    "branches": [
+      {
+        "id": "rockruff-lycanroc-1",
+        "targetSpecies": "lycanroc",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 25
+          },
+          {
+            "type": "time",
+            "value": "day"
+          }
+        ],
+        "consumeItem": null
+      },
+      {
+        "id": "rockruff-lycanroc-2",
+        "targetSpecies": "lycanroc",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 25
+          },
+          {
+            "type": "time",
+            "value": "night"
+          }
+        ],
+        "consumeItem": null
+      },
+      {
+        "id": "rockruff-lycanroc-3",
+        "targetSpecies": "lycanroc",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 25
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "roggenrola": {
+    "branches": [
+      {
+        "id": "roggenrola-boldore-1",
+        "targetSpecies": "boldore",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 25
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "rolycoly": {
+    "branches": [
+      {
+        "id": "rolycoly-carkol-1",
+        "targetSpecies": "carkol",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 18
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "rookidee": {
+    "branches": [
+      {
+        "id": "rookidee-corvisquire-1",
+        "targetSpecies": "corvisquire",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 18
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "roselia": {
+    "branches": [
+      {
+        "id": "roselia-roserade-1",
+        "targetSpecies": "roserade",
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "shiny-stone"
+          }
+        ],
+        "consumeItem": "shiny-stone"
+      }
+    ]
+  },
+  "roserade": {
+    "branches": []
+  },
+  "rotom": {
+    "branches": []
+  },
+  "rowlet": {
+    "branches": [
+      {
+        "id": "rowlet-dartrix-1",
+        "targetSpecies": "dartrix",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 17
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "rufflet": {
+    "branches": [
+      {
+        "id": "rufflet-braviary-1",
+        "targetSpecies": "braviary",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 54
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "runerigus": {
+    "branches": []
+  },
+  "sableye": {
+    "branches": []
+  },
+  "salamence": {
+    "branches": []
+  },
+  "salandit": {
+    "branches": [
+      {
+        "id": "salandit-salazzle-1",
+        "targetSpecies": "salazzle",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 33
+          },
+          {
+            "type": "gender",
+            "value": "female"
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "salazzle": {
+    "branches": []
+  },
+  "samurott": {
+    "branches": []
+  },
+  "sandaconda": {
+    "branches": []
+  },
+  "sandile": {
+    "branches": [
+      {
+        "id": "sandile-krokorok-1",
+        "targetSpecies": "krokorok",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 29
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "sandshrew": {
+    "branches": [
+      {
+        "id": "sandshrew-sandslash-1",
+        "targetSpecies": "sandslash",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 22
+          }
+        ],
+        "consumeItem": null
+      },
+      {
+        "id": "sandshrew-sandslash-2",
+        "targetSpecies": "sandslash",
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "ice-stone"
+          }
+        ],
+        "consumeItem": "ice-stone"
+      }
+    ]
+  },
+  "sandslash": {
+    "branches": []
+  },
+  "sandygast": {
+    "branches": [
+      {
+        "id": "sandygast-palossand-1",
+        "targetSpecies": "palossand",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 42
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "sawk": {
+    "branches": []
+  },
+  "sawsbuck": {
+    "branches": []
+  },
+  "scatterbug": {
+    "branches": [
+      {
+        "id": "scatterbug-spewpa-1",
+        "targetSpecies": "spewpa",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 9
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "sceptile": {
+    "branches": []
+  },
+  "scizor": {
+    "branches": []
+  },
+  "scolipede": {
+    "branches": []
+  },
+  "scorbunny": {
+    "branches": [
+      {
+        "id": "scorbunny-raboot-1",
+        "targetSpecies": "raboot",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 16
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "scrafty": {
+    "branches": []
+  },
+  "scraggy": {
+    "branches": [
+      {
+        "id": "scraggy-scrafty-1",
+        "targetSpecies": "scrafty",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 39
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "scyther": {
+    "branches": [
+      {
+        "id": "scyther-scizor-1",
+        "targetSpecies": "scizor",
+        "trigger": "trade",
+        "conditions": [
+          {
+            "type": "held-item",
+            "item": "metal-coat"
+          }
+        ],
+        "consumeItem": null
+      },
+      {
+        "id": "scyther-kleavor-1",
+        "targetSpecies": "kleavor",
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "black-augurite"
+          }
+        ],
+        "consumeItem": "black-augurite"
+      }
+    ]
+  },
+  "seadra": {
+    "branches": [
+      {
+        "id": "seadra-kingdra-1",
+        "targetSpecies": "kingdra",
+        "trigger": "trade",
+        "conditions": [
+          {
+            "type": "held-item",
+            "item": "dragon-scale"
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "seaking": {
+    "branches": []
+  },
+  "sealeo": {
+    "branches": [
+      {
+        "id": "sealeo-walrein-1",
+        "targetSpecies": "walrein",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 44
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "seedot": {
+    "branches": [
+      {
+        "id": "seedot-nuzleaf-1",
+        "targetSpecies": "nuzleaf",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 14
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "seel": {
+    "branches": [
+      {
+        "id": "seel-dewgong-1",
+        "targetSpecies": "dewgong",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 34
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "seismitoad": {
+    "branches": []
+  },
+  "sentret": {
+    "branches": [
+      {
+        "id": "sentret-furret-1",
+        "targetSpecies": "furret",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 15
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "serperior": {
+    "branches": []
+  },
+  "servine": {
+    "branches": [
+      {
+        "id": "servine-serperior-1",
+        "targetSpecies": "serperior",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 36
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "seviper": {
+    "branches": []
+  },
+  "sewaddle": {
+    "branches": [
+      {
+        "id": "sewaddle-swadloon-1",
+        "targetSpecies": "swadloon",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 20
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "sharpedo": {
+    "branches": []
+  },
+  "shaymin": {
+    "branches": []
+  },
+  "shedinja": {
+    "branches": []
+  },
+  "shelgon": {
+    "branches": [
+      {
+        "id": "shelgon-salamence-1",
+        "targetSpecies": "salamence",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 50
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "shellder": {
+    "branches": [
+      {
+        "id": "shellder-cloyster-1",
+        "targetSpecies": "cloyster",
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "water-stone"
+          }
+        ],
+        "consumeItem": "water-stone"
+      }
+    ]
+  },
+  "shellos": {
+    "branches": [
+      {
+        "id": "shellos-gastrodon-1",
+        "targetSpecies": "gastrodon",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 30
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "shelmet": {
+    "branches": [
+      {
+        "id": "shelmet-accelgor-1",
+        "targetSpecies": "accelgor",
+        "trigger": "trade",
+        "conditions": [
+          {
+            "type": "extra",
+            "key": "trade_species",
+            "value": {
+              "name": "karrablast",
+              "url": "https://pokeapi.co/api/v2/pokemon-species/588/"
+            }
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "shieldon": {
+    "branches": [
+      {
+        "id": "shieldon-bastiodon-1",
+        "targetSpecies": "bastiodon",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 30
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "shiftry": {
+    "branches": []
+  },
+  "shiinotic": {
+    "branches": []
+  },
+  "shinx": {
+    "branches": [
+      {
+        "id": "shinx-luxio-1",
+        "targetSpecies": "luxio",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 15
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "shroomish": {
+    "branches": [
+      {
+        "id": "shroomish-breloom-1",
+        "targetSpecies": "breloom",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 23
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "shuckle": {
+    "branches": []
+  },
+  "shuppet": {
+    "branches": [
+      {
+        "id": "shuppet-banette-1",
+        "targetSpecies": "banette",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 37
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "sigilyph": {
+    "branches": []
+  },
+  "silcoon": {
+    "branches": [
+      {
+        "id": "silcoon-beautifly-1",
+        "targetSpecies": "beautifly",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 10
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "silicobra": {
+    "branches": [
+      {
+        "id": "silicobra-sandaconda-1",
+        "targetSpecies": "sandaconda",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 36
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "silvally": {
+    "branches": []
+  },
+  "simipour": {
+    "branches": []
+  },
+  "simisage": {
+    "branches": []
+  },
+  "simisear": {
+    "branches": []
+  },
+  "sinistea": {
+    "branches": [
+      {
+        "id": "sinistea-polteageist-1",
+        "targetSpecies": "polteageist",
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "cracked-pot"
+          }
+        ],
+        "consumeItem": "cracked-pot"
+      }
+    ]
+  },
+  "sirfetchd": {
+    "branches": []
+  },
+  "sizzlipede": {
+    "branches": [
+      {
+        "id": "sizzlipede-centiskorch-1",
+        "targetSpecies": "centiskorch",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 28
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "skarmory": {
+    "branches": []
+  },
+  "skiddo": {
+    "branches": [
+      {
+        "id": "skiddo-gogoat-1",
+        "targetSpecies": "gogoat",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 32
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "skiploom": {
+    "branches": [
+      {
+        "id": "skiploom-jumpluff-1",
+        "targetSpecies": "jumpluff",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 27
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "skitty": {
+    "branches": [
+      {
+        "id": "skitty-delcatty-1",
+        "targetSpecies": "delcatty",
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "moon-stone"
+          }
+        ],
+        "consumeItem": "moon-stone"
+      }
+    ]
+  },
+  "skorupi": {
+    "branches": [
+      {
+        "id": "skorupi-drapion-1",
+        "targetSpecies": "drapion",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 40
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "skrelp": {
+    "branches": [
+      {
+        "id": "skrelp-dragalge-1",
+        "targetSpecies": "dragalge",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 48
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "skuntank": {
+    "branches": []
+  },
+  "skwovet": {
+    "branches": [
+      {
+        "id": "skwovet-greedent-1",
+        "targetSpecies": "greedent",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 24
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "slaking": {
+    "branches": []
+  },
+  "slakoth": {
+    "branches": [
+      {
+        "id": "slakoth-vigoroth-1",
+        "targetSpecies": "vigoroth",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 18
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "sliggoo": {
+    "branches": [
+      {
+        "id": "sliggoo-goodra-1",
+        "targetSpecies": "goodra",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 50
+          },
+          {
+            "type": "extra",
+            "key": "needs_overworld_rain",
+            "value": true
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "slowbro": {
+    "branches": []
+  },
+  "slowking": {
+    "branches": []
+  },
+  "slowpoke": {
+    "branches": [
+      {
+        "id": "slowpoke-slowbro-1",
+        "targetSpecies": "slowbro",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 37
+          }
+        ],
+        "consumeItem": null
+      },
+      {
+        "id": "slowpoke-slowbro-2",
+        "targetSpecies": "slowbro",
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "galarica-cuff"
+          }
+        ],
+        "consumeItem": "galarica-cuff"
+      },
+      {
+        "id": "slowpoke-slowking-1",
+        "targetSpecies": "slowking",
+        "trigger": "trade",
+        "conditions": [
+          {
+            "type": "held-item",
+            "item": "kings-rock"
+          }
+        ],
+        "consumeItem": null
+      },
+      {
+        "id": "slowpoke-slowking-2",
+        "targetSpecies": "slowking",
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "galarica-wreath"
+          }
+        ],
+        "consumeItem": "galarica-wreath"
+      }
+    ]
+  },
+  "slugma": {
+    "branches": [
+      {
+        "id": "slugma-magcargo-1",
+        "targetSpecies": "magcargo",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 38
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "slurpuff": {
+    "branches": []
+  },
+  "smeargle": {
+    "branches": []
+  },
+  "smoochum": {
+    "branches": [
+      {
+        "id": "smoochum-jynx-1",
+        "targetSpecies": "jynx",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 30
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "sneasel": {
+    "branches": [
+      {
+        "id": "sneasel-weavile-1",
+        "targetSpecies": "weavile",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "held-item",
+            "item": "razor-claw"
+          },
+          {
+            "type": "time",
+            "value": "night"
+          }
+        ],
+        "consumeItem": null
+      },
+      {
+        "id": "sneasel-sneasler-1",
+        "targetSpecies": "sneasler",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "held-item",
+            "item": "razor-claw"
+          },
+          {
+            "type": "time",
+            "value": "day"
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "sneasler": {
+    "branches": []
+  },
+  "snivy": {
+    "branches": [
+      {
+        "id": "snivy-servine-1",
+        "targetSpecies": "servine",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 17
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "snom": {
+    "branches": [
+      {
+        "id": "snom-frosmoth-1",
+        "targetSpecies": "frosmoth",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "friendship",
+            "min": 160
+          },
+          {
+            "type": "time",
+            "value": "night"
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "snorlax": {
+    "branches": []
+  },
+  "snorunt": {
+    "branches": [
+      {
+        "id": "snorunt-glalie-1",
+        "targetSpecies": "glalie",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 42
+          }
+        ],
+        "consumeItem": null
+      },
+      {
+        "id": "snorunt-froslass-1",
+        "targetSpecies": "froslass",
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "dawn-stone"
+          },
+          {
+            "type": "gender",
+            "value": "female"
+          }
+        ],
+        "consumeItem": "dawn-stone"
+      }
+    ]
+  },
+  "snover": {
+    "branches": [
+      {
+        "id": "snover-abomasnow-1",
+        "targetSpecies": "abomasnow",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 40
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "snubbull": {
+    "branches": [
+      {
+        "id": "snubbull-granbull-1",
+        "targetSpecies": "granbull",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 23
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "sobble": {
+    "branches": [
+      {
+        "id": "sobble-drizzile-1",
+        "targetSpecies": "drizzile",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 16
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "solgaleo": {
+    "branches": []
+  },
+  "solosis": {
+    "branches": [
+      {
+        "id": "solosis-duosion-1",
+        "targetSpecies": "duosion",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 32
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "solrock": {
+    "branches": []
+  },
+  "spearow": {
+    "branches": [
+      {
+        "id": "spearow-fearow-1",
+        "targetSpecies": "fearow",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 20
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "spectrier": {
+    "branches": []
+  },
+  "spewpa": {
+    "branches": [
+      {
+        "id": "spewpa-vivillon-1",
+        "targetSpecies": "vivillon",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 12
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "spheal": {
+    "branches": [
+      {
+        "id": "spheal-sealeo-1",
+        "targetSpecies": "sealeo",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 32
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "spinarak": {
+    "branches": [
+      {
+        "id": "spinarak-ariados-1",
+        "targetSpecies": "ariados",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 22
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "spinda": {
+    "branches": []
+  },
+  "spiritomb": {
+    "branches": []
+  },
+  "spoink": {
+    "branches": [
+      {
+        "id": "spoink-grumpig-1",
+        "targetSpecies": "grumpig",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 32
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "spritzee": {
+    "branches": [
+      {
+        "id": "spritzee-aromatisse-1",
+        "targetSpecies": "aromatisse",
+        "trigger": "trade",
+        "conditions": [
+          {
+            "type": "held-item",
+            "item": "sachet"
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "squirtle": {
+    "branches": [
+      {
+        "id": "squirtle-wartortle-1",
+        "targetSpecies": "wartortle",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 16
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "stakataka": {
+    "branches": []
+  },
+  "stantler": {
+    "branches": [
+      {
+        "id": "stantler-wyrdeer-1",
+        "targetSpecies": "wyrdeer",
+        "trigger": "other",
+        "conditions": [
+          {
+            "type": "extra",
+            "key": "min_move_count",
+            "value": 20
+          },
+          {
+            "type": "extra",
+            "key": "used_move",
+            "value": {
+              "name": "psyshield-bash",
+              "url": "https://pokeapi.co/api/v2/move/828/"
+            }
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "staraptor": {
+    "branches": []
+  },
+  "staravia": {
+    "branches": [
+      {
+        "id": "staravia-staraptor-1",
+        "targetSpecies": "staraptor",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 34
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "starly": {
+    "branches": [
+      {
+        "id": "starly-staravia-1",
+        "targetSpecies": "staravia",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 14
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "starmie": {
+    "branches": []
+  },
+  "staryu": {
+    "branches": [
+      {
+        "id": "staryu-starmie-1",
+        "targetSpecies": "starmie",
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "water-stone"
+          }
+        ],
+        "consumeItem": "water-stone"
+      }
+    ]
+  },
+  "steelix": {
+    "branches": []
+  },
+  "steenee": {
+    "branches": [
+      {
+        "id": "steenee-tsareena-1",
+        "targetSpecies": "tsareena",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "known-move",
+            "moveId": "stomp"
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "stonjourner": {
+    "branches": []
+  },
+  "stoutland": {
+    "branches": []
+  },
+  "stufful": {
+    "branches": [
+      {
+        "id": "stufful-bewear-1",
+        "targetSpecies": "bewear",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 27
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "stunfisk": {
+    "branches": []
+  },
+  "stunky": {
+    "branches": [
+      {
+        "id": "stunky-skuntank-1",
+        "targetSpecies": "skuntank",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 34
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "sudowoodo": {
+    "branches": []
+  },
+  "suicune": {
+    "branches": []
+  },
+  "sunflora": {
+    "branches": []
+  },
+  "sunkern": {
+    "branches": [
+      {
+        "id": "sunkern-sunflora-1",
+        "targetSpecies": "sunflora",
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "sun-stone"
+          }
+        ],
+        "consumeItem": "sun-stone"
+      }
+    ]
+  },
+  "surskit": {
+    "branches": [
+      {
+        "id": "surskit-masquerain-1",
+        "targetSpecies": "masquerain",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 22
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "swablu": {
+    "branches": [
+      {
+        "id": "swablu-altaria-1",
+        "targetSpecies": "altaria",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 35
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "swadloon": {
+    "branches": [
+      {
+        "id": "swadloon-leavanny-1",
+        "targetSpecies": "leavanny",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "friendship",
+            "min": 220
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "swalot": {
+    "branches": []
+  },
+  "swampert": {
+    "branches": []
+  },
+  "swanna": {
+    "branches": []
+  },
+  "swellow": {
+    "branches": []
+  },
+  "swinub": {
+    "branches": [
+      {
+        "id": "swinub-piloswine-1",
+        "targetSpecies": "piloswine",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 33
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "swirlix": {
+    "branches": [
+      {
+        "id": "swirlix-slurpuff-1",
+        "targetSpecies": "slurpuff",
+        "trigger": "trade",
+        "conditions": [
+          {
+            "type": "held-item",
+            "item": "whipped-dream"
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "swoobat": {
+    "branches": []
+  },
+  "sylveon": {
+    "branches": []
+  },
+  "taillow": {
+    "branches": [
+      {
+        "id": "taillow-swellow-1",
+        "targetSpecies": "swellow",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 22
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "talonflame": {
+    "branches": []
+  },
+  "tangela": {
+    "branches": [
+      {
+        "id": "tangela-tangrowth-1",
+        "targetSpecies": "tangrowth",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "known-move",
+            "moveId": "ancient-power"
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "tangrowth": {
+    "branches": []
+  },
+  "tapu-bulu": {
+    "branches": []
+  },
+  "tapu-fini": {
+    "branches": []
+  },
+  "tapu-koko": {
+    "branches": []
+  },
+  "tapu-lele": {
+    "branches": []
+  },
+  "tauros": {
+    "branches": []
+  },
+  "teddiursa": {
+    "branches": [
+      {
+        "id": "teddiursa-ursaring-1",
+        "targetSpecies": "ursaring",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 30
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "tentacool": {
+    "branches": [
+      {
+        "id": "tentacool-tentacruel-1",
+        "targetSpecies": "tentacruel",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 30
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "tentacruel": {
+    "branches": []
+  },
+  "tepig": {
+    "branches": [
+      {
+        "id": "tepig-pignite-1",
+        "targetSpecies": "pignite",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 17
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "terrakion": {
+    "branches": []
+  },
+  "thievul": {
+    "branches": []
+  },
+  "throh": {
+    "branches": []
+  },
+  "thundurus": {
+    "branches": []
+  },
+  "thwackey": {
+    "branches": [
+      {
+        "id": "thwackey-rillaboom-1",
+        "targetSpecies": "rillaboom",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 35
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "timburr": {
+    "branches": [
+      {
+        "id": "timburr-gurdurr-1",
+        "targetSpecies": "gurdurr",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 25
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "tirtouga": {
+    "branches": [
+      {
+        "id": "tirtouga-carracosta-1",
+        "targetSpecies": "carracosta",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 37
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "togedemaru": {
+    "branches": []
+  },
+  "togekiss": {
+    "branches": []
+  },
+  "togepi": {
+    "branches": [
+      {
+        "id": "togepi-togetic-1",
+        "targetSpecies": "togetic",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "friendship",
+            "min": 160
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "togetic": {
+    "branches": [
+      {
+        "id": "togetic-togekiss-1",
+        "targetSpecies": "togekiss",
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "shiny-stone"
+          }
+        ],
+        "consumeItem": "shiny-stone"
+      }
+    ]
+  },
+  "torchic": {
+    "branches": [
+      {
+        "id": "torchic-combusken-1",
+        "targetSpecies": "combusken",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 16
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "torkoal": {
+    "branches": []
+  },
+  "tornadus": {
+    "branches": []
+  },
+  "torracat": {
+    "branches": [
+      {
+        "id": "torracat-incineroar-1",
+        "targetSpecies": "incineroar",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 34
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "torterra": {
+    "branches": []
+  },
+  "totodile": {
+    "branches": [
+      {
+        "id": "totodile-croconaw-1",
+        "targetSpecies": "croconaw",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 18
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "toucannon": {
+    "branches": []
+  },
+  "toxapex": {
+    "branches": []
+  },
+  "toxel": {
+    "branches": [
+      {
+        "id": "toxel-toxtricity-1",
+        "targetSpecies": "toxtricity",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 30
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "toxicroak": {
+    "branches": []
+  },
+  "toxtricity": {
+    "branches": []
+  },
+  "tranquill": {
+    "branches": [
+      {
+        "id": "tranquill-unfezant-1",
+        "targetSpecies": "unfezant",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 32
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "trapinch": {
+    "branches": [
+      {
+        "id": "trapinch-vibrava-1",
+        "targetSpecies": "vibrava",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 35
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "treecko": {
+    "branches": [
+      {
+        "id": "treecko-grovyle-1",
+        "targetSpecies": "grovyle",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 16
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "trevenant": {
+    "branches": []
+  },
+  "tropius": {
+    "branches": []
+  },
+  "trubbish": {
+    "branches": [
+      {
+        "id": "trubbish-garbodor-1",
+        "targetSpecies": "garbodor",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 36
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "trumbeak": {
+    "branches": [
+      {
+        "id": "trumbeak-toucannon-1",
+        "targetSpecies": "toucannon",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 28
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "tsareena": {
+    "branches": []
+  },
+  "turtonator": {
+    "branches": []
+  },
+  "turtwig": {
+    "branches": [
+      {
+        "id": "turtwig-grotle-1",
+        "targetSpecies": "grotle",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 18
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "tympole": {
+    "branches": [
+      {
+        "id": "tympole-palpitoad-1",
+        "targetSpecies": "palpitoad",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 25
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "tynamo": {
+    "branches": [
+      {
+        "id": "tynamo-eelektrik-1",
+        "targetSpecies": "eelektrik",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 39
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "type-null": {
+    "branches": [
+      {
+        "id": "type-null-silvally-1",
+        "targetSpecies": "silvally",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "friendship",
+            "min": 160
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "typhlosion": {
+    "branches": []
+  },
+  "tyranitar": {
+    "branches": []
+  },
+  "tyrantrum": {
+    "branches": []
+  },
+  "tyrogue": {
+    "branches": [
+      {
+        "id": "tyrogue-hitmonlee-1",
+        "targetSpecies": "hitmonlee",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 20
+          },
+          {
+            "type": "stat-compare",
+            "stat": "attack-vs-defense",
+            "op": "gt"
+          }
+        ],
+        "consumeItem": null
+      },
+      {
+        "id": "tyrogue-hitmonchan-1",
+        "targetSpecies": "hitmonchan",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 20
+          },
+          {
+            "type": "stat-compare",
+            "stat": "attack-vs-defense",
+            "op": "lt"
+          }
+        ],
+        "consumeItem": null
+      },
+      {
+        "id": "tyrogue-hitmontop-1",
+        "targetSpecies": "hitmontop",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 20
+          },
+          {
+            "type": "stat-compare",
+            "stat": "attack-vs-defense",
+            "op": "eq"
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "tyrunt": {
+    "branches": [
+      {
+        "id": "tyrunt-tyrantrum-1",
+        "targetSpecies": "tyrantrum",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 39
+          },
+          {
+            "type": "time",
+            "value": "day"
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "umbreon": {
+    "branches": []
+  },
+  "unfezant": {
+    "branches": []
+  },
+  "unown": {
+    "branches": []
+  },
+  "ursaluna": {
+    "branches": []
+  },
+  "ursaring": {
+    "branches": [
+      {
+        "id": "ursaring-ursaluna-1",
+        "targetSpecies": "ursaluna",
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "peat-block"
+          }
+        ],
+        "consumeItem": "peat-block"
+      }
+    ]
+  },
+  "urshifu": {
+    "branches": []
+  },
+  "uxie": {
+    "branches": []
+  },
+  "vanillish": {
+    "branches": [
+      {
+        "id": "vanillish-vanilluxe-1",
+        "targetSpecies": "vanilluxe",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 47
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "vanillite": {
+    "branches": [
+      {
+        "id": "vanillite-vanillish-1",
+        "targetSpecies": "vanillish",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 35
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "vanilluxe": {
+    "branches": []
+  },
+  "vaporeon": {
+    "branches": []
+  },
+  "venipede": {
+    "branches": [
+      {
+        "id": "venipede-whirlipede-1",
+        "targetSpecies": "whirlipede",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 22
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "venomoth": {
+    "branches": []
+  },
+  "venonat": {
+    "branches": [
+      {
+        "id": "venonat-venomoth-1",
+        "targetSpecies": "venomoth",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 31
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "venusaur": {
+    "branches": []
+  },
+  "vespiquen": {
+    "branches": []
+  },
+  "vibrava": {
+    "branches": [
+      {
+        "id": "vibrava-flygon-1",
+        "targetSpecies": "flygon",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 45
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "victini": {
+    "branches": []
+  },
+  "victreebel": {
+    "branches": []
+  },
+  "vigoroth": {
+    "branches": [
+      {
+        "id": "vigoroth-slaking-1",
+        "targetSpecies": "slaking",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 36
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "vikavolt": {
+    "branches": []
+  },
+  "vileplume": {
+    "branches": []
+  },
+  "virizion": {
+    "branches": []
+  },
+  "vivillon": {
+    "branches": []
+  },
+  "volbeat": {
+    "branches": []
+  },
+  "volcanion": {
+    "branches": []
+  },
+  "volcarona": {
+    "branches": []
+  },
+  "voltorb": {
+    "branches": [
+      {
+        "id": "voltorb-electrode-1",
+        "targetSpecies": "electrode",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 30
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "vullaby": {
+    "branches": [
+      {
+        "id": "vullaby-mandibuzz-1",
+        "targetSpecies": "mandibuzz",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 54
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "vulpix": {
+    "branches": [
+      {
+        "id": "vulpix-ninetales-1",
+        "targetSpecies": "ninetales",
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "fire-stone"
+          }
+        ],
+        "consumeItem": "fire-stone"
+      },
+      {
+        "id": "vulpix-ninetales-2",
+        "targetSpecies": "ninetales",
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "ice-stone"
+          }
+        ],
+        "consumeItem": "ice-stone"
+      }
+    ]
+  },
+  "wailmer": {
+    "branches": [
+      {
+        "id": "wailmer-wailord-1",
+        "targetSpecies": "wailord",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 40
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "wailord": {
+    "branches": []
+  },
+  "walrein": {
+    "branches": []
+  },
+  "wartortle": {
+    "branches": [
+      {
+        "id": "wartortle-blastoise-1",
+        "targetSpecies": "blastoise",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 36
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "watchog": {
+    "branches": []
+  },
+  "weavile": {
+    "branches": []
+  },
+  "weedle": {
+    "branches": [
+      {
+        "id": "weedle-kakuna-1",
+        "targetSpecies": "kakuna",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 7
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "weepinbell": {
+    "branches": [
+      {
+        "id": "weepinbell-victreebel-1",
+        "targetSpecies": "victreebel",
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "leaf-stone"
+          }
+        ],
+        "consumeItem": "leaf-stone"
+      }
+    ]
+  },
+  "weezing": {
+    "branches": []
+  },
+  "whimsicott": {
+    "branches": []
+  },
+  "whirlipede": {
+    "branches": [
+      {
+        "id": "whirlipede-scolipede-1",
+        "targetSpecies": "scolipede",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 30
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "whiscash": {
+    "branches": []
+  },
+  "whismur": {
+    "branches": [
+      {
+        "id": "whismur-loudred-1",
+        "targetSpecies": "loudred",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 20
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "wigglytuff": {
+    "branches": []
+  },
+  "wimpod": {
+    "branches": [
+      {
+        "id": "wimpod-golisopod-1",
+        "targetSpecies": "golisopod",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 30
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "wingull": {
+    "branches": [
+      {
+        "id": "wingull-pelipper-1",
+        "targetSpecies": "pelipper",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 25
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "wishiwashi": {
+    "branches": []
+  },
+  "wobbuffet": {
+    "branches": []
+  },
+  "woobat": {
+    "branches": [
+      {
+        "id": "woobat-swoobat-1",
+        "targetSpecies": "swoobat",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "friendship",
+            "min": 160
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "wooloo": {
+    "branches": [
+      {
+        "id": "wooloo-dubwool-1",
+        "targetSpecies": "dubwool",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 24
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "wooper": {
+    "branches": [
+      {
+        "id": "wooper-quagsire-1",
+        "targetSpecies": "quagsire",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 20
+          }
+        ],
+        "consumeItem": null
+      },
+      {
+        "id": "wooper-clodsire-1",
+        "targetSpecies": "clodsire",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 20
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "wormadam": {
+    "branches": []
+  },
+  "wurmple": {
+    "branches": [
+      {
+        "id": "wurmple-silcoon-1",
+        "targetSpecies": "silcoon",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 7
+          }
+        ],
+        "consumeItem": null
+      },
+      {
+        "id": "wurmple-cascoon-1",
+        "targetSpecies": "cascoon",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 7
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "wynaut": {
+    "branches": [
+      {
+        "id": "wynaut-wobbuffet-1",
+        "targetSpecies": "wobbuffet",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 15
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "wyrdeer": {
+    "branches": []
+  },
+  "xatu": {
+    "branches": []
+  },
+  "xerneas": {
+    "branches": []
+  },
+  "xurkitree": {
+    "branches": []
+  },
+  "yamask": {
+    "branches": [
+      {
+        "id": "yamask-cofagrigus-1",
+        "targetSpecies": "cofagrigus",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 34
+          }
+        ],
+        "consumeItem": null
+      },
+      {
+        "id": "yamask-runerigus-1",
+        "targetSpecies": "runerigus",
+        "trigger": "other",
+        "conditions": [
+          {
+            "type": "extra",
+            "key": "min_damage_taken",
+            "value": 49
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "yamper": {
+    "branches": [
+      {
+        "id": "yamper-boltund-1",
+        "targetSpecies": "boltund",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 25
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "yanma": {
+    "branches": [
+      {
+        "id": "yanma-yanmega-1",
+        "targetSpecies": "yanmega",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "known-move",
+            "moveId": "ancient-power"
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "yanmega": {
+    "branches": []
+  },
+  "yungoos": {
+    "branches": [
+      {
+        "id": "yungoos-gumshoos-1",
+        "targetSpecies": "gumshoos",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 20
+          },
+          {
+            "type": "time",
+            "value": "day"
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "yveltal": {
+    "branches": []
+  },
+  "zacian": {
+    "branches": []
+  },
+  "zamazenta": {
+    "branches": []
+  },
+  "zangoose": {
+    "branches": []
+  },
+  "zapdos": {
+    "branches": []
+  },
+  "zarude": {
+    "branches": []
+  },
+  "zebstrika": {
+    "branches": []
+  },
+  "zekrom": {
+    "branches": []
+  },
+  "zeraora": {
+    "branches": []
+  },
+  "zigzagoon": {
+    "branches": [
+      {
+        "id": "zigzagoon-linoone-1",
+        "targetSpecies": "linoone",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 20
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "zoroark": {
+    "branches": []
+  },
+  "zorua": {
+    "branches": [
+      {
+        "id": "zorua-zoroark-1",
+        "targetSpecies": "zoroark",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 30
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "zubat": {
+    "branches": [
+      {
+        "id": "zubat-golbat-1",
+        "targetSpecies": "golbat",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 22
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "zweilous": {
+    "branches": [
+      {
+        "id": "zweilous-hydreigon-1",
+        "targetSpecies": "hydreigon",
+        "trigger": "level-up",
+        "conditions": [
+          {
+            "type": "level",
+            "level": 64
+          }
+        ],
+        "consumeItem": null
+      }
+    ]
+  },
+  "zygarde": {
+    "branches": []
+  }
 }

@@ -8,7 +8,9 @@ import { attemptCapture, getCatchRate } from "../game/capture.js";
 import { createPokemon } from "../game/pokemon-factory.js";
 import { getMoveById, getSpeciesByName } from "../game/data-loader.js";
 import type { BattleState, OwnedPokemon, UserData } from "../../../../shared/types.js";
+import { recordDamageTaken } from "../game/battle-progress.js";
 import { decrementItem, healPokemon } from "../game/inventory-utils.js";
+import { recordMoveUsage } from "../game/move-usage.js";
 
 export const battleRoutes = Router();
 battleRoutes.use(authMiddleware);
@@ -78,7 +80,9 @@ function doWildAttackAndCheck(
     battle.wild.species, battle.wild.level, battle.wild.stats,
     battle.wild.moves, myPokemon.stats, myPokemon.species,
   );
+  const previousHp = myPokemon.hp;
   myPokemon.hp = Math.max(0, myPokemon.hp - wildResult.damage);
+  recordDamageTaken(myPokemon, previousHp - myPokemon.hp);
   log.push(`야생 ${battle.wild.species}의 공격! ${wildResult.damage} 데미지!`);
   if (wildResult.message) log.push(wildResult.message);
   return handleFainted(user, myPokemon, battle, log, res);
@@ -158,6 +162,7 @@ async function handleFight(
 
   function playerAttack() {
     selectedMove.pp -= 1;
+    recordMoveUsage(myPokemon, selectedMove.id);
     const result = calculateDamage(
       myPokemon.level, myPokemon.stats, battle.wild.stats, selectedMoveData,
       getTypes(myPokemon.species), getTypes(battle.wild.species),

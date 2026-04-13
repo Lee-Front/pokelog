@@ -9,7 +9,10 @@ import type {
   SlackIntegration,
 } from "../../../../shared/types.js";
 import { pollNotionIntegration } from "../integrations/notion-polling.js";
+import { pollJiraIntegration } from "../integrations/jira-polling.js";
+import { pollSlackIntegration } from "../integrations/slack-polling.js";
 import { testIntegrationConnection } from "../integrations/provider-tests.js";
+import { pollUserIntegrations } from "../polling/polling-worker.js";
 import { authMiddleware, type AuthRequest } from "../middleware/auth-middleware.js";
 import { getSyncState, saveSyncState } from "../storage/sync-state-store.js";
 import {
@@ -18,6 +21,7 @@ import {
   isGitIntegration,
   isRepoEmailTaken,
   normalizeRepoUrl,
+  searchUsersByIdentity,
   saveUser,
 } from "../storage/user-store.js";
 
@@ -37,6 +41,26 @@ userRoutes.get("/profile", async (req: AuthRequest, res: Response) => {
   } catch (err) {
     console.error("Profile error:", err);
     res.status(500).json({ error: "프로필을 불러오지 못했습니다" });
+  }
+});
+
+userRoutes.get("/search", async (req: AuthRequest, res: Response) => {
+  try {
+    const query = String(req.query.q ?? "").trim();
+    const limit = Math.max(1, Math.min(20, Number(req.query.limit ?? 10) || 10));
+    if (!query) {
+      res.json({ users: [] });
+      return;
+    }
+
+    const users = await searchUsersByIdentity(query, {
+      excludeUserId: req.userId!,
+      limit,
+    });
+    res.json({ users });
+  } catch (err) {
+    console.error("User search error:", err);
+    res.status(500).json({ error: "Failed to search users." });
   }
 });
 
@@ -144,6 +168,9 @@ userRoutes.get("/integrations", async (req: AuthRequest, res: Response) => {
     }
 
     res.json({ integrations: user.integrations });
+
+    // trigger polling in background when user views integrations
+    pollUserIntegrations(req.userId!).catch((e) => console.error("Integration-view poll error:", e));
   } catch (err) {
     console.error("Integration list error:", err);
     res.status(500).json({ error: "연동 목록을 불러오지 못했습니다" });
@@ -292,23 +319,32 @@ userRoutes.post("/integrations/:id/sync", async (req: AuthRequest, res: Response
   try {
     const user = await getUser(req.userId!);
     if (!user) {
-      res.status(404).json({ error: "?ÑŠìŠœ?ë¨®? ï§¡ì– ì“£ ???ë†ë’¿?ëˆë–Ž" });
+      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
       return;
     }
 
     const integration = user.integrations.find((entry) => entry.id === req.params.id);
     if (!integration) {
-      res.status(404).json({ error: "?ê³•ë£ž ?ëº£ë‚«ç‘œ?ï§¡ì– ì“£ ???ë†ë’¿?ëˆë–Ž" });
+      res.status(404).json({ error: "연동 정보를 찾을 수 없습니다" });
       return;
     }
 
-    if (integration.provider !== "notion" || !("config" in integration)) {
-      res.status(400).json({ error: "ìˆ˜ë™ syncëŠ” í˜„ìž¬ Notion integrationë§Œ ì§€ì›í•©ë‹ˆë‹¤" });
+    if (!["notion", "jira", "slack"].includes(integration.provider) || !("config" in integration)) {
+      res.status(400).json({ error: "수동 sync는 Notion, Jira, Slack 연동만 지원합니다" });
       return;
     }
 
     const syncState = await getSyncState();
-    const result = await pollNotionIntegration(user, integration, syncState);
+    let result: unknown;
+
+    if (integration.provider === "notion") {
+      result = await pollNotionIntegration(user, integration as NotionIntegration, syncState);
+    } else if (integration.provider === "jira") {
+      result = await pollJiraIntegration(user, integration as JiraIntegration, syncState);
+    } else if (integration.provider === "slack") {
+      result = await pollSlackIntegration(user, integration as SlackIntegration, syncState);
+    }
+
     integration.lastCheckedAt = new Date().toISOString();
     integration.status = "ok";
     integration.failCount = 0;
@@ -324,7 +360,7 @@ userRoutes.post("/integrations/:id/sync", async (req: AuthRequest, res: Response
     });
   } catch (err) {
     console.error("Integration sync error:", err);
-    res.status(500).json({ error: "?ê³•ë£ž sync ?ì‹¤í–‰ ì¤‘ ì˜¤ë¥˜ê°€ ë°œìƒí–ˆìŠµë‹ˆë‹¤" });
+    res.status(500).json({ error: "연동 sync 실행 중 오류가 발생했습니다" });
   }
 });
 

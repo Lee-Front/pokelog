@@ -10,9 +10,17 @@ import { createWildPokemon, createPokemon } from "../game/pokemon-factory.js";
 import { getRegion } from "../game/data-loader.js";
 import { createEncounterEvent } from "../game/event-factory.js";
 import { incrementItem } from "../game/inventory-utils.js";
-import { checkLevelUp, checkEvolution, calculateStatsForLevel } from "../game/growth.js";
+import {
+  applyLearnedMoves,
+  buildLevelEvolutionContext,
+  checkLevelUp,
+  calculateStatsForLevel,
+  evolvePokemon,
+  getMatchingEvolutionBranches,
+} from "../game/growth.js";
 import type { ServerConfig } from "../../../../shared/types.js";
 import { INTEGRATION_EVENT_CATALOG } from "../integrations/event-catalog.js";
+import { clearPendingEvolutionForPokemon, queuePendingEvolution } from "../game/pending-evolution.js";
 
 import { adminMiddleware } from "../middleware/admin-middleware.js";
 
@@ -174,30 +182,42 @@ adminRoutes.post("/test/commit", async (req, res) => {
     const reward = calculateReward(bytes, multiplier, config.rewards);
     user.points += reward.points;
     user.totalExp += reward.exp;
+    const currentRegion = user.currentRegion ?? "default";
 
     // 파티 경험치 분배
     if (user.party.length > 0) {
       const expPerPoke = Math.floor(reward.exp / user.party.length);
-      for (const uid of user.party) {
-        const poke = user.pokemon.find((p) => p.uid === uid);
-        if (poke) {
-          poke.exp += expPerPoke;
-          const result = checkLevelUp(poke);
-          if (result.leveled) {
-            poke.level = result.newLevel;
-            const newStats = calculateStatsForLevel(poke.species, result.newLevel);
-            poke.maxHp = newStats.maxHp;
-            poke.hp = Math.min(poke.hp, poke.maxHp);
-            poke.stats = newStats.stats;
-            const evolved = checkEvolution(poke.species, result.newLevel);
-            if (evolved) {
-              poke.species = evolved;
-              if (!user.pokedex.includes(evolved)) user.pokedex.push(evolved);
-              const evoStats = calculateStatsForLevel(evolved, result.newLevel);
-              poke.maxHp = evoStats.maxHp;
-              poke.hp = Math.min(poke.hp, poke.maxHp);
-              poke.stats = evoStats.stats;
-            }
+      const partyPokemon = user.party
+        .map((uid) => user.pokemon.find((p) => p.uid === uid))
+        .filter((pokemon): pokemon is NonNullable<typeof pokemon> => Boolean(pokemon));
+
+      for (const poke of partyPokemon) {
+        poke.exp += expPerPoke;
+        const result = checkLevelUp(poke);
+        if (result.leveled) {
+          poke.level = result.newLevel;
+          applyLearnedMoves(poke, result.newMoves);
+          const newStats = calculateStatsForLevel(poke.species, result.newLevel);
+          poke.maxHp = newStats.maxHp;
+          poke.hp = Math.min(poke.hp, poke.maxHp);
+          poke.stats = newStats.stats;
+          const matchingBranches = getMatchingEvolutionBranches(
+            poke.species,
+            {
+              level: result.newLevel,
+              ...buildLevelEvolutionContext(poke, partyPokemon, {
+                now: new Date(),
+                region: currentRegion,
+              }),
+            },
+          );
+          if (matchingBranches.length === 1) {
+            const evolved = matchingBranches[0].targetSpecies;
+            clearPendingEvolutionForPokemon(user, poke.uid);
+            evolvePokemon(poke, evolved);
+            if (!user.pokedex.includes(evolved)) user.pokedex.push(evolved);
+          } else if (matchingBranches.length > 1) {
+            queuePendingEvolution(user, poke, matchingBranches);
           }
         }
       }
@@ -216,7 +236,7 @@ adminRoutes.post("/test/commit", async (req, res) => {
 
     let encounterInfo: { species: string; level: number } | null = null;
     if (encounterResult.encountered) {
-      const regionData = getRegion("default");
+      const regionData = getRegion(currentRegion);
       const pick = selectWildPokemon(regionData);
       const wildPokemon = createWildPokemon(pick.species, pick.level);
 
@@ -265,7 +285,7 @@ adminRoutes.post("/test/encounter", async (req, res) => {
     let wildSpecies = species;
     let wildLevel = level;
     if (!wildSpecies) {
-      const regionData = getRegion("default");
+      const regionData = getRegion(user.currentRegion ?? "default");
       const pick = selectWildPokemon(regionData);
       wildSpecies = pick.species;
       wildLevel = pick.level;

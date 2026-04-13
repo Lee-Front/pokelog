@@ -1,0 +1,1003 @@
+[
+  {
+    "id": "ability-shield",
+    "name": "Ability Shield",
+    "category": "held-items",
+    "cost": 20000,
+    "shortEffect": ""
+  },
+  {
+    "id": "absorb-bulb",
+    "name": "구근",
+    "category": "held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "adrenaline-orb",
+    "name": "주눅구슬",
+    "category": "held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "air-balloon",
+    "name": "풍선",
+    "category": "held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "assault-vest",
+    "name": "돌격조끼",
+    "category": "held-items",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "beast-ball",
+    "name": "울트라볼",
+    "category": "special-balls",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "berry-juice",
+    "name": "나무열매쥬스",
+    "category": "healing",
+    "cost": 200,
+    "shortEffect": ""
+  },
+  {
+    "id": "berry-sweet",
+    "name": "베리사탕공예",
+    "category": "evolution",
+    "cost": 500,
+    "shortEffect": ""
+  },
+  {
+    "id": "big-root",
+    "name": "큰뿌리",
+    "category": "held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "binding-band",
+    "name": "조임밴드",
+    "category": "held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "black-sludge",
+    "name": "검은진흙",
+    "category": "held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "blunder-policy",
+    "name": "허탕보험",
+    "category": "held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "booster-energy",
+    "name": "Booster Energy",
+    "category": "held-items",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "bright-powder",
+    "name": "반짝가루",
+    "category": "held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "cell-battery",
+    "name": "충전지",
+    "category": "held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "cherish-ball",
+    "name": "프레셔스볼",
+    "category": "special-balls",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "chipped-pot",
+    "name": "이빠진포트",
+    "category": "evolution",
+    "cost": 38000,
+    "shortEffect": ""
+  },
+  {
+    "id": "clear-amulet",
+    "name": "Clear Amulet",
+    "category": "held-items",
+    "cost": 30000,
+    "shortEffect": ""
+  },
+  {
+    "id": "clover-sweet",
+    "name": "네잎사탕공예",
+    "category": "evolution",
+    "cost": 500,
+    "shortEffect": ""
+  },
+  {
+    "id": "covert-cloak",
+    "name": "Covert Cloak",
+    "category": "held-items",
+    "cost": 20000,
+    "shortEffect": ""
+  },
+  {
+    "id": "cracked-pot",
+    "name": "깨진포트",
+    "category": "evolution",
+    "cost": 1600,
+    "shortEffect": ""
+  },
+  {
+    "id": "damp-rock",
+    "name": "축축한바위",
+    "category": "held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "dawn-stone",
+    "name": "각성의돌",
+    "category": "evolution",
+    "cost": 3000,
+    "shortEffect": ""
+  },
+  {
+    "id": "destiny-knot",
+    "name": "빨간실",
+    "category": "held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "dire-hit",
+    "name": "크리티컬커터",
+    "category": "stat-boosts",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "dive-ball",
+    "name": "다이브볼",
+    "category": "special-balls",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "dragon-scale",
+    "name": "용의비늘",
+    "category": "evolution",
+    "cost": 2000,
+    "shortEffect": ""
+  },
+  {
+    "id": "dream-ball",
+    "name": "드림볼",
+    "category": "special-balls",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "dubious-disc",
+    "name": "괴상한패치",
+    "category": "evolution",
+    "cost": 2000,
+    "shortEffect": ""
+  },
+  {
+    "id": "dusk-ball",
+    "name": "다크볼",
+    "category": "special-balls",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "dusk-stone",
+    "name": "어둠의돌",
+    "category": "evolution",
+    "cost": 3000,
+    "shortEffect": ""
+  },
+  {
+    "id": "eject-button",
+    "name": "탈출버튼",
+    "category": "held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "eject-pack",
+    "name": "탈출팩",
+    "category": "held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "electirizer",
+    "name": "에레키부스터",
+    "category": "evolution",
+    "cost": 2000,
+    "shortEffect": ""
+  },
+  {
+    "id": "electric-seed",
+    "name": "일렉트릭시드",
+    "category": "held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "energy-powder",
+    "name": "힘의가루",
+    "category": "healing",
+    "cost": 500,
+    "shortEffect": ""
+  },
+  {
+    "id": "energy-root",
+    "name": "힘의뿌리",
+    "category": "healing",
+    "cost": 1200,
+    "shortEffect": ""
+  },
+  {
+    "id": "eviolite",
+    "name": "진화의휘석",
+    "category": "held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "expert-belt",
+    "name": "달인의띠",
+    "category": "held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "fire-stone",
+    "name": "불꽃의돌",
+    "category": "evolution",
+    "cost": 3000,
+    "shortEffect": ""
+  },
+  {
+    "id": "float-stone",
+    "name": "가벼운돌",
+    "category": "held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "flower-sweet",
+    "name": "꽃사탕공예",
+    "category": "evolution",
+    "cost": 500,
+    "shortEffect": ""
+  },
+  {
+    "id": "focus-band",
+    "name": "기합의머리띠",
+    "category": "held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "focus-sash",
+    "name": "기합의띠",
+    "category": "held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "fresh-water",
+    "name": "맛있는물",
+    "category": "healing",
+    "cost": 200,
+    "shortEffect": ""
+  },
+  {
+    "id": "full-restore",
+    "name": "회복약",
+    "category": "healing",
+    "cost": 3000,
+    "shortEffect": ""
+  },
+  {
+    "id": "grassy-seed",
+    "name": "그래스시드",
+    "category": "held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "great-ball",
+    "name": "수퍼볼",
+    "category": "standard-balls",
+    "cost": 600,
+    "shortEffect": ""
+  },
+  {
+    "id": "grip-claw",
+    "name": "끈기갈고리손톱",
+    "category": "held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "guard-spec",
+    "name": "이펙트가드",
+    "category": "stat-boosts",
+    "cost": 1500,
+    "shortEffect": ""
+  },
+  {
+    "id": "heal-ball",
+    "name": "힐볼",
+    "category": "special-balls",
+    "cost": 300,
+    "shortEffect": ""
+  },
+  {
+    "id": "heat-rock",
+    "name": "뜨거운바위",
+    "category": "held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "heavy-duty-boots",
+    "name": "통굽부츠",
+    "category": "held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "hyper-potion",
+    "name": "고급상처약",
+    "category": "healing",
+    "cost": 1500,
+    "shortEffect": ""
+  },
+  {
+    "id": "ice-stone",
+    "name": "얼음의돌",
+    "category": "evolution",
+    "cost": 3000,
+    "shortEffect": ""
+  },
+  {
+    "id": "icy-rock",
+    "name": "차가운바위",
+    "category": "held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "kings-rock",
+    "name": "왕의징표석",
+    "category": "held-items",
+    "cost": 5000,
+    "shortEffect": ""
+  },
+  {
+    "id": "lax-incense",
+    "name": "무사태평향로",
+    "category": "held-items",
+    "cost": 5000,
+    "shortEffect": ""
+  },
+  {
+    "id": "leaf-stone",
+    "name": "리프의돌",
+    "category": "evolution",
+    "cost": 3000,
+    "shortEffect": ""
+  },
+  {
+    "id": "leftovers",
+    "name": "먹다남은음식",
+    "category": "held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "lemonade",
+    "name": "후르츠밀크",
+    "category": "healing",
+    "cost": 400,
+    "shortEffect": ""
+  },
+  {
+    "id": "life-orb",
+    "name": "생명의구슬",
+    "category": "held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "light-clay",
+    "name": "빛의점토",
+    "category": "held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "loaded-dice",
+    "name": "Loaded Dice",
+    "category": "held-items",
+    "cost": 20000,
+    "shortEffect": ""
+  },
+  {
+    "id": "love-sweet",
+    "name": "하트사탕공예",
+    "category": "evolution",
+    "cost": 500,
+    "shortEffect": ""
+  },
+  {
+    "id": "luminous-moss",
+    "name": "빛이끼",
+    "category": "held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "luxury-ball",
+    "name": "럭셔리볼",
+    "category": "special-balls",
+    "cost": 3000,
+    "shortEffect": ""
+  },
+  {
+    "id": "magmarizer",
+    "name": "마그마부스터",
+    "category": "evolution",
+    "cost": 2000,
+    "shortEffect": ""
+  },
+  {
+    "id": "malicious-armor",
+    "name": "Malicious Armor",
+    "category": "evolution",
+    "cost": 750,
+    "shortEffect": ""
+  },
+  {
+    "id": "master-ball",
+    "name": "마스터볼",
+    "category": "standard-balls",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "max-mushrooms",
+    "name": "다이버섯",
+    "category": "stat-boosts",
+    "cost": 6000,
+    "shortEffect": ""
+  },
+  {
+    "id": "max-potion",
+    "name": "풀회복약",
+    "category": "healing",
+    "cost": 2500,
+    "shortEffect": ""
+  },
+  {
+    "id": "mental-herb",
+    "name": "멘탈허브",
+    "category": "held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "metronome",
+    "name": "메트로놈",
+    "category": "held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "mirror-herb",
+    "name": "Mirror Herb",
+    "category": "held-items",
+    "cost": 30000,
+    "shortEffect": ""
+  },
+  {
+    "id": "misty-seed",
+    "name": "미스트시드",
+    "category": "held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "moomoo-milk",
+    "name": "튼튼밀크",
+    "category": "healing",
+    "cost": 600,
+    "shortEffect": ""
+  },
+  {
+    "id": "moon-stone",
+    "name": "달의돌",
+    "category": "evolution",
+    "cost": 3000,
+    "shortEffect": ""
+  },
+  {
+    "id": "muscle-band",
+    "name": "힘의머리띠",
+    "category": "held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "nest-ball",
+    "name": "네스트볼",
+    "category": "special-balls",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "net-ball",
+    "name": "넷트볼",
+    "category": "special-balls",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "oval-stone",
+    "name": "동글동글돌",
+    "category": "evolution",
+    "cost": 2000,
+    "shortEffect": ""
+  },
+  {
+    "id": "park-ball",
+    "name": "파크볼",
+    "category": "standard-balls",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "pass-orb",
+    "name": "딜구슬",
+    "category": "held-items",
+    "cost": 200,
+    "shortEffect": ""
+  },
+  {
+    "id": "poke-ball",
+    "name": "몬스터볼",
+    "category": "standard-balls",
+    "cost": 200,
+    "shortEffect": ""
+  },
+  {
+    "id": "potion",
+    "name": "상처약",
+    "category": "healing",
+    "cost": 200,
+    "shortEffect": ""
+  },
+  {
+    "id": "power-herb",
+    "name": "파워풀허브",
+    "category": "held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "premier-ball",
+    "name": "프레미어볼",
+    "category": "special-balls",
+    "cost": 20,
+    "shortEffect": ""
+  },
+  {
+    "id": "prism-scale",
+    "name": "고운비늘",
+    "category": "evolution",
+    "cost": 2000,
+    "shortEffect": ""
+  },
+  {
+    "id": "protective-pads",
+    "name": "방호패드",
+    "category": "held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "protector",
+    "name": "프로텍터",
+    "category": "evolution",
+    "cost": 2000,
+    "shortEffect": ""
+  },
+  {
+    "id": "psychic-seed",
+    "name": "사이코시드",
+    "category": "held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "punching-glove",
+    "name": "Punching Glove",
+    "category": "held-items",
+    "cost": 15000,
+    "shortEffect": ""
+  },
+  {
+    "id": "quick-ball",
+    "name": "퀵볼",
+    "category": "special-balls",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "quick-claw",
+    "name": "선제공격손톱",
+    "category": "held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "razor-claw",
+    "name": "예리한손톱",
+    "category": "held-items",
+    "cost": 5000,
+    "shortEffect": ""
+  },
+  {
+    "id": "razor-fang",
+    "name": "예리한이빨",
+    "category": "held-items",
+    "cost": 5000,
+    "shortEffect": ""
+  },
+  {
+    "id": "reaper-cloth",
+    "name": "영계의천",
+    "category": "evolution",
+    "cost": 2000,
+    "shortEffect": ""
+  },
+  {
+    "id": "red-card",
+    "name": "레드카드",
+    "category": "held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "repeat-ball",
+    "name": "리피드볼",
+    "category": "special-balls",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "ribbon-sweet",
+    "name": "리본사탕공예",
+    "category": "evolution",
+    "cost": 500,
+    "shortEffect": ""
+  },
+  {
+    "id": "ring-target",
+    "name": "겨냥표적",
+    "category": "held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "rocky-helmet",
+    "name": "울퉁불퉁멧",
+    "category": "held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "room-service",
+    "name": "룸서비스",
+    "category": "held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "sachet",
+    "name": "향기주머니",
+    "category": "evolution",
+    "cost": 2000,
+    "shortEffect": ""
+  },
+  {
+    "id": "safari-ball",
+    "name": "사파리볼",
+    "category": "standard-balls",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "safety-goggles",
+    "name": "방진고글",
+    "category": "held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "scope-lens",
+    "name": "초점렌즈",
+    "category": "held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "shed-shell",
+    "name": "아름다운허물",
+    "category": "held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "shell-bell",
+    "name": "조개껍질방울",
+    "category": "held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "shiny-stone",
+    "name": "빛의돌",
+    "category": "evolution",
+    "cost": 3000,
+    "shortEffect": ""
+  },
+  {
+    "id": "smoke-ball",
+    "name": "연막탄",
+    "category": "held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "smooth-rock",
+    "name": "보송보송바위",
+    "category": "held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "snowball",
+    "name": "눈덩이",
+    "category": "held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "soda-pop",
+    "name": "미네랄사이다",
+    "category": "healing",
+    "cost": 300,
+    "shortEffect": ""
+  },
+  {
+    "id": "sport-ball",
+    "name": "콤페볼",
+    "category": "standard-balls",
+    "cost": 300,
+    "shortEffect": ""
+  },
+  {
+    "id": "star-sweet",
+    "name": "스타사탕공예",
+    "category": "evolution",
+    "cost": 500,
+    "shortEffect": ""
+  },
+  {
+    "id": "strawberry-sweet",
+    "name": "딸기사탕공예",
+    "category": "evolution",
+    "cost": 500,
+    "shortEffect": ""
+  },
+  {
+    "id": "sun-stone",
+    "name": "태양의돌",
+    "category": "evolution",
+    "cost": 3000,
+    "shortEffect": ""
+  },
+  {
+    "id": "super-potion",
+    "name": "좋은상처약",
+    "category": "healing",
+    "cost": 700,
+    "shortEffect": ""
+  },
+  {
+    "id": "sweet-apple",
+    "name": "달콤한사과",
+    "category": "evolution",
+    "cost": 2200,
+    "shortEffect": ""
+  },
+  {
+    "id": "sweet-heart",
+    "name": "하트스위트",
+    "category": "healing",
+    "cost": 3000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tart-apple",
+    "name": "새콤한사과",
+    "category": "evolution",
+    "cost": 2200,
+    "shortEffect": ""
+  },
+  {
+    "id": "terrain-extender",
+    "name": "그라운드코트",
+    "category": "held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "throat-spray",
+    "name": "목스프레이",
+    "category": "held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "thunder-stone",
+    "name": "천둥의돌",
+    "category": "evolution",
+    "cost": 3000,
+    "shortEffect": ""
+  },
+  {
+    "id": "timer-ball",
+    "name": "타이마볼",
+    "category": "special-balls",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "ultra-ball",
+    "name": "하이퍼볼",
+    "category": "standard-balls",
+    "cost": 800,
+    "shortEffect": ""
+  },
+  {
+    "id": "up-grade",
+    "name": "업그레이드",
+    "category": "evolution",
+    "cost": 2000,
+    "shortEffect": ""
+  },
+  {
+    "id": "utility-umbrella",
+    "name": "만능우산",
+    "category": "held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "water-stone",
+    "name": "물의돌",
+    "category": "evolution",
+    "cost": 3000,
+    "shortEffect": ""
+  },
+  {
+    "id": "weakness-policy",
+    "name": "약점보험",
+    "category": "held-items",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "whipped-dream",
+    "name": "휘핑팝",
+    "category": "evolution",
+    "cost": 2000,
+    "shortEffect": ""
+  },
+  {
+    "id": "white-herb",
+    "name": "하양허브",
+    "category": "held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "wide-lens",
+    "name": "광각렌즈",
+    "category": "held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "wise-glasses",
+    "name": "박식안경",
+    "category": "held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "x-accuracy",
+    "name": "잘-맞히기",
+    "category": "stat-boosts",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "x-attack",
+    "name": "플러스파워",
+    "category": "stat-boosts",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "x-defense",
+    "name": "디펜드업",
+    "category": "stat-boosts",
+    "cost": 2000,
+    "shortEffect": ""
+  },
+  {
+    "id": "x-sp-atk",
+    "name": "스페셜업",
+    "category": "stat-boosts",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "x-sp-def",
+    "name": "스페셜가드",
+    "category": "stat-boosts",
+    "cost": 2000,
+    "shortEffect": ""
+  },
+  {
+    "id": "x-speed",
+    "name": "스피드업",
+    "category": "stat-boosts",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "zoom-lens",
+    "name": "포커스렌즈",
+    "category": "held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  }
+]

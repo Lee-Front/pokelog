@@ -101,9 +101,12 @@ export interface PokemonStats {
   spDefense: number;
 }
 
+export type PokemonGender = "male" | "female" | "genderless";
+
 export interface OwnedPokemon {
   uid: string;
   species: string;
+  variantId?: string | null;
   nickname: string | null;
   level: number;
   exp: number;
@@ -112,6 +115,21 @@ export interface OwnedPokemon {
   stats: PokemonStats;
   moves: PokemonMove[];
   caughtAt: string;
+  gender?: PokemonGender | null;
+  friendship?: number;
+  heldItem?: string | null;
+  abilityId?: string | null;
+  moveUsageCounts?: Record<string, number>;
+  damageTakenTotal?: number;
+  tradeLocked?: boolean;
+}
+
+export type EggTierId = "common" | "rare" | "legend";
+
+export interface OwnedEgg {
+  id: string;
+  tier: EggTierId;
+  createdAt: string;
 }
 
 export interface WildPokemon {
@@ -131,6 +149,36 @@ export interface PendingEvent {
   expiresAt: string;
 }
 
+export interface PendingEvolutionOption {
+  branchId: string;
+  targetSpecies: string;
+  targetName: string;
+}
+
+export interface PendingEvolution {
+  id: string;
+  pokemonUid: string;
+  sourceSpecies: string;
+  sourceName: string;
+  trigger: EvolutionTrigger;
+  options: PendingEvolutionOption[];
+  createdAt: string;
+}
+
+export type TradeStatus = "pending" | "accepted" | "rejected" | "cancelled";
+
+export interface TradeRecord {
+  id: string;
+  requesterUserId: string;
+  requesterPokemonUid: string;
+  responderUserId: string;
+  responderPokemonUid: string;
+  status: TradeStatus;
+  createdAt: string;
+  updatedAt: string;
+  resolvedAt?: string;
+}
+
 export interface BattleState {
   eventId: string;
   myPokemonUid: string;
@@ -146,15 +194,18 @@ export interface LogEntry {
 
 export interface UserData {
   account: UserAccount;
+  currentRegion?: string;
   points: number;
   totalExp: number;
   combo: UserCombo;
   encounterCeiling: EncounterCeiling;
   party: string[];
   pokemon: OwnedPokemon[];
+  eggs: OwnedEgg[];
   pokedex: string[];
   inventory: Record<string, number>;
   pendingEvents: PendingEvent[];
+  pendingEvolutions?: PendingEvolution[];
   battleState: BattleState | null;
   storage: OwnedPokemon[];
   log: LogEntry[];
@@ -239,16 +290,34 @@ export interface ServerConfig {
 }
 
 // === Sync State ===
+export interface NotionSyncSnapshot {
+  createdTime: string;
+  lastEditedTime: string;
+  archived: boolean;
+  parentType: string;
+  statusValue?: string;
+}
+
+export interface JiraSyncSnapshot {
+  issueKey: string;
+  statusName: string;
+  statusCategory: string;
+  assignee?: string;
+  updated: string;
+  commentCount: number;
+  worklogCount: number;
+}
+
+export interface SlackSyncSnapshot {
+  lastMessageTs: string;
+}
+
 export interface SyncState {
   repos: Record<string, Record<string, string>>;
   integrations?: {
-    notion?: Record<string, Record<string, {
-      createdTime: string;
-      lastEditedTime: string;
-      archived: boolean;
-      parentType: string;
-      statusValue?: string;
-    }>>;
+    notion?: Record<string, Record<string, NotionSyncSnapshot>>;
+    jira?: Record<string, Record<string, JiraSyncSnapshot>>;
+    slack?: Record<string, SlackSyncSnapshot>;
   };
 }
 
@@ -267,25 +336,200 @@ export interface SpeciesData {
     speed: number;
   };
   catchRate: number;
+  rawCaptureRate?: number;
   expGroup: string;
-  learnset: Record<string, string[]>;
+  baseExpYield?: number;
+  learnset: SpeciesLearnset;
   maxMoves: number;
+  abilities?: {
+    normal: string[];
+    hidden?: string;
+  };
+  eggGroups?: string[];
+  genderRate?: number;
+  baseHappiness?: number;
+  isBaby?: boolean;
+  isLegendary?: boolean;
+  isMythical?: boolean;
+}
+
+export interface SpeciesLearnset {
+  levelUp: Record<string, string[]>;
+  tm: string[];
+  tutor: string[];
+  egg: string[];
+  event: string[];
+}
+
+export type VariantKind = "regional" | "permanent-form" | "battle-form";
+
+export interface VariantData {
+  id: string;
+  baseSpecies: string;
+  kind: VariantKind;
+  name: string;
+  category: string;
+  sourceArtSlug: string;
+  formSuffix: string;
+  encounterEligible: boolean;
+  eggEligible: boolean;
+  typing?: string[];
+  baseStatsOverride?: Partial<SpeciesData["baseStats"]>;
+  learnsetOverride?: Partial<SpeciesLearnset>;
 }
 
 export interface MoveData {
   id: string;
   name: string;
   type: string;
-  category: "physical" | "special";
+  category: "physical" | "special" | "status";
   power: number;
   accuracy: number;
   pp: number;
   description: string;
+  priority?: number;
+  target?: string;
+  meta?: {
+    ailment?: string;
+    ailmentChance?: number;
+    critRate?: number;
+    drain?: number;
+    flinchChance?: number;
+    healing?: number;
+    statChance?: number;
+    minHits?: number;
+    maxHits?: number;
+  };
+  statChanges?: Array<{ stat: string; change: number }>;
+}
+
+export type EvolutionTrigger = "level-up" | "use-item" | "trade" | "other";
+
+export type EvolutionTimeOfDay = "day" | "night";
+
+export interface EvolutionConditionLevel {
+  type: "level";
+  level: number;
+}
+
+export interface EvolutionConditionItemUse {
+  type: "item-use";
+  item: string;
+}
+
+export interface EvolutionConditionFriendship {
+  type: "friendship";
+  min: number;
+}
+
+export interface EvolutionConditionHeldItem {
+  type: "held-item";
+  item: string;
+}
+
+export interface EvolutionConditionTime {
+  type: "time";
+  value: EvolutionTimeOfDay;
+}
+
+export interface EvolutionConditionTrade {
+  type: "trade";
+}
+
+export interface EvolutionConditionRegion {
+  type: "region";
+  region: string;
+}
+
+export interface EvolutionConditionGender {
+  type: "gender";
+  value: "male" | "female";
+}
+
+export interface EvolutionConditionKnownMove {
+  type: "known-move";
+  moveId: string;
+}
+
+export interface EvolutionConditionKnownMoveType {
+  type: "known-move-type";
+  moveType: string;
+}
+
+export interface EvolutionConditionLocation {
+  type: "location";
+  location: string;
+}
+
+export interface EvolutionConditionStatCompare {
+  type: "stat-compare";
+  stat: "attack-vs-defense";
+  op: "gt" | "eq" | "lt";
+}
+
+export interface EvolutionConditionPartyMember {
+  type: "party-member";
+  species?: string;
+  pokemonType?: string;
+}
+
+export interface EvolutionConditionExtra {
+  type: "extra";
+  key: string;
+  value: unknown;
+}
+
+export type EvolutionCondition =
+  | EvolutionConditionLevel
+  | EvolutionConditionItemUse
+  | EvolutionConditionFriendship
+  | EvolutionConditionHeldItem
+  | EvolutionConditionTime
+  | EvolutionConditionTrade
+  | EvolutionConditionRegion
+  | EvolutionConditionGender
+  | EvolutionConditionKnownMove
+  | EvolutionConditionKnownMoveType
+  | EvolutionConditionLocation
+  | EvolutionConditionStatCompare
+  | EvolutionConditionPartyMember
+  | EvolutionConditionExtra;
+
+export interface EvolutionBranch {
+  id: string;
+  targetSpecies: string;
+  targetVariantId?: string;
+  trigger: EvolutionTrigger;
+  conditions: EvolutionCondition[];
+  consumeItem?: string | null;
 }
 
 export interface EvolutionData {
-  evolvesTo: string;
-  condition: { type: "level"; level: number };
+  branches: EvolutionBranch[];
+}
+
+export interface AbilityData {
+  id: string;
+  name: string;
+  shortEffect: string;
+  isMainSeries: boolean;
+}
+
+export type StatName = "attack" | "defense" | "spAttack" | "spDefense" | "speed";
+
+export interface NatureData {
+  id: string;
+  name: string;
+  increasedStat: StatName | null;
+  decreasedStat: StatName | null;
+}
+
+export interface ItemData {
+  id: string;
+  name: string;
+  category: string;
+  cost: number;
+  shortEffect: string;
 }
 
 export interface EncounterEntry {

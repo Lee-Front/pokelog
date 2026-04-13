@@ -1,0 +1,70 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { clearAllCaches, getEvolutions, getSpeciesByName } from "../../src/game/data-loader.js";
+import { clearEggGachaCache, getEggTierSummaries, hatchEgg } from "../../src/game/egg-gacha.js";
+
+function getPreEvolutionTargets(): Set<string> {
+  const targets = new Set<string>();
+  for (const evolution of Object.values(getEvolutions())) {
+    for (const branch of evolution.branches) {
+      targets.add(branch.targetSpecies);
+    }
+  }
+  return targets;
+}
+
+beforeEach(() => {
+  clearAllCaches();
+  clearEggGachaCache();
+  vi.restoreAllMocks();
+});
+
+describe("egg-gacha", () => {
+  it("builds tier summaries from synced species data", () => {
+    const summaries = getEggTierSummaries();
+    expect(summaries.map((entry) => entry.tier)).toEqual(["common", "rare", "legend"]);
+    expect(summaries.every((entry) => entry.speciesCount > 0)).toBe(true);
+    expect(summaries.map((entry) => entry.cost)).toEqual([120, 450, 3200]);
+  });
+
+  it("hatches common eggs from easy base-stage species", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+
+    const result = hatchEgg({ id: "egg-common", tier: "common", createdAt: new Date().toISOString() });
+    const species = getSpeciesByName(result.pokemon.species);
+
+    expect(species).toBeDefined();
+    expect(getPreEvolutionTargets().has(result.pokemon.species)).toBe(false);
+    expect(species!.isBaby).toBe(false);
+    expect(Boolean(species!.isLegendary || species!.isMythical)).toBe(false);
+    expect(species!.rawCaptureRate).toBeGreaterThanOrEqual(120);
+    expect(result.pokemon.level).toBeGreaterThanOrEqual(1);
+    expect(result.pokemon.level).toBeLessThanOrEqual(6);
+  });
+
+  it("hatches rare eggs from baby or low-capture base-stage species", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+
+    const result = hatchEgg({ id: "egg-rare", tier: "rare", createdAt: new Date().toISOString() });
+    const species = getSpeciesByName(result.pokemon.species);
+
+    expect(species).toBeDefined();
+    expect(getPreEvolutionTargets().has(result.pokemon.species)).toBe(false);
+    expect(Boolean(species!.isLegendary || species!.isMythical)).toBe(false);
+    expect(Boolean(species!.isBaby || (species!.rawCaptureRate ?? 0) < 120)).toBe(true);
+    expect(result.pokemon.level).toBeGreaterThanOrEqual(5);
+    expect(result.pokemon.level).toBeLessThanOrEqual(12);
+  });
+
+  it("hatches legend eggs from legendary or mythical base-stage species", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+
+    const result = hatchEgg({ id: "egg-legend", tier: "legend", createdAt: new Date().toISOString() });
+    const species = getSpeciesByName(result.pokemon.species);
+
+    expect(species).toBeDefined();
+    expect(getPreEvolutionTargets().has(result.pokemon.species)).toBe(false);
+    expect(Boolean(species!.isLegendary || species!.isMythical)).toBe(true);
+    expect(result.pokemon.level).toBeGreaterThanOrEqual(15);
+    expect(result.pokemon.level).toBeLessThanOrEqual(25);
+  });
+});

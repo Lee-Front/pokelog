@@ -1,0 +1,24 @@
+{
+  "name": "Hisui",
+  "encounters": [
+    { "species": "rowlet", "weight": 90, "levelRange": [5, 8] },
+    { "species": "cyndaquil", "weight": 90, "levelRange": [5, 8] },
+    { "species": "oshawott", "weight": 90, "levelRange": [5, 8] },
+    { "species": "starly", "weight": 95, "levelRange": [2, 5] },
+    { "species": "shinx", "weight": 85, "levelRange": [3, 6] },
+    { "species": "wurmple", "weight": 80, "levelRange": [2, 4] },
+    { "species": "buizel", "weight": 70, "levelRange": [4, 7] },
+    { "species": "croagunk", "weight": 55, "levelRange": [5, 8] },
+    { "species": "stantler", "weight": 40, "levelRange": [6, 10] },
+    { "species": "qwilfish", "weight": 36, "levelRange": [6, 10] },
+    { "species": "barboach", "weight": 32, "levelRange": [6, 10] },
+    { "species": "petilil", "weight": 45, "levelRange": [6, 9] },
+    { "species": "rufflet", "weight": 30, "levelRange": [8, 12] },
+    { "species": "bergmite", "weight": 28, "levelRange": [8, 12] },
+    { "species": "teddiursa", "weight": 24, "levelRange": [8, 12] },
+    { "species": "scyther", "weight": 20, "levelRange": [8, 12] },
+    { "species": "growlithe", "weight": 14, "levelRange": [9, 13] },
+    { "species": "goomy", "weight": 16, "levelRange": [10, 14] },
+    { "species": "zorua", "weight": 10, "levelRange": [10, 14] }
+  ]
+}

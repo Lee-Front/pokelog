@@ -1,0 +1,25 @@
+{
+  "name": "Hoenn",
+  "encounters": [
+    { "species": "poochyena", "weight": 105, "levelRange": [2, 5] },
+    { "species": "zigzagoon", "weight": 105, "levelRange": [2, 5] },
+    { "species": "wurmple", "weight": 95, "levelRange": [2, 4] },
+    { "species": "lotad", "weight": 80, "levelRange": [3, 6] },
+    { "species": "seedot", "weight": 80, "levelRange": [3, 6] },
+    { "species": "wingull", "weight": 76, "levelRange": [3, 6] },
+    { "species": "ralts", "weight": 40, "levelRange": [4, 7] },
+    { "species": "shroomish", "weight": 65, "levelRange": [4, 7] },
+    { "species": "meditite", "weight": 58, "levelRange": [5, 8] },
+    { "species": "aron", "weight": 55, "levelRange": [5, 8] },
+    { "species": "electrike", "weight": 55, "levelRange": [5, 8] },
+    { "species": "numel", "weight": 40, "levelRange": [6, 10] },
+    { "species": "trapinch", "weight": 35, "levelRange": [7, 10] },
+    { "species": "swablu", "weight": 30, "levelRange": [8, 11] },
+    { "species": "sableye", "weight": 20, "levelRange": [8, 12] },
+    { "species": "spheal", "weight": 20, "levelRange": [8, 12] },
+    { "species": "feebas", "weight": 10, "levelRange": [8, 12] },
+    { "species": "absol", "weight": 8, "levelRange": [12, 18] },
+    { "species": "bagon", "weight": 4, "levelRange": [14, 20] },
+    { "species": "beldum", "weight": 3, "levelRange": [15, 20] }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "generatedAt": "2026-04-13",
+  "totals": {
+    "totalBranches": 477,
+    "unsupportedBranches": 0,
+    "unsupportedTriggerBranches": 0,
+    "unsupportedExtraBranches": 0
+  },
+  "unsupportedTriggerFamilies": {},
+  "unsupportedExtraFamilies": {}
+}

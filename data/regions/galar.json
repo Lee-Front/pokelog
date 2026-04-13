@@ -1,0 +1,25 @@
+{
+  "name": "Galar",
+  "encounters": [
+    { "species": "skwovet", "weight": 110, "levelRange": [2, 5] },
+    { "species": "rookidee", "weight": 110, "levelRange": [2, 5] },
+    { "species": "blipbug", "weight": 95, "levelRange": [2, 4] },
+    { "species": "nickit", "weight": 80, "levelRange": [3, 6] },
+    { "species": "wooloo", "weight": 80, "levelRange": [3, 6] },
+    { "species": "chewtle", "weight": 65, "levelRange": [4, 7] },
+    { "species": "yamper", "weight": 60, "levelRange": [5, 8] },
+    { "species": "rolycoly", "weight": 55, "levelRange": [5, 8] },
+    { "species": "applin", "weight": 30, "levelRange": [7, 10] },
+    { "species": "silicobra", "weight": 30, "levelRange": [7, 10] },
+    { "species": "sinistea", "weight": 22, "levelRange": [7, 11] },
+    { "species": "toxel", "weight": 22, "levelRange": [8, 12] },
+    { "species": "sizzlipede", "weight": 22, "levelRange": [8, 12] },
+    { "species": "hatenna", "weight": 18, "levelRange": [8, 12] },
+    { "species": "impidimp", "weight": 15, "levelRange": [10, 14] },
+    { "species": "milcery", "weight": 16, "levelRange": [8, 12] },
+    { "species": "clobbopus", "weight": 12, "levelRange": [9, 13] },
+    { "species": "cufant", "weight": 12, "levelRange": [9, 13] },
+    { "species": "dreepy", "weight": 6, "levelRange": [12, 18] },
+    { "species": "snom", "weight": 10, "levelRange": [10, 14] }
+  ]
+}

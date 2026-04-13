@@ -4,6 +4,12 @@
   "private": true,
   "workspaces": ["packages/*"],
   "scripts": {
+    "audit:pokemon-data": "node scripts/generate-pokemon-data-audit.mjs",
+    "audit:evolution-runtime-gaps": "node scripts/generate-evolution-runtime-gaps.mjs",
+    "generate:pokemon-variants": "node scripts/generate-pokemon-variants.mjs",
+    "scaffold:pokemon-species": "node scripts/generate-species-scaffold.mjs",
+    "split:pokemon-art": "node scripts/generate-pokemon-art-split.mjs",
+    "sync:pokeapi": "node scripts/sync-pokeapi.mjs",
     "build": "npm run build --workspaces",
     "test": "npm run test --workspaces",
     "dev:server": "npm run dev -w packages/server",

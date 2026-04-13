@@ -1,0 +1,25 @@
+{
+  "name": "Alola",
+  "encounters": [
+    { "species": "yungoos", "weight": 105, "levelRange": [2, 5] },
+    { "species": "pikipek", "weight": 105, "levelRange": [2, 5] },
+    { "species": "grubbin", "weight": 90, "levelRange": [3, 6] },
+    { "species": "cutiefly", "weight": 80, "levelRange": [3, 6] },
+    { "species": "crabrawler", "weight": 75, "levelRange": [3, 6] },
+    { "species": "rockruff", "weight": 70, "levelRange": [4, 7] },
+    { "species": "mareanie", "weight": 55, "levelRange": [5, 8] },
+    { "species": "mudbray", "weight": 55, "levelRange": [5, 8] },
+    { "species": "fomantis", "weight": 50, "levelRange": [5, 8] },
+    { "species": "bounsweet", "weight": 42, "levelRange": [5, 9] },
+    { "species": "morelull", "weight": 34, "levelRange": [6, 10] },
+    { "species": "salandit", "weight": 30, "levelRange": [7, 10] },
+    { "species": "stufful", "weight": 30, "levelRange": [7, 10] },
+    { "species": "wimpod", "weight": 24, "levelRange": [8, 12] },
+    { "species": "sandygast", "weight": 24, "levelRange": [8, 12] },
+    { "species": "oranguru", "weight": 10, "levelRange": [10, 14] },
+    { "species": "passimian", "weight": 10, "levelRange": [10, 14] },
+    { "species": "jangmo-o", "weight": 12, "levelRange": [10, 14] },
+    { "species": "togedemaru", "weight": 8, "levelRange": [12, 16] },
+    { "species": "komala", "weight": 8, "levelRange": [10, 14] }
+  ]
+}

@@ -148,7 +148,7 @@ function printConnectScreen(integrations: Integration[], message?: ScreenMessage
 
   console.log(`  ${BLD}Connect${R} ${DIM}integrations${R}`);
   console.log(`  ${DIM}${counts}${R}`);
-  console.log(`  ${DIM}tip:${R} polling is 1 minute. Notion supports manual sync.`);
+  console.log(`  ${DIM}tip:${R} polling is 1 minute. Notion/Jira/Slack support manual sync.`);
   if (message) {
     console.log();
     console.log(`  ${formatMessage(message)}`);
@@ -174,7 +174,7 @@ async function getIntegrations(): Promise<{ integrations: Integration[]; message
 
 async function promptProvider(): Promise<Provider | null> {
   return rawSelect("추가할 provider를 선택하세요", [
-    { name: "Git (public repo URL)", value: "git" },
+    { name: "Git", value: "git" },
     { name: "Notion", value: "notion" },
     { name: "Jira", value: "jira" },
     { name: "Slack", value: "slack" },
@@ -184,6 +184,18 @@ async function promptProvider(): Promise<Provider | null> {
 async function addGitIntegration(): Promise<{ body?: Record<string, unknown>; message?: ScreenMessage }> {
   const repoUrl = (await inputPrompt("Repository URL:")).trim();
   if (!repoUrl) return {};
+
+  const authMode = await rawSelect("인증 방식을 선택하세요", [
+    { name: "Public (토큰 없이)", value: "public" },
+    { name: "Private (Personal Access Token)", value: "token" },
+  ]);
+  if (!authMode) return {};
+
+  let token: string | undefined;
+  if (authMode === "token") {
+    token = (await inputPrompt("Personal Access Token:")).trim();
+    if (!token) return {};
+  }
 
   const mode = await rawSelect("집계 방식을 선택하세요", [
     { name: "Track all commits", value: "all" },
@@ -214,13 +226,16 @@ async function addGitIntegration(): Promise<{ body?: Record<string, unknown>; me
     body: {
       provider: "git",
       label: label || defaultLabel,
-      config: { repoUrl, authMode: "public" },
+      config: { repoUrl, authMode, token },
       emails,
     },
   };
 }
 
 async function addNotionIntegration(): Promise<{ body?: Record<string, unknown> }> {
+  console.log(`  ${YEL}Notion은 Integration이 연결된 페이지만 추적할 수 있습니다.${R}`);
+  console.log(`  ${DIM}최상위 페이지에 연결하면 하위 페이지는 자동으로 포함됩니다.${R}`);
+  console.log();
   const token = (await inputPrompt("Notion Integration Token:")).trim();
   if (!token) return {};
   const label = (await inputPrompt("표시 이름 (예: Personal Notion):")).trim();
@@ -332,7 +347,7 @@ async function updateGitEmails(integration: GitIntegration): Promise<ScreenMessa
   return { tone: "success", text: `이메일 필터를 저장했습니다: ${emails.join(", ")}` };
 }
 
-async function syncNotionIntegration(integration: NotionIntegration): Promise<ScreenMessage> {
+async function syncIntegration(integration: Integration): Promise<ScreenMessage> {
   const syncRes = await apiPost(`/api/user/integrations/${integration.id}/sync`);
   if (!syncRes.ok) {
     return { tone: "error", text: `수동 동기화가 실패했습니다: ${String(syncRes.data.error)}` };
@@ -340,13 +355,18 @@ async function syncNotionIntegration(integration: NotionIntegration): Promise<Sc
 
   const result = (syncRes.data.result ?? {}) as Record<string, unknown>;
   const status = result.firstSync === true ? "baseline created" : "diff checked";
-  const snapshotCount = typeof result.snapshotCount === "number" ? String(result.snapshotCount) : "-";
+  const countKey = typeof result.snapshotCount === "number" ? "pages" :
+    typeof result.issueCount === "number" ? "issues" :
+    typeof result.messageCount === "number" ? "messages" : "items";
+  const count = typeof result.snapshotCount === "number" ? String(result.snapshotCount) :
+    typeof result.issueCount === "number" ? String(result.issueCount) :
+    typeof result.messageCount === "number" ? String(result.messageCount) : "-";
   const detected = typeof result.detectedEvents === "number" ? String(result.detectedEvents) : "-";
   const applied = typeof result.appliedEvents === "number" ? String(result.appliedEvents) : "-";
   const tone: MessageTone = Number(applied) > 0 ? "success" : "warn";
   return {
     tone,
-    text: `Notion sync | ${integration.label} | status ${status} | pages ${snapshotCount} | detected ${detected} | applied ${applied}`,
+    text: `${providerLabel(integration.provider)} sync | ${integration.label} | status ${status} | ${countKey} ${count} | detected ${detected} | applied ${applied}`,
   };
 }
 
@@ -361,7 +381,7 @@ async function editIntegration(integration: Integration): Promise<ScreenMessage 
     { name: "연결 테스트", value: "test" },
     { name: "삭제", value: "delete" },
   ];
-  if (isNotionIntegration(integration)) {
+  if (["notion", "jira", "slack"].includes(integration.provider)) {
     choices.unshift({ name: "지금 동기화", value: "sync" });
   }
   if (isGitIntegration(integration)) {
@@ -376,8 +396,8 @@ async function editIntegration(integration: Integration): Promise<ScreenMessage 
     return updateGitEmails(integration);
   }
 
-  if (mode === "sync" && isNotionIntegration(integration)) {
-    return syncNotionIntegration(integration);
+  if (mode === "sync") {
+    return syncIntegration(integration);
   }
 
   if (mode === "test") {

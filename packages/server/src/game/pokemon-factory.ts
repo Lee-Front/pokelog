@@ -8,6 +8,7 @@ import type {
   PokemonMove,
   PokemonStats,
 } from "../../../../shared/types.js";
+import { resolvePokemonGender } from "./pokemon-gender.js";
 
 function calcHp(baseHp: number, level: number): number {
   return Math.floor(((baseHp * 2 * level) / 100) + level + 10);
@@ -32,16 +33,17 @@ function buildStats(species: SpeciesData, level: number): { maxHp: number; stats
 function buildMoves(species: SpeciesData, level: number): PokemonMove[] {
   const allMoves = getMoves();
   const moveMap = new Map(allMoves.map((m) => [m.id, m]));
+  const levelUpLearnset = species.learnset.levelUp;
 
   // Collect all moves learnable at or below current level
   const learnableMoves: string[] = [];
-  const sortedLevels = Object.keys(species.learnset)
+  const sortedLevels = Object.keys(levelUpLearnset)
     .map(Number)
     .sort((a, b) => a - b);
 
   for (const lvl of sortedLevels) {
     if (lvl <= level) {
-      for (const moveId of species.learnset[String(lvl)]) {
+      for (const moveId of levelUpLearnset[String(lvl)]) {
         // Remove duplicates - keep last occurrence
         const idx = learnableMoves.indexOf(moveId);
         if (idx !== -1) {
@@ -74,6 +76,7 @@ export function createPokemon(species: string, level: number): OwnedPokemon {
   return {
     uid: crypto.randomUUID(),
     species,
+    variantId: null,
     nickname: null,
     level,
     exp: 0,
@@ -82,6 +85,13 @@ export function createPokemon(species: string, level: number): OwnedPokemon {
     stats,
     moves,
     caughtAt: new Date().toISOString(),
+    gender: resolvePokemonGender(speciesData.genderRate, Math.random()),
+    friendship: speciesData.baseHappiness ?? 70,
+    heldItem: null,
+    abilityId: speciesData.abilities?.normal[0] ?? null,
+    moveUsageCounts: {},
+    damageTakenTotal: 0,
+    tradeLocked: false,
   };
 }
 

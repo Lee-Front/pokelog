@@ -1,4 +1,4 @@
-import type { NotionIntegration, SyncState, UserData } from "../../../../shared/types.js";
+import type { NotionIntegration, NotionSyncSnapshot, SyncState, UserData } from "../../../../shared/types.js";
 import { getConfig } from "../storage/config-store.js";
 import { saveUser } from "../storage/user-store.js";
 import { applyIntegrationReward } from "./integration-reward.js";
@@ -19,7 +19,7 @@ export async function pollNotionIntegration(
   const config = await getConfig();
   const snapshots = await listNotionPages(integration);
   const notionSync = syncState.integrations?.notion ?? {};
-  const integrationState = notionSync[integration.id] ?? {};
+  const integrationState: Record<string, NotionSyncSnapshot> = notionSync[integration.id] ?? {};
   const isFirstSync = Object.keys(integrationState).length === 0;
   let changed = false;
   let detectedEvents = 0;

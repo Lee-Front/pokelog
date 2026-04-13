@@ -1,0 +1,25 @@
+{
+  "name": "Johto",
+  "encounters": [
+    { "species": "sentret", "weight": 110, "levelRange": [2, 5] },
+    { "species": "hoothoot", "weight": 100, "levelRange": [2, 5] },
+    { "species": "spinarak", "weight": 85, "levelRange": [3, 6] },
+    { "species": "ledyba", "weight": 85, "levelRange": [3, 6] },
+    { "species": "mareep", "weight": 80, "levelRange": [4, 7] },
+    { "species": "hoppip", "weight": 70, "levelRange": [4, 7] },
+    { "species": "wooper", "weight": 70, "levelRange": [4, 7] },
+    { "species": "slugma", "weight": 55, "levelRange": [5, 9] },
+    { "species": "remoraid", "weight": 52, "levelRange": [5, 9] },
+    { "species": "yanma", "weight": 45, "levelRange": [6, 10] },
+    { "species": "swinub", "weight": 40, "levelRange": [6, 10] },
+    { "species": "teddiursa", "weight": 35, "levelRange": [7, 11] },
+    { "species": "misdreavus", "weight": 25, "levelRange": [8, 12] },
+    { "species": "murkrow", "weight": 25, "levelRange": [8, 12] },
+    { "species": "gligar", "weight": 25, "levelRange": [8, 12] },
+    { "species": "phanpy", "weight": 25, "levelRange": [8, 12] },
+    { "species": "sneasel", "weight": 18, "levelRange": [9, 13] },
+    { "species": "miltank", "weight": 12, "levelRange": [12, 18] },
+    { "species": "skarmory", "weight": 10, "levelRange": [12, 18] },
+    { "species": "larvitar", "weight": 4, "levelRange": [14, 20] }
+  ]
+}

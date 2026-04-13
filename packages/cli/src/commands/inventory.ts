@@ -1,289 +1,430 @@
-import { DIM, RED, GRN, YEL, BLU, CYN, BLD, R } from "../ui/colors.js";
+import { DIM, RED, GRN, YEL, CYN, BLD, R } from "../ui/colors.js";
 import { apiGet, apiPost } from "../api-client.js";
-import { fetchArt, fetchBallArt, renderHpBar, stripAnsi, redraw } from "../ui/display.js";
+import { fetchArt, fetchBallArt, redraw } from "../ui/display.js";
 import { enterRaw, waitKey } from "../ui/raw-mode.js";
-import { visualWidth, padRight, artToLines, mergeSideBySide } from "../ui/text.js";
+import { padRight, artToLines, mergeSideBySide } from "../ui/text.js";
 
-// ── 아이템 메타데이터 ───────────────────────────────────────────
-const ITEM_META: Record<string, {
-  name: string;
-  type: "ball" | "potion";
-  ballKey?: string;
-  heal?: number;
-  desc: string;
-}> = {
-  pokeball:    { name: "몬스터볼",       type: "ball",   ballKey: "MonsterBall", desc: "전투 전용 — 포획에 사용" },
-  safariball:  { name: "사파리볼",       type: "ball",   ballKey: "SafariBall",  desc: "전투 전용 — 포획에 사용" },
-  greatball:   { name: "슈퍼볼",         type: "ball",   ballKey: "GreatBall",   desc: "전투 전용 — 포획률 +50%" },
-  ultraball:   { name: "울트라볼",       type: "ball",   ballKey: "UltraBall",   desc: "전투 전용 — 포획률 +100%" },
-  masterball:  { name: "마스터볼",       type: "ball",   ballKey: "MasterBall",  desc: "전투 전용 — 확정 포획" },
-  potion:      { name: "상처약",         type: "potion", heal: 20,               desc: "HP 20 회복" },
-  superPotion: { name: "좋은 상처약",    type: "potion", heal: 50,               desc: "HP 50 회복" },
-  hyperPotion: { name: "굉장한 상처약",  type: "potion", heal: 200,              desc: "HP 200 회복" },
+type InventoryKind = "ball" | "healing" | "evolution" | "held" | "other";
+
+type PartyMon = {
+  uid: string;
+  species: string;
+  level: number;
+  hp: number;
+  maxHp: number;
+  heldItem?: string | null;
 };
 
-function getItemName(key: string)  { return ITEM_META[key]?.name ?? key; }
-function getItemDesc(key: string)  { return ITEM_META[key]?.desc ?? ""; }
-function isUsable(key: string)     { return ITEM_META[key]?.type === "potion"; }
+type InventoryCatalogEntry = {
+  name: string;
+  kind: InventoryKind;
+  description: string;
+  canUseDirectly: boolean;
+  canHold: boolean;
+};
 
-// ── 포션 아트 (텍스트) ──────────────────────────────────────────
-function makePotionArt(heal: number): string {
-  const hp = `+${heal} HP`;
-  return [
-    `${DIM}     .─.${R}`,
-    `${DIM}    ( · )${R}`,
-    `${DIM}  ┌──────┐${R}`,
-    `${GRN}  │${BLD} ${hp.padStart(4).padEnd(5)} ${R}${GRN}│${R}`,
-    `${DIM}  │      │${R}`,
-    `${DIM}  └──────┘${R}`,
-  ].join("\n");
-}
+type InventoryResponse = {
+  inventory: Record<string, number>;
+  catalog: Record<string, InventoryCatalogEntry>;
+};
 
-// ── 레이아웃 유틸 ───────────────────────────────────────────────
-const LEFT_W = 26;
-const GAP    = "    ";
+const CATEGORY_ORDER = [
+  { label: "Balls", kind: "ball" },
+  { label: "Healing", kind: "healing" },
+  { label: "Evolution", kind: "evolution" },
+  { label: "Held", kind: "held" },
+  { label: "Other", kind: "other" },
+] as const;
 
-// ── 아트 캐시 ───────────────────────────────────────────────────
+const BALL_ART: Record<string, string> = {
+  pokeball: "MonsterBall",
+  safariball: "SafariBall",
+  greatball: "GreatBall",
+  ultraball: "UltraBall",
+  masterball: "MasterBall",
+};
+
 const artCache = new Map<string, string | null>();
 
+function formatSlug(value: string): string {
+  return value
+    .split("-")
+    .map((part) => (part ? part[0].toUpperCase() + part.slice(1) : part))
+    .join(" ");
+}
+
+function getCatalogEntry(itemId: string, catalog: Record<string, InventoryCatalogEntry>): InventoryCatalogEntry | undefined {
+  return catalog[itemId];
+}
+
+function getItemName(itemId: string, catalog: Record<string, InventoryCatalogEntry>): string {
+  return getCatalogEntry(itemId, catalog)?.name ?? formatSlug(itemId);
+}
+
+function getItemDesc(itemId: string, catalog: Record<string, InventoryCatalogEntry>): string {
+  return getCatalogEntry(itemId, catalog)?.description ?? "";
+}
+
+function getItemKind(itemId: string, catalog: Record<string, InventoryCatalogEntry>): InventoryKind | undefined {
+  return getCatalogEntry(itemId, catalog)?.kind;
+}
+
+function isUsable(itemId: string, catalog: Record<string, InventoryCatalogEntry>): boolean {
+  const entry = getCatalogEntry(itemId, catalog);
+  return Boolean(entry?.canUseDirectly || entry?.canHold);
+}
+
 async function getCachedArt(key: string, fetcher: () => Promise<string | null>): Promise<string | null> {
-  if (artCache.has(key)) return artCache.get(key)!;
+  if (artCache.has(key)) {
+    return artCache.get(key)!;
+  }
+
   const art = await fetcher();
   artCache.set(key, art);
   return art;
 }
 
-// ── 카테고리 ────────────────────────────────────────────────────
-const CATEGORIES = [
-  { label: "몬스터볼", keys: ["pokeball", "safariball", "greatball", "ultraball", "masterball"] },
-  { label: "상처약",   keys: ["potion", "superPotion", "hyperPotion"] },
-];
+function makeHealingArt(label: string): string {
+  const text = label.slice(0, 10).padEnd(10);
+  return [
+    `${DIM}     .-.${R}`,
+    `${DIM}    ( + )${R}`,
+    `${DIM}   /   \\${R}`,
+    `${GRN}  |${BLD}${text}${R}${GRN}|${R}`,
+    `${DIM}   \\   /${R}`,
+    `${DIM}    '-'${R}`,
+  ].join("\n");
+}
 
-// ── Items 화면 ──────────────────────────────────────────────────
+function getCategoryItems(
+  inventory: Record<string, number>,
+  catalog: Record<string, InventoryCatalogEntry>,
+  kind: InventoryKind,
+): [string, number][] {
+  return Object.entries(inventory)
+    .filter(([itemId, count]) => count > 0 && getItemKind(itemId, catalog) === kind)
+    .sort((a, b) => getItemName(a[0], catalog).localeCompare(getItemName(b[0], catalog)));
+}
+
 function buildItemsLines(
   catIdx: number,
   items: [string, number][],
-  idx: number,
+  itemIdx: number,
   art: string | null,
-  msg: string,
+  message: string,
+  catalog: Record<string, InventoryCatalogEntry>,
 ): string[] {
-  // 카테고리 탭
-  const tabs = CATEGORIES.map((c, i) =>
-    i === catIdx ? `${CYN}${BLD}${c.label}${R}` : `${DIM}${c.label}${R}`
-  ).join(`  ${DIM}·${R}  `);
+  const tabs = CATEGORY_ORDER.map((category, index) => (
+    index === catIdx ? `${CYN}${BLD}${category.label}${R}` : `${DIM}${category.label}${R}`
+  )).join(` ${DIM}|${R} `);
 
-  // 왼쪽: 이름 + 개수
-  const left: string[] = [];
-  if (items.length === 0) {
-    left.push(`  ${DIM}보유한 아이템이 없습니다.${R}`);
-  } else {
-    for (let i = 0; i < items.length; i++) {
-      const [key, count] = items[i];
-      const active = i === idx;
-      const cursor = active ? `${CYN}❯${R}` : " ";
-      const name   = active ? `${BLD}${getItemName(key)}${R}` : getItemName(key);
-      left.push(`${cursor} ${padRight(name, 16)} ${DIM}×${count}${R}`);
-    }
-  }
+  const left = items.length === 0
+    ? [`  ${DIM}No items in this category.${R}`]
+    : items.map(([itemId, count], index) => {
+      const cursor = index === itemIdx ? `${CYN}>${R}` : " ";
+      const label = index === itemIdx ? `${BLD}${getItemName(itemId, catalog)}${R}` : getItemName(itemId, catalog);
+      return `${cursor} ${padRight(label, 20)} ${DIM}x${count}${R}`;
+    });
 
-  // 오른쪽: 아트
-  const right = artToLines(art);
+  const selectedItem = items[itemIdx]?.[0] ?? "";
+  const selectedEntry = selectedItem ? getCatalogEntry(selectedItem, catalog) : undefined;
+  const desc = selectedEntry?.description ? `${DIM}${selectedEntry.description}${R}` : "";
 
-  // 선택 아이템 설명
-  const selKey = items[idx]?.[0] ?? "";
-  const desc   = selKey ? `${DIM}${getItemDesc(selKey)}${R}` : "";
-
-  const lines: string[] = [
+  const lines = [
     "",
-    `  ${BLD}인벤토리${R}`,
-    "  " + "─".repeat(50),
-    `  ${DIM}↑↓ 탐색   ←→ 카테고리   Enter 사용   Esc 뒤로${R}`,
-    `  ← ${tabs}  →`,
+    `  ${BLD}Inventory${R}`,
+    "  " + "-".repeat(54),
+    `  ${DIM}Left/Right: Category  Up/Down: Move  Enter: Select  Esc: Back${R}`,
+    `  ${tabs}`,
     "",
-    ...mergeSideBySide(left, right),
+    ...mergeSideBySide(left, artToLines(art)),
     "",
   ];
-  if (desc) { lines.push(`  ${desc}`); lines.push(""); }
-  if (msg)  { lines.push(`  ${msg}`); }
+
+  if (desc) {
+    lines.push(`  ${desc}`, "");
+  }
+  if (message) {
+    lines.push(`  ${message}`);
+  }
   return lines;
 }
-
-// ── Targets 화면 ───────────────────────────────────────────────
-type PartyMon = { uid: string; species: string; level: number; hp: number; maxHp: number };
 
 function buildTargetsLines(
-  itemKey: string,
+  itemId: string,
   itemCount: number,
   targets: PartyMon[],
-  idx: number,
+  targetIdx: number,
   art: string | null,
-  msg: string,
+  message: string,
+  catalog: Record<string, InventoryCatalogEntry>,
 ): string[] {
-  const left: string[] = [];
-  left.push(`${YEL}── 파티 포켓몬 ──${R}`);
-  for (let i = 0; i < targets.length; i++) {
-    const p      = targets[i];
-    const active = i === idx;
-    const cursor = active ? `${CYN}❯${R}` : " ";
-    const name   = active ? `${BLD}${p.species}${R}` : p.species;
-    const ratio  = p.hp / p.maxHp;
-    const hpCol  = ratio <= 0.25 ? RED : ratio <= 0.5 ? YEL : GRN;
-    left.push(`${cursor} ${padRight(name, 14)} ${hpCol}${renderHpBar(p.hp, p.maxHp, 8)}${R}`);
-  }
+  const itemKind = getItemKind(itemId, catalog);
+  const instructions = itemKind === "healing"
+    ? "Up/Down: Target  Enter: Heal  Esc: Back"
+    : itemKind === "held"
+      ? "Up/Down: Target  Enter: Equip item  Esc: Back"
+      : "Up/Down: Target  Enter: Use item  Esc: Back";
 
-  const right = artToLines(art);
+  const left = [
+    `${YEL}Select Pokemon${R}`,
+    ...targets.map((pokemon, index) => {
+      const cursor = index === targetIdx ? `${CYN}>${R}` : " ";
+      const name = index === targetIdx ? `${BLD}${pokemon.species}${R}` : pokemon.species;
+      const heldLabel = pokemon.heldItem ? ` ${DIM}@ ${getItemName(pokemon.heldItem, catalog)}${R}` : "";
+      const hpLabel = `${DIM}${pokemon.hp}/${pokemon.maxHp}${R}`;
+      return `${cursor} ${padRight(name, 16)} ${padRight(hpLabel, 14)} ${DIM}Lv.${pokemon.level}${R}${heldLabel}`;
+    }),
+  ];
 
-  const lines: string[] = [
+  const lines = [
     "",
-    `  ${BLD}${getItemName(itemKey)}${R} ${DIM}사용 (×${itemCount} 보유)${R}`,
-    "  " + "─".repeat(50),
-    `  ${DIM}↑↓ 탐색   Enter 사용   Esc 뒤로${R}`,
+    `  ${BLD}${getItemName(itemId, catalog)}${R} ${DIM}(x${itemCount})${R}`,
+    "  " + "-".repeat(54),
+    `  ${DIM}${instructions}${R}`,
     "",
-    ...mergeSideBySide(left, right),
+    ...mergeSideBySide(left, artToLines(art)),
     "",
   ];
-  if (msg) { lines.push(`  ${msg}`); }
+
+  if (message) {
+    lines.push(`  ${message}`);
+  }
   return lines;
 }
 
-// ── 메인 ───────────────────────────────────────────────────────
+function getTargetsForItem(
+  itemId: string,
+  party: PartyMon[],
+  catalog: Record<string, InventoryCatalogEntry>,
+): PartyMon[] {
+  return getItemKind(itemId, catalog) === "healing"
+    ? party.filter((pokemon) => pokemon.hp < pokemon.maxHp)
+    : party;
+}
+
+async function getItemArt(itemId: string, catalog: Record<string, InventoryCatalogEntry>): Promise<string | null> {
+  const kind = getItemKind(itemId, catalog);
+  if (!kind) {
+    return null;
+  }
+
+  if (kind === "ball" && BALL_ART[itemId]) {
+    return getCachedArt(itemId, () => fetchBallArt(BALL_ART[itemId]));
+  }
+
+  if (kind === "healing") {
+    const label = getItemName(itemId, catalog);
+    const art = makeHealingArt(label);
+    artCache.set(itemId, art);
+    return art;
+  }
+
+  return null;
+}
+
+function resolveItemAction(itemId: string, catalog: Record<string, InventoryCatalogEntry>): string {
+  return getItemKind(itemId, catalog) === "held"
+    ? "/api/game/items/equip"
+    : "/api/shop/use";
+}
+
 export async function inventoryCommand() {
   enterRaw();
 
   type Mode = "items" | "targets";
-  let mode: Mode    = "items";
-  let catIdx        = 0;
-  let itemIdx       = 0;
-  let targetIdx     = 0;
-  let selectedItem  = "";
-  let msg           = "";
-  let lineCount     = 0;
-  let first         = true;
+
+  let mode: Mode = "items";
+  let categoryIndex = 0;
+  let itemIndex = 0;
+  let targetIndex = 0;
+  let selectedItem = "";
+  let lineCount = 0;
+  let firstRender = true;
+  let message = "";
   let currentArt: string | null = null;
-  let lastArtKey    = "";
+  let lastArtKey = "";
+  let inventory: Record<string, number> = {};
+  let catalog: Record<string, InventoryCatalogEntry> = {};
+  let party: PartyMon[] = [];
+  let targets: PartyMon[] = [];
 
-  // 인벤토리 & 파티 데이터
-  let inv: Record<string, number> = {};
-  let party: PartyMon[]           = [];
-  let targets: PartyMon[]         = [];
-
-  async function refreshInv() {
-    const res = await apiGet("/api/game/inventory");
-    if (res.ok) inv = res.data.inventory as Record<string, number>;
+  async function refreshInventory() {
+    const response = await apiGet("/api/game/inventory");
+    if (response.ok) {
+      const data = response.data as InventoryResponse;
+      inventory = data.inventory ?? {};
+      catalog = data.catalog ?? {};
+    }
   }
+
   async function refreshParty() {
-    const res = await apiGet("/api/game/party");
-    if (res.ok) party = res.data.party as PartyMon[];
+    const response = await apiGet("/api/game/party");
+    if (response.ok) {
+      party = response.data.party as PartyMon[];
+    }
   }
 
-  await Promise.all([refreshInv(), refreshParty()]);
+  await Promise.all([refreshInventory(), refreshParty()]);
 
   while (true) {
-    // ── items 모드 ──
     if (mode === "items") {
-      // 현재 카테고리 아이템만 필터
-      const catKeys    = CATEGORIES[catIdx].keys;
-      const catItems   = Object.entries(inv)
-        .filter(([k, c]) => catKeys.includes(k) && c > 0) as [string, number][];
+      const category = CATEGORY_ORDER[categoryIndex];
+      const categoryItems = getCategoryItems(inventory, catalog, category.kind);
+      itemIndex = Math.min(itemIndex, Math.max(0, categoryItems.length - 1));
 
-      itemIdx = Math.min(itemIdx, Math.max(0, catItems.length - 1));
-
-      const artKey = catItems[itemIdx]?.[0] ?? "";
+      const artKey = categoryItems[itemIndex]?.[0] ?? "";
       if (artKey !== lastArtKey) {
-        const meta = ITEM_META[artKey];
-        if (meta?.type === "ball" && meta.ballKey) {
-          currentArt = await getCachedArt(artKey, () => fetchBallArt(meta.ballKey!));
-        } else if (meta?.type === "potion" && meta.heal !== undefined) {
-          currentArt = makePotionArt(meta.heal);
-          artCache.set(artKey, currentArt);
-        } else {
-          currentArt = null;
-        }
+        currentArt = artKey ? await getItemArt(artKey, catalog) : null;
         lastArtKey = artKey;
       }
 
-      const lines = buildItemsLines(catIdx, catItems, itemIdx, currentArt, msg);
-      lineCount = redraw(lines, lineCount, first);
-      first = false;
-      msg = "";
+      lineCount = redraw(
+        buildItemsLines(categoryIndex, categoryItems, itemIndex, currentArt, message, catalog),
+        lineCount,
+        firstRender,
+      );
+      firstRender = false;
+      message = "";
 
       const key = await waitKey();
-      if (key === "\x03") { process.stdout.write("\x1b[?25h"); process.exit(0); }
-      else if (key === "\x1b" || key === "q") break;
-      else if (key === "\x1b[D") {
-        catIdx = (catIdx - 1 + CATEGORIES.length) % CATEGORIES.length;
-        itemIdx = 0; lastArtKey = ""; currentArt = null; first = true;
+      if (key === "\x03") {
+        process.stdout.write("\x1b[?25h");
+        process.exit(0);
       }
-      else if (key === "\x1b[C") {
-        catIdx = (catIdx + 1) % CATEGORIES.length;
-        itemIdx = 0; lastArtKey = ""; currentArt = null; first = true;
+      if (key === "\x1b" || key === "q") {
+        break;
       }
-      else if (key === "\x1b[A" && itemIdx > 0) { itemIdx--; }
-      else if (key === "\x1b[B" && itemIdx < catItems.length - 1) { itemIdx++; }
-      else if (key === "\r") {
-        const [selKey] = catItems[itemIdx] ?? [];
-        if (!selKey) continue;
-        if (!isUsable(selKey)) {
-          msg = `${DIM}몬스터볼은 전투 중에만 사용할 수 있습니다.${R}`;
-          continue;
-        }
-        // 포션 → 타겟 선택 모드
-        await refreshParty();
-        targets = party.filter((p) => p.hp < p.maxHp);
-        if (targets.length === 0) {
-          msg = `${DIM}회복이 필요한 포켓몬이 없습니다.${R}`;
-          continue;
-        }
-        selectedItem = selKey;
-        targetIdx    = 0;
-        lastArtKey   = "";
-        currentArt   = null;
-        mode         = "targets";
-        first        = true;
+      if (key === "\x1b[D") {
+        categoryIndex = (categoryIndex - 1 + CATEGORY_ORDER.length) % CATEGORY_ORDER.length;
+        itemIndex = 0;
+        lastArtKey = "";
+        currentArt = null;
+        firstRender = true;
+        continue;
       }
+      if (key === "\x1b[C") {
+        categoryIndex = (categoryIndex + 1) % CATEGORY_ORDER.length;
+        itemIndex = 0;
+        lastArtKey = "";
+        currentArt = null;
+        firstRender = true;
+        continue;
+      }
+      if (key === "\x1b[A" && itemIndex > 0) {
+        itemIndex -= 1;
+        continue;
+      }
+      if (key === "\x1b[B" && itemIndex < categoryItems.length - 1) {
+        itemIndex += 1;
+        continue;
+      }
+      if (key !== "\r") {
+        continue;
+      }
+
+      const [itemId] = categoryItems[itemIndex] ?? [];
+      if (!itemId) {
+        continue;
+      }
+      if (!isUsable(itemId, catalog)) {
+        message = `${DIM}This item cannot be used from inventory.${R}`;
+        continue;
+      }
+
+      await refreshParty();
+      targets = getTargetsForItem(itemId, party, catalog);
+      if (targets.length === 0) {
+        message = getItemKind(itemId, catalog) === "healing"
+          ? `${DIM}No party Pokemon need healing.${R}`
+          : `${DIM}No party Pokemon available for this item.${R}`;
+        continue;
+      }
+
+      selectedItem = itemId;
+      targetIndex = 0;
+      lastArtKey = "";
+      currentArt = null;
+      mode = "targets";
+      firstRender = true;
+      continue;
     }
 
-    // ── targets 모드 ──
-    else {
-      targetIdx = Math.min(targetIdx, Math.max(0, targets.length - 1));
+    targetIndex = Math.min(targetIndex, Math.max(0, targets.length - 1));
 
-      const artKey = targets[targetIdx]?.species ?? "";
-      if (artKey !== lastArtKey) {
-        currentArt = await getCachedArt(artKey, () => fetchArt(artKey));
-        lastArtKey = artKey;
-      }
-
-      const selCount = inv[selectedItem] ?? 0;
-      const lines = buildTargetsLines(selectedItem, selCount, targets, targetIdx, currentArt, msg);
-      lineCount = redraw(lines, lineCount, first);
-      first = false;
-      msg = "";
-
-      const key = await waitKey();
-      if (key === "\x03") { process.stdout.write("\x1b[?25h"); process.exit(0); }
-      else if (key === "\x1b" || key === "q") {
-        mode = "items"; lastArtKey = ""; currentArt = null; first = true;
-      }
-      else if (key === "\x1b[A" && targetIdx > 0) { targetIdx--; }
-      else if (key === "\x1b[B" && targetIdx < targets.length - 1) { targetIdx++; }
-      else if (key === "\r") {
-        const target = targets[targetIdx];
-        if (!target) continue;
-        const res = await apiPost("/api/shop/use", { item: selectedItem, pokemonUid: target.uid });
-        if (res.ok) {
-          msg = `${GRN}✓ ${target.species}에게 ${getItemName(selectedItem)} 사용!${R}`;
-          await Promise.all([refreshInv(), refreshParty()]);
-          targets = party.filter((p) => p.hp < p.maxHp);
-          if (targets.length === 0) {
-            mode = "items"; lastArtKey = ""; currentArt = null; first = true;
-          } else {
-            targetIdx = Math.min(targetIdx, targets.length - 1);
-          }
-        } else {
-          msg = `${RED}✗ ${res.data.error}${R}`;
-        }
-      }
+    const artKey = targets[targetIndex]?.species ?? "";
+    if (artKey !== lastArtKey) {
+      currentArt = await getCachedArt(artKey, () => fetchArt(artKey));
+      lastArtKey = artKey;
     }
+
+    const itemCount = inventory[selectedItem] ?? 0;
+    lineCount = redraw(
+      buildTargetsLines(selectedItem, itemCount, targets, targetIndex, currentArt, message, catalog),
+      lineCount,
+      firstRender,
+    );
+    firstRender = false;
+    message = "";
+
+    const key = await waitKey();
+    if (key === "\x03") {
+      process.stdout.write("\x1b[?25h");
+      process.exit(0);
+    }
+    if (key === "\x1b" || key === "q") {
+      mode = "items";
+      lastArtKey = "";
+      currentArt = null;
+      firstRender = true;
+      continue;
+    }
+    if (key === "\x1b[A" && targetIndex > 0) {
+      targetIndex -= 1;
+      continue;
+    }
+    if (key === "\x1b[B" && targetIndex < targets.length - 1) {
+      targetIndex += 1;
+      continue;
+    }
+    if (key !== "\r") {
+      continue;
+    }
+
+    const target = targets[targetIndex];
+    if (!target) {
+      continue;
+    }
+
+    const response = await apiPost(resolveItemAction(selectedItem, catalog), {
+      item: selectedItem,
+      pokemonUid: target.uid,
+    });
+    if (!response.ok) {
+      message = `${RED}${response.data.error}${R}`;
+      continue;
+    }
+
+    message = `${GRN}${response.data.message ?? `${getItemName(selectedItem, catalog)} used successfully.`}${R}`;
+    await Promise.all([refreshInventory(), refreshParty()]);
+    if ((inventory[selectedItem] ?? 0) <= 0) {
+      mode = "items";
+      lastArtKey = "";
+      currentArt = null;
+      firstRender = true;
+      continue;
+    }
+
+    targets = getTargetsForItem(selectedItem, party, catalog);
+    if (targets.length === 0) {
+      mode = "items";
+      lastArtKey = "";
+      currentArt = null;
+      firstRender = true;
+      continue;
+    }
+
+    targetIndex = Math.min(targetIndex, targets.length - 1);
   }
 
   process.stdout.write("\x1b[?25h");

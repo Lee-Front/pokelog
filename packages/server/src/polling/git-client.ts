@@ -13,9 +13,28 @@ export interface CommitInfo {
   message: string;
 }
 
-export async function testRepoAccess(url: string): Promise<{ ok: boolean; branches: string[]; error?: string }> {
+function injectTokenUrl(url: string, token: string): string {
   try {
-    const { stdout } = await exec("git", ["ls-remote", "--heads", url]);
+    const parsed = new URL(url);
+    parsed.username = "oauth2";
+    parsed.password = token;
+    return parsed.toString();
+  } catch {
+    return url;
+  }
+}
+
+export function resolveRepoUrl(url: string, authMode?: string, token?: string): string {
+  if (authMode === "token" && token) {
+    return injectTokenUrl(url, token);
+  }
+  return url;
+}
+
+export async function testRepoAccess(url: string, authMode?: string, token?: string): Promise<{ ok: boolean; branches: string[]; error?: string }> {
+  try {
+    const effectiveUrl = resolveRepoUrl(url, authMode, token);
+    const { stdout } = await exec("git", ["ls-remote", "--heads", effectiveUrl]);
     const branches = stdout
       .trim()
       .split("\n")
@@ -33,9 +52,12 @@ export async function testRepoAccess(url: string): Promise<{ ok: boolean; branch
 export async function cloneBareRepo(
   url: string,
   targetDir: string,
+  authMode?: string,
+  token?: string,
 ): Promise<void> {
   await fs.mkdir(path.dirname(targetDir), { recursive: true });
-  await exec("git", ["clone", "--bare", url, targetDir]);
+  const effectiveUrl = resolveRepoUrl(url, authMode, token);
+  await exec("git", ["clone", "--bare", effectiveUrl, targetDir]);
 }
 
 /** Fetch latest from origin */

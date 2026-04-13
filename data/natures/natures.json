@@ -1,0 +1,152 @@
+[
+  {
+    "id": "adamant",
+    "name": "고집",
+    "increasedStat": "attack",
+    "decreasedStat": "spAttack"
+  },
+  {
+    "id": "bashful",
+    "name": "수줍음",
+    "increasedStat": null,
+    "decreasedStat": null
+  },
+  {
+    "id": "bold",
+    "name": "대담",
+    "increasedStat": "defense",
+    "decreasedStat": "attack"
+  },
+  {
+    "id": "brave",
+    "name": "용감",
+    "increasedStat": "attack",
+    "decreasedStat": "speed"
+  },
+  {
+    "id": "calm",
+    "name": "차분",
+    "increasedStat": "spDefense",
+    "decreasedStat": "attack"
+  },
+  {
+    "id": "careful",
+    "name": "신중",
+    "increasedStat": "spDefense",
+    "decreasedStat": "spAttack"
+  },
+  {
+    "id": "docile",
+    "name": "온순",
+    "increasedStat": null,
+    "decreasedStat": null
+  },
+  {
+    "id": "gentle",
+    "name": "얌전",
+    "increasedStat": "spDefense",
+    "decreasedStat": "defense"
+  },
+  {
+    "id": "hardy",
+    "name": "노력",
+    "increasedStat": null,
+    "decreasedStat": null
+  },
+  {
+    "id": "hasty",
+    "name": "성급",
+    "increasedStat": "speed",
+    "decreasedStat": "defense"
+  },
+  {
+    "id": "impish",
+    "name": "장난꾸러기",
+    "increasedStat": "defense",
+    "decreasedStat": "spAttack"
+  },
+  {
+    "id": "jolly",
+    "name": "명랑",
+    "increasedStat": "speed",
+    "decreasedStat": "spAttack"
+  },
+  {
+    "id": "lax",
+    "name": "촐랑",
+    "increasedStat": "defense",
+    "decreasedStat": "spDefense"
+  },
+  {
+    "id": "lonely",
+    "name": "외로움",
+    "increasedStat": "attack",
+    "decreasedStat": "defense"
+  },
+  {
+    "id": "mild",
+    "name": "의젓",
+    "increasedStat": "spAttack",
+    "decreasedStat": "defense"
+  },
+  {
+    "id": "modest",
+    "name": "조심",
+    "increasedStat": "spAttack",
+    "decreasedStat": "attack"
+  },
+  {
+    "id": "naive",
+    "name": "천진난만",
+    "increasedStat": "speed",
+    "decreasedStat": "spDefense"
+  },
+  {
+    "id": "naughty",
+    "name": "개구쟁이",
+    "increasedStat": "attack",
+    "decreasedStat": "spDefense"
+  },
+  {
+    "id": "quiet",
+    "name": "냉정",
+    "increasedStat": "spAttack",
+    "decreasedStat": "speed"
+  },
+  {
+    "id": "quirky",
+    "name": "변덕",
+    "increasedStat": null,
+    "decreasedStat": null
+  },
+  {
+    "id": "rash",
+    "name": "덜렁",
+    "increasedStat": "spAttack",
+    "decreasedStat": "spDefense"
+  },
+  {
+    "id": "relaxed",
+    "name": "무사태평",
+    "increasedStat": "defense",
+    "decreasedStat": "speed"
+  },
+  {
+    "id": "sassy",
+    "name": "건방",
+    "increasedStat": "spDefense",
+    "decreasedStat": "speed"
+  },
+  {
+    "id": "serious",
+    "name": "성실",
+    "increasedStat": null,
+    "decreasedStat": null
+  },
+  {
+    "id": "timid",
+    "name": "겁쟁이",
+    "increasedStat": "speed",
+    "decreasedStat": "attack"
+  }
+]

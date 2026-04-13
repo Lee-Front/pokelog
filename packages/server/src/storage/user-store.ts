@@ -1,8 +1,12 @@
 import path from "node:path";
 import fs from "node:fs/promises";
 import { readJson, writeJson } from "./json-store.js";
-import type { GitIntegration, Integration, UserData } from "../../../../shared/types.js";
+import type { GitIntegration, Integration, OwnedPokemon, UserData } from "../../../../shared/types.js";
 import { DATA_DIR } from "../paths.js";
+import { getSpeciesByName } from "../game/data-loader.js";
+import { normalizeDamageTakenTotal } from "../game/battle-progress.js";
+import { resolvePokemonGender, seededGenderRoll } from "../game/pokemon-gender.js";
+import { normalizeMoveUsageCounts } from "../game/move-usage.js";
 
 function userPath(userId: string): string {
   return path.join(DATA_DIR, "users", `${userId}.json`);
@@ -46,6 +50,52 @@ export async function isEmailTaken(email: string): Promise<boolean> {
   return user !== null;
 }
 
+export async function searchUsersByIdentity(
+  query: string,
+  options: {
+    excludeUserId?: string;
+    limit?: number;
+  } = {},
+): Promise<Array<{ id: string; nickname: string }>> {
+  const normalizedQuery = query.trim().toLowerCase();
+  if (!normalizedQuery) {
+    return [];
+  }
+
+  const users = await getAllUsers();
+  const ranked = users
+    .filter((user) => user.account.id !== options.excludeUserId)
+    .map((user) => {
+      const id = user.account.id;
+      const nickname = user.account.nickname;
+      const normalizedId = id.toLowerCase();
+      const normalizedNickname = nickname.toLowerCase();
+
+      let score = -1;
+      if (normalizedId === normalizedQuery) score = 100;
+      else if (normalizedNickname === normalizedQuery) score = 95;
+      else if (normalizedId.startsWith(normalizedQuery)) score = 80;
+      else if (normalizedNickname.startsWith(normalizedQuery)) score = 75;
+      else if (normalizedId.includes(normalizedQuery)) score = 50;
+      else if (normalizedNickname.includes(normalizedQuery)) score = 45;
+
+      return {
+        id,
+        nickname,
+        score,
+      };
+    })
+    .filter((entry) => entry.score >= 0)
+    .sort((left, right) => (
+      right.score - left.score
+      || left.id.localeCompare(right.id)
+    ));
+
+  return ranked
+    .slice(0, Math.max(1, options.limit ?? 10))
+    .map(({ id, nickname }) => ({ id, nickname }));
+}
+
 function normalizeIntegration(integration: Integration): Integration {
   return {
     ...integration,
@@ -53,9 +103,34 @@ function normalizeIntegration(integration: Integration): Integration {
   };
 }
 
+function normalizeOwnedPokemon(pokemon: OwnedPokemon): OwnedPokemon {
+  const species = getSpeciesByName(pokemon.species);
+  const gender = pokemon.gender ?? resolvePokemonGender(
+    species?.genderRate,
+    seededGenderRoll(`${pokemon.uid}:${pokemon.species}`),
+  );
+
+  return {
+    ...pokemon,
+    variantId: pokemon.variantId ?? null,
+    gender,
+    friendship: pokemon.friendship ?? 70,
+    heldItem: pokemon.heldItem ?? null,
+    abilityId: pokemon.abilityId ?? null,
+    moveUsageCounts: normalizeMoveUsageCounts(pokemon.moveUsageCounts),
+    damageTakenTotal: normalizeDamageTakenTotal(pokemon.damageTakenTotal),
+    tradeLocked: pokemon.tradeLocked ?? false,
+  };
+}
+
 function normalizeUserData(user: UserData): UserData {
   return {
     ...user,
+    currentRegion: user.currentRegion ?? "default",
+    pokemon: Array.isArray(user.pokemon) ? user.pokemon.map(normalizeOwnedPokemon) : [],
+    storage: Array.isArray(user.storage) ? user.storage.map(normalizeOwnedPokemon) : [],
+    eggs: Array.isArray(user.eggs) ? user.eggs : [],
+    pendingEvolutions: Array.isArray(user.pendingEvolutions) ? user.pendingEvolutions : [],
     integrations: Array.isArray(user.integrations)
       ? user.integrations.map(normalizeIntegration)
       : [],

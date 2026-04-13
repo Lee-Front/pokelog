@@ -8,6 +8,8 @@ const DEFAULT_SYNC_STATE: SyncState = {
   repos: {},
   integrations: {
     notion: {},
+    jira: {},
+    slack: {},
   },
 };
 
@@ -21,6 +23,8 @@ export async function getSyncState(): Promise<SyncState> {
       ...DEFAULT_SYNC_STATE.integrations,
       ...state.integrations,
       notion: state.integrations?.notion ?? {},
+      jira: state.integrations?.jira ?? {},
+      slack: state.integrations?.slack ?? {},
     },
   };
 }

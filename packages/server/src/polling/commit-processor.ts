@@ -4,11 +4,19 @@ import { calculateReward } from "../game/reward.js";
 import { judgeCombo, getComboMultiplier } from "../game/combo.js";
 import { checkEncounter, selectWildPokemon } from "../game/encounter.js";
 import { createWildPokemon } from "../game/pokemon-factory.js";
-import { checkLevelUp, checkEvolution, calculateStatsForLevel } from "../game/growth.js";
+import {
+  applyLearnedMoves,
+  buildLevelEvolutionContext,
+  checkLevelUp,
+  calculateStatsForLevel,
+  evolvePokemon,
+  getMatchingEvolutionBranches,
+} from "../game/growth.js";
 import { getCommitByteChanges } from "./git-client.js";
 import type { CommitInfo } from "./git-client.js";
 import { getRegion } from "../game/data-loader.js";
 import { createEncounterEvent } from "../game/event-factory.js";
+import { clearPendingEvolutionForPokemon, queuePendingEvolution } from "../game/pending-evolution.js";
 
 export async function processCommit(
   commit: CommitInfo,
@@ -49,29 +57,43 @@ export async function processCommit(
     // Apply rewards
     user.points += reward.points;
     user.totalExp += reward.exp;
+    const currentRegion = user.currentRegion ?? "default";
 
     // Distribute EXP to party pokemon
     if (user.party.length > 0) {
       const expPerPokemon = Math.floor(reward.exp / user.party.length);
-      for (const uid of user.party) {
-        const pokemon = user.pokemon.find((p) => p.uid === uid);
+      const partyPokemon = user.party
+        .map((uid) => user.pokemon.find((p) => p.uid === uid))
+        .filter((pokemon): pokemon is NonNullable<typeof pokemon> => Boolean(pokemon));
+
+      for (const pokemon of partyPokemon) {
         if (pokemon) {
           pokemon.exp += expPerPokemon;
           const result = checkLevelUp(pokemon);
           if (result.leveled) {
             pokemon.level = result.newLevel;
+            applyLearnedMoves(pokemon, result.newMoves);
             const newStats = calculateStatsForLevel(pokemon.species, result.newLevel);
             pokemon.maxHp = newStats.maxHp;
             pokemon.hp = Math.min(pokemon.hp, pokemon.maxHp);
             pokemon.stats = newStats.stats;
-            const evolved = checkEvolution(pokemon.species, result.newLevel);
-            if (evolved) {
-              pokemon.species = evolved;
+            const matchingBranches = getMatchingEvolutionBranches(
+              pokemon.species,
+              {
+                level: result.newLevel,
+                ...buildLevelEvolutionContext(pokemon, partyPokemon, {
+                  now: new Date(commit.timestamp),
+                  region: currentRegion,
+                }),
+              },
+            );
+            if (matchingBranches.length === 1) {
+              const evolved = matchingBranches[0].targetSpecies;
+              clearPendingEvolutionForPokemon(user, pokemon.uid);
+              evolvePokemon(pokemon, evolved);
               if (!user.pokedex.includes(evolved)) user.pokedex.push(evolved);
-              const evoStats = calculateStatsForLevel(evolved, result.newLevel);
-              pokemon.maxHp = evoStats.maxHp;
-              pokemon.hp = Math.min(pokemon.hp, pokemon.maxHp);
-              pokemon.stats = evoStats.stats;
+            } else if (matchingBranches.length > 1) {
+              queuePendingEvolution(user, pokemon, matchingBranches);
             }
           }
         }
@@ -89,7 +111,7 @@ export async function processCommit(
     user.encounterCeiling.accumulatedBytes = encounterResult.newCeiling;
 
     if (encounterResult.encountered) {
-      const regionData = getRegion("default");
+      const regionData = getRegion(currentRegion);
       const wildInfo = selectWildPokemon(regionData);
       const wildPokemon = createWildPokemon(wildInfo.species, wildInfo.level);
 

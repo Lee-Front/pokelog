@@ -1,6 +1,7 @@
 node_modules/
 dist/
 pokelog-data/
+.cache/
 .pokelog/
 *.js.map
 .env.local

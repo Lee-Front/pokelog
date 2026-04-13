@@ -1,0 +1,25 @@
+{
+  "name": "Kalos",
+  "encounters": [
+    { "species": "bunnelby", "weight": 105, "levelRange": [2, 5] },
+    { "species": "fletchling", "weight": 105, "levelRange": [2, 5] },
+    { "species": "scatterbug", "weight": 95, "levelRange": [2, 4] },
+    { "species": "litleo", "weight": 70, "levelRange": [4, 7] },
+    { "species": "flabebe", "weight": 70, "levelRange": [4, 7] },
+    { "species": "dedenne", "weight": 60, "levelRange": [4, 7] },
+    { "species": "skiddo", "weight": 60, "levelRange": [5, 8] },
+    { "species": "pancham", "weight": 50, "levelRange": [5, 8] },
+    { "species": "espurr", "weight": 45, "levelRange": [6, 9] },
+    { "species": "honedge", "weight": 35, "levelRange": [7, 10] },
+    { "species": "inkay", "weight": 30, "levelRange": [7, 10] },
+    { "species": "helioptile", "weight": 30, "levelRange": [7, 10] },
+    { "species": "binacle", "weight": 24, "levelRange": [7, 11] },
+    { "species": "swirlix", "weight": 20, "levelRange": [8, 12] },
+    { "species": "hawlucha", "weight": 15, "levelRange": [10, 14] },
+    { "species": "tyrunt", "weight": 8, "levelRange": [10, 14] },
+    { "species": "amaura", "weight": 8, "levelRange": [10, 14] },
+    { "species": "goomy", "weight": 12, "levelRange": [10, 14] },
+    { "species": "noibat", "weight": 12, "levelRange": [10, 14] },
+    { "species": "phantump", "weight": 10, "levelRange": [10, 14] }
+  ]
+}

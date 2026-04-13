@@ -1,0 +1,2228 @@
+[
+  {
+    "id": "adaptability",
+    "name": "적응력",
+    "shortEffect": "타입이 같은 기술의 위력이 올라간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "aerilate",
+    "name": "스카이스킨",
+    "shortEffect": "노말타입의 기술이 비행타입이 된다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "aftermath",
+    "name": "유폭",
+    "shortEffect": "기절할 때 스친 상대에게 데미지를 준다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "air-lock",
+    "name": "에어록",
+    "shortEffect": "날씨의 영향이 없어진다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "analytic",
+    "name": "애널라이즈",
+    "shortEffect": "제일 마지막에 기술을 쓰면 강해진다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "anger-point",
+    "name": "분노의경혈",
+    "shortEffect": "급소에 맞으면 공격이 올라간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "anger-shell",
+    "name": "Anger Shell",
+    "shortEffect": "When an attack causes its HP to drop to half or less, the Pokémon gets angry. This lowers its Defense and Sp. Def stats but boosts its Attack, Sp. Atk, and Speed stats.",
+    "isMainSeries": true
+  },
+  {
+    "id": "anticipation",
+    "name": "위험예지",
+    "shortEffect": "상대가 지닌 위험한 기술을 감지한다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "aqua-boost",
+    "name": "Aqua Boost",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "arena-trap",
+    "name": "개미지옥",
+    "shortEffect": "배틀에서 상대를 도망칠 수 없게 한다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "armor-tail",
+    "name": "Armor Tail",
+    "shortEffect": "The mysterious tail covering the Pokémon's head makes opponents unable to use priority moves against the Pokémon or its allies.",
+    "isMainSeries": true
+  },
+  {
+    "id": "aroma-veil",
+    "name": "아로마베일",
+    "shortEffect": "같은 편으로 향하는 멘탈 공격을 막는다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "as-one-glastrier",
+    "name": "혼연일체",
+    "shortEffect": "버드렉스의 긴장감과 블리자포스의 백의울음 두 가지 특성을 겸비한다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "as-one-spectrier",
+    "name": "혼연일체",
+    "shortEffect": "버드렉스의 긴장감과 레이스포스의 흑의울음 두 가지 특성을 겸비한다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "aura-break",
+    "name": "오라브레이크",
+    "shortEffect": "오라의 효과가 반대가 된다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "bad-dreams",
+    "name": "나이트메어",
+    "shortEffect": "잠들어 있는 상대의 HP를 줄인다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "ball-fetch",
+    "name": "볼줍기",
+    "shortEffect": "도구를 지니고 있지 않은 경우 첫 번째로 던져서 실패한 몬스터볼을 주워온다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "battery",
+    "name": "배터리",
+    "shortEffect": "같은 편 특수 기술의 위력을 올린다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "battle-armor",
+    "name": "전투무장",
+    "shortEffect": "상대의 공격이 급소에 맞지 않는다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "battle-bond",
+    "name": "유대변화",
+    "shortEffect": "상대를 쓰러뜨리면 트레이너와의 유대감이 깊어져서 지우개굴닌자로 변한다. 물수리검이 강해진다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "beads-of-ruin",
+    "name": "Beads of Ruin",
+    "shortEffect": "The power of the Pokémon's ruinous beads lowers the Sp. Def stats of all Pokémon except itself.",
+    "isMainSeries": true
+  },
+  {
+    "id": "beast-boost",
+    "name": "비스트부스트",
+    "shortEffect": "상대를 기절시켰을 때 자신의 가장 높은 능력이 올라간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "berserk",
+    "name": "발끈",
+    "shortEffect": "상대의 공격으로 HP가 절반이 되면 특수공격이 올라간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "big-pecks",
+    "name": "부풀린가슴",
+    "shortEffect": "방어를 떨어뜨리는 공격을 받지 않는다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "black-hole",
+    "name": "Black Hole",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "blaze",
+    "name": "맹화",
+    "shortEffect": "위급할 때 불꽃타입의 위력이 올라간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "bodyguard",
+    "name": "Bodyguard",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "bonanza",
+    "name": "Bonanza",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "bulletproof",
+    "name": "방탄",
+    "shortEffect": "구슬이나 폭탄에 맞지 않는다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "calming",
+    "name": "Calming",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "celebrate",
+    "name": "Celebrate",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "cheek-pouch",
+    "name": "볼주머니",
+    "shortEffect": "어떤 나무열매라도 먹으면 HP도 회복한다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "chilling-neigh",
+    "name": "백의울음",
+    "shortEffect": "상대를 쓰러뜨리면 차가운 울음소리를 내면서 공격이 올라간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "chlorophyll",
+    "name": "엽록소",
+    "shortEffect": "맑을 때 스피드가 올라간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "clear-body",
+    "name": "클리어바디",
+    "shortEffect": "상대가 능력을 떨어뜨릴 수 없다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "climber",
+    "name": "Climber",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "cloud-nine",
+    "name": "날씨부정",
+    "shortEffect": "날씨의 영향이 없어진다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "color-change",
+    "name": "변색",
+    "shortEffect": "받은 기술의 타입으로 변화한다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "comatose",
+    "name": "절대안깸",
+    "shortEffect": "항상 비몽사몽 상태로 절대 깨지 않는다. 잠든 상태로 공격할 수 있다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "commander",
+    "name": "Commander",
+    "shortEffect": "When the Pokémon enters a battle, it goes inside the mouth of an ally Dondozo if one is on the field. The Pokémon then issues commands from there.",
+    "isMainSeries": true
+  },
+  {
+    "id": "competitive",
+    "name": "승기",
+    "shortEffect": "능력이 떨어지면 특수공격이 올라간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "compound-eyes",
+    "name": "복안",
+    "shortEffect": "기술의 명중률이 올라간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "confidence",
+    "name": "Confidence",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "conqueror",
+    "name": "Conqueror",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "contrary",
+    "name": "심술꾸러기",
+    "shortEffect": "능력의 변화가 역전된다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "corrosion",
+    "name": "부식",
+    "shortEffect": "강철타입이나 독타입도 독 상태로 만들 수 있다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "costar",
+    "name": "Costar",
+    "shortEffect": "When the Pokémon enters a battle, it copies an ally's stat changes.",
+    "isMainSeries": true
+  },
+  {
+    "id": "cotton-down",
+    "name": "솜털",
+    "shortEffect": "공격을 받으면 솜털을 흩뿌려서 자신을 제외한 모든 포켓몬의 스피드를 떨어뜨린다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "cud-chew",
+    "name": "Cud Chew",
+    "shortEffect": "When the Pokémon eats a Berry, it will regurgitate that Berry at the end of the next turn and eat it one more time.",
+    "isMainSeries": true
+  },
+  {
+    "id": "curious-medicine",
+    "name": "기묘한약",
+    "shortEffect": "등장했을 때 조개껍질에서 약을 흩뿌려서 능력 변화를 원래대로 되돌린다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "cursed-body",
+    "name": "저주받은바디",
+    "shortEffect": "공격받으면 가끔 상대를 사슬묶기 상태로 만든다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "cute-charm",
+    "name": "헤롱헤롱바디",
+    "shortEffect": "스치면 헤롱헤롱 상태가 될 때가 있다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "damp",
+    "name": "습기",
+    "shortEffect": "누구도 폭발 할 수 없게 된다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "dancer",
+    "name": "무희",
+    "shortEffect": "누군가 춤 기술을 쓰면 자신도 이어서 춤 기술을 쓸 수 있다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "dark-aura",
+    "name": "다크오라",
+    "shortEffect": "전원의 악타입 기술이 강해진다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "dauntless-shield",
+    "name": "불굴의방패",
+    "shortEffect": "등장했을 때 방어가 올라간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "daze",
+    "name": "Daze",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "dazzling",
+    "name": "비비드바디",
+    "shortEffect": "상대를 놀라게 해서 이쪽을 향한 선제 기술을 사용할 수 없게 한다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "decoy",
+    "name": "Decoy",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "deep-sleep",
+    "name": "Deep Sleep",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "defeatist",
+    "name": "무기력",
+    "shortEffect": "HP가 절반이 되면 능력이 떨어진다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "defiant",
+    "name": "오기",
+    "shortEffect": "능력이 떨어지면 공격이 올라간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "delta-stream",
+    "name": "델타스트림",
+    "shortEffect": "비행타입의 약점이 없어지는 날씨로 만든다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "desolate-land",
+    "name": "끝의대지",
+    "shortEffect": "물타입의 공격을 받지 않는 날씨로 만든다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "disguise",
+    "name": "탈",
+    "shortEffect": "몸을 덮는 탈로 1번 공격을 막을 수 있다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "disgust",
+    "name": "Disgust",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "dodge",
+    "name": "Dodge",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "download",
+    "name": "다운로드",
+    "shortEffect": "상대의 능력을 보고 능력치를 바꾼다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "dragonize",
+    "name": "Dragonize",
+    "shortEffect": "The Pokémon's Normal-type moves become Dragon-type moves and their power is boosted by 20%.",
+    "isMainSeries": true
+  },
+  {
+    "id": "dragons-maw",
+    "name": "용의턱",
+    "shortEffect": "드래곤타입 기술의 위력이 올라간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "drizzle",
+    "name": "잔비",
+    "shortEffect": "배틀에 나가면 비를 내린다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "drought",
+    "name": "가뭄",
+    "shortEffect": "배틀에 나가면 햇살이 강해진다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "dry-skin",
+    "name": "건조피부",
+    "shortEffect": "더우면 HP가 줄어든다. 물로 HP를 회복한다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "early-bird",
+    "name": "일찍기상",
+    "shortEffect": "잠듦 상태에서 빨리 깨어난다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "earth-eater",
+    "name": "Earth Eater",
+    "shortEffect": "If hit by a Ground-type move, the Pokémon has its HP restored instead of taking damage.",
+    "isMainSeries": true
+  },
+  {
+    "id": "effect-spore",
+    "name": "포자",
+    "shortEffect": "스치면 독, 마비, 잠듦 상태가 될 때가 있다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "electric-surge",
+    "name": "일렉트릭메이커",
+    "shortEffect": "등장했을 때 일렉트릭필드를 사용한다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "electromorphosis",
+    "name": "Electromorphosis",
+    "shortEffect": "The Pokémon becomes charged when it takes damage, boosting the power of the next Electric-type move the Pokémon uses.",
+    "isMainSeries": true
+  },
+  {
+    "id": "embody-aspect",
+    "name": "초상투영",
+    "shortEffect": "The Pokémon's heart fills with memories, causing the Mask to shine and one of the Pokémon's stats to be boosted.",
+    "isMainSeries": true
+  },
+  {
+    "id": "emergency-exit",
+    "name": "위기회피",
+    "shortEffect": "HP가 절반이 되면 위험을 회피하기 위해 지닌 포켓몬으로 돌아간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "explode",
+    "name": "Explode",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "fairy-aura",
+    "name": "페어리오라",
+    "shortEffect": "전원의 페어리타입 기술이 강해진다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "filter",
+    "name": "필터",
+    "shortEffect": "효과가 굉장한 기술의 위력을 약하게 한다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "flame-body",
+    "name": "불꽃몸",
+    "shortEffect": "접촉한 상대에게 화상을 입힐 때가 있다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "flame-boost",
+    "name": "Flame Boost",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "flare-boost",
+    "name": "열폭주",
+    "shortEffect": "화상 상태일 때 특수공격의 위력이 올라간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "flash-fire",
+    "name": "타오르는불꽃",
+    "shortEffect": "불꽃을 받으면 불꽃 기술이 강해진다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "flower-gift",
+    "name": "플라워기프트",
+    "shortEffect": "맑을 때 자신과 같은 편이 강해진다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "flower-veil",
+    "name": "플라워베일",
+    "shortEffect": "같은 편의 풀타입 포켓몬은 능력이 떨어지지 않는다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "fluffy",
+    "name": "복슬복슬",
+    "shortEffect": "상대로부터 받은 접촉하는 기술의 데미지를 반감시키지만 불꽃타입 기술의 데미지는 2배가 된다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "forecast",
+    "name": "기분파",
+    "shortEffect": "날씨에 따라 캐스퐁이 변화한다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "forewarn",
+    "name": "예지몽",
+    "shortEffect": "상대가 지닌 기술을 꿰뚫어볼 수 있다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "fortune",
+    "name": "Fortune",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "friend-guard",
+    "name": "프렌드가드",
+    "shortEffect": "같은 편의 데미지를 줄일 수 있다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "frighten",
+    "name": "Frighten",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "frisk",
+    "name": "통찰",
+    "shortEffect": "상대가 지닌 물건을 알 수 있다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "frostbite",
+    "name": "Frostbite",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "full-metal-body",
+    "name": "메탈프로텍트",
+    "shortEffect": "상대 기술이나 특성으로 능력을 떨어뜨릴 수 없다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "fur-coat",
+    "name": "퍼코트",
+    "shortEffect": "물리 기술의 데미지가 절반이 된다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "gale-wings",
+    "name": "질풍날개",
+    "shortEffect": "비행타입의 기술이 먼저 나오게 된다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "galvanize",
+    "name": "일렉트릭스킨",
+    "shortEffect": "노말타입 기술이 전기타입이 된다. 위력이 조금 올라간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "gluttony",
+    "name": "먹보",
+    "shortEffect": "나무열매를 여느 때보다 빨리 사용한다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "good-as-gold",
+    "name": "Good as Gold",
+    "shortEffect": "A body of pure, solid gold gives the Pokémon full immunity to other Pokémon's status moves.",
+    "isMainSeries": true
+  },
+  {
+    "id": "gooey",
+    "name": "미끈미끈",
+    "shortEffect": "접촉한 상대의 스피드를 떨어뜨린다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "gorilla-tactics",
+    "name": "무아지경",
+    "shortEffect": "공격이 올라가지만 처음에 선택한 기술 외에는 쓸 수 없게 된다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "grass-cloak",
+    "name": "Grass Cloak",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "grass-pelt",
+    "name": "풀모피",
+    "shortEffect": "그래스필드일 때 방어가 올라간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "grassy-surge",
+    "name": "그래스메이커",
+    "shortEffect": "등장했을 때 그래스필드를 사용한다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "grim-neigh",
+    "name": "흑의울음",
+    "shortEffect": "상대를 쓰러뜨리면 무서운 울음소리를 내면서 특수공격이 올라간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "guard-dog",
+    "name": "Guard Dog",
+    "shortEffect": "Boosts the Pokémon’s Attack stat if intimidated. Moves and items that would force the Pokémon to switch out also fail to work.",
+    "isMainSeries": true
+  },
+  {
+    "id": "gulp",
+    "name": "Gulp",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "gulp-missile",
+    "name": "그대로꿀꺽미사일",
+    "shortEffect": "파도타기나 다이빙을 쓰면 먹이를 물어온다. 데미지를 받으면 먹이를 토해내서 공격한다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "guts",
+    "name": "근성",
+    "shortEffect": "상태 이상이 되면 공격이 올라간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "hadron-engine",
+    "name": "Hadron Engine",
+    "shortEffect": "Turns the ground into Electric Terrain when the Pokémon enters a battle. The futuristic engine within the Pokémon also boosts its Sp. Atk stat on Electric Terrain.",
+    "isMainSeries": true
+  },
+  {
+    "id": "harvest",
+    "name": "수확",
+    "shortEffect": "사용한 나무열매를 몇 번이고 만들어 낸다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "healer",
+    "name": "치유의마음",
+    "shortEffect": "같은 편의 상태 이상을 가끔 회복시킨다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "heatproof",
+    "name": "내열",
+    "shortEffect": "불꽃 기술의 위력을 약하게 한다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "heavy-metal",
+    "name": "헤비메탈",
+    "shortEffect": "자신의 무게가 2배가 된다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "herbivore",
+    "name": "Herbivore",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "hero",
+    "name": "Hero",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "high-rise",
+    "name": "High-rise",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "honey-gather",
+    "name": "꿀모으기",
+    "shortEffect": "달콤한꿀을 모아서 올 때가 있다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "hospitality",
+    "name": "대접",
+    "shortEffect": "When the Pokémon enters a battle, it showers its ally with hospitality, restoring a small amount of the ally's HP",
+    "isMainSeries": true
+  },
+  {
+    "id": "hot-blooded",
+    "name": "Hot Blooded",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "huge-power",
+    "name": "천하장사",
+    "shortEffect": "물리공격의 위력이 올라간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "hunger-switch",
+    "name": "꼬르륵스위치",
+    "shortEffect": "턴이 끝날 때마다 배부른 모양, 배고픈 모양, 배부른 모양...으로 번갈아서 모습을 바꾼다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "hustle",
+    "name": "의욕",
+    "shortEffect": "공격은 높지만 빗나가기 쉽다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "hydration",
+    "name": "촉촉바디",
+    "shortEffect": "비가 오면 상태 이상이 회복된다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "hyper-cutter",
+    "name": "괴력집게",
+    "shortEffect": "상대가 공격을 떨어뜨리지 못한다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "ice-body",
+    "name": "아이스바디",
+    "shortEffect": "싸라기눈일 때 HP를 조금씩 회복한다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "ice-face",
+    "name": "아이스페이스",
+    "shortEffect": "물리공격을 머리의 얼음이 대신 맞아주지만 모습도 바뀐다. 얼음은 싸라기눈이 내리면 원래대로 돌아온다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "ice-scales",
+    "name": "얼음인분",
+    "shortEffect": "얼음인분의 보호를 받아 특수공격으로 받는 데미지가 절반이 된다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "illuminate",
+    "name": "발광",
+    "shortEffect": "야생 포켓몬과 만나기 쉬워진다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "illusion",
+    "name": "일루전",
+    "shortEffect": "뒤의 포켓몬으로 둔갑하여 나온다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "immunity",
+    "name": "면역",
+    "shortEffect": "독 상태가 되지 않는다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "imposter",
+    "name": "괴짜",
+    "shortEffect": "눈앞의 포켓몬으로 변신해버린다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "infiltrator",
+    "name": "틈새포착",
+    "shortEffect": "상대의 벽을 뚫고 공격한다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "innards-out",
+    "name": "내용물분출",
+    "shortEffect": "상대가 쓰러뜨렸을 때 HP의 남은 양만큼 상대에게 데미지를 준다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "inner-focus",
+    "name": "정신력",
+    "shortEffect": "풀죽지 않는다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "insomnia",
+    "name": "불면",
+    "shortEffect": "잠듦 상태가 되지 않는다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "instinct",
+    "name": "Instinct",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "interference",
+    "name": "Interference",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "intimidate",
+    "name": "위협",
+    "shortEffect": "상대의 공격을 떨어뜨린다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "intrepid-sword",
+    "name": "불요의검",
+    "shortEffect": "등장했을 때 공격이 올라간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "iron-barbs",
+    "name": "철가시",
+    "shortEffect": "접촉한 상대에게 상처를 입힌다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "iron-fist",
+    "name": "철주먹",
+    "shortEffect": "펀치를 사용하는 기술의 위력이 올라간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "jagged-edge",
+    "name": "Jagged Edge",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "justified",
+    "name": "정의의마음",
+    "shortEffect": "악 기술을 받으면 공격이 올라간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "keen-eye",
+    "name": "날카로운눈",
+    "shortEffect": "명중률이 떨어지지 않는다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "klutz",
+    "name": "서투름",
+    "shortEffect": "지니고 있는 도구를 쓸 수 없다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "last-bastion",
+    "name": "Last Bastion",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "leaf-guard",
+    "name": "리프가드",
+    "shortEffect": "맑을 때는 상태 이상이 되지 않는다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "levitate",
+    "name": "부유",
+    "shortEffect": "땅타입의 기술을 받지 않는다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "libero",
+    "name": "리베로",
+    "shortEffect": "자신이 사용한 기술과 같은 타입으로 변화한다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "life-force",
+    "name": "Life Force",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "light-metal",
+    "name": "라이트메탈",
+    "shortEffect": "자신의 무게가 절반이 된다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "lightning-rod",
+    "name": "피뢰침",
+    "shortEffect": "전기를 끌어모아 특수공격을 올린다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "limber",
+    "name": "유연",
+    "shortEffect": "마비 상태가 되지 않는다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "lingering-aroma",
+    "name": "Lingering Aroma",
+    "shortEffect": "Contact with the Pokémon changes the attacker's Ability to Lingering Aroma.",
+    "isMainSeries": true
+  },
+  {
+    "id": "liquid-ooze",
+    "name": "해감액",
+    "shortEffect": "흡수한 상대의 HP를 줄인다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "liquid-voice",
+    "name": "촉촉보이스",
+    "shortEffect": "모든 소리 기술이 물타입이 된다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "long-reach",
+    "name": "원격",
+    "shortEffect": "모든 기술을 상대에게 접촉하지 않고 사용할 수 있다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "lullaby",
+    "name": "Lullaby",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "lunchbox",
+    "name": "Lunchbox",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "magic-bounce",
+    "name": "매직미러",
+    "shortEffect": "변화 기술을 되받아칠 수 있다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "magic-guard",
+    "name": "매직가드",
+    "shortEffect": "공격 이외에는 데미지를 입지 않는다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "magician",
+    "name": "매지션",
+    "shortEffect": "기술을 맞은 상대의 도구를 빼앗아 버린다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "magma-armor",
+    "name": "마그마의무장",
+    "shortEffect": "얼음 상태가 되지 않는다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "magnet-pull",
+    "name": "자력",
+    "shortEffect": "강철의 포켓몬을 도망칠 수 없게 한다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "marvel-scale",
+    "name": "이상한비늘",
+    "shortEffect": "상태 이상이 되면 방어가 올라간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "medic",
+    "name": "Medic",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "mega-launcher",
+    "name": "메가런처",
+    "shortEffect": "파동 기술의 위력이 크다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "mega-sol",
+    "name": "Mega Sol",
+    "shortEffect": "Even when the sunlight has not turned harsh, the Pokémon can use its moves as if the weather were harsh sunlight.",
+    "isMainSeries": true
+  },
+  {
+    "id": "melee",
+    "name": "Melee",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "merciless",
+    "name": "무도한행동",
+    "shortEffect": "독 상태의 상대를 공격하면 반드시 급소에 맞는다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "mimicry",
+    "name": "의태",
+    "shortEffect": "필드의 상태에 따라 포켓몬의 타입이 바뀐다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "minds-eye",
+    "name": "심안",
+    "shortEffect": "The Pokémon ignores changes to opponents' evasiveness, its accuracy can't be lowered, and it can hit Ghost types with Normal-type and Fighting-type moves",
+    "isMainSeries": true
+  },
+  {
+    "id": "minus",
+    "name": "마이너스",
+    "shortEffect": "플러스나 마이너스가 있으면 특수공격이 올라간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "mirror-armor",
+    "name": "미러아머",
+    "shortEffect": "자신이 받는 능력 다운 효과에 한해 되받아친다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "misty-surge",
+    "name": "미스트메이커",
+    "shortEffect": "등장했을 때 미스트필드를 사용한다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "mold-breaker",
+    "name": "틀깨기",
+    "shortEffect": "특성에 관계없이 상대에게 기술을 쓸 수 있다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "mood-maker",
+    "name": "Mood Maker",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "moody",
+    "name": "변덕쟁이",
+    "shortEffect": "능력이 오르락내리락한다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "motor-drive",
+    "name": "전기엔진",
+    "shortEffect": "전기를 받으면 스피드가 올라간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "mountaineer",
+    "name": "Mountaineer",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "moxie",
+    "name": "자기과신",
+    "shortEffect": "상대를 쓰러뜨리면 공격이 올라간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "multiscale",
+    "name": "멀티스케일",
+    "shortEffect": "HP가 꽉 찼을 때 데미지가 줄어든다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "multitype",
+    "name": "멀티타입",
+    "shortEffect": "지니고 있는 플레이트에 따라 타입이 바뀐다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "mummy",
+    "name": "미라",
+    "shortEffect": "상대의 기술을 받으면 상대를 미라로 만든다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "mycelium-might",
+    "name": "Mycelium Might",
+    "shortEffect": "The Pokémon will always act more slowly when using status moves, but these moves will be unimpeded by the Ability of the target.",
+    "isMainSeries": true
+  },
+  {
+    "id": "natural-cure",
+    "name": "자연회복",
+    "shortEffect": "배틀에서 일단 물러나면 상태 이상이 회복된다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "neuroforce",
+    "name": "브레인포스",
+    "shortEffect": "효과가 굉장한 공격의 위력이 더욱 올라간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "neutralizing-gas",
+    "name": "화학변화가스",
+    "shortEffect": "화학변화가스를 가진 포켓몬이 배틀에 나와 있으면 모든 포켓몬이 가진 특성의 효과가 사라지거나 발동하지 않게 된다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "no-guard",
+    "name": "노가드",
+    "shortEffect": "서로의 기술이 반드시 맞는다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "nomad",
+    "name": "Nomad",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "normalize",
+    "name": "노말스킨",
+    "shortEffect": "쓴 기술이 모두 노말타입이 된다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "nurse",
+    "name": "Nurse",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "oblivious",
+    "name": "둔감",
+    "shortEffect": "헤롱헤롱이나 도발 상태가 되지 않는다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "omnipotent",
+    "name": "Omnipotent",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "opportunist",
+    "name": "Opportunist",
+    "shortEffect": "If an opponent's stat is boosted, the Pokémon seizes the opportunity to boost the same stat for itself.",
+    "isMainSeries": true
+  },
+  {
+    "id": "orichalcum-pulse",
+    "name": "Orichalcum Pulse",
+    "shortEffect": "Turns the sunlight harsh when the Pokémon enters a battle. The ancient pulse thrumming through the Pokémon also boosts its Attack stat in harsh sunlight.",
+    "isMainSeries": true
+  },
+  {
+    "id": "overcoat",
+    "name": "방진",
+    "shortEffect": "먼지나 가루를 막는다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "overgrow",
+    "name": "심록",
+    "shortEffect": "위급할 때 풀타입의 위력이 올라간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "own-tempo",
+    "name": "마이페이스",
+    "shortEffect": "혼란 상태가 되지 않는다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "parental-bond",
+    "name": "부자유친",
+    "shortEffect": "부모와 자식 2마리가 공격한다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "parry",
+    "name": "Parry",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "pastel-veil",
+    "name": "파스텔베일",
+    "shortEffect": "자신과 같은 편이 독의 상태 이상 효과를 받지 않게 된다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "perception",
+    "name": "Perception",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "perish-body",
+    "name": "멸망의바디",
+    "shortEffect": "접촉하는 기술을 받으면 3턴 후에 양쪽 모두 기절한다. 교체되면 효과가 없어진다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "pickpocket",
+    "name": "나쁜손버릇",
+    "shortEffect": "닿은 상대로부터 도구를 훔친다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "pickup",
+    "name": "픽업",
+    "shortEffect": "도구를 주워올 때가 있다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "piercing-drill",
+    "name": "Piercing Drill",
+    "shortEffect": "When the Pokémon uses contact moves, it can hit even targets that are protecting themselves, dealing 1/4 of the damage that the move would otherwise deal. Everything aside from the target's protective effects is still triggered.",
+    "isMainSeries": true
+  },
+  {
+    "id": "pixilate",
+    "name": "페어리스킨",
+    "shortEffect": "노말타입의 기술이 페어리타입이 된다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "plus",
+    "name": "플러스",
+    "shortEffect": "플러스나 마이너스가 있으면 특수공격이 올라간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "poison-heal",
+    "name": "포이즌힐",
+    "shortEffect": "독 상태가 되면 HP를 회복한다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "poison-point",
+    "name": "독가시",
+    "shortEffect": "접촉한 상대를 중독시킬 때가 있다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "poison-puppeteer",
+    "name": "독조종",
+    "shortEffect": "Pokémon poisoned by Pecharunt's moves will also become confused.",
+    "isMainSeries": true
+  },
+  {
+    "id": "poison-touch",
+    "name": "독수",
+    "shortEffect": "접촉하기만 해도 상대를 독 상태로 만들 때가 있다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "power-construct",
+    "name": "스웜체인지",
+    "shortEffect": "HP가 절반이 되면 셀들이 응원하러 달려와 퍼펙트폼으로 모습이 변한다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "power-nap",
+    "name": "Power Nap",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "power-of-alchemy",
+    "name": "과학의힘",
+    "shortEffect": "쓰러진 같은 편의 특성을 이어받아 같은 특성으로 바뀐다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "power-spot",
+    "name": "파워스폿",
+    "shortEffect": "옆에 있기만 해도 기술의 위력이 올라간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "prankster",
+    "name": "짓궂은마음",
+    "shortEffect": "변화 기술을 먼저 쓸 수 있다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "pressure",
+    "name": "프레셔",
+    "shortEffect": "상대가 사용하는 기술의 PP를 많이 줄인다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "pride",
+    "name": "Pride",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "primordial-sea",
+    "name": "시작의바다",
+    "shortEffect": "불꽃타입의 공격을 받지 않는 날씨로 만든다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "prism-armor",
+    "name": "프리즘아머",
+    "shortEffect": "효과가 굉장한 공격의 위력을 약하게 만든다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "propeller-tail",
+    "name": "스크루지느러미",
+    "shortEffect": "상대의 기술을 끌어모으는 특성이나 기술의 영향을 받지 않는다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "protean",
+    "name": "변환자재",
+    "shortEffect": "사용한 기술과 같은 타입으로 변화한다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "protosynthesis",
+    "name": "Protosynthesis",
+    "shortEffect": "Boosts the Pokémon's most proficient stat in harsh sunlight or if the Pokémon is holding Booster Energy.",
+    "isMainSeries": true
+  },
+  {
+    "id": "psychic-surge",
+    "name": "사이코메이커",
+    "shortEffect": "등장했을 때 사이코필드를 사용한다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "punk-rock",
+    "name": "펑크록",
+    "shortEffect": "소리 기술의 위력이 올라간다. 상대로부터 받는 소리 기술의 데미지는 절반이 된다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "pure-power",
+    "name": "순수한힘",
+    "shortEffect": "물리공격의 위력이 올라간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "purifying-salt",
+    "name": "Purifying Salt",
+    "shortEffect": "The Pokémon's pure salt protects it from status conditions and halves the damage taken from Ghost-type moves.",
+    "isMainSeries": true
+  },
+  {
+    "id": "quark-drive",
+    "name": "Quark Drive",
+    "shortEffect": "Boosts the Pokémon's most proficient stat on Electric Terrain or if the Pokémon is holding Booster Energy.",
+    "isMainSeries": true
+  },
+  {
+    "id": "queenly-majesty",
+    "name": "여왕의위엄",
+    "shortEffect": "상대에게 위압감을 줘서 이쪽을 향한 선제 기술을 사용할 수 없게 한다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "quick-draw",
+    "name": "퀵드로",
+    "shortEffect": "상대보다 먼저 행동할 수도 있다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "quick-feet",
+    "name": "속보",
+    "shortEffect": "상태 이상이 되면 스피드가 올라간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "rain-dish",
+    "name": "젖은접시",
+    "shortEffect": "비가 올 때 조금씩 HP를 회복한다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "rattled",
+    "name": "주눅",
+    "shortEffect": "주눅이 들어 스피드가 올라가는 타입이 있다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "receiver",
+    "name": "리시버",
+    "shortEffect": "쓰러진 같은 편의 특성을 이어받아 같은 특성이 된다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "reckless",
+    "name": "이판사판",
+    "shortEffect": "반동 데미지를 받는 기술이 강해진다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "refrigerate",
+    "name": "프리즈스킨",
+    "shortEffect": "노말타입의 기술이 얼음타입이 된다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "regenerator",
+    "name": "재생력",
+    "shortEffect": "볼에 넣으면 HP가 조금 회복된다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "ripen",
+    "name": "숙성",
+    "shortEffect": "나무열매를 숙성시켜서 효과가 2배가 된다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "rivalry",
+    "name": "투쟁심",
+    "shortEffect": "상대와 성별이 같으면 강해진다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "rks-system",
+    "name": "AR시스템",
+    "shortEffect": "지니고 있는 메모리로 자신의 타입이 변한다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "rock-head",
+    "name": "돌머리",
+    "shortEffect": "부딪쳐도 반동을 받지 않는다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "rocky-payload",
+    "name": "Rocky Payload",
+    "shortEffect": "Powers up Rock-type moves.",
+    "isMainSeries": true
+  },
+  {
+    "id": "rough-skin",
+    "name": "까칠한피부",
+    "shortEffect": "접촉한 상대에게 상처를 입힌다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "run-away",
+    "name": "도주",
+    "shortEffect": "야생 포켓몬으로부터 반드시 도망칠 수 있다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "run-up",
+    "name": "Run Up",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "sand-force",
+    "name": "모래의힘",
+    "shortEffect": "모래바람으로 위력이 올라가는 기술이 있다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "sand-rush",
+    "name": "모래헤치기",
+    "shortEffect": "모래바람으로 스피드가 올라간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "sand-spit",
+    "name": "모래뿜기",
+    "shortEffect": "공격을 받으면 모래바람을 일으킨다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "sand-stream",
+    "name": "모래날림",
+    "shortEffect": "배틀에서 모래바람을 일으킨다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "sand-veil",
+    "name": "모래숨기",
+    "shortEffect": "모래바람으로 회피율이 올라간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "sandpit",
+    "name": "Sandpit",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "sap-sipper",
+    "name": "초식",
+    "shortEffect": "풀 기술을 받으면 공격이 올라간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "schooling",
+    "name": "어군",
+    "shortEffect": "HP가 많을 때 무리지어 강해진다. HP가 얼마 남지 않으면 무리는 뿔뿔이 흩어진다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "scrappy",
+    "name": "배짱",
+    "shortEffect": "고스트타입에 노말 기술이 맞는다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "screen-cleaner",
+    "name": "배리어프리",
+    "shortEffect": "등장했을 때 상대와 같은 편의 빛의장막, 리플렉터, 오로라베일의 효과가 사라진다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "seed-sower",
+    "name": "Seed Sower",
+    "shortEffect": "Turns the ground into Grassy Terrain when the Pokémon is hit by an attack.",
+    "isMainSeries": true
+  },
+  {
+    "id": "sequence",
+    "name": "Sequence",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "serene-grace",
+    "name": "하늘의은총",
+    "shortEffect": "기술의 추가 효과가 나오기 쉽다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "shackle",
+    "name": "Shackle",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "shadow-dash",
+    "name": "Shadow Dash",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "shadow-shield",
+    "name": "스펙터가드",
+    "shortEffect": "HP가 꽉 찼을 때 받는 데미지가 줄어든다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "shadow-tag",
+    "name": "그림자밟기",
+    "shortEffect": "상대의 그림자를 밟아 도망칠 수 없게 한다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "share",
+    "name": "Share",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "sharpness",
+    "name": "Sharpness",
+    "shortEffect": "Powers up slicing moves.",
+    "isMainSeries": true
+  },
+  {
+    "id": "shed-skin",
+    "name": "탈피",
+    "shortEffect": "상태 이상을 회복할 때가 있다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "sheer-force",
+    "name": "우격다짐",
+    "shortEffect": "힘이 강해지지만 추가 효과가 없어진다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "shell-armor",
+    "name": "조가비갑옷",
+    "shortEffect": "상대의 공격이 급소에 맞지 않는다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "shield",
+    "name": "Shield",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "shield-dust",
+    "name": "인분",
+    "shortEffect": "기술의 추가 효과를 받지 않는다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "shields-down",
+    "name": "리밋실드",
+    "shortEffect": "HP가 절반이 되면 껍질이 깨져 공격적으로 된다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "simple",
+    "name": "단순",
+    "shortEffect": "능력 변화가 여느 때보다 심하다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "skater",
+    "name": "Skater",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "skill-link",
+    "name": "스킬링크",
+    "shortEffect": "연속 기술을 많이 쓸 수 있다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "slow-start",
+    "name": "슬로스타트",
+    "shortEffect": "공격과 스피드가 잠시 동안 절반이 된다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "slush-rush",
+    "name": "눈치우기",
+    "shortEffect": "날씨가 싸라기눈일 때 스피드가 올라간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "sniper",
+    "name": "스나이퍼",
+    "shortEffect": "급소에 맞혔을 때 위력이 올라간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "snow-cloak",
+    "name": "눈숨기",
+    "shortEffect": "날씨가 싸라기눈일 때 회피율이 올라간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "snow-warning",
+    "name": "눈퍼뜨리기",
+    "shortEffect": "배틀에 나가면 싸라기눈을 내리게 한다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "solar-power",
+    "name": "선파워",
+    "shortEffect": "맑으면 HP가 줄지만 특수공격이 올라간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "solid-rock",
+    "name": "하드록",
+    "shortEffect": "효과가 굉장한 기술의 위력을 약하게 한다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "soul-heart",
+    "name": "소울하트",
+    "shortEffect": "포켓몬이 기절할 때마다 특수공격이 올라간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "soundproof",
+    "name": "방음",
+    "shortEffect": "소리 기술을 받지 않는다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "speed-boost",
+    "name": "가속",
+    "shortEffect": "조금씩 스피드가 높아진다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "spicy-spray",
+    "name": "Spicy Spray",
+    "shortEffect": "When the Pokémon takes damage from a move, it burns the attacker.",
+    "isMainSeries": true
+  },
+  {
+    "id": "spirit",
+    "name": "Spirit",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "sponge",
+    "name": "Sponge",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "sprint",
+    "name": "Sprint",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "stakeout",
+    "name": "잠복",
+    "shortEffect": "교체로 나온 상대에게 2배 데미지로 공격할 수 있다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "stall",
+    "name": "시간벌기",
+    "shortEffect": "상대보다 재빨라도 행동이 느려진다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "stalwart",
+    "name": "굳건한신념",
+    "shortEffect": "상대의 기술을 끌어모으는 특성이나 기술의 영향을 받지 않는다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "stamina",
+    "name": "지구력",
+    "shortEffect": "공격을 받으면 방어가 올라간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "stance-change",
+    "name": "배틀스위치",
+    "shortEffect": "배틀모드에서 모습이 바뀐다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "static",
+    "name": "정전기",
+    "shortEffect": "접촉한 상대를 마비시킬 때가 있다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "steadfast",
+    "name": "불굴의마음",
+    "shortEffect": "풀죽을 때마다 스피드가 올라간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "stealth",
+    "name": "Stealth",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "steam-engine",
+    "name": "증기기관",
+    "shortEffect": "물타입이나 불꽃타입 기술을 받으면 스피드가 매우 크게 올라간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "steelworker",
+    "name": "강철술사",
+    "shortEffect": "강철타입 기술의 위력이 올라간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "steely-spirit",
+    "name": "강철정신",
+    "shortEffect": "같은 편의 강철타입 공격의 위력이 올라간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "stench",
+    "name": "악취",
+    "shortEffect": "악취 때문에 상대가 풀죽을 때가 있다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "sticky-hold",
+    "name": "점착",
+    "shortEffect": "달라붙어서 도구를 지킨다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "storm-drain",
+    "name": "마중물",
+    "shortEffect": "물을 끌어모아 특수공격을 올린다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "strong-jaw",
+    "name": "옹골찬턱",
+    "shortEffect": "턱이 튼튼하여 무는 힘이 강하다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "sturdy",
+    "name": "옹골참",
+    "shortEffect": "일격으로 쓰러지지 않는다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "suction-cups",
+    "name": "흡반",
+    "shortEffect": "교체시키는 기술이나 도구의 효과를 받지 않는다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "super-luck",
+    "name": "대운",
+    "shortEffect": "상대의 급소에 공격이 맞기 쉽다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "supersweet-syrup",
+    "name": "감미로운꿀",
+    "shortEffect": "Lowers the evasion of opposing Pokémon by 1 stage when first sent into battle",
+    "isMainSeries": true
+  },
+  {
+    "id": "supreme-overlord",
+    "name": "Supreme Overlord",
+    "shortEffect": "When the Pokémon enters a battle, its Attack and Sp. Atk stats are slightly boosted for each of the allies in its party that have already been defeated.",
+    "isMainSeries": true
+  },
+  {
+    "id": "surge-surfer",
+    "name": "서핑테일",
+    "shortEffect": "일렉트릭필드일 때 스피드가 2배가 된다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "swarm",
+    "name": "벌레의알림",
+    "shortEffect": "위급할 때 벌레타입의 위력이 올라간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "sweet-veil",
+    "name": "스위트베일",
+    "shortEffect": "같은 편의 포켓몬이 잠들지 않게 된다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "swift-swim",
+    "name": "쓱쓱",
+    "shortEffect": "비가 올 때 스피드가 올라간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "sword-of-ruin",
+    "name": "Sword of Ruin",
+    "shortEffect": "The power of the Pokémon's ruinous sword lowers the Defense stats of all Pokémon except itself.",
+    "isMainSeries": true
+  },
+  {
+    "id": "symbiosis",
+    "name": "공생",
+    "shortEffect": "같은 편에게 도구를 건넬 수 있게 된다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "synchronize",
+    "name": "싱크로",
+    "shortEffect": "독, 마비, 화상을 상대에게 옮긴다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "tablets-of-ruin",
+    "name": "Tablets of Ruin",
+    "shortEffect": "The power of the Pokémon's ruinous wooden tablets lowers the Attack stats of all Pokémon except itself.",
+    "isMainSeries": true
+  },
+  {
+    "id": "tangled-feet",
+    "name": "갈지자걸음",
+    "shortEffect": "혼란에 빠져있으면 회피하기 쉬워진다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "tangling-hair",
+    "name": "컬리헤어",
+    "shortEffect": "공격으로 자신과 접촉한 상대의 스피드를 떨어뜨린다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "technician",
+    "name": "테크니션",
+    "shortEffect": "약한 기술의 위력이 올라간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "telepathy",
+    "name": "텔레파시",
+    "shortEffect": "같은 편의 공격의 낌새를 읽고 기술을 받지 않는다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "tenacity",
+    "name": "Tenacity",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "tera-shell",
+    "name": "테라셸",
+    "shortEffect": "The Pokémon's shell contains the powers of each type. All damage-dealing moves that hit the Pokémon when its HP is full will not be very effective.",
+    "isMainSeries": true
+  },
+  {
+    "id": "tera-shift",
+    "name": "테라체인지",
+    "shortEffect": "When the Pokémon enters a battle, it absorbs the energy around itself and transforms into its Terastal Form.",
+    "isMainSeries": true
+  },
+  {
+    "id": "teraform-zero",
+    "name": "제로포밍",
+    "shortEffect": "When Terapagos changes into its Stellar Form, it uses its hidden powers to eliminate all effects of weather and terrain, reducing them to zero.",
+    "isMainSeries": true
+  },
+  {
+    "id": "teravolt",
+    "name": "테라볼티지",
+    "shortEffect": "특성에 관계없이 상대에게 기술을 쓸 수 있다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "thermal-exchange",
+    "name": "Thermal Exchange",
+    "shortEffect": "Boosts the Attack stat when the Pokémon is hit by a Fire-type move. The Pokémon also cannot be burned.",
+    "isMainSeries": true
+  },
+  {
+    "id": "thick-fat",
+    "name": "두꺼운지방",
+    "shortEffect": "불꽃과 얼음타입의 기술에 강하다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "thrust",
+    "name": "Thrust",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "tinted-lens",
+    "name": "색안경",
+    "shortEffect": "효과가 별로인 기술이 강해진다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "torrent",
+    "name": "급류",
+    "shortEffect": "위급할 때 물타입의 위력이 올라간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "tough-claws",
+    "name": "단단한발톱",
+    "shortEffect": "접촉하는 기술의 위력이 올라간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "toxic-boost",
+    "name": "독폭주",
+    "shortEffect": "독 상태일 때 물리공격의 위력이 올라간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "toxic-chain",
+    "name": "독사슬",
+    "shortEffect": "The power of the Pokémon's toxic chain may badly poison any target the Pokémon hits with a move",
+    "isMainSeries": true
+  },
+  {
+    "id": "toxic-debris",
+    "name": "Toxic Debris",
+    "shortEffect": "Scatters poison spikes at the feet of the opposing team when the Pokémon takes damage from physical moves.",
+    "isMainSeries": true
+  },
+  {
+    "id": "trace",
+    "name": "트레이스",
+    "shortEffect": "상대와 같은 특성이 된다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "transistor",
+    "name": "트랜지스터",
+    "shortEffect": "전기타입 기술의 위력이 올라간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "triage",
+    "name": "힐링시프트",
+    "shortEffect": "회복 기술을 먼저 사용할 수 있다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "truant",
+    "name": "게으름",
+    "shortEffect": "연속으로 공격할 수 없다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "turboblaze",
+    "name": "터보블레이즈",
+    "shortEffect": "특성에 관계없이 상대에게 기술을 쓸 수 있다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "unaware",
+    "name": "천진",
+    "shortEffect": "상대의 능력 변화를 무시한다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "unburden",
+    "name": "곡예",
+    "shortEffect": "도구가 없어지면 스피드가 올라간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "unnerve",
+    "name": "긴장감",
+    "shortEffect": "상대를 긴장시켜 나무열매를 먹지 못하게 한다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "unseen-fist",
+    "name": "보이지않는주먹",
+    "shortEffect": "상대에게 접촉하는 기술을 사용하면 방어의 효과를 무시하고 공격할 수 있다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "vanguard",
+    "name": "Vanguard",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "vessel-of-ruin",
+    "name": "Vessel of Ruin",
+    "shortEffect": "The power of the Pokémon's ruinous vessel lowers the Sp. Atk stats of all Pokémon except itself.",
+    "isMainSeries": true
+  },
+  {
+    "id": "victory-star",
+    "name": "승리의별",
+    "shortEffect": "자신과 같은 편의 명중률이 올라간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "vital-spirit",
+    "name": "의기양양",
+    "shortEffect": "잠듦 상태가 되지 않는다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "volt-absorb",
+    "name": "축전",
+    "shortEffect": "전기를 받으면 회복한다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "wandering-spirit",
+    "name": "떠도는영혼",
+    "shortEffect": "접촉하는 기술로 공격해온 포켓몬과 특성을 바꾼다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "warm-blanket",
+    "name": "Warm Blanket",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "water-absorb",
+    "name": "저수",
+    "shortEffect": "물을 받으면 회복한다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "water-bubble",
+    "name": "수포",
+    "shortEffect": "자신을 향하는 불꽃타입 기술의 위력을 떨어뜨린다. 화상을 입지 않는다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "water-compaction",
+    "name": "꾸덕꾸덕굳기",
+    "shortEffect": "물타입의 기술을 받으면 방어가 크게 올라간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "water-veil",
+    "name": "수의베일",
+    "shortEffect": "화상 상태가 되지 않는다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "wave-rider",
+    "name": "Wave Rider",
+    "shortEffect": "",
+    "isMainSeries": false
+  },
+  {
+    "id": "weak-armor",
+    "name": "깨어진갑옷",
+    "shortEffect": "물리 기술을 받으면 방어가 떨어지고 스피드가 올라간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "well-baked-body",
+    "name": "Well-Baked Body",
+    "shortEffect": "The Pokémon takes no damage when hit by Fire-type moves. Instead, its Defense stat is sharply boosted.",
+    "isMainSeries": true
+  },
+  {
+    "id": "white-smoke",
+    "name": "하얀연기",
+    "shortEffect": "상대가 능력을 떨어뜨릴 수 없다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "wimp-out",
+    "name": "도망태세",
+    "shortEffect": "HP가 절반이 되면 황급히 도망쳐서 지닌 포켓몬으로 돌아간다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "wind-power",
+    "name": "Wind Power",
+    "shortEffect": "The Pokémon becomes charged when it is hit by a wind move, boosting the power of the next Electric-type move the Pokémon uses.",
+    "isMainSeries": true
+  },
+  {
+    "id": "wind-rider",
+    "name": "Wind Rider",
+    "shortEffect": "Boosts the Pokémon's Attack stat if Tailwind takes effect or if the Pokémon is hit by a wind move. The Pokémon also takes no damage from wind moves.",
+    "isMainSeries": true
+  },
+  {
+    "id": "wonder-guard",
+    "name": "불가사의부적",
+    "shortEffect": "효과가 굉장한 기술밖에 맞지 않는다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "wonder-skin",
+    "name": "미라클스킨",
+    "shortEffect": "변화 기술을 받기 어려운 몸으로 되어 있다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "zen-mode",
+    "name": "달마모드",
+    "shortEffect": "위급할 때 모습이 변화한다.",
+    "isMainSeries": true
+  },
+  {
+    "id": "zero-to-hero",
+    "name": "Zero to Hero",
+    "shortEffect": "The Pokémon transforms into its Hero Form when it switches out.",
+    "isMainSeries": true
+  }
+]

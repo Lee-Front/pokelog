@@ -2,6 +2,7 @@ import { Router } from "express";
 import type { Request, Response } from "express";
 import { hashPassword, verifyPassword, issueToken } from "../auth/auth.js";
 import { getUser, saveUser } from "../storage/user-store.js";
+import { pollUserIntegrations } from "../polling/polling-worker.js";
 import { createPokemon } from "../game/pokemon-factory.js";
 import type { UserData } from "../../../../shared/types.js";
 
@@ -45,15 +46,18 @@ authRoutes.post("/register", async (req: Request, res: Response) => {
         createdAt: new Date().toISOString(),
         matchings: {},
       },
+      currentRegion: "default",
       points: 0,
       totalExp: 0,
       combo: { count: 0, lastCommitAt: null },
       encounterCeiling: { accumulatedBytes: 0 },
       party: [starterPokemon.uid],
       pokemon: [starterPokemon],
+      eggs: [],
       pokedex: [starter],
       inventory: { pokeball: 5 },
       pendingEvents: [],
+      pendingEvolutions: [],
       battleState: null,
       storage: [],
       log: [],
@@ -92,6 +96,9 @@ authRoutes.post("/login", async (req: Request, res: Response) => {
 
     const token = issueToken(id);
     res.json({ token });
+
+    // trigger polling in background on login
+    pollUserIntegrations(id).catch((e) => console.error("Login-triggered poll error:", e));
   } catch (err) {
     console.error("Login error:", err);
     res.status(500).json({ error: "서버 오류가 발생했습니다" });

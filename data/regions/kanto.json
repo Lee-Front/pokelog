@@ -1,0 +1,27 @@
+{
+  "name": "Kanto",
+  "encounters": [
+    { "species": "pidgey", "weight": 110, "levelRange": [2, 5] },
+    { "species": "rattata", "weight": 110, "levelRange": [2, 5] },
+    { "species": "caterpie", "weight": 90, "levelRange": [2, 4] },
+    { "species": "weedle", "weight": 90, "levelRange": [2, 4] },
+    { "species": "spearow", "weight": 80, "levelRange": [3, 6] },
+    { "species": "zubat", "weight": 78, "levelRange": [3, 6] },
+    { "species": "oddish", "weight": 70, "levelRange": [4, 7] },
+    { "species": "bellsprout", "weight": 70, "levelRange": [4, 7] },
+    { "species": "geodude", "weight": 68, "levelRange": [4, 7] },
+    { "species": "poliwag", "weight": 60, "levelRange": [4, 7] },
+    { "species": "magikarp", "weight": 60, "levelRange": [3, 7] },
+    { "species": "gastly", "weight": 40, "levelRange": [5, 9] },
+    { "species": "abra", "weight": 30, "levelRange": [5, 8] },
+    { "species": "growlithe", "weight": 30, "levelRange": [6, 9] },
+    { "species": "ponyta", "weight": 28, "levelRange": [6, 10] },
+    { "species": "horsea", "weight": 25, "levelRange": [7, 10] },
+    { "species": "exeggcute", "weight": 20, "levelRange": [8, 12] },
+    { "species": "pikachu", "weight": 18, "levelRange": [5, 9] },
+    { "species": "eevee", "weight": 12, "levelRange": [10, 14] },
+    { "species": "lapras", "weight": 8, "levelRange": [16, 22] },
+    { "species": "snorlax", "weight": 5, "levelRange": [18, 24] },
+    { "species": "dratini", "weight": 3, "levelRange": [10, 16] }
+  ]
+}

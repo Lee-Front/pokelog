@@ -1,0 +1,25 @@
+{
+  "name": "Unova",
+  "encounters": [
+    { "species": "patrat", "weight": 105, "levelRange": [2, 5] },
+    { "species": "lillipup", "weight": 105, "levelRange": [2, 5] },
+    { "species": "purrloin", "weight": 90, "levelRange": [3, 6] },
+    { "species": "pidove", "weight": 90, "levelRange": [3, 6] },
+    { "species": "sewaddle", "weight": 82, "levelRange": [3, 6] },
+    { "species": "blitzle", "weight": 70, "levelRange": [4, 7] },
+    { "species": "roggenrola", "weight": 70, "levelRange": [4, 7] },
+    { "species": "timburr", "weight": 55, "levelRange": [5, 8] },
+    { "species": "tympole", "weight": 55, "levelRange": [5, 8] },
+    { "species": "venipede", "weight": 52, "levelRange": [5, 8] },
+    { "species": "cottonee", "weight": 45, "levelRange": [6, 9] },
+    { "species": "petilil", "weight": 45, "levelRange": [6, 9] },
+    { "species": "sandile", "weight": 45, "levelRange": [7, 10] },
+    { "species": "scraggy", "weight": 35, "levelRange": [8, 11] },
+    { "species": "gothita", "weight": 28, "levelRange": [8, 12] },
+    { "species": "solosis", "weight": 28, "levelRange": [8, 12] },
+    { "species": "zorua", "weight": 16, "levelRange": [9, 13] },
+    { "species": "litwick", "weight": 18, "levelRange": [10, 14] },
+    { "species": "axew", "weight": 8, "levelRange": [12, 18] },
+    { "species": "deino", "weight": 3, "levelRange": [15, 20] }
+  ]
+}

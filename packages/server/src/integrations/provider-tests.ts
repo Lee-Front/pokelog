@@ -55,7 +55,7 @@ function isSlackIntegration(integration: Integration): integration is SlackInteg
 }
 
 async function testGitIntegration(integration: GitIntegration): Promise<ProviderTestResult> {
-  const result = await testRepoAccess(integration.config.repoUrl);
+  const result = await testRepoAccess(integration.config.repoUrl, integration.config.authMode, integration.config.token);
   return {
     ok: result.ok,
     lastError: result.error,

@@ -1,7 +1,9 @@
 import { registerCommand, loginCommand, logoutCommand } from "./commands/auth.js";
 import { connectCommand } from "./commands/connect.js";
 import { debugCommand } from "./commands/debug.js";
+import { eggCommand } from "./commands/egg.js";
 import { encounterCommand } from "./commands/encounter.js";
+import { evolutionsCommand } from "./commands/evolutions.js";
 import { eventsCommand } from "./commands/events.js";
 import { healCommand } from "./commands/heal.js";
 import { historyCommand } from "./commands/history.js";
@@ -12,12 +14,15 @@ import { nicknameCommand } from "./commands/profile.js";
 import { partyCommand } from "./commands/party.js";
 import { pokedexCommand } from "./commands/pokedex.js";
 import { rankingCommand } from "./commands/ranking.js";
+import { regionCommand } from "./commands/region.js";
 import { serversCommand } from "./commands/servers.js";
 import { shopCommand } from "./commands/shop.js";
 import { statusCommand } from "./commands/status.js";
 import { storageCommand } from "./commands/storage.js";
+import { tradeCommand } from "./commands/trade.js";
 import { useCommand } from "./commands/use.js";
 import { getCurrentServer, getCurrentServerName, getToken, hasNoServers } from "./config.js";
+import { BLD, CYN, R } from "./ui/colors.js";
 import { printHeader } from "./ui/display.js";
 import { rawInput, rawSelect, separator } from "./ui/prompts.js";
 
@@ -49,6 +54,7 @@ const HELP_PAGES: Record<string, Array<{ cmd: string; desc: string }>> = {
     { cmd: "pokedex", desc: "도감 보기" },
     { cmd: "inventory", desc: "인벤토리 보기" },
     { cmd: "heal", desc: "파티 회복" },
+    { cmd: "egg", desc: "알 구매 / 부화" },
     { cmd: "shop", desc: "상점 열기" },
     { cmd: "storage", desc: "보관함 보기" },
     { cmd: "ranking", desc: "랭킹 보기" },
@@ -77,7 +83,7 @@ const HELP_PAGES: Record<string, Array<{ cmd: string; desc: string }>> = {
 async function printHelp() {
   const items: Array<{ name: string; value: string } | { separator: string }> = [];
   for (const [category, entries] of Object.entries(HELP_PAGES)) {
-    items.push(separator(`  ${category}`));
+    items.push(separator(`  ${BLD}${CYN}── ${category} ──${R}`));
     for (const { cmd, desc } of entries) {
       items.push({ name: `${cmd.padEnd(20)} ${desc}`, value: cmd });
     }
@@ -101,7 +107,11 @@ const AUTH_COMMANDS = new Set([
   "party",
   "pokedex",
   "inventory",
+  "trade",
+  "region",
+  "evolutions",
   "heal",
+  "egg",
   "shop",
   "storage",
   "ranking",
@@ -118,7 +128,11 @@ const ALL_COMMANDS = [
   "party",
   "pokedex",
   "inventory",
+  "trade",
+  "region",
+  "evolutions",
   "heal",
+  "egg",
   "shop",
   "storage",
   "ranking",
@@ -192,8 +206,22 @@ async function executeCommand(line: string): Promise<boolean> {
     case "inventory":
       await inventoryCommand();
       break;
+    case "trade":
+      await tradeCommand();
+      preserveOutput = true;
+      break;
+    case "region":
+      await regionCommand(args[0]);
+      break;
+    case "evolutions":
+      await evolutionsCommand();
+      break;
     case "heal":
       await healCommand();
+      break;
+    case "egg":
+      await eggCommand();
+      preserveOutput = true;
       break;
     case "shop":
       await shopCommand();

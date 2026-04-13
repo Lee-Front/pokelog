@@ -1,0 +1,25 @@
+{
+  "name": "Sinnoh",
+  "encounters": [
+    { "species": "starly", "weight": 110, "levelRange": [2, 5] },
+    { "species": "bidoof", "weight": 110, "levelRange": [2, 5] },
+    { "species": "shinx", "weight": 90, "levelRange": [3, 6] },
+    { "species": "kricketot", "weight": 85, "levelRange": [2, 5] },
+    { "species": "budew", "weight": 80, "levelRange": [3, 6] },
+    { "species": "pachirisu", "weight": 62, "levelRange": [4, 7] },
+    { "species": "buizel", "weight": 70, "levelRange": [4, 7] },
+    { "species": "shellos", "weight": 70, "levelRange": [4, 7] },
+    { "species": "bronzor", "weight": 45, "levelRange": [6, 10] },
+    { "species": "drifloon", "weight": 38, "levelRange": [5, 9] },
+    { "species": "croagunk", "weight": 45, "levelRange": [6, 10] },
+    { "species": "skorupi", "weight": 40, "levelRange": [7, 10] },
+    { "species": "hippopotas", "weight": 28, "levelRange": [7, 11] },
+    { "species": "finneon", "weight": 26, "levelRange": [7, 11] },
+    { "species": "snover", "weight": 35, "levelRange": [8, 11] },
+    { "species": "riolu", "weight": 18, "levelRange": [9, 12] },
+    { "species": "munchlax", "weight": 8, "levelRange": [10, 14] },
+    { "species": "rotom", "weight": 8, "levelRange": [12, 18] },
+    { "species": "gible", "weight": 8, "levelRange": [12, 18] },
+    { "species": "spiritomb", "weight": 3, "levelRange": [15, 20] }
+  ]
+}

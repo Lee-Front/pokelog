@@ -1,19 +1,49 @@
 import { apiGet } from "../api-client.js";
+import { evolutionsCommand } from "./evolutions.js";
 import { renderBox } from "../ui/display.js";
+import { selectAction } from "../ui/prompts.js";
+
+type StatusResponse = {
+  nickname: string;
+  points: number;
+  totalExp: number;
+  combo?: { count?: number } | null;
+  pendingEventCount: number;
+  pendingEvolutionCount?: number;
+  region?: string;
+};
 
 export async function statusCommand() {
   const res = await apiGet("/api/game/status");
   if (!res.ok) {
-    console.error(`오류: ${res.data.error}`);
+    console.error(`Error: ${String(res.data.error ?? "Failed to load status.")}`);
     return;
   }
-  const d = res.data;
+
+  const data = res.data as StatusResponse;
+  const pendingEvolutionCount = Number(data.pendingEvolutionCount ?? 0);
+
   renderBox([
-    `pokelog - ${d.nickname}`,
-    "─".repeat(30),
-    `보유 포인트:    ${d.points}P`,
-    `총 경험치:      ${d.totalExp}`,
-    `현재 콤보:      ${d.comboCount}x`,
-    `미확인 이벤트:  ${d.pendingEventCount}건`,
+    `pokelog - ${data.nickname}`,
+    "-".repeat(30),
+    `Points              ${data.points}P`,
+    `Total EXP           ${data.totalExp}`,
+    `Combo               x${Number(data.combo?.count ?? 0)}`,
+    `Pending Encounters  ${data.pendingEventCount}`,
+    `Pending Evolutions  ${pendingEvolutionCount}`,
+    `Region              ${data.region ?? "default"}`,
   ]);
+
+  if (pendingEvolutionCount <= 0) {
+    return;
+  }
+
+  const action = await selectAction("Pending evolutions are ready.", [
+    { name: "Resolve pending evolutions", value: "resolve" },
+    { name: "Back", value: "back" },
+  ]);
+
+  if (action === "resolve") {
+    await evolutionsCommand();
+  }
 }

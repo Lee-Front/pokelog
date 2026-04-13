@@ -3,7 +3,48 @@ import { readJson, writeJson } from "./json-store.js";
 import type { ServerConfig } from "../../../../shared/types.js";
 import { DATA_DIR } from "../paths.js";
 import { DEFAULT_INTEGRATION_REWARD_RULES, mergeIntegrationRewardRules } from "../integrations/event-catalog.js";
+
 const CONFIG_PATH = path.join(DATA_DIR, "config.json");
+
+const DEFAULT_EVOLUTION_SHOP_ITEMS = {
+  "black-augurite": { name: "Black Augurite", price: 3000 },
+  "cracked-pot": { name: "Cracked Pot", price: 1600 },
+  "dawn-stone": { name: "Dawn Stone", price: 3000 },
+  "dusk-stone": { name: "Dusk Stone", price: 3000 },
+  "fire-stone": { name: "Fire Stone", price: 3000 },
+  "galarica-cuff": { name: "Galarica Cuff", price: 3000 },
+  "galarica-wreath": { name: "Galarica Wreath", price: 3000 },
+  "ice-stone": { name: "Ice Stone", price: 3000 },
+  "leaf-stone": { name: "Leaf Stone", price: 3000 },
+  "moon-stone": { name: "Moon Stone", price: 3000 },
+  "peat-block": { name: "Peat Block", price: 3000 },
+  "shiny-stone": { name: "Shiny Stone", price: 3000 },
+  "sun-stone": { name: "Sun Stone", price: 3000 },
+  "sweet-apple": { name: "Sweet Apple", price: 2200 },
+  "tart-apple": { name: "Tart Apple", price: 2200 },
+  "thunder-stone": { name: "Thunder Stone", price: 3000 },
+  "water-stone": { name: "Water Stone", price: 3000 },
+} satisfies ServerConfig["shop"]["items"];
+
+const DEFAULT_HELD_EVOLUTION_SHOP_ITEMS = {
+  "deep-sea-scale": { name: "Deep Sea Scale", price: 2000 },
+  "deep-sea-tooth": { name: "Deep Sea Tooth", price: 2000 },
+  "dragon-scale": { name: "Dragon Scale", price: 2000 },
+  "dubious-disc": { name: "Dubious Disc", price: 2000 },
+  electirizer: { name: "Electirizer", price: 2000 },
+  "kings-rock": { name: "King's Rock", price: 5000 },
+  magmarizer: { name: "Magmarizer", price: 2000 },
+  "metal-coat": { name: "Metal Coat", price: 2000 },
+  "oval-stone": { name: "Oval Stone", price: 2000 },
+  "prism-scale": { name: "Prism Scale", price: 2000 },
+  protector: { name: "Protector", price: 2000 },
+  "razor-claw": { name: "Razor Claw", price: 5000 },
+  "razor-fang": { name: "Razor Fang", price: 2000 },
+  "reaper-cloth": { name: "Reaper Cloth", price: 2000 },
+  sachet: { name: "Sachet", price: 2000 },
+  "up-grade": { name: "Up-Grade", price: 2000 },
+  "whipped-dream": { name: "Whipped Dream", price: 2000 },
+} satisfies ServerConfig["shop"]["items"];
 
 export const DEFAULT_CONFIG: ServerConfig = {
   server: { port: 3000 },
@@ -40,14 +81,16 @@ export const DEFAULT_CONFIG: ServerConfig = {
   },
   shop: {
     items: {
-      pokeball:   { name: "몬스터볼",  price: 100,   catchBonus: 0 },
-      safariball: { name: "사파리볼",  price: 250,   catchBonus: 0.1 },
-      greatball:  { name: "수퍼볼",    price: 350,   catchBonus: 0.2 },
-      ultraball:  { name: "하이퍼볼",  price: 900,   catchBonus: 0.35 },
-      masterball: { name: "마스터볼",  price: 50000, catchBonus: 0, guaranteedCatch: true },
-      potion:       { name: "상처약",      price: 150, healAmount: 20 },
-      superPotion:  { name: "좋은 상처약", price: 400, healAmount: 50 },
-      hyperPotion:  { name: "고급 상처약", price: 800, healAmount: 120 },
+      pokeball: { name: "Poke Ball", price: 100, catchBonus: 0 },
+      safariball: { name: "Safari Ball", price: 250, catchBonus: 0.1 },
+      greatball: { name: "Great Ball", price: 350, catchBonus: 0.2 },
+      ultraball: { name: "Ultra Ball", price: 900, catchBonus: 0.35 },
+      masterball: { name: "Master Ball", price: 50000, catchBonus: 0, guaranteedCatch: true },
+      potion: { name: "Potion", price: 150, healAmount: 20 },
+      superPotion: { name: "Super Potion", price: 400, healAmount: 50 },
+      hyperPotion: { name: "Hyper Potion", price: 800, healAmount: 120 },
+      ...DEFAULT_EVOLUTION_SHOP_ITEMS,
+      ...DEFAULT_HELD_EVOLUTION_SHOP_ITEMS,
     },
   },
 };
@@ -90,7 +133,10 @@ export async function getConfig(): Promise<ServerConfig> {
     shop: {
       ...DEFAULT_CONFIG.shop,
       ...config.shop,
-      items: config.shop?.items ?? DEFAULT_CONFIG.shop.items,
+      items: {
+        ...DEFAULT_CONFIG.shop.items,
+        ...config.shop?.items,
+      },
     },
   };
 }
