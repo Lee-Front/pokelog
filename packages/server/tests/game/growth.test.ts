@@ -95,13 +95,15 @@ describe("calculateStatsForLevel", () => {
   it("applies nature stat increase (adamant: +attack, -spAttack)", () => {
     const base = calculateStatsForLevel("charmander", 50);
     const adamant = calculateStatsForLevel("charmander", 50, "adamant");
-    expect(adamant.stats.attack).toBeGreaterThan(base.stats.attack);
-    expect(adamant.stats.spAttack).toBeLessThan(base.stats.spAttack);
+    // adamant: attack * 1.1, spAttack * 0.9 (정확한 배수 검증)
+    expect(adamant.stats.attack).toBe(Math.floor(base.stats.attack * 1.1));
+    expect(adamant.stats.spAttack).toBe(Math.floor(base.stats.spAttack * 0.9));
     // HP is unaffected by nature
     expect(adamant.hp).toBe(base.hp);
     // Other stats unchanged
     expect(adamant.stats.defense).toBe(base.stats.defense);
     expect(adamant.stats.speed).toBe(base.stats.speed);
+    expect(adamant.stats.spDefense).toBe(base.stats.spDefense);
   });
 
   it("neutral nature (hardy) does not change stats", () => {
