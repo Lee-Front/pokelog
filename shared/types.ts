@@ -121,7 +121,6 @@ export interface OwnedPokemon {
   abilityId?: string | null;
   moveUsageCounts?: Record<string, number>;
   damageTakenTotal?: number;
-  tradeLocked?: boolean;
   nature?: string;
   isShiny?: boolean;
 }

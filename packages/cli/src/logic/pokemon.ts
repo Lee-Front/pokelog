@@ -12,11 +12,10 @@ export interface PokemonSummary {
   nature: string | null;
   gender: string | null;
   isShiny: boolean;
-  tradeLocked: boolean;
 }
 
 export interface EquipAction {
-  type: "equip" | "unequip" | "evolve" | "lock-trade" | "unlock-trade" | "back";
+  type: "equip" | "unequip" | "evolve" | "back";
 }
 
 export function buildPokemonActions(pokemon: PokemonSummary, hasPendingEvolution: boolean): Array<{ name: string; value: string }> {
@@ -31,11 +30,6 @@ export function buildPokemonActions(pokemon: PokemonSummary, hasPendingEvolution
   } else {
     actions.push({ name: "Equip held item", value: "equip" });
   }
-
-  actions.push({
-    name: pokemon.tradeLocked ? "Unlock trade" : "Lock trade",
-    value: pokemon.tradeLocked ? "unlock-trade" : "lock-trade",
-  });
 
   actions.push({ name: "Back", value: "back" });
   return actions;

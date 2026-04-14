@@ -27,7 +27,6 @@ function clonePokemon(pokemon: OwnedPokemon): OwnedPokemon {
     moves: pokemon.moves.map((move) => ({ ...move })),
     moveUsageCounts: { ...(pokemon.moveUsageCounts ?? {}) },
     damageTakenTotal: pokemon.damageTakenTotal ?? 0,
-    tradeLocked: pokemon.tradeLocked ?? false,
   };
 }
 
@@ -58,10 +57,6 @@ function ensureTradeablePokemon(user: UserData, uid: string, ownerLabel: string)
     throw new TradeError(`${ownerLabel} cannot trade a Pokemon that is currently battling.`);
   }
 
-  if (found.pokemon.tradeLocked) {
-    throw new TradeError(`${ownerLabel} cannot trade a Pokemon that is trade-locked.`);
-  }
-
   return found;
 }
 
@@ -79,10 +74,6 @@ function listTradeablePokemon(user: UserData): TradePokemonCandidate[] {
       continue;
     }
 
-    if (pokemon.tradeLocked) {
-      continue;
-    }
-
     candidates.push({
       uid: pokemon.uid,
       species: pokemon.species,
@@ -95,10 +86,6 @@ function listTradeablePokemon(user: UserData): TradePokemonCandidate[] {
 
   for (const pokemon of user.storage) {
     if (pokemon.uid === battlingUid) {
-      continue;
-    }
-
-    if (pokemon.tradeLocked) {
       continue;
     }
 

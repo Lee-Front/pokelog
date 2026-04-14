@@ -174,25 +174,6 @@ describe("trade", () => {
     expect(candidates.responder.pokemon.map((entry) => entry.uid)).toEqual([bobParty.uid, bobStorage.uid]);
   });
 
-  it("blocks locked Pokemon from trade creation and candidate lists", async () => {
-    const alicePokemon = factoryModule.createPokemon("pikachu", 20);
-    const bobPokemon = factoryModule.createPokemon("eevee", 20);
-    alicePokemon.tradeLocked = true;
-
-    await userStoreModule.saveUser(createUser("alice", "Alice", alicePokemon));
-    await userStoreModule.saveUser(createUser("bob", "Bob", bobPokemon));
-
-    const candidates = await tradeModule.listTradeCandidates("alice", "bob");
-    expect(candidates.requester.pokemon).toHaveLength(0);
-
-    await expect(tradeModule.createTradeRequest({
-      requesterUserId: "alice",
-      responderUserId: "bob",
-      requesterPokemonUid: alicePokemon.uid,
-      responderPokemonUid: bobPokemon.uid,
-    })).rejects.toThrow("trade-locked");
-  });
-
   it("rejects a pending trade request", async () => {
     const alicePokemon = factoryModule.createPokemon("kadabra", 30);
     const bobPokemon = factoryModule.createPokemon("machoke", 30);

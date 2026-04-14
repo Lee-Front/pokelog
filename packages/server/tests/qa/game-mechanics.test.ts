@@ -75,7 +75,6 @@ function createTestPokemon(overrides: Partial<OwnedPokemon> = {}): OwnedPokemon 
     abilityId: "blaze",
     moveUsageCounts: { scratch: 12 },
     damageTakenTotal: 150,
-    tradeLocked: false,
     nature: "adamant",
     isShiny: true,
     ...overrides,

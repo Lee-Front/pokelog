@@ -10,7 +10,7 @@ import {
   type TradeView,
   type TradePokemonCandidate,
 } from "../logic/trade.js";
-import { DIM, R, GRN } from "../ui/colors.js";
+import { DIM, R, GRN, RED, YEL } from "../ui/colors.js";
 
 type TradeUserSearchResult = {
   id: string;
@@ -290,22 +290,3 @@ export async function tradeCancelCommand(tradeId: string) {
   console.log(`Trade cancelled: ${formatTradeLine(trade)}`);
 }
 
-export async function tradeLockCommand(pokemonUid: string) {
-  const response = await apiPost("/api/game/trades/lock", { pokemonUid });
-  if (!response.ok) {
-    console.error(`Error: ${response.data.error}`);
-    return;
-  }
-
-  console.log(response.data.message ?? "Pokemon trade-locked.");
-}
-
-export async function tradeUnlockCommand(pokemonUid: string) {
-  const response = await apiPost("/api/game/trades/unlock", { pokemonUid });
-  if (!response.ok) {
-    console.error(`Error: ${response.data.error}`);
-    return;
-  }
-
-  console.log(response.data.message ?? "Pokemon trade lock removed.");
-}

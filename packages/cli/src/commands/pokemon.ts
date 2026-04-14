@@ -21,7 +21,6 @@ type PokemonDetail = {
   };
   moves: Array<{ id: string; pp: number; maxPp: number }>;
   caughtAt: string;
-  tradeLocked?: boolean;
   heldItem?: string | null;
   nature?: string;
   isShiny?: boolean;
@@ -67,7 +66,6 @@ export async function pokemonCommand(uid: string) {
       `${DIM}EXP${R} ${pokemon.exp}`,
       `${DIM}Nature${R} ${pokemon.nature ?? "???"}  ${DIM}Gender${R} ${pokemon.gender ?? "?"}${pokemon.isShiny ? `  ${YEL}★${R}` : ""}`,
       `${DIM}Item${R}   ${pokemon.heldItem ? pokemon.heldItem : `${DIM}none${R}`}`,
-      `${DIM}Trade${R}  ${pokemon.tradeLocked ? `${YEL}LOCKED${R}` : `${GRN}OPEN${R}`}`,
       hasPendingEvolution ? `${YEL}Pending Evolution Ready${R}` : "",
       "",
       `${DIM}${"-".repeat(24)}${R}`,
@@ -119,10 +117,6 @@ export async function pokemonCommand(uid: string) {
       ...(pokemon.heldItem
         ? [{ name: `Unequip ${pokemon.heldItem}`, value: "unequip" as const }]
         : [{ name: "Equip held item", value: "equip" as const }]),
-      {
-        name: pokemon.tradeLocked ? "Unlock trade" : "Lock trade",
-        value: pokemon.tradeLocked ? "unlock-trade" as const : "lock-trade" as const,
-      },
       { name: "Back", value: "back" as const },
     ]);
 
@@ -172,16 +166,5 @@ export async function pokemonCommand(uid: string) {
       continue;
     }
 
-    if (action === "lock-trade" || action === "unlock-trade") {
-      const response = await apiPost(
-        action === "lock-trade" ? "/api/game/trades/lock" : "/api/game/trades/unlock",
-        { pokemonUid: uid },
-      );
-
-      if (!response.ok) {
-        console.error(`Error: ${String(response.data.error ?? "Failed to update trade lock.")}`);
-        return;
-      }
-    }
   }
 }

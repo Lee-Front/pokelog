@@ -11,7 +11,6 @@ type PokemonEntry = {
   level: number;
   hp: number;
   maxHp: number;
-  tradeLocked?: boolean;
 };
 
 type StorageData = {
@@ -88,8 +87,7 @@ function buildPartyLines(
 
     const name = active ? `${BLD}${pokemon.species}${R}` : pokemon.species;
     const evoBadge = pendingEvolutionUids.has(pokemon.uid) ? ` ${YEL}EVO${R}` : "";
-    const lockBadge = pokemon.tradeLocked ? ` ${DIM}LOCK${R}` : "";
-    lines.push(`${pointer} ${padRight(name, 14)} ${DIM}Lv.${pokemon.level}${R}${evoBadge}${lockBadge}`);
+    lines.push(`${pointer} ${padRight(name, 14)} ${DIM}Lv.${pokemon.level}${R}${evoBadge}`);
   }
 
   return lines;
@@ -134,8 +132,7 @@ function buildStorageLines(
     const pointer = active ? `${CYN}>${R}` : " ";
     const name = active ? `${BLD}${pokemon.species}${R}` : pokemon.species;
     const evoBadge = pendingEvolutionUids.has(pokemon.uid) ? ` ${YEL}EVO${R}` : "";
-    const lockBadge = pokemon.tradeLocked ? ` ${DIM}LOCK${R}` : "";
-    lines.push(`${pointer} ${padRight(name, 14)} ${DIM}Lv.${pokemon.level}${R}${evoBadge}${lockBadge}`);
+    lines.push(`${pointer} ${padRight(name, 14)} ${DIM}Lv.${pokemon.level}${R}${evoBadge}`);
   }
 
   return lines;
@@ -169,7 +166,7 @@ function buildLines(
     "",
     `  ${BLD}Pokemon Storage${R}`,
     "  " + "-".repeat(62),
-    `  ${DIM}Left/Right: Panel  Up/Down: Move  Enter: Transfer  E: Resolve evolution  L: Toggle trade lock  Esc: Back${R}`,
+    `  ${DIM}Left/Right: Panel  Up/Down: Move  Enter: Transfer  E: Resolve evolution  Esc: Back${R}`,
     "",
     ...merged,
     "",
@@ -313,25 +310,6 @@ export async function storageCommand() {
       lastSpecies = "";
       currentArt = null;
       enterRaw();
-      continue;
-    }
-
-    if (key === "l" || key === "L") {
-      const pokemon = selectedPokemon;
-      if (!pokemon) {
-        continue;
-      }
-
-      const response = await apiPost(
-        pokemon.tradeLocked ? "/api/game/trades/unlock" : "/api/game/trades/lock",
-        { pokemonUid: pokemon.uid },
-      );
-      message = response.ok
-        ? `${GRN}${String(response.data.message ?? "Trade lock updated.")}${R}`
-        : `${RED}${String(response.data.error ?? "Failed to update trade lock.")}${R}`;
-
-      await refreshAll();
-      first = true;
       continue;
     }
 

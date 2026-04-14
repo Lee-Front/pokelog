@@ -44,7 +44,6 @@ describe("createPokemon", () => {
     expect(typeof pokemon.isShiny).toBe("boolean");
     expect(typeof pokemon.friendship).toBe("number");
     expect(typeof pokemon.abilityId).toBe("string");
-    expect(pokemon.tradeLocked).toBe(false);
     expect(pokemon.moveUsageCounts).toEqual({});
     expect(pokemon.damageTakenTotal).toBe(0);
   });
@@ -136,7 +135,6 @@ describe("wildPokemonToOwned", () => {
     expect(owned.uid).toEqual(expect.any(String));
     expect(owned.caughtAt).toEqual(expect.any(String));
     expect(owned.exp).toBe(0);
-    expect(owned.tradeLocked).toBe(false);
   });
 
   it("preserves variantId from a variant wild pokemon", () => {

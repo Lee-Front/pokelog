@@ -25,11 +25,9 @@ import {
   tradeAcceptCommand,
   tradeCancelCommand,
   tradeCommand,
-  tradeLockCommand,
   tradeRejectCommand,
   tradeRequestCommand,
   tradeSearchCommand,
-  tradeUnlockCommand,
 } from "./commands/trade.js";
 import { useItemCommand } from "./commands/use-item.js";
 import { useCommand } from "./commands/use.js";
@@ -86,8 +84,6 @@ if (process.argv.length <= 2) {
   tradeCmd.command("accept <tradeId>").description("accept a trade").action(tradeAcceptCommand);
   tradeCmd.command("reject <tradeId>").description("reject a trade").action(tradeRejectCommand);
   tradeCmd.command("cancel <tradeId>").description("cancel a trade").action(tradeCancelCommand);
-  tradeCmd.command("lock <pokemonUid>").description("lock a Pokemon from trading").action(tradeLockCommand);
-  tradeCmd.command("unlock <pokemonUid>").description("unlock a Pokemon for trading").action(tradeUnlockCommand);
 
   program.command("shop").description("shop").action(shopCommand);
   program.command("buy <item> [quantity]").description("buy item").action((item, qty) => buyCommand(item, parseInt(qty || "1", 10)));

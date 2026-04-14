@@ -17,7 +17,6 @@ function makePokemon(overrides: Partial<PokemonSummary> = {}): PokemonSummary {
     nature: "adamant",
     gender: "male",
     isShiny: false,
-    tradeLocked: false,
     ...overrides,
   };
 }
@@ -44,14 +43,6 @@ describe("buildPokemonActions", () => {
   it("does not show evolution action when not pending", () => {
     const actions = buildPokemonActions(makePokemon(), false);
     expect(actions.some((a) => a.value === "evolve")).toBe(false);
-  });
-
-  it("shows lock/unlock trade", () => {
-    const unlocked = buildPokemonActions(makePokemon({ tradeLocked: false }), false);
-    expect(unlocked.some((a) => a.value === "lock-trade")).toBe(true);
-
-    const locked = buildPokemonActions(makePokemon({ tradeLocked: true }), false);
-    expect(locked.some((a) => a.value === "unlock-trade")).toBe(true);
   });
 
   it("always has back as last action", () => {

@@ -1,5 +1,5 @@
 import { BLD, CYN, DIM, R, YEL } from "../ui/colors.js";
-import { apiGet, apiPost, apiPut } from "../api-client.js";
+import { apiGet, apiPut } from "../api-client.js";
 import { fetchArt, redraw } from "../ui/display.js";
 import { artToLines, padRight } from "../ui/text.js";
 import { enterRaw, waitKey } from "../ui/raw-mode.js";
@@ -12,7 +12,6 @@ type PartyMon = {
   level: number;
   hp: number;
   maxHp: number;
-  tradeLocked?: boolean;
 };
 
 const LEFT_W = 30;
@@ -39,8 +38,7 @@ function buildLines(
 
     const name = active ? `${BLD}${pokemon.species}${R}` : pokemon.species;
     const evoBadge = pendingEvolutionUids.has(pokemon.uid) ? ` ${YEL}EVO${R}` : "";
-    const lockBadge = pokemon.tradeLocked ? ` ${DIM}LOCK${R}` : "";
-    left.push(`${pointer} ${padRight(name, 16)} ${DIM}Lv.${pokemon.level}${R}${evoBadge}${lockBadge}`);
+    left.push(`${pointer} ${padRight(name, 16)} ${DIM}Lv.${pokemon.level}${R}${evoBadge}`);
   }
 
   const right = artToLines(art);
@@ -57,7 +55,7 @@ function buildLines(
     "",
     `  ${BLD}Party Pokemon${R}`,
     "  " + "-".repeat(54),
-    `  ${DIM}Up/Down: Move  Enter: Open / Resolve evolution  L: Toggle trade lock  Esc: Back${R}`,
+    `  ${DIM}Up/Down: Move  Enter: Open / Resolve evolution  Esc: Back${R}`,
     "",
     ...merged,
     "",
@@ -138,22 +136,6 @@ export async function partyCommand() {
       continue;
     }
     if (key !== "\r") {
-      if (key === "l" || key === "L") {
-        const pokemon = party[cursor];
-        if (!pokemon) {
-          continue;
-        }
-
-        const toggleResponse = await fetchTradeLock(pokemon.uid, Boolean(pokemon.tradeLocked));
-        if (toggleResponse.ok) {
-          message = `${toggleResponse.data.message ?? "Trade lock updated."}`;
-          await refreshParty();
-          await refreshPendingEvolutions();
-        } else {
-          message = `${String(toggleResponse.data.error ?? "Failed to update trade lock.")}`;
-        }
-        continue;
-      }
       continue;
     }
 
@@ -178,10 +160,6 @@ export async function partyCommand() {
   }
 
   process.stdout.write("\x1b[?25h");
-}
-
-async function fetchTradeLock(pokemonUid: string, tradeLocked: boolean) {
-  return apiPost(tradeLocked ? "/api/game/trades/unlock" : "/api/game/trades/lock", { pokemonUid });
 }
 
 export async function partySetCommand(uids: string[]) {

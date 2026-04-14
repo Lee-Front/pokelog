@@ -11,7 +11,6 @@ import { equipHeldItem, HeldItemError, unequipHeldItem } from "../game/held-item
 import { buildInventoryCatalogEntry } from "../game/inventory-catalog.js";
 import { PendingEvolutionError, resolvePendingEvolutionChoice } from "../game/pending-evolution.js";
 import { buildLevelEvolutionContext, getEvolutionBranchDiagnostics } from "../game/growth.js";
-import { setTradeLock, TradeLockError } from "../game/trade-lock.js";
 import {
   acceptTradeRequest,
   cancelTradeRequest,
@@ -415,68 +414,6 @@ gameRoutes.post("/trades/:id/cancel", async (req: AuthRequest, res: Response) =>
 
     console.error("Trade cancel error:", err);
     res.status(500).json({ error: "Failed to cancel trade request." });
-  }
-});
-
-gameRoutes.post("/trades/lock", async (req: AuthRequest, res: Response) => {
-  try {
-    const { pokemonUid } = req.body ?? {};
-    if (!pokemonUid) {
-      res.status(400).json({ error: "pokemonUid is required." });
-      return;
-    }
-
-    const user = await getUser(req.userId!);
-    if (!user) {
-      res.status(404).json({ error: "User not found." });
-      return;
-    }
-
-    const result = setTradeLock(user, String(pokemonUid), true);
-    await saveUser(user);
-    res.json({
-      message: `${result.pokemon.species} is now trade-locked.`,
-      pokemon: result.pokemon,
-    });
-  } catch (err) {
-    if (err instanceof TradeLockError) {
-      res.status(err.status).json({ error: err.message });
-      return;
-    }
-
-    console.error("Trade lock error:", err);
-    res.status(500).json({ error: "Failed to lock Pokemon for trade." });
-  }
-});
-
-gameRoutes.post("/trades/unlock", async (req: AuthRequest, res: Response) => {
-  try {
-    const { pokemonUid } = req.body ?? {};
-    if (!pokemonUid) {
-      res.status(400).json({ error: "pokemonUid is required." });
-      return;
-    }
-
-    const user = await getUser(req.userId!);
-    if (!user) {
-      res.status(404).json({ error: "User not found." });
-      return;
-    }
-
-    const result = setTradeLock(user, String(pokemonUid), false);
-    await saveUser(user);
-    res.json({
-      message: `${result.pokemon.species} trade lock removed.`,
-      pokemon: result.pokemon,
-    });
-  } catch (err) {
-    if (err instanceof TradeLockError) {
-      res.status(err.status).json({ error: err.message });
-      return;
-    }
-
-    console.error("Trade unlock error:", err);
-    res.status(500).json({ error: "Failed to unlock Pokemon for trade." });
   }
 });
 

@@ -185,7 +185,6 @@ describe("QA: API Contract", () => {
         "abilityId",
         "moveUsageCounts",
         "damageTakenTotal",
-        "tradeLocked",
         "nature",
         "isShiny",
       ];

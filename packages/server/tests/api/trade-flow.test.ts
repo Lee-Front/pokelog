@@ -120,18 +120,4 @@ describe("trade flow", () => {
     expect(req.body.error).toBeDefined();
   });
 
-  it("locks pokemon from trading", async () => {
-    const { token } = await t.registerAndLogin("lockuser", "charmander");
-    const api = t.authed(token);
-
-    const party = await api.get("/api/game/party");
-    const uid = party.body.party[0].uid;
-
-    const lock = await api.post("/api/game/trades/lock", { pokemonUid: uid });
-    expect(lock.status).toBe(200);
-
-    // 잠긴 포켓몬 확인
-    const detail = await api.get(`/api/game/pokemon/${uid}`);
-    expect(detail.body.pokemon.tradeLocked).toBe(true);
-  });
 });

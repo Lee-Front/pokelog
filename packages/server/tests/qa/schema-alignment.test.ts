@@ -10,14 +10,14 @@ beforeAll(() => clearAllCaches());
 
 describe("QA: Schema Alignment", () => {
   // ========================================================
-  // B1 - createPokemon returns all 20 OwnedPokemon fields
+  // B1 - createPokemon returns all 19 OwnedPokemon fields
   // ========================================================
-  describe("B1: createPokemon returns all OwnedPokemon fields", () => {
+  describe("B1: createPokemon returns all 19 OwnedPokemon fields", () => {
     afterEach(() => {
       vi.restoreAllMocks();
     });
 
-    it("createPokemon('bulbasaur', 5) has all 20 fields with correct types", () => {
+    it("createPokemon('bulbasaur', 5) has all 19 fields with correct types", () => {
       vi.spyOn(Math, "random").mockReturnValue(0.5);
 
       const pokemon = createPokemon("bulbasaur", 5);
@@ -105,10 +105,6 @@ describe("QA: Schema Alignment", () => {
       expect(pokemon).toHaveProperty("damageTakenTotal");
       expect(typeof pokemon.damageTakenTotal).toBe("number");
 
-      // tradeLocked
-      expect(pokemon).toHaveProperty("tradeLocked");
-      expect(typeof pokemon.tradeLocked).toBe("boolean");
-
       // nature
       expect(pokemon).toHaveProperty("nature");
       expect(typeof pokemon.nature).toBe("string");
@@ -118,12 +114,12 @@ describe("QA: Schema Alignment", () => {
       expect(pokemon).toHaveProperty("isShiny");
       expect(typeof pokemon.isShiny).toBe("boolean");
 
-      // Verify exactly 20 keys present
+      // Verify exactly 19 keys present
       const expectedKeys = [
         "uid", "species", "variantId", "nickname", "level", "exp",
         "hp", "maxHp", "stats", "moves", "caughtAt", "gender",
         "friendship", "heldItem", "abilityId", "moveUsageCounts",
-        "damageTakenTotal", "tradeLocked", "nature", "isShiny",
+        "damageTakenTotal", "nature", "isShiny",
       ];
       for (const key of expectedKeys) {
         expect(pokemon, `missing key: ${key}`).toHaveProperty(key);
@@ -243,7 +239,7 @@ describe("QA: Schema Alignment", () => {
         caughtAt: "2023-01-01T00:00:00Z",
         // Intentionally omit all optional fields:
         // variantId, gender, friendship, heldItem, abilityId,
-        // moveUsageCounts, damageTakenTotal, tradeLocked, nature, isShiny
+        // moveUsageCounts, damageTakenTotal, nature, isShiny
       };
 
       const userData: UserData = {
@@ -311,8 +307,6 @@ describe("QA: Schema Alignment", () => {
       expect(typeof normalized.damageTakenTotal).toBe("number");
       expect(normalized.damageTakenTotal).toBe(0);
 
-      // tradeLocked defaults to false
-      expect(normalized.tradeLocked).toBe(false);
     });
   });
 

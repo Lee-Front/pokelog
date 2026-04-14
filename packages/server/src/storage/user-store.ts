@@ -119,7 +119,6 @@ function normalizeOwnedPokemon(pokemon: OwnedPokemon): OwnedPokemon {
     abilityId: pokemon.abilityId ?? null,
     moveUsageCounts: normalizeMoveUsageCounts(pokemon.moveUsageCounts),
     damageTakenTotal: normalizeDamageTakenTotal(pokemon.damageTakenTotal),
-    tradeLocked: pokemon.tradeLocked ?? false,
     nature: pokemon.nature ?? "hardy",
     isShiny: pokemon.isShiny ?? false,
   };

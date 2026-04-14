@@ -124,7 +124,6 @@ export function createPokemon(species: string, level: number): OwnedPokemon {
     abilityId: speciesData.abilities?.normal[0] ?? null,
     moveUsageCounts: {},
     damageTakenTotal: 0,
-    tradeLocked: false,
     nature,
     isShiny: Math.random() < (1 / 4096),
   };
@@ -176,7 +175,6 @@ export function wildPokemonToOwned(wild: WildPokemon): OwnedPokemon {
     abilityId: wild.ability ?? speciesData?.abilities?.normal[0] ?? null,
     moveUsageCounts: {},
     damageTakenTotal: 0,
-    tradeLocked: false,
     nature: wild.nature ?? "hardy",
     isShiny: wild.isShiny ?? false,
   };
