@@ -101,6 +101,13 @@ export interface PokemonStats {
   spDefense: number;
 }
 
+export type PrimaryStatus = "poison" | "burn" | "paralysis" | "sleep" | "freeze";
+
+export interface VolatileStatus {
+  id: string;
+  turnsRemaining: number;
+}
+
 export type PokemonGender = "male" | "female" | "genderless";
 
 export interface OwnedPokemon {
@@ -123,6 +130,8 @@ export interface OwnedPokemon {
   damageTakenTotal?: number;
   nature?: string;
   isShiny?: boolean;
+  statusCondition?: PrimaryStatus | null;
+  sleepTurns?: number;
 }
 
 export type EggTierId = "common" | "rare" | "legend";
@@ -145,6 +154,7 @@ export interface WildPokemon {
   gender?: PokemonGender;
   ability?: string;
   isShiny?: boolean;
+  statusCondition?: PrimaryStatus | null;
 }
 
 export interface PendingEvent {
@@ -201,6 +211,8 @@ export interface BattleState {
   wild: WildPokemon;
   playerStatStages?: StatStages;
   wildStatStages?: StatStages;
+  playerVolatile?: VolatileStatus[];
+  wildVolatile?: VolatileStatus[];
 }
 
 export interface LogEntry {

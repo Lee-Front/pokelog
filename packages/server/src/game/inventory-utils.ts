@@ -17,5 +17,7 @@ export function healPokemon(pokemon: OwnedPokemon, amount?: number): void {
     for (const move of pokemon.moves) {
       move.pp = move.maxPp;
     }
+    pokemon.statusCondition = null;
+    pokemon.sleepTurns = undefined;
   }
 }

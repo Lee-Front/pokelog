@@ -7,10 +7,14 @@ import { calculateDamage, determineTurnOrder, applyStatChanges, defaultStatStage
 import { attemptCapture, getCatchRate } from "../game/capture.js";
 import { wildPokemonToOwned } from "../game/pokemon-factory.js";
 import { getMoveById, getSpeciesByName, getVariants } from "../game/data-loader.js";
-import type { BattleState, MoveData, OwnedPokemon, UserData, StatStages } from "../../../../shared/types.js";
+import type { BattleState, MoveData, OwnedPokemon, UserData, StatStages, PrimaryStatus, VolatileStatus } from "../../../../shared/types.js";
 import { recordDamageTaken } from "../game/battle-progress.js";
 import { decrementItem, healPokemon } from "../game/inventory-utils.js";
 import { recordMoveUsage } from "../game/move-usage.js";
+import {
+  checkPreAttack, applyEndOfTurn, tickVolatiles, rollAilment,
+  isVolatileAilment, addVolatile, rollSleepTurns, rollConfusionTurns, rollTrapTurns,
+} from "../game/status-conditions.js";
 
 export const battleRoutes = Router();
 battleRoutes.use(authMiddleware);
@@ -61,6 +65,106 @@ function hasAlivePartyMembers(user: { party: string[]; pokemon: Array<{ uid: str
       const p = user.pokemon.find((pk) => pk.uid === uid);
       return p != null && p.hp > 0;
     });
+}
+
+/** 기술 사용 후 ailment 부여 처리 */
+function maybeApplyAilment(
+  moveData: MoveData,
+  targetStatus: PrimaryStatus | null | undefined,
+  targetVolatiles: VolatileStatus[],
+  log: string[],
+): { newStatus: PrimaryStatus | null; newVolatiles: VolatileStatus[]; sleepTurns?: number } {
+  const ailment = moveData.meta?.ailment;
+  const chance = moveData.meta?.ailmentChance ?? 0;
+  if (!ailment || ailment === "none") return { newStatus: null, newVolatiles: targetVolatiles };
+
+  // Try primary status
+  const primary = rollAilment(ailment, chance, targetStatus);
+  if (primary) {
+    const statusNames: Record<string, string> = {
+      poison: "독", burn: "화상", paralysis: "마비", sleep: "잠듦", freeze: "얼음",
+    };
+    log.push(`${statusNames[primary] ?? primary} 상태가 되었다!`);
+    return {
+      newStatus: primary,
+      newVolatiles: targetVolatiles,
+      sleepTurns: primary === "sleep" ? rollSleepTurns() : undefined,
+    };
+  }
+
+  // Try volatile status
+  if (isVolatileAilment(ailment)) {
+    // Roll chance for volatiles too
+    if (chance > 0 && chance < 100) {
+      if (Math.random() * 100 >= chance) return { newStatus: null, newVolatiles: targetVolatiles };
+    }
+    let turns = -1; // permanent by default
+    if (ailment === "confusion") turns = rollConfusionTurns();
+    else if (ailment === "trap") turns = rollTrapTurns();
+    else if (ailment === "disable") turns = 4;
+    else if (ailment === "embargo") turns = 5;
+    else if (ailment === "heal-block") turns = 5;
+    else if (ailment === "yawn") turns = 1;
+    else if (ailment === "perish-song") turns = 3;
+
+    const newVolatiles = addVolatile(targetVolatiles, ailment, turns);
+    if (newVolatiles !== targetVolatiles) {
+      const volNames: Record<string, string> = {
+        confusion: "혼란", trap: "조이기", "leech-seed": "씨뿌리기", infatuation: "사랑",
+      };
+      log.push(`${volNames[ailment] ?? ailment} 상태가 되었다!`);
+    }
+    return { newStatus: null, newVolatiles };
+  }
+
+  return { newStatus: null, newVolatiles: targetVolatiles };
+}
+
+/** 턴 종료 효과 적용 */
+function applyEndOfTurnEffects(
+  battle: BattleState,
+  myPokemon: OwnedPokemon,
+  log: string[],
+): void {
+  // Player end-of-turn
+  const playerEot = applyEndOfTurn(
+    myPokemon.statusCondition,
+    battle.playerVolatile ?? [],
+    myPokemon.maxHp,
+    battle.wild.maxHp,
+  );
+  if (playerEot.damage > 0) {
+    myPokemon.hp = Math.max(0, myPokemon.hp - playerEot.damage);
+  }
+  if (playerEot.healing > 0) {
+    myPokemon.hp = Math.min(myPokemon.maxHp, myPokemon.hp + playerEot.healing);
+  }
+  if (playerEot.opponentHealing > 0) {
+    battle.wild.hp = Math.min(battle.wild.maxHp, battle.wild.hp + playerEot.opponentHealing);
+  }
+  for (const msg of playerEot.messages) log.push(`${myPokemon.species}: ${msg}`);
+
+  // Wild end-of-turn
+  const wildEot = applyEndOfTurn(
+    battle.wild.statusCondition,
+    battle.wildVolatile ?? [],
+    battle.wild.maxHp,
+    myPokemon.maxHp,
+  );
+  if (wildEot.damage > 0) {
+    battle.wild.hp = Math.max(0, battle.wild.hp - wildEot.damage);
+  }
+  if (wildEot.healing > 0) {
+    battle.wild.hp = Math.min(battle.wild.maxHp, battle.wild.hp + wildEot.healing);
+  }
+  if (wildEot.opponentHealing > 0) {
+    myPokemon.hp = Math.min(myPokemon.maxHp, myPokemon.hp + wildEot.opponentHealing);
+  }
+  for (const msg of wildEot.messages) log.push(`야생 ${battle.wild.species}: ${msg}`);
+
+  // Tick volatiles
+  battle.playerVolatile = tickVolatiles(battle.playerVolatile ?? []);
+  battle.wildVolatile = tickVolatiles(battle.wildVolatile ?? []);
 }
 
 /** 기절 처리 — response를 보냈으면 true 반환 */
@@ -158,8 +262,33 @@ async function doWildAttackAndCheck(
   log: string[], res: Response,
   preSelectedWildMove?: { id: string; pp: number; maxPp: number },
 ): Promise<boolean> {
+  // Pre-attack status check for wild pokemon
+  const wildPreCheck = checkPreAttack(
+    battle.wild.statusCondition,
+    battle.wildVolatile ?? [],
+    battle.wild.stats,
+  );
+  if (wildPreCheck.statusCleared) {
+    battle.wild.statusCondition = null;
+    log.push(`야생 ${battle.wild.species}: ${wildPreCheck.message}`);
+  }
+  if (!wildPreCheck.canAct) {
+    log.push(`야생 ${battle.wild.species}: ${wildPreCheck.message}`);
+    if (wildPreCheck.selfDamage) {
+      battle.wild.hp = Math.max(0, battle.wild.hp - wildPreCheck.selfDamage);
+      log.push(`야생 ${battle.wild.species}이(가) ${wildPreCheck.selfDamage} 데미지를 받았다!`);
+    }
+    return await handleFainted(user, myPokemon, battle, log, res);
+  }
+
+  // Burn modifier: halve attack for physical moves
+  const wildStats = { ...battle.wild.stats };
+  if (battle.wild.statusCondition === "burn") {
+    wildStats.attack = Math.max(1, Math.floor(wildStats.attack / 2));
+  }
+
   const wildResult = wildAttack(
-    battle.wild.species, battle.wild.level, battle.wild.stats,
+    battle.wild.species, battle.wild.level, wildStats,
     battle.wild.moves, myPokemon.stats, myPokemon.species,
     battle.wildStatStages, battle.playerStatStages,
     preSelectedWildMove,
@@ -181,6 +310,19 @@ async function doWildAttackAndCheck(
 
     // Apply stat changes for wild pokemon
     maybeApplyStatChanges(battle, wildResult.moveData, false, log);
+
+    // Apply ailment to player from wild attack
+    const ailmentResult = maybeApplyAilment(
+      wildResult.moveData,
+      myPokemon.statusCondition,
+      battle.playerVolatile ?? [],
+      log,
+    );
+    if (ailmentResult.newStatus) {
+      myPokemon.statusCondition = ailmentResult.newStatus;
+      if (ailmentResult.sleepTurns !== undefined) myPokemon.sleepTurns = ailmentResult.sleepTurns;
+    }
+    battle.playerVolatile = ailmentResult.newVolatiles;
   }
 
   return await handleFainted(user, myPokemon, battle, log, res);
@@ -231,6 +373,8 @@ battleRoutes.post("/start", async (req, res) => {
       wild: { ...event.pokemon },
       playerStatStages: defaultStatStages(),
       wildStatStages: defaultStatStages(),
+      playerVolatile: [],
+      wildVolatile: [],
     };
 
     user.battleState = battleState;
@@ -266,8 +410,54 @@ async function handleFight(
   const wildMoveData = wildChosenMove ? getMoveById(wildChosenMove.id) : null;
   const wildPriority = wildMoveData?.priority ?? 0;
 
-  const playerSpeed = applyStatStageMultiplier(myPokemon.stats.speed, battle.playerStatStages?.speed ?? 0);
-  const wildSpeed = applyStatStageMultiplier(battle.wild.stats.speed, battle.wildStatStages?.speed ?? 0);
+  // Handle sleep turns for player before pre-attack check
+  if (myPokemon.statusCondition === "sleep") {
+    if (myPokemon.sleepTurns !== undefined && myPokemon.sleepTurns > 0) {
+      myPokemon.sleepTurns -= 1;
+    }
+    if (myPokemon.sleepTurns !== undefined && myPokemon.sleepTurns <= 0) {
+      myPokemon.statusCondition = null;
+      myPokemon.sleepTurns = undefined;
+      log.push(`${myPokemon.species}이(가) 잠에서 깨어났다!`);
+    }
+  }
+
+  // Pre-attack check for player
+  let playerCanAct = true;
+  if (myPokemon.statusCondition || (battle.playerVolatile ?? []).length > 0) {
+    const preCheck = checkPreAttack(
+      myPokemon.statusCondition,
+      battle.playerVolatile ?? [],
+      myPokemon.stats,
+    );
+    if (preCheck.statusCleared) {
+      myPokemon.statusCondition = null;
+      myPokemon.sleepTurns = undefined;
+      log.push(preCheck.message);
+    }
+    if (!preCheck.canAct) {
+      playerCanAct = false;
+      log.push(preCheck.message);
+      if (preCheck.selfDamage) {
+        myPokemon.hp = Math.max(0, myPokemon.hp - preCheck.selfDamage);
+        log.push(`${myPokemon.species}이(가) ${preCheck.selfDamage} 데미지를 받았다!`);
+        if (await handleFainted(user, myPokemon, battle, log, res)) return;
+      }
+    }
+  }
+
+  // Paralysis halves speed
+  let playerSpeedBase = myPokemon.stats.speed;
+  if (myPokemon.statusCondition === "paralysis") {
+    playerSpeedBase = Math.max(1, Math.floor(playerSpeedBase / 2));
+  }
+  let wildSpeedBase = battle.wild.stats.speed;
+  if (battle.wild.statusCondition === "paralysis") {
+    wildSpeedBase = Math.max(1, Math.floor(wildSpeedBase / 2));
+  }
+
+  const playerSpeed = applyStatStageMultiplier(playerSpeedBase, battle.playerStatStages?.speed ?? 0);
+  const wildSpeed = applyStatStageMultiplier(wildSpeedBase, battle.wildStatStages?.speed ?? 0);
   const turnOrder = determineTurnOrder(
     playerSpeed, wildSpeed,
     selectedMoveData.priority ?? 0, wildPriority,
@@ -278,8 +468,15 @@ async function handleFight(
   function playerAttack() {
     selectedMove.pp -= 1;
     recordMoveUsage(myPokemon, selectedMove.id);
+
+    // Burn modifier: halve attack stat for physical moves
+    const playerStats = { ...myPokemon.stats };
+    if (myPokemon.statusCondition === "burn") {
+      playerStats.attack = Math.max(1, Math.floor(playerStats.attack / 2));
+    }
+
     const result = calculateDamage(
-      myPokemon.level, myPokemon.stats, battle.wild.stats, selectedMoveData,
+      myPokemon.level, playerStats, battle.wild.stats, selectedMoveData,
       getTypes(myPokemon.species, myPokemon.variantId), getTypes(battle.wild.species, battle.wild.variantId),
       battle.playerStatStages, battle.wildStatStages,
     );
@@ -298,6 +495,18 @@ async function handleFight(
       // Apply stat changes for player
       maybeApplyStatChanges(battle, selectedMoveData, true, log);
 
+      // Apply ailment to wild from player attack
+      const ailmentResult = maybeApplyAilment(
+        selectedMoveData,
+        battle.wild.statusCondition,
+        battle.wildVolatile ?? [],
+        log,
+      );
+      if (ailmentResult.newStatus) {
+        battle.wild.statusCondition = ailmentResult.newStatus;
+      }
+      battle.wildVolatile = ailmentResult.newVolatiles;
+
       // Check flinch (only effective if player goes first)
       const flinchChance = selectedMoveData.meta?.flinchChance ?? 0;
       if (flinchChance > 0 && Math.random() * 100 < flinchChance) {
@@ -307,14 +516,16 @@ async function handleFight(
   }
 
   if (turnOrder === "player") {
-    playerAttack();
-    if (battle.wild.hp <= 0) {
-      log.push(`야생 ${battle.wild.species}이(가) 쓰러졌다!`);
-      user.pendingEvents = user.pendingEvents.filter((e) => e.id !== battle.eventId);
-      user.battleState = null;
-      await saveUser(user);
-      res.json({ log, battleState: null, result: "win" });
-      return;
+    if (playerCanAct) {
+      playerAttack();
+      if (battle.wild.hp <= 0) {
+        log.push(`야생 ${battle.wild.species}이(가) 쓰러졌다!`);
+        user.pendingEvents = user.pendingEvents.filter((e) => e.id !== battle.eventId);
+        user.battleState = null;
+        await saveUser(user);
+        res.json({ log, battleState: null, result: "win" });
+        return;
+      }
     }
     if (playerCausedFlinch) {
       log.push(`야생 ${battle.wild.species}은(는) 풀이 죽어 움직이지 못했다!`);
@@ -323,15 +534,33 @@ async function handleFight(
     }
   } else {
     if (await doWildAttackAndCheck(user, myPokemon, battle, log, res, wildChosenMove ?? undefined)) return;
-    playerAttack();
-    if (battle.wild.hp <= 0) {
-      log.push(`야생 ${battle.wild.species}이(가) 쓰러졌다!`);
-      user.pendingEvents = user.pendingEvents.filter((e) => e.id !== battle.eventId);
-      user.battleState = null;
-      await saveUser(user);
-      res.json({ log, battleState: null, result: "win" });
-      return;
+    if (playerCanAct) {
+      playerAttack();
+      if (battle.wild.hp <= 0) {
+        log.push(`야생 ${battle.wild.species}이(가) 쓰러졌다!`);
+        user.pendingEvents = user.pendingEvents.filter((e) => e.id !== battle.eventId);
+        user.battleState = null;
+        await saveUser(user);
+        res.json({ log, battleState: null, result: "win" });
+        return;
+      }
     }
+  }
+
+  // End-of-turn effects (status damage, volatile ticks)
+  applyEndOfTurnEffects(battle, myPokemon, log);
+
+  // Check if end-of-turn damage KO'd anyone
+  if (myPokemon.hp <= 0) {
+    if (await handleFainted(user, myPokemon, battle, log, res)) return;
+  }
+  if (battle.wild.hp <= 0) {
+    log.push(`야생 ${battle.wild.species}이(가) 쓰러졌다!`);
+    user.pendingEvents = user.pendingEvents.filter((e) => e.id !== battle.eventId);
+    user.battleState = null;
+    await saveUser(user);
+    res.json({ log, battleState: null, result: "win" });
+    return;
   }
 
   await saveUser(user);
@@ -440,6 +669,7 @@ async function handleSwitch(
   const forced = data?.forced === true;
   battle.myPokemonUid = newUid;
   battle.playerStatStages = defaultStatStages();
+  battle.playerVolatile = [];
   log.push(`${newPokemon.species}(으)로 교체했다!`);
 
   if (!forced) {

@@ -121,6 +121,7 @@ function normalizeOwnedPokemon(pokemon: OwnedPokemon): OwnedPokemon {
     damageTakenTotal: normalizeDamageTakenTotal(pokemon.damageTakenTotal),
     nature: pokemon.nature ?? "hardy",
     isShiny: pokemon.isShiny ?? false,
+    statusCondition: pokemon.statusCondition ?? null,
   };
 }
 
