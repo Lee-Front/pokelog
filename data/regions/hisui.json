@@ -1,28 +1,1029 @@
 {
   "name": "Hisui",
   "encounters": [
-    { "species": "rowlet", "weight": 90, "levelRange": [5, 8] },
-    { "species": "cyndaquil", "weight": 90, "levelRange": [5, 8] },
-    { "species": "oshawott", "weight": 90, "levelRange": [5, 8] },
-    { "species": "starly", "weight": 95, "levelRange": [2, 5] },
-    { "species": "shinx", "weight": 85, "levelRange": [3, 6] },
-    { "species": "wurmple", "weight": 80, "levelRange": [2, 4] },
-    { "species": "buizel", "weight": 70, "levelRange": [4, 7] },
-    { "species": "croagunk", "weight": 55, "levelRange": [5, 8] },
-    { "species": "stantler", "weight": 40, "levelRange": [6, 10] },
-    { "species": "qwilfish", "weight": 36, "levelRange": [6, 10] },
-    { "species": "barboach", "weight": 32, "levelRange": [6, 10] },
-    { "species": "petilil", "weight": 45, "levelRange": [6, 9] },
-    { "species": "rufflet", "weight": 30, "levelRange": [8, 12] },
-    { "species": "bergmite", "weight": 28, "levelRange": [8, 12] },
-    { "species": "teddiursa", "weight": 24, "levelRange": [8, 12] },
-    { "species": "scyther", "weight": 20, "levelRange": [8, 12] },
-    { "species": "growlithe", "weight": 14, "levelRange": [9, 13] },
-    { "species": "goomy", "weight": 16, "levelRange": [10, 14] },
-    { "species": "zorua", "weight": 10, "levelRange": [10, 14] },
-    { "species": "growlithe-hisui", "weight": 20, "levelRange": [7, 11] },
-    { "species": "voltorb-hisui", "weight": 18, "levelRange": [8, 12] },
-    { "species": "sneasel-hisui", "weight": 12, "levelRange": [10, 14] },
-    { "species": "qwilfish-hisui", "weight": 15, "levelRange": [8, 12] }
+    {
+      "species": "applin",
+      "weight": 80,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "arrokuda",
+      "weight": 80,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "blipbug",
+      "weight": 80,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "chewtle",
+      "weight": 80,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "hatenna",
+      "weight": 80,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "impidimp",
+      "weight": 80,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "milcery",
+      "weight": 80,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "nickit",
+      "weight": 80,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "rolycoly",
+      "weight": 80,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "rookidee",
+      "weight": 80,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "silicobra",
+      "weight": 80,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "skwovet",
+      "weight": 80,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "wooloo",
+      "weight": 80,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "yamper",
+      "weight": 80,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "clobbopus",
+      "weight": 60,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "cufant",
+      "weight": 60,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "gossifleur",
+      "weight": 60,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "growlithe",
+      "weight": 60,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "growlithe-hisui",
+      "weight": 60,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "sizzlipede",
+      "weight": 60,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "snom",
+      "weight": 60,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "voltorb",
+      "weight": 60,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "voltorb-hisui",
+      "weight": 60,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "morpeko-full-belly",
+      "weight": 50,
+      "levelRange": [
+        10,
+        25
+      ]
+    },
+    {
+      "species": "sinistea",
+      "weight": 45,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "dreepy",
+      "weight": 30,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "duraludon",
+      "weight": 30,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "qwilfish",
+      "weight": 30,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "qwilfish-hisui",
+      "weight": 30,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "sneasel",
+      "weight": 30,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "sneasel-hisui",
+      "weight": 30,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "zorua",
+      "weight": 30,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "zorua-hisui",
+      "weight": 30,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "carkol",
+      "weight": 15,
+      "levelRange": [
+        15,
+        30
+      ]
+    },
+    {
+      "species": "corvisquire",
+      "weight": 15,
+      "levelRange": [
+        15,
+        30
+      ]
+    },
+    {
+      "species": "cramorant",
+      "weight": 15,
+      "levelRange": [
+        10,
+        25
+      ]
+    },
+    {
+      "species": "dottler",
+      "weight": 15,
+      "levelRange": [
+        15,
+        30
+      ]
+    },
+    {
+      "species": "drakloak",
+      "weight": 15,
+      "levelRange": [
+        15,
+        30
+      ]
+    },
+    {
+      "species": "eiscue-ice",
+      "weight": 15,
+      "levelRange": [
+        10,
+        25
+      ]
+    },
+    {
+      "species": "falinks",
+      "weight": 15,
+      "levelRange": [
+        10,
+        25
+      ]
+    },
+    {
+      "species": "hattrem",
+      "weight": 15,
+      "levelRange": [
+        15,
+        30
+      ]
+    },
+    {
+      "species": "indeedee-male",
+      "weight": 15,
+      "levelRange": [
+        10,
+        25
+      ]
+    },
+    {
+      "species": "morgrem",
+      "weight": 15,
+      "levelRange": [
+        15,
+        30
+      ]
+    },
+    {
+      "species": "pincurchin",
+      "weight": 15,
+      "levelRange": [
+        10,
+        25
+      ]
+    },
+    {
+      "species": "sliggoo",
+      "weight": 15,
+      "levelRange": [
+        15,
+        30
+      ]
+    },
+    {
+      "species": "sliggoo-hisui",
+      "weight": 15,
+      "levelRange": [
+        15,
+        30
+      ]
+    },
+    {
+      "species": "stonjourner",
+      "weight": 15,
+      "levelRange": [
+        10,
+        25
+      ]
+    },
+    {
+      "species": "toxel",
+      "weight": 15,
+      "levelRange": [
+        1,
+        5
+      ]
+    },
+    {
+      "species": "grookey",
+      "weight": 10,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "scorbunny",
+      "weight": 10,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "sobble",
+      "weight": 10,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "alcremie",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "appletun",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "arcanine",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "arcanine-hisui",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "avalugg",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "avalugg-hisui",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "barraskewda",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "basculegion-male",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "boltund",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "braviary",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "braviary-hisui",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "centiskorch",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "coalossal",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "copperajah",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "corviknight",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "cursola",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "dragapult",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "drednaw",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "dubwool",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "eldegoss",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "electrode",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "electrode-hisui",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "flapple",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "frosmoth",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "goodra",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "goodra-hisui",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "grapploct",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "greedent",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "grimmsnarl",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "hatterene",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "kleavor",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "lilligant",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "lilligant-hisui",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "mr-rime",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "obstagoon",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "orbeetle",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "overqwil",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "perrserker",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "polteageist",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "runerigus",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "sandaconda",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "sirfetchd",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "sneasler",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "thievul",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "toxtricity-amped",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "ursaluna",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "wyrdeer",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "zoroark",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "zoroark-hisui",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "drizzile",
+      "weight": 5,
+      "levelRange": [
+        15,
+        30
+      ]
+    },
+    {
+      "species": "raboot",
+      "weight": 5,
+      "levelRange": [
+        15,
+        30
+      ]
+    },
+    {
+      "species": "thwackey",
+      "weight": 5,
+      "levelRange": [
+        15,
+        30
+      ]
+    },
+    {
+      "species": "arctovish",
+      "weight": 3,
+      "levelRange": [
+        15,
+        25
+      ]
+    },
+    {
+      "species": "arctozolt",
+      "weight": 3,
+      "levelRange": [
+        15,
+        25
+      ]
+    },
+    {
+      "species": "cinderace",
+      "weight": 3,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "decidueye",
+      "weight": 3,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "decidueye-hisui",
+      "weight": 3,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "dracovish",
+      "weight": 3,
+      "levelRange": [
+        15,
+        25
+      ]
+    },
+    {
+      "species": "dracozolt",
+      "weight": 3,
+      "levelRange": [
+        15,
+        25
+      ]
+    },
+    {
+      "species": "inteleon",
+      "weight": 3,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "rillaboom",
+      "weight": 3,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "samurott",
+      "weight": 3,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "samurott-hisui",
+      "weight": 3,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "typhlosion",
+      "weight": 3,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "typhlosion-hisui",
+      "weight": 3,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "calyrex",
+      "weight": 2,
+      "levelRange": [
+        40,
+        60
+      ]
+    },
+    {
+      "species": "enamorus-incarnate",
+      "weight": 2,
+      "levelRange": [
+        40,
+        60
+      ]
+    },
+    {
+      "species": "eternatus",
+      "weight": 2,
+      "levelRange": [
+        40,
+        60
+      ]
+    },
+    {
+      "species": "glastrier",
+      "weight": 2,
+      "levelRange": [
+        40,
+        60
+      ]
+    },
+    {
+      "species": "kubfu",
+      "weight": 2,
+      "levelRange": [
+        40,
+        60
+      ]
+    },
+    {
+      "species": "regidrago",
+      "weight": 2,
+      "levelRange": [
+        40,
+        60
+      ]
+    },
+    {
+      "species": "regieleki",
+      "weight": 2,
+      "levelRange": [
+        40,
+        60
+      ]
+    },
+    {
+      "species": "spectrier",
+      "weight": 2,
+      "levelRange": [
+        40,
+        60
+      ]
+    },
+    {
+      "species": "urshifu-single-strike",
+      "weight": 2,
+      "levelRange": [
+        40,
+        60
+      ]
+    },
+    {
+      "species": "zacian",
+      "weight": 2,
+      "levelRange": [
+        40,
+        60
+      ]
+    },
+    {
+      "species": "zamazenta",
+      "weight": 2,
+      "levelRange": [
+        40,
+        60
+      ]
+    },
+    {
+      "species": "zarude",
+      "weight": 1,
+      "levelRange": [
+        40,
+        60
+      ]
+    }
   ]
 }

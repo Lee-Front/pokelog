@@ -1,25 +1,1253 @@
 {
   "name": "Unova",
   "encounters": [
-    { "species": "patrat", "weight": 105, "levelRange": [2, 5] },
-    { "species": "lillipup", "weight": 105, "levelRange": [2, 5] },
-    { "species": "purrloin", "weight": 90, "levelRange": [3, 6] },
-    { "species": "pidove", "weight": 90, "levelRange": [3, 6] },
-    { "species": "sewaddle", "weight": 82, "levelRange": [3, 6] },
-    { "species": "blitzle", "weight": 70, "levelRange": [4, 7] },
-    { "species": "roggenrola", "weight": 70, "levelRange": [4, 7] },
-    { "species": "timburr", "weight": 55, "levelRange": [5, 8] },
-    { "species": "tympole", "weight": 55, "levelRange": [5, 8] },
-    { "species": "venipede", "weight": 52, "levelRange": [5, 8] },
-    { "species": "cottonee", "weight": 45, "levelRange": [6, 9] },
-    { "species": "petilil", "weight": 45, "levelRange": [6, 9] },
-    { "species": "sandile", "weight": 45, "levelRange": [7, 10] },
-    { "species": "scraggy", "weight": 35, "levelRange": [8, 11] },
-    { "species": "gothita", "weight": 28, "levelRange": [8, 12] },
-    { "species": "solosis", "weight": 28, "levelRange": [8, 12] },
-    { "species": "zorua", "weight": 16, "levelRange": [9, 13] },
-    { "species": "litwick", "weight": 18, "levelRange": [10, 14] },
-    { "species": "axew", "weight": 8, "levelRange": [12, 18] },
-    { "species": "deino", "weight": 3, "levelRange": [15, 20] }
+    {
+      "species": "elgyem",
+      "weight": 80,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "ferroseed",
+      "weight": 80,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "gothita",
+      "weight": 80,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "karrablast",
+      "weight": 80,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "lillipup",
+      "weight": 80,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "minccino",
+      "weight": 80,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "patrat",
+      "weight": 80,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "pidove",
+      "weight": 80,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "purrloin",
+      "weight": 80,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "roggenrola",
+      "weight": 80,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "sewaddle",
+      "weight": 80,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "shelmet",
+      "weight": 80,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "solosis",
+      "weight": 80,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "tympole",
+      "weight": 80,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "vanillite",
+      "weight": 80,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "venipede",
+      "weight": 80,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "blitzle",
+      "weight": 60,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "cottonee",
+      "weight": 60,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "deerling",
+      "weight": 60,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "ducklett",
+      "weight": 60,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "dwebble",
+      "weight": 60,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "foongus",
+      "weight": 60,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "frillish-male",
+      "weight": 60,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "golett",
+      "weight": 60,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "joltik",
+      "weight": 60,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "litwick",
+      "weight": 60,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "mienfoo",
+      "weight": 60,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "munna",
+      "weight": 60,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "panpour",
+      "weight": 60,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "pansage",
+      "weight": 60,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "pansear",
+      "weight": 60,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "petilil",
+      "weight": 60,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "rufflet",
+      "weight": 60,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "sandile",
+      "weight": 60,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "scraggy",
+      "weight": 60,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "timburr",
+      "weight": 60,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "trubbish",
+      "weight": 60,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "tynamo",
+      "weight": 60,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "vullaby",
+      "weight": 60,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "woobat",
+      "weight": 60,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "yamask",
+      "weight": 60,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "audino",
+      "weight": 50,
+      "levelRange": [
+        10,
+        25
+      ]
+    },
+    {
+      "species": "emolga",
+      "weight": 50,
+      "levelRange": [
+        10,
+        25
+      ]
+    },
+    {
+      "species": "maractus",
+      "weight": 50,
+      "levelRange": [
+        10,
+        25
+      ]
+    },
+    {
+      "species": "cubchoo",
+      "weight": 45,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "darumaka",
+      "weight": 45,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "drilbur",
+      "weight": 45,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "klink",
+      "weight": 45,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "pawniard",
+      "weight": 45,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "axew",
+      "weight": 30,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "basculin-red-striped",
+      "weight": 30,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "deino",
+      "weight": 30,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "larvesta",
+      "weight": 30,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "zorua",
+      "weight": 30,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "alomomola",
+      "weight": 15,
+      "levelRange": [
+        10,
+        25
+      ]
+    },
+    {
+      "species": "bisharp",
+      "weight": 15,
+      "levelRange": [
+        15,
+        30
+      ]
+    },
+    {
+      "species": "boldore",
+      "weight": 15,
+      "levelRange": [
+        15,
+        30
+      ]
+    },
+    {
+      "species": "bouffalant",
+      "weight": 15,
+      "levelRange": [
+        10,
+        25
+      ]
+    },
+    {
+      "species": "cryogonal",
+      "weight": 15,
+      "levelRange": [
+        10,
+        25
+      ]
+    },
+    {
+      "species": "druddigon",
+      "weight": 15,
+      "levelRange": [
+        10,
+        25
+      ]
+    },
+    {
+      "species": "duosion",
+      "weight": 15,
+      "levelRange": [
+        15,
+        30
+      ]
+    },
+    {
+      "species": "durant",
+      "weight": 15,
+      "levelRange": [
+        10,
+        25
+      ]
+    },
+    {
+      "species": "eelektrik",
+      "weight": 15,
+      "levelRange": [
+        15,
+        30
+      ]
+    },
+    {
+      "species": "fraxure",
+      "weight": 15,
+      "levelRange": [
+        15,
+        30
+      ]
+    },
+    {
+      "species": "gothorita",
+      "weight": 15,
+      "levelRange": [
+        15,
+        30
+      ]
+    },
+    {
+      "species": "gurdurr",
+      "weight": 15,
+      "levelRange": [
+        15,
+        30
+      ]
+    },
+    {
+      "species": "heatmor",
+      "weight": 15,
+      "levelRange": [
+        10,
+        25
+      ]
+    },
+    {
+      "species": "herdier",
+      "weight": 15,
+      "levelRange": [
+        15,
+        30
+      ]
+    },
+    {
+      "species": "klang",
+      "weight": 15,
+      "levelRange": [
+        15,
+        30
+      ]
+    },
+    {
+      "species": "krokorok",
+      "weight": 15,
+      "levelRange": [
+        15,
+        30
+      ]
+    },
+    {
+      "species": "lampent",
+      "weight": 15,
+      "levelRange": [
+        15,
+        30
+      ]
+    },
+    {
+      "species": "palpitoad",
+      "weight": 15,
+      "levelRange": [
+        15,
+        30
+      ]
+    },
+    {
+      "species": "sawk",
+      "weight": 15,
+      "levelRange": [
+        10,
+        25
+      ]
+    },
+    {
+      "species": "sigilyph",
+      "weight": 15,
+      "levelRange": [
+        10,
+        25
+      ]
+    },
+    {
+      "species": "stunfisk",
+      "weight": 15,
+      "levelRange": [
+        10,
+        25
+      ]
+    },
+    {
+      "species": "swadloon",
+      "weight": 15,
+      "levelRange": [
+        15,
+        30
+      ]
+    },
+    {
+      "species": "throh",
+      "weight": 15,
+      "levelRange": [
+        10,
+        25
+      ]
+    },
+    {
+      "species": "tranquill",
+      "weight": 15,
+      "levelRange": [
+        15,
+        30
+      ]
+    },
+    {
+      "species": "vanillish",
+      "weight": 15,
+      "levelRange": [
+        15,
+        30
+      ]
+    },
+    {
+      "species": "whirlipede",
+      "weight": 15,
+      "levelRange": [
+        15,
+        30
+      ]
+    },
+    {
+      "species": "zweilous",
+      "weight": 15,
+      "levelRange": [
+        15,
+        30
+      ]
+    },
+    {
+      "species": "oshawott",
+      "weight": 10,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "snivy",
+      "weight": 10,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "tepig",
+      "weight": 10,
+      "levelRange": [
+        2,
+        10
+      ]
+    },
+    {
+      "species": "accelgor",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "amoonguss",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "beartic",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "beheeyem",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "braviary",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "chandelure",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "cinccino",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "cofagrigus",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "conkeldurr",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "crustle",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "darmanitan-standard",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "eelektross",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "escavalier",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "excadrill",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "ferrothorn",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "galvantula",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "garbodor",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "gigalith",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "golurk",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "gothitelle",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "haxorus",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "hydreigon",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "jellicent-male",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "klinklang",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "krookodile",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "leavanny",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "liepard",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "lilligant",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "mandibuzz",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "mienshao",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "musharna",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "reuniclus",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "sawsbuck",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "scolipede",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "scrafty",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "seismitoad",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "simipour",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "simisage",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "simisear",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "stoutland",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "swanna",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "swoobat",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "unfezant",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "vanilluxe",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "volcarona",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "watchog",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "whimsicott",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "zebstrika",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "zoroark",
+      "weight": 8,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "dewott",
+      "weight": 5,
+      "levelRange": [
+        15,
+        30
+      ]
+    },
+    {
+      "species": "pignite",
+      "weight": 5,
+      "levelRange": [
+        15,
+        30
+      ]
+    },
+    {
+      "species": "servine",
+      "weight": 5,
+      "levelRange": [
+        15,
+        30
+      ]
+    },
+    {
+      "species": "archen",
+      "weight": 3,
+      "levelRange": [
+        15,
+        25
+      ]
+    },
+    {
+      "species": "archeops",
+      "weight": 3,
+      "levelRange": [
+        15,
+        25
+      ]
+    },
+    {
+      "species": "carracosta",
+      "weight": 3,
+      "levelRange": [
+        15,
+        25
+      ]
+    },
+    {
+      "species": "emboar",
+      "weight": 3,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "samurott",
+      "weight": 3,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "serperior",
+      "weight": 3,
+      "levelRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "species": "tirtouga",
+      "weight": 3,
+      "levelRange": [
+        15,
+        25
+      ]
+    },
+    {
+      "species": "cobalion",
+      "weight": 2,
+      "levelRange": [
+        40,
+        60
+      ]
+    },
+    {
+      "species": "kyurem",
+      "weight": 2,
+      "levelRange": [
+        40,
+        60
+      ]
+    },
+    {
+      "species": "landorus-incarnate",
+      "weight": 2,
+      "levelRange": [
+        40,
+        60
+      ]
+    },
+    {
+      "species": "reshiram",
+      "weight": 2,
+      "levelRange": [
+        40,
+        60
+      ]
+    },
+    {
+      "species": "terrakion",
+      "weight": 2,
+      "levelRange": [
+        40,
+        60
+      ]
+    },
+    {
+      "species": "thundurus-incarnate",
+      "weight": 2,
+      "levelRange": [
+        40,
+        60
+      ]
+    },
+    {
+      "species": "tornadus-incarnate",
+      "weight": 2,
+      "levelRange": [
+        40,
+        60
+      ]
+    },
+    {
+      "species": "virizion",
+      "weight": 2,
+      "levelRange": [
+        40,
+        60
+      ]
+    },
+    {
+      "species": "zekrom",
+      "weight": 2,
+      "levelRange": [
+        40,
+        60
+      ]
+    },
+    {
+      "species": "genesect",
+      "weight": 1,
+      "levelRange": [
+        40,
+        60
+      ]
+    },
+    {
+      "species": "keldeo-ordinary",
+      "weight": 1,
+      "levelRange": [
+        40,
+        60
+      ]
+    },
+    {
+      "species": "meloetta-aria",
+      "weight": 1,
+      "levelRange": [
+        40,
+        60
+      ]
+    },
+    {
+      "species": "victini",
+      "weight": 1,
+      "levelRange": [
+        40,
+        60
+      ]
+    }
   ]
 }
