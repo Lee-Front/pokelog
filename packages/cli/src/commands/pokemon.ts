@@ -22,6 +22,10 @@ type PokemonDetail = {
   moves: Array<{ id: string; pp: number; maxPp: number }>;
   caughtAt: string;
   tradeLocked?: boolean;
+  heldItem?: string | null;
+  nature?: string;
+  isShiny?: boolean;
+  gender?: string;
 };
 
 type EvolutionPreviewEntry = {
@@ -61,7 +65,9 @@ export async function pokemonCommand(uid: string) {
       `${BLD}${name}${R}  ${DIM}Lv.${pokemon.level}${R}`,
       `${DIM}HP${R}  ${hpColor}${renderHpBar(pokemon.hp, pokemon.maxHp, 14)}${R}`,
       `${DIM}EXP${R} ${pokemon.exp}`,
-      `${DIM}Trade${R} ${pokemon.tradeLocked ? `${YEL}LOCKED${R}` : `${GRN}OPEN${R}`}`,
+      `${DIM}Nature${R} ${pokemon.nature ?? "???"}  ${DIM}Gender${R} ${pokemon.gender ?? "?"}${pokemon.isShiny ? `  ${YEL}★${R}` : ""}`,
+      `${DIM}Item${R}   ${pokemon.heldItem ? pokemon.heldItem : `${DIM}none${R}`}`,
+      `${DIM}Trade${R}  ${pokemon.tradeLocked ? `${YEL}LOCKED${R}` : `${GRN}OPEN${R}`}`,
       hasPendingEvolution ? `${YEL}Pending Evolution Ready${R}` : "",
       "",
       `${DIM}${"-".repeat(24)}${R}`,
@@ -110,6 +116,9 @@ export async function pokemonCommand(uid: string) {
       ...(hasPendingEvolution
         ? [{ name: "Resolve pending evolution", value: "evolve" as const }]
         : []),
+      ...(pokemon.heldItem
+        ? [{ name: `Unequip ${pokemon.heldItem}`, value: "unequip" as const }]
+        : [{ name: "Equip held item", value: "equip" as const }]),
       {
         name: pokemon.tradeLocked ? "Unlock trade" : "Lock trade",
         value: pokemon.tradeLocked ? "unlock-trade" as const : "lock-trade" as const,
@@ -126,6 +135,41 @@ export async function pokemonCommand(uid: string) {
       if (result !== "resolved") {
         return;
       }
+    }
+
+    if (action === "equip") {
+      const invResponse = await apiGet("/api/game/inventory");
+      if (!invResponse.ok) continue;
+      const inventory = invResponse.data.inventory as Record<string, number>;
+      const catalog = (invResponse.data.catalog ?? {}) as Record<string, { kind?: string }>;
+      const holdableItems = Object.entries(inventory)
+        .filter(([id, qty]) => qty > 0 && catalog[id]?.kind === "held")
+        .map(([id]) => ({ name: id, value: id }));
+
+      if (holdableItems.length === 0) {
+        console.log(`${DIM}장착 가능한 아이템이 없습니다${R}`);
+        continue;
+      }
+
+      const item = await selectAction("장착할 아이템", [
+        ...holdableItems,
+        { name: "취소", value: "back" },
+      ]);
+      if (item === "back") continue;
+
+      const equipRes = await apiPost("/api/game/items/equip", { item, pokemonUid: uid });
+      if (!equipRes.ok) {
+        console.error(`Error: ${String(equipRes.data.error)}`);
+      }
+      continue;
+    }
+
+    if (action === "unequip") {
+      const unequipRes = await apiPost("/api/game/items/unequip", { pokemonUid: uid });
+      if (!unequipRes.ok) {
+        console.error(`Error: ${String(unequipRes.data.error)}`);
+      }
+      continue;
     }
 
     if (action === "lock-trade" || action === "unlock-trade") {

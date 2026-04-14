@@ -132,4 +132,25 @@ describe("shop + item usage", () => {
     expect(equipRes.status).toBe(200);
     expect(equipRes.body.pokemon.heldItem).toBe("leftovers");
   });
+
+  it("unequips a held item from pokemon", async () => {
+    const { token, userId } = await t.registerAndLogin();
+    const api = t.authed(token);
+
+    const partyRes = await api.get("/api/game/party");
+    const pokemon = partyRes.body.party[0];
+
+    // Give and equip leftovers
+    await t.admin().post("/api/admin/test/give-item", { userId, item: "leftovers", quantity: 1 });
+    await api.post("/api/game/items/equip", { item: "leftovers", pokemonUid: pokemon.uid });
+
+    // Unequip
+    const unequipRes = await api.post("/api/game/items/unequip", { pokemonUid: pokemon.uid });
+    expect(unequipRes.status).toBe(200);
+    expect(unequipRes.body.pokemon.heldItem).toBeNull();
+
+    // Item returned to inventory
+    const inv = await api.get("/api/game/inventory");
+    expect(inv.body.inventory.leftovers).toBe(1);
+  });
 });
