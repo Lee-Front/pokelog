@@ -1,6 +1,7 @@
 # Pokemon Mechanics Architecture
 
 Generated: 2026-04-13
+Updated: 2026-04-14
 
 ## Purpose
 
@@ -18,15 +19,22 @@ Current gameplay target:
 - Wild encounters, capture, party growth, learnsets, and evolution
 - Permanent species and permanent variants that can exist outside battle
 
-Explicitly deferred for now:
+Now implemented:
 
-- Terastalization
-- Dynamax / Gigantamax
-- Mega Evolution
+- Mega Evolution (48 species, player-activated once per battle)
+- Gigantamax (32 species, 3-turn duration, G-Max exclusive moves)
+- Primal Reversion (2 species, auto-activates on battle start)
+- Reversible form changes: item-based (20 species), battle-auto (11 species)
+- Weather system (sun/rain/hail/sandstorm)
+- Status conditions (primary: poison/burn/paralysis/sleep/freeze + volatile)
+- Critical hits, STAB, stat stages
+
+Still deferred:
+
+- Terastalization (Gen 9 scope)
 - Z-Moves
 - Transform-style copy mechanics
-
-These deferred systems must be considered in the structure, but they are not part of the first functional milestone.
+- Fusion (Kyurem/Necrozma/Calyrex — excluded for now)
 
 ## Current Repo Reality
 
@@ -42,13 +50,15 @@ Relevant current files:
 Current limitations:
 
 - Evolution typing now supports branch data and the current runtime handles item-use plus several level-up context conditions, with pending choice flow for multi-branch cases. `region` conditions now read real user state, `location` conditions are approximated through region aliases, `extra.min_affection` is approximated through friendship, `extra.used_move` / `extra.min_move_count` are supported through per-Pokemon move usage counters populated by battle actions, and trade branches now resolve through a dedicated player-to-player trade flow. Only a smaller set of `extra` families are still deferred. Pokemon detail now exposes branch diagnostics so blocked versus deferred evolutions are visible instead of silent, and tracked move-usage branches now show progress-aware blocker text.
-- `OwnedPokemon` now contains gender, held item, friendship, ability identity, trade-lock state, move-usage counters, cumulative damage-taken telemetry, and a reserved `variantId`, but no gameplay loop writes non-null variant state yet.
-- `OwnedPokemon` now persists enough progression telemetry to cover both move-usage and cumulative-damage evolution substitutes, but it still lacks broader battle-history data for more advanced mechanics.
-- Multiplayer trade now exists as a central store plus approval flow, with user search, candidate-assisted Pokemon selection, and per-Pokemon trade locking. It is still command-first rather than a full-screen negotiated flow.
-- Users now carry a current region state for encounters and evolution context, and the repo ships first-pass pools for `default`, `kanto`, `johto`, `hoenn`, `sinnoh`, `unova`, `kalos`, `alola`, `galar`, and `hisui`. The loader now normalizes region entries, and most named regions carry roughly 19-22 encounter entries. Pool balancing and coverage depth are still early.
-- Egg gacha is now a global, region-independent acquisition loop built from synced species metadata. Its current tiering is intentionally wide (`120P / 450P / 3200P`) so common eggs remain disposable while legend eggs act as a long-term sink, but the exact weight formulas are still heuristic.
+- `OwnedPokemon` now contains: gender, nature, isShiny, held item, friendship, ability, move-usage counters, cumulative damage-taken, statusCondition, sleepTurns, variantId, hasGigantamaxFactor.
+- `variantId` is actively used: regional variant encounters create pokemon with variantId, item-based form changes update it, battle transformations set temporary battleForm.
+- `WildPokemon` now includes: nature, gender, ability, isShiny, variantId. Captured wild pokemon preserve all these fields via `wildPokemonToOwned`.
+- Multiplayer trade uses interactive TUI with accept/reject/cancel flow. Trade-lock feature was removed (not in original games). Trade records archived instead of dropped at 200 limit.
+- Encounter pools cover 100% of 905 species across 10 regions. Regional variants included in home regions. Weight system: common 60-80, starters 3-10, legendaries 2, mythicals 1.
+- Egg gacha tiers: common 120P, rare 450P, legend 3200P. Regional variants are egg-eligible.
 - Runtime now has a dedicated `variants.json` table derived from the art split, but variant overrides and variant-target evolution resolution are not populated yet.
-- Battle code has no space for temporary battle-only transformations.
+- Battle code now supports temporary transformations: Mega Evolution (playerBattleForm + transformationUsed), Gigantamax (3-turn countdown + HP multiplier), Primal Reversion (auto on battle start). All revert on battle end.
+- Battle code includes: weather system (4 types, 5-turn duration), status conditions (primary persists after battle, volatile clears), stat stages (-6 to +6), critical hits, STAB, drain/healing/flinch meta effects.
 - The art split already shows that raw art slugs contain both base species and special forms, so they cannot be treated as one flat list.
 
 ## Core Domain Separation
