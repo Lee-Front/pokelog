@@ -34,6 +34,7 @@ export async function setupTestApp() {
   );
 
   process.env.POKELOG_DATA_DIR = dataDir;
+  process.env.POKELOG_ADMIN_KEY = "test-admin-key";
 
   // 캐시 초기화 (이전 테스트 데이터 오염 방지)
   vi.resetModules();
@@ -77,6 +78,16 @@ export async function setupTestApp() {
     };
   }
 
+  function admin() {
+    return {
+      get: (url: string) => request.get(url).set("x-admin-key", "test-admin-key"),
+      post: (url: string, body?: Record<string, unknown>) => {
+        const req = request.post(url).set("x-admin-key", "test-admin-key");
+        return body ? req.send(body) : req.send();
+      },
+    };
+  }
+
   function cleanup() {
     try {
       fs.rmSync(dataDir, { recursive: true, force: true });
@@ -84,9 +95,10 @@ export async function setupTestApp() {
       // ignore cleanup errors
     }
     delete process.env.POKELOG_DATA_DIR;
+    delete process.env.POKELOG_ADMIN_KEY;
   }
 
-  return { app, request, registerAndLogin, authed, cleanup, dataDir };
+  return { app, request, registerAndLogin, authed, admin, cleanup, dataDir };
 }
 
 export type TestApp = Awaited<ReturnType<typeof setupTestApp>>;

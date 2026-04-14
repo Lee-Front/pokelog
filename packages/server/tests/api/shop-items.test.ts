@@ -41,11 +41,8 @@ describe("shop + item usage", () => {
     const { token, userId } = await t.registerAndLogin();
     const api = t.authed(token);
 
-    // Give the user enough points by manipulating the user data file
-    const userFile = path.join(t.dataDir, "users", `${userId}.json`);
-    const userData = JSON.parse(fs.readFileSync(userFile, "utf-8"));
-    userData.points = 10000;
-    fs.writeFileSync(userFile, JSON.stringify(userData));
+    // Give the user enough points via admin API
+    await t.admin().post("/api/admin/test/give-points", { userId, amount: 10000 });
 
     const res = await api.post("/api/shop/buy", { item: "pokeball", quantity: 2 });
     expect(res.status).toBe(200);
@@ -91,11 +88,8 @@ describe("shop + item usage", () => {
     const { token, userId } = await t.registerAndLogin();
     const api = t.authed(token);
 
-    // Give user enough points and buy a potion
-    const userFile = path.join(t.dataDir, "users", `${userId}.json`);
-    const userData = JSON.parse(fs.readFileSync(userFile, "utf-8"));
-    userData.points = 10000;
-    fs.writeFileSync(userFile, JSON.stringify(userData));
+    // Give user enough points via admin API and buy a potion
+    await t.admin().post("/api/admin/test/give-points", { userId, amount: 10000 });
 
     const buy = await api.post("/api/shop/buy", { item: "potion", quantity: 1 });
     expect(buy.status).toBe(200);
@@ -104,6 +98,7 @@ describe("shop + item usage", () => {
     const partyRes = await api.get("/api/game/party");
     const pokemon = partyRes.body.party[0];
 
+    const userFile = path.join(t.dataDir, "users", `${userId}.json`);
     const damagedData = JSON.parse(fs.readFileSync(userFile, "utf-8"));
     const pokemonInFile = damagedData.pokemon.find((p: { uid: string }) => p.uid === pokemon.uid);
     pokemonInFile.hp = 1;
@@ -126,11 +121,8 @@ describe("shop + item usage", () => {
     const partyRes = await api.get("/api/game/party");
     const pokemon = partyRes.body.party[0];
 
-    // Add leftovers directly to inventory via file manipulation
-    const userFile = path.join(t.dataDir, "users", `${userId}.json`);
-    const userData = JSON.parse(fs.readFileSync(userFile, "utf-8"));
-    userData.inventory["leftovers"] = 1;
-    fs.writeFileSync(userFile, JSON.stringify(userData));
+    // Add leftovers to inventory via admin API
+    await t.admin().post("/api/admin/test/give-item", { userId, item: "leftovers", quantity: 1 });
 
     // Equip the held item
     const equipRes = await api.post("/api/game/items/equip", {
