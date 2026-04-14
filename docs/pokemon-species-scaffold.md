@@ -1,14 +1,14 @@
 # Pokemon Species Scaffold
 
-Generated: 2026-04-12T06:43:01.764Z
+Generated: 2026-04-14T01:01:01.101Z
 
 ## Summary
 
 - Base species workset size: 905
-- Completed species entries already in `data/pokemon/species.json`: 20
-- Missing species entries to research and fill: 885
-- Species coverage against base art list: 2.21%
-- Base species without evolution entry yet: 891
+- Completed species entries already in `data/pokemon/species.json`: 874
+- Missing species entries to research and fill: 31
+- Species coverage against base art list: 96.57%
+- Base species without evolution entry yet: 0
 - Species entries with learnset moves missing from `moves.json`: 0
 
 ## What This File Is
@@ -20,71 +20,41 @@ Generated: 2026-04-12T06:43:01.764Z
 
 ## Missing Species Preview
 
-- `abomasnow`
-- `abra`
-- `absol`
-- `accelgor`
 - `aegislash`
-- `aerodactyl`
-- `aggron`
-- `aipom`
-- `alakazam`
-- `alcremie`
-- `alomomola`
-- `altaria`
-- `amaura`
-- `ambipom`
-- `amoonguss`
-- `ampharos`
-- `anorith`
-- `appletun`
-- `applin`
-- `araquanid`
-- `arbok`
-- `arcanine`
-- `arceus`
-- `archen`
-- `archeops`
-- `arctovish`
-- `arctozolt`
-- `ariados`
-- `armaldo`
-- `aromatisse`
-- `aron`
-- `arrokuda`
-- `articuno`
-- `audino`
-- `aurorus`
-- `avalugg`
-- `axew`
-- `azelf`
-- `azumarill`
-- `azurill`
-- ... and 845 more
+- `basculegion`
+- `basculin`
+- `darmanitan`
+- `deoxys`
+- `eiscue`
+- `enamorus`
+- `frillish`
+- `giratina`
+- `gourgeist`
+- `indeedee`
+- `jellicent`
+- `keldeo`
+- `landorus`
+- `lycanroc`
+- `meloetta`
+- `meowstic`
+- `mimikyu`
+- `minior`
+- `morpeko`
+- `oricorio`
+- `pumpkaboo`
+- `pyroar`
+- `shaymin`
+- `thundurus`
+- `tornadus`
+- `toxtricity`
+- `urshifu`
+- `wishiwashi`
+- `wormadam`
+- `zygarde`
 
 ## Missing Evolution Entry Preview
 
-- `abomasnow`
-- `abra`
-- `absol`
-- `accelgor`
-- `aegislash`
-- `aerodactyl`
-- `aggron`
-- `aipom`
-- `alakazam`
-- `alcremie`
-- `alomomola`
-- `altaria`
-- `amaura`
-- `ambipom`
-- `amoonguss`
-- `ampharos`
-- `anorith`
-- `appletun`
-- `applin`
-- `araquanid`
-- ... and 871 more
+- none
 
 ## Workflow
 

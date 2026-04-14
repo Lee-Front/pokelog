@@ -21,6 +21,13 @@ function compareBySpecies(left, right) {
 }
 
 const evolutionData = readJson(evolutionPath);
+const SUPPORTED_TRIGGERS = new Set([
+  "level-up",
+  "use-item",
+  "trade",
+  "other",
+]);
+
 const SUPPORTED_EXTRA_KEYS = new Set([
   "min_affection",
   "min_beauty",
@@ -41,6 +48,18 @@ for (const [sourceSpecies, entry] of Object.entries(evolutionData)) {
   for (const branch of entry.branches ?? []) {
     totalBranches++;
 
+    // Check trigger support
+    if (branch.trigger && !SUPPORTED_TRIGGERS.has(branch.trigger)) {
+      unsupportedBranchCount++;
+      const bucket = unsupportedTriggerFamilies[branch.trigger] ??= [];
+      bucket.push({
+        sourceSpecies,
+        targetSpecies: branch.targetSpecies,
+        branchId: branch.id,
+      });
+    }
+
+    // Check extra condition support
     for (const condition of branch.conditions ?? []) {
       if (condition.type !== "extra" || SUPPORTED_EXTRA_KEYS.has(condition.key)) {
         continue;

@@ -98,7 +98,7 @@ gameRoutes.get("/status", async (req: AuthRequest, res: Response) => {
       pendingEventCount: pendingCount,
       pendingEvolutionCount: user.pendingEvolutions?.length ?? 0,
       todayLog: todayLogs,
-      region: getRegion(user.currentRegion ?? "default").name,
+      region: (() => { try { return getRegion(user.currentRegion ?? "default").name; } catch { return user.currentRegion ?? "default"; } })(),
     });
   } catch (err) {
     console.error("Status error:", err);

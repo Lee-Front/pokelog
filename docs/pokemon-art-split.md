@@ -1,13 +1,13 @@
 # Pokemon Art Split
 
-Generated: 2026-04-12T06:27:06.335Z
+Generated: 2026-04-14T01:00:57.560Z
 
 ## Summary
 
 - Raw regular art slugs: 1329
 - Base species candidates: 905
 - Special forms: 424
-- Current `species.json` coverage for base species: 20/905 (2.21%)
+- Current `species.json` coverage for base species: 874/905 (96.57%)
 - Current `species.json` entries that are already special forms: 0
 - Unclassified special slugs: 0
 
@@ -45,47 +45,37 @@ Generated: 2026-04-12T06:27:06.335Z
 
 ## Base Species Missing Data Preview
 
-- `abomasnow`
-- `abra`
-- `absol`
-- `accelgor`
 - `aegislash`
-- `aerodactyl`
-- `aggron`
-- `aipom`
-- `alakazam`
-- `alcremie`
-- `alomomola`
-- `altaria`
-- `amaura`
-- `ambipom`
-- `amoonguss`
-- `ampharos`
-- `anorith`
-- `appletun`
-- `applin`
-- `araquanid`
-- `arbok`
-- `arcanine`
-- `arceus`
-- `archen`
-- `archeops`
-- `arctovish`
-- `arctozolt`
-- `ariados`
-- `armaldo`
-- `aromatisse`
-- `aron`
-- `arrokuda`
-- `articuno`
-- `audino`
-- `aurorus`
-- `avalugg`
-- `axew`
-- `azelf`
-- `azumarill`
-- `azurill`
-- ... and 845 more
+- `basculegion`
+- `basculin`
+- `darmanitan`
+- `deoxys`
+- `eiscue`
+- `enamorus`
+- `frillish`
+- `giratina`
+- `gourgeist`
+- `indeedee`
+- `jellicent`
+- `keldeo`
+- `landorus`
+- `lycanroc`
+- `meloetta`
+- `meowstic`
+- `mimikyu`
+- `minior`
+- `morpeko`
+- `oricorio`
+- `pumpkaboo`
+- `pyroar`
+- `shaymin`
+- `thundurus`
+- `tornadus`
+- `toxtricity`
+- `urshifu`
+- `wishiwashi`
+- `wormadam`
+- `zygarde`
 
 ## Special Form Preview
 

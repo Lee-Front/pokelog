@@ -1,24 +1,24 @@
 # Pokemon Data Audit
 
-Generated: 2026-04-12T06:43:01.715Z
+Generated: 2026-04-14T01:01:04.927Z
 
 ## Summary
 
 - Regular ANSI art slugs: 1329
 - Shiny ANSI art slugs: 1329
-- Species entries in `data/pokemon/species.json`: 20
-- Move entries in `data/moves/moves.json`: 20
-- Evolution entries in `data/pokemon/evolution.json`: 14
-- Regular art coverage by species data: 20/1329 (1.50%)
+- Species entries in `data/pokemon/species.json`: 905
+- Move entries in `data/moves/moves.json`: 937
+- Evolution entries in `data/pokemon/evolution.json`: 905
+- Regular art coverage by species data: 874/1329 (65.76%)
 
 ## Current Gaps
 
-- Regular art slugs missing from species data: 1309
-- Species entries without matching regular art: 0
-- Species entries without an evolution entry: 6
+- Regular art slugs missing from species data: 455
+- Species entries without matching regular art: 31
+- Species entries without an evolution entry: 31
 - Learnset move ids missing from move data: 0
-- Evolution sources missing from species data: 0
-- Evolution targets missing from species data: 0
+- Evolution sources missing from species data: 31
+- Evolution targets missing from species data: 18
 
 ## Notes
 
@@ -28,22 +28,13 @@ Generated: 2026-04-12T06:43:01.715Z
 
 ## Missing Species Data Preview
 
-- `abomasnow`
 - `abomasnow-mega`
-- `abra`
-- `absol`
 - `absol-mega`
-- `accelgor`
 - `aegislash`
 - `aegislash-blade`
-- `aerodactyl`
 - `aerodactyl-mega`
-- `aggron`
 - `aggron-mega`
-- `aipom`
-- `alakazam`
 - `alakazam-mega`
-- `alcremie`
 - `alcremie-caramel-swirl-berry`
 - `alcremie-caramel-swirl-clover`
 - `alcremie-caramel-swirl-flower`
@@ -68,16 +59,40 @@ Generated: 2026-04-12T06:43:01.715Z
 - `alcremie-matcha-cream-plain`
 - `alcremie-matcha-cream-ribbon`
 - `alcremie-matcha-cream-star`
-- ... and 1269 more
+- `alcremie-matcha-cream-strawberry`
+- `alcremie-mint-cream-berry`
+- `alcremie-mint-cream-clover`
+- `alcremie-mint-cream-flower`
+- `alcremie-mint-cream-love`
+- `alcremie-mint-cream-plain`
+- `alcremie-mint-cream-ribbon`
+- `alcremie-mint-cream-star`
+- `alcremie-mint-cream-strawberry`
+- ... and 415 more
 
 ## Species Missing Evolution Entry Preview
 
-- `blastoise`
-- `charizard`
-- `pidgeotto`
-- `raichu`
-- `raticate`
-- `venusaur`
+- `aegislash-shield`
+- `basculegion-male`
+- `basculin-red-striped`
+- `darmanitan-standard`
+- `deoxys-normal`
+- `eiscue-ice`
+- `enamorus-incarnate`
+- `frillish-male`
+- `giratina-altered`
+- `gourgeist-average`
+- `indeedee-male`
+- `jellicent-male`
+- `keldeo-ordinary`
+- `landorus-incarnate`
+- `lycanroc-midday`
+- `meloetta-aria`
+- `meowstic-male`
+- `mimikyu-disguised`
+- `minior-red-meteor`
+- `morpeko-full-belly`
+- ... and 11 more
 
 ## Missing Learnset Move Data Preview
 

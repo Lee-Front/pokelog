@@ -6,6 +6,7 @@ import { eggCommand } from "./commands/egg.js";
 import { encounterCommand } from "./commands/encounter.js";
 import { evolutionsCommand } from "./commands/evolutions.js";
 import { eventsCommand } from "./commands/events.js";
+import { healCommand } from "./commands/heal.js";
 import { historyCommand } from "./commands/history.js";
 import { inventoryCommand } from "./commands/inventory.js";
 import { joinCommand } from "./commands/join.js";
@@ -44,7 +45,7 @@ if (process.argv.length <= 2) {
   program.command("join <url>").description("join server").action(joinCommand);
   program.command("servers").description("list servers").action(serversCommand);
   program.command("use <name>").description("switch server").action(useCommand);
-  program.command("leave <name>").description("leave server").action(leaveCommand);
+  program.command("leave [name]").description("leave server").action(leaveCommand);
   program.command("whereami").description("show current server").action(whereamiCommand);
 
   program.command("register").description("register").action(registerCommand);
@@ -61,6 +62,7 @@ if (process.argv.length <= 2) {
   program.command("evolutions").description("resolve pending evolutions").action(evolutionsCommand);
   program.command("encounter <id>").description("open encounter").action(encounterCommand);
   program.command("history").description("show reward history").option("--limit <n>", "recent row count", "20").action((opts) => historyCommand(parseInt(opts.limit, 10) || 20));
+  program.command("heal").description("heal party").action(healCommand);
   program.command("region [region]").description("show or change current region").action(regionCommand);
 
   const partyCmd = program.command("party").description("show party");

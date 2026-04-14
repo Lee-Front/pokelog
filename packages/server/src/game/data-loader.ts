@@ -325,8 +325,11 @@ export function getCatchRateOverrides(): CatchRateOverrides {
 
 export function getRegion(name: string): RegionData {
   if (!regionCache.has(name)) {
-    const data = JSON.parse(readFileSync(projectPath(`data/regions/${name}.json`), "utf-8")) as RawRegionData;
-    regionCache.set(name, normalizeRegionData(name, data));
+    const raw = readJsonFile<RawRegionData | null>(`data/regions/${name}.json`, null);
+    if (!raw) {
+      throw new Error(`Region not found: ${name}`);
+    }
+    regionCache.set(name, normalizeRegionData(name, raw));
   }
   return regionCache.get(name)!;
 }
