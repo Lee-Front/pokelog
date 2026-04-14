@@ -1,9 +1,10 @@
 import { apiGet, apiPost } from "../api-client.js";
-import { BLD, DIM, GRN, RED, R, YEL, CYN } from "../ui/colors.js";
-import { fetchArt } from "../ui/display.js";
+import { BLD, DIM, GRN, RED, R, YEL } from "../ui/colors.js";
+import { fetchArt, fetchEggArt } from "../ui/display.js";
 import { enterRaw, waitKey } from "../ui/raw-mode.js";
 import { redraw } from "../ui/screen.js";
-import { artToLines, padRight } from "../ui/text.js";
+import { artToLines, padRight, visualWidth } from "../ui/text.js";
+import { mergeSideBySide } from "../ui/text.js";
 
 interface EggTier {
   tier: string;
@@ -15,22 +16,38 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+// ── 티어별 알 아트 이름 매핑 ────────────────────────────────────
+
+const EGG_ART_MAP: Record<string, string> = {
+  common: "commonEgg",
+  rare: "rareEgg",
+  legend: "legendEgg",
+};
+
 // ── 뽑기 연출 ───────────────────────────────────────────────────
 
 const ROLL_FRAMES = ["◐", "◓", "◑", "◒"];
 
 async function playPullAnimation(
   tierLabel: string,
+  eggArt: string | null,
   lineCountRef: { value: number; first: boolean },
 ): Promise<void> {
+  const artLines = artToLines(eggArt);
   for (let i = 0; i < 8; i++) {
     const frame = ROLL_FRAMES[i % ROLL_FRAMES.length];
+    const infoLines = [
+      `${YEL}${frame}${R}  ${tierLabel} 뽑는 중...`,
+    ];
+    const merged = artLines.length > 0
+      ? mergeSideBySide(artLines, infoLines)
+      : infoLines.map((l) => `  ${l}`);
     const lines = [
       "",
       `  ${BLD}포켓몬 뽑기${R}`,
       `  ${DIM}${"─".repeat(40)}${R}`,
       "",
-      `  ${YEL}${frame}${R}  ${tierLabel} 뽑는 중...`,
+      ...merged,
       "",
     ];
     lineCountRef.value = redraw(lines, lineCountRef.value, lineCountRef.first);
@@ -58,24 +75,9 @@ async function showResult(
     `${DIM}아무 키나 누르면 돌아갑니다${R}`,
   ];
 
-  const rightWidth = Math.max(0, ...artLines.map((l) => {
-    let w = 0;
-    for (const ch of l.replace(/\x1b\[[0-9;]*m/g, "")) {
-      const c = ch.codePointAt(0) ?? 0;
-      w += (c >= 0x1100 && c <= 0x115F) || (c >= 0x2E80 && c <= 0xA4CF) ||
-           (c >= 0xAC00 && c <= 0xD7AF) || (c >= 0xF900 && c <= 0xFAFF) ||
-           (c >= 0xFF01 && c <= 0xFF60) ? 2 : 1;
-    }
-    return w;
-  }), 20);
-
-  const rows = Math.max(artLines.length, infoLines.length);
-  const merged: string[] = [];
-  for (let i = 0; i < rows; i++) {
-    const left = padRight(artLines[i] ?? "", rightWidth);
-    const right = infoLines[i] ?? "";
-    merged.push(`  ${left}   ${right}`);
-  }
+  const merged = artLines.length > 0
+    ? mergeSideBySide(artLines, infoLines)
+    : infoLines.map((l) => `  ${l}`);
 
   const lines = [
     "",
@@ -97,15 +99,10 @@ function buildMenuLines(
   tiers: EggTier[],
   cursor: number,
   points: number,
+  art: string | null,
   message: string,
 ): string[] {
-  const lines = [
-    "",
-    `  ${BLD}포켓몬 뽑기${R}   ${DIM}보유 포인트:${R} ${YEL}${points}P${R}`,
-    `  ${DIM}${"─".repeat(40)}${R}`,
-    `  ${DIM}↑↓ 이동   Enter 뽑기   Esc 뒤로${R}`,
-    "",
-  ];
+  const menuLines: string[] = [];
 
   for (let i = 0; i < tiers.length; i++) {
     const tier = tiers[i];
@@ -124,22 +121,32 @@ function buildMenuLines(
       : `${DIM}${tier.cost}P${R}`;
 
     const tag = !canAfford ? ` ${RED}부족${R}` : "";
-    lines.push(`${pointer} ${padRight(label, 14)} ${price}${tag}`);
+    menuLines.push(`${pointer} ${padRight(label, 14)} ${price}${tag}`);
   }
 
-  lines.push("");
-  lines.push(`  ${active(cursor, tiers.length)} ${DIM}뒤로${R}`);
-  lines.push("");
+  menuLines.push("");
+  menuLines.push(`${cursor === tiers.length ? `${YEL}>${R}` : " "} ${DIM}뒤로${R}`);
+
+  const artLines = artToLines(art);
+  const merged = artLines.length > 0
+    ? mergeSideBySide(artLines, menuLines)
+    : menuLines.map((l) => `  ${l}`);
+
+  const lines = [
+    "",
+    `  ${BLD}포켓몬 뽑기${R}   ${DIM}보유 포인트:${R} ${YEL}${points}P${R}`,
+    `  ${DIM}${"─".repeat(40)}${R}`,
+    `  ${DIM}↑↓ 이동   Enter 뽑기   Esc 뒤로${R}`,
+    "",
+    ...merged,
+    "",
+  ];
 
   if (message) {
     lines.push(`  ${message}`, "");
   }
 
   return lines;
-}
-
-function active(cursor: number, backIdx: number): string {
-  return cursor === backIdx ? `${YEL}>${R}` : " ";
 }
 
 export async function eggCommand() {
@@ -159,15 +166,35 @@ export async function eggCommand() {
     return;
   }
 
+  // 알 아트 캐시
+  const eggArtCache = new Map<string, string | null>();
+  async function getEggArt(tier: string): Promise<string | null> {
+    if (eggArtCache.has(tier)) return eggArtCache.get(tier)!;
+    const artName = EGG_ART_MAP[tier] ?? `${tier}Egg`;
+    const art = await fetchEggArt(artName);
+    eggArtCache.set(tier, art);
+    return art;
+  }
+
   const totalOptions = tiers.length + 1; // tiers + 뒤로
   let cursor = 0;
   let lineCount = 0;
   let first = true;
   let message = "";
+  let currentArt: string | null = null;
+  let lastTier = "";
 
   while (true) {
     cursor = Math.min(cursor, totalOptions - 1);
-    const lines = buildMenuLines(tiers, cursor, points, message);
+
+    // 커서에 해당하는 티어의 알 아트 로드
+    const tierKey = cursor < tiers.length ? tiers[cursor].tier : "";
+    if (tierKey !== lastTier) {
+      currentArt = tierKey ? await getEggArt(tierKey) : null;
+      lastTier = tierKey;
+    }
+
+    const lines = buildMenuLines(tiers, cursor, points, currentArt, message);
     lineCount = redraw(lines, lineCount, first);
     first = false;
     message = "";
@@ -199,8 +226,9 @@ export async function eggCommand() {
     }
 
     // 뽑기 실행
+    const eggArt = await getEggArt(tier.tier);
     const ref = { value: lineCount, first: true };
-    await playPullAnimation(tier.label, ref);
+    await playPullAnimation(tier.label, eggArt, ref);
 
     const pullRes = await apiPost("/api/game/eggs/pull", { tier: tier.tier });
     if (!pullRes.ok) {

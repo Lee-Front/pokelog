@@ -55,6 +55,18 @@ export async function fetchBallArt(ballType: string): Promise<string | null> {
   return (await tryFetch(artName)) ?? (artName !== "normal" ? await tryFetch("normal") : null);
 }
 
+export async function fetchEggArt(name: string): Promise<string | null> {
+  try {
+    const serverUrl = await getServerUrl();
+    if (!serverUrl) return null;
+    const res = await fetch(`${serverUrl}/api/art/egg/${name}`);
+    if (res.ok) return (await res.text()).replace(/\r/g, "");
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export function renderHpBar(current: number, max: number, width: number = 20): string {
   const ratio = Math.max(0, current / max);
   const filled = Math.round(ratio * width);

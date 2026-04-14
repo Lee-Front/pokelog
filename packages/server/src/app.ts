@@ -24,6 +24,7 @@ export function createApp() {
   // 아트 파일 읽기 헬퍼 — 경로 순회 방어 포함
   const BALL_ART_DIR = projectPath("data/colorscripts/small/ball");
   const POKEMON_ART_DIR = projectPath("data/colorscripts/small/regular");
+  const EGG_ART_DIR = projectPath("data/colorscripts/small/egg");
 
   function safeReadArt(baseDir: string, name: string): string | null {
     const sanitized = name.replace(/[^a-zA-Z0-9-]/g, "");
@@ -31,6 +32,13 @@ export function createApp() {
     if (!resolved.startsWith(baseDir + path.sep) && resolved !== baseDir) return null;
     try { return fs.readFileSync(resolved, "utf-8"); } catch { return null; }
   }
+
+  // 알 ANSI 아트 API
+  app.get("/api/art/egg/:name", (req, res) => {
+    const art = safeReadArt(EGG_ART_DIR, req.params.name);
+    if (art) res.type("text/plain").send(art);
+    else res.status(404).send("");
+  });
 
   // 볼 ANSI 아트 API — /:species보다 먼저 등록해야 매칭됨
   app.get("/api/art/ball/:name", (req, res) => {
