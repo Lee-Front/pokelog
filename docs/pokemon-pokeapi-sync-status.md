@@ -276,19 +276,43 @@ WildPokemon now also includes `nature`, `gender`, and `ability`.
 Battle system now supports:
 
 - move `priority` in turn order determination (higher priority goes first, speed breaks ties)
+- `statChanges` applied after each attack with `statChance` probability check
+- stat stage multipliers (standard Pokemon -6 to +6 formula) affect damage calculation
+- `meta.drain` (HP absorption, negative for recoil) applied after damage
+- `meta.healing` (percentage of max HP) applied after damage
+- `meta.flinchChance` causes target to skip turn when attacker goes first
 - Z-move variants and shadow moves (pp=0) are filtered from moves data during sync
 
 Still deferred:
-- move `meta` effects (ailment, drain, flinch, healing, stat chance)
-- move `statChanges` application during battle
-- multi-hit mechanics
-- critical hit rate modifiers
+- move `meta.ailment` (status conditions need a separate state machine)
+- multi-hit mechanics (`meta.minHits`/`meta.maxHits`)
+- critical hit rate modifiers (`meta.critRate`)
+
+## Runtime Variant Encounter Status
+
+Regional variants are now active in encounter pools:
+
+- alola: 6 variants (vulpix, sandshrew, geodude, grimer, meowth, diglett)
+- galar: 5 variants (ponyta, zigzagoon, darumaka, corsola, meowth)
+- hisui: 4 variants (growlithe, voltorb, sneasel, qwilfish)
+
+Variant encounter flow:
+- `selectWildPokemon` returns the variant slug (e.g. `vulpix-alola`)
+- `createWildPokemon` resolves variant slug to base species + variantId
+- Wild pokemon has `variantId` field for display and capture
+- Captured variant pokemon retains `variantId` on `OwnedPokemon`
+
+Evolution now supports `targetVariantId`:
+- `evolvePokemon` accepts optional `targetVariantId` parameter
+- All call sites (growth, item-usage, trade, pending-evolution) pass branch variant info
+- Pokemon detail screen shows held item, nature, gender, shiny status
+- Equip/unequip held items available from pokemon detail screen
 
 ## Next Recommended Work
 
-1. Add regional variants to encounter pools in region data files.
-2. Extend battle behavior to apply move `meta` effects and `statChanges`.
-3. Add reversible form change systems (Castform, Rotom, Aegislash).
-4. Decide whether resolved trade records should also be archived before central-store pruning.
-5. Decide whether trade eligibility should remain opt-out via lock, or move to explicit opt-in per Pokemon.
-6. Region encounter balancing and long-tail species coverage.
+1. Add reversible form change systems (Castform, Rotom, Aegislash).
+2. Implement battle `meta.ailment` status conditions (poison, burn, paralysis, sleep, freeze).
+3. Decide whether resolved trade records should also be archived before central-store pruning.
+4. Decide whether trade eligibility should remain opt-out via lock, or move to explicit opt-in per Pokemon.
+5. Region encounter balancing and long-tail species coverage.
+6. CI/CD pipeline with test gates and coverage tracking.

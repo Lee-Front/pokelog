@@ -61,7 +61,7 @@ packages/cli/
     formatters.test.ts           ← 공유 포맷터 순수 함수 (26개)
     trade.test.ts                ← 교환 UI 로직 순수 함수 (18개)
 
-총: 32개 파일, 244개 테스트
+총: 39개 파일, 299개 테스트
 ```
 
 ## 핵심 설계 결정
