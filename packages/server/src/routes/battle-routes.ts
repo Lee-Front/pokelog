@@ -3,7 +3,7 @@ import type { Response } from "express";
 import { authMiddleware, type AuthRequest } from "../middleware/auth-middleware.js";
 import { getUser, saveUser } from "../storage/user-store.js";
 import { getConfig } from "../storage/config-store.js";
-import { calculateDamage, determineTurnOrder, applyStatChanges, defaultStatStages, applyStatStageMultiplier } from "../game/battle.js";
+import { applyStatChanges, defaultStatStages } from "../game/battle.js";
 import { attemptCapture, getCatchRate } from "../game/capture.js";
 import { wildPokemonToOwned } from "../game/pokemon-factory.js";
 import { getMoveById } from "../game/data-loader.js";
@@ -29,6 +29,7 @@ import { getEffectiveTypes } from "../game/pokemon-state.js";
 import {
   applyBattleFormChange, maybeSetWeather, applyWeatherEndOfTurn,
   checkHpForms, revertBattleForms, wildAttack,
+  executePlayerAttack, resolvePreAttack, determineBattleTurnOrder, applyEndOfTurnBattle,
 } from "../game/battle-state.js";
 
 export const battleRoutes = Router();
@@ -494,60 +495,18 @@ async function handleFight(
     ? wildAvailableMoves[Math.floor(Math.random() * wildAvailableMoves.length)]
     : null;
   const wildMoveData = wildChosenMove ? getMoveById(wildChosenMove.id) : null;
-  const wildPriority = wildMoveData?.priority ?? 0;
 
-  // Handle sleep turns for player before pre-attack check
-  if (myPokemon.statusCondition === "sleep") {
-    if (myPokemon.sleepTurns !== undefined && myPokemon.sleepTurns > 0) {
-      myPokemon.sleepTurns -= 1;
-    }
-    if (myPokemon.sleepTurns !== undefined && myPokemon.sleepTurns <= 0) {
-      myPokemon.statusCondition = null;
-      myPokemon.sleepTurns = undefined;
-      log.push(`${myPokemon.species}이(가) 잠에서 깨어났다!`);
-    }
+  // Pre-attack check for player (handles sleep decrement, freeze, paralysis, confusion)
+  const preAttack = resolvePreAttack(myPokemon, battle.playerVolatile ?? [], log);
+  const playerCanAct = preAttack.canAct;
+  if (!playerCanAct && preAttack.selfDamage) {
+    myPokemon.hp = Math.max(0, myPokemon.hp - preAttack.selfDamage);
+    log.push(`${myPokemon.species}이(가) ${preAttack.selfDamage} 데미지를 받았다!`);
+    if (await handleFainted(user, myPokemon, battle, log, res)) return;
   }
 
-  // Pre-attack check for player
-  let playerCanAct = true;
-  if (myPokemon.statusCondition || (battle.playerVolatile ?? []).length > 0) {
-    const preCheck = checkPreAttack(
-      myPokemon.statusCondition,
-      battle.playerVolatile ?? [],
-      myPokemon.stats,
-    );
-    if (preCheck.statusCleared) {
-      myPokemon.statusCondition = null;
-      myPokemon.sleepTurns = undefined;
-      log.push(preCheck.message);
-    }
-    if (!preCheck.canAct) {
-      playerCanAct = false;
-      log.push(preCheck.message);
-      if (preCheck.selfDamage) {
-        myPokemon.hp = Math.max(0, myPokemon.hp - preCheck.selfDamage);
-        log.push(`${myPokemon.species}이(가) ${preCheck.selfDamage} 데미지를 받았다!`);
-        if (await handleFainted(user, myPokemon, battle, log, res)) return;
-      }
-    }
-  }
-
-  // Paralysis halves speed
-  let playerSpeedBase = myPokemon.stats.speed;
-  if (myPokemon.statusCondition === "paralysis") {
-    playerSpeedBase = Math.max(1, Math.floor(playerSpeedBase / 2));
-  }
-  let wildSpeedBase = battle.wild.stats.speed;
-  if (battle.wild.statusCondition === "paralysis") {
-    wildSpeedBase = Math.max(1, Math.floor(wildSpeedBase / 2));
-  }
-
-  const playerSpeed = applyStatStageMultiplier(playerSpeedBase, battle.playerStatStages?.speed ?? 0);
-  const wildSpeed = applyStatStageMultiplier(wildSpeedBase, battle.wildStatStages?.speed ?? 0);
-  const turnOrder = determineTurnOrder(
-    playerSpeed, wildSpeed,
-    selectedMoveData.priority ?? 0, wildPriority,
-  );
+  // Determine turn order (paralysis speed halving + stat stages applied inside)
+  const turnOrder = determineBattleTurnOrder(battle, myPokemon, selectedMoveData, wildMoveData ?? { priority: 0 });
 
   // Turn start form checks (morpeko)
   applyBattleFormChange(
@@ -561,104 +520,10 @@ async function handleFight(
     "wild", log,
   );
 
-  let playerCausedFlinch = false;
-
-  function playerAttack() {
-    selectedMove.pp -= 1;
-    recordMoveUsage(myPokemon, selectedMove.id);
-
-    // Burn modifier: halve attack stat for physical moves
-    const playerStats = { ...myPokemon.stats };
-    if (myPokemon.statusCondition === "burn") {
-      playerStats.attack = Math.max(1, Math.floor(playerStats.attack / 2));
-    }
-
-    // Weather type modifier for player attack
-    const playerWeatherMod = battle.weather ? getWeatherTypeModifier(battle.weather, selectedMoveData.type) : 1;
-
-    const result = calculateDamage(
-      myPokemon.level, playerStats, battle.wild.stats, selectedMoveData,
-      getTypes(myPokemon.species, myPokemon.variantId, battle.playerBattleForm),
-      getTypes(battle.wild.species, battle.wild.variantId, battle.wildBattleForm),
-      battle.playerStatStages, battle.wildStatStages,
-      playerWeatherMod,
-    );
-    battle.wild.hp = Math.max(0, battle.wild.hp - result.damage);
-    log.push(`${myPokemon.species}의 ${selectedMoveData.name}! ${result.missed ? "빗나갔다!" : `${result.damage} 데미지!`}`);
-    if (result.message) log.push(result.message);
-
-    if (!result.missed) {
-      // Apply meta effects for player
-      const metaResult = applyMetaEffects(selectedMoveData, result.damage, myPokemon.hp, myPokemon.maxHp);
-      if (metaResult.hpChange !== 0) {
-        myPokemon.hp = Math.max(0, Math.min(myPokemon.maxHp, myPokemon.hp + metaResult.hpChange));
-      }
-      for (const msg of metaResult.messages) log.push(msg);
-
-      // Apply stat changes for player
-      maybeApplyStatChanges(battle, selectedMoveData, true, log);
-
-      // Apply ailment to wild from player attack
-      const ailmentResult = maybeApplyAilment(
-        selectedMoveData,
-        battle.wild.statusCondition,
-        battle.wildVolatile ?? [],
-        log,
-      );
-      if (ailmentResult.newStatus) {
-        battle.wild.statusCondition = ailmentResult.newStatus;
-      }
-      battle.wildVolatile = ailmentResult.newVolatiles;
-
-      // Check flinch (only effective if player goes first)
-      const flinchChance = selectedMoveData.meta?.flinchChance ?? 0;
-      if (flinchChance > 0 && Math.random() * 100 < flinchChance) {
-        playerCausedFlinch = true;
-      }
-
-      // Player post-attack form check (aegislash)
-      applyBattleFormChange(
-        battle,
-        checkPostAttackForm(myPokemon.species, selectedMoveData.category, battle.playerBattleForm ?? myPokemon.variantId ?? null),
-        "player", log,
-      );
-
-      // Player move-based form check (meloetta)
-      applyBattleFormChange(
-        battle,
-        checkMoveForm(myPokemon.species, selectedMove.id, battle.playerBattleForm ?? myPokemon.variantId ?? null),
-        "player", log,
-      );
-
-      // Player post-surf form (cramorant)
-      if (selectedMove.id === "surf" || selectedMove.id === "dive") {
-        applyBattleFormChange(
-          battle,
-          checkPostSurfForm(myPokemon.species, myPokemon.hp, myPokemon.maxHp),
-          "player", log,
-        );
-      }
-
-      // Player weather setting
-      maybeSetWeather(battle, selectedMove.id, myPokemon.species, log);
-
-      // Check eiscue first-hit for wild (was the wild hit physically?)
-      if (selectedMoveData.category === "physical" && result.damage > 0) {
-        applyBattleFormChange(
-          battle,
-          checkFirstHitForm(battle.wild.species, battle.wildBattleForm ?? battle.wild.variantId ?? null, true),
-          "wild", log,
-        );
-      }
-    }
-
-    // HP threshold form checks after player attack
-    checkHpForms(battle, myPokemon, log);
-  }
-
   if (turnOrder === "player") {
     if (playerCanAct) {
-      playerAttack();
+      recordMoveUsage(myPokemon, selectedMove.id);
+      const attackResult = executePlayerAttack(battle, myPokemon, selectedMoveData, selectedMove, log);
       if (battle.wild.hp <= 0) {
         log.push(`야생 ${battle.wild.species}이(가) 쓰러졌다!`);
         user.pendingEvents = user.pendingEvents.filter((e) => e.id !== battle.eventId);
@@ -668,16 +533,19 @@ async function handleFight(
         res.json({ log, battleState: null, result: "win" });
         return;
       }
-    }
-    if (playerCausedFlinch) {
-      log.push(`야생 ${battle.wild.species}은(는) 풀이 죽어 움직이지 못했다!`);
+      if (attackResult.flinchCaused) {
+        log.push(`야생 ${battle.wild.species}은(는) 풀이 죽어 움직이지 못했다!`);
+      } else {
+        if (await doWildAttackAndCheck(user, myPokemon, battle, log, res, wildChosenMove ?? undefined)) return;
+      }
     } else {
       if (await doWildAttackAndCheck(user, myPokemon, battle, log, res, wildChosenMove ?? undefined)) return;
     }
   } else {
     if (await doWildAttackAndCheck(user, myPokemon, battle, log, res, wildChosenMove ?? undefined)) return;
     if (playerCanAct) {
-      playerAttack();
+      recordMoveUsage(myPokemon, selectedMove.id);
+      executePlayerAttack(battle, myPokemon, selectedMoveData, selectedMove, log);
       if (battle.wild.hp <= 0) {
         log.push(`야생 ${battle.wild.species}이(가) 쓰러졌다!`);
         user.pendingEvents = user.pendingEvents.filter((e) => e.id !== battle.eventId);
@@ -690,25 +558,9 @@ async function handleFight(
     }
   }
 
-  // End-of-turn effects (status damage, volatile ticks)
-  applyEndOfTurnEffects(battle, myPokemon, log);
-
-  // End-of-turn weather damage and tick
+  // End-of-turn: status/volatile ticks, gmax countdown, weather damage
+  applyEndOfTurnBattle(battle, myPokemon, log);
   applyWeatherEndOfTurn(battle, myPokemon, log);
-
-  // Gigantamax turn tick
-  if (battle.transformationType === "gigantamax" && battle.gmaxTurnsRemaining != null) {
-    battle.gmaxTurnsRemaining--;
-    if (battle.gmaxTurnsRemaining <= 0) {
-      battle.playerBattleForm = null;
-      battle.transformationType = null;
-      const reverted = revertGmaxHp(myPokemon.hp, myPokemon.maxHp, battle.playerPreTransformMaxHp!);
-      myPokemon.hp = reverted.hp;
-      myPokemon.maxHp = reverted.maxHp;
-      battle.playerPreTransformMaxHp = undefined;
-      log.push("기가맥스가 풀렸다!");
-    }
-  }
 
   // Check if end-of-turn damage KO'd anyone
   if (myPokemon.hp <= 0) {
