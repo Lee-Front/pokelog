@@ -19,6 +19,10 @@
     { "species": "scyther", "weight": 20, "levelRange": [8, 12] },
     { "species": "growlithe", "weight": 14, "levelRange": [9, 13] },
     { "species": "goomy", "weight": 16, "levelRange": [10, 14] },
-    { "species": "zorua", "weight": 10, "levelRange": [10, 14] }
+    { "species": "zorua", "weight": 10, "levelRange": [10, 14] },
+    { "species": "growlithe-hisui", "weight": 20, "levelRange": [7, 11] },
+    { "species": "voltorb-hisui", "weight": 18, "levelRange": [8, 12] },
+    { "species": "sneasel-hisui", "weight": 12, "levelRange": [10, 14] },
+    { "species": "qwilfish-hisui", "weight": 15, "levelRange": [8, 12] }
   ]
 }

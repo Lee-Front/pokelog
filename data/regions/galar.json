@@ -20,6 +20,11 @@
     { "species": "clobbopus", "weight": 12, "levelRange": [9, 13] },
     { "species": "cufant", "weight": 12, "levelRange": [9, 13] },
     { "species": "dreepy", "weight": 6, "levelRange": [12, 18] },
-    { "species": "snom", "weight": 10, "levelRange": [10, 14] }
+    { "species": "snom", "weight": 10, "levelRange": [10, 14] },
+    { "species": "ponyta-galar", "weight": 30, "levelRange": [5, 9] },
+    { "species": "zigzagoon-galar", "weight": 40, "levelRange": [3, 7] },
+    { "species": "darumaka-galar", "weight": 20, "levelRange": [7, 11] },
+    { "species": "corsola-galar", "weight": 15, "levelRange": [8, 12] },
+    { "species": "meowth-galar", "weight": 25, "levelRange": [5, 9] }
   ]
 }

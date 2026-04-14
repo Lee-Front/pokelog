@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { getSpecies, getSpeciesByName, getMoves, getMoveById, getAllSpeciesList, getNatures, getNatureById } from "./data-loader.js";
+import { getSpecies, getSpeciesByName, getMoves, getMoveById, getAllSpeciesList, getNatures, getNatureById, getVariants } from "./data-loader.js";
 import type {
   SpeciesData,
   MoveData,
@@ -77,6 +77,18 @@ function buildMoves(species: SpeciesData, level: number): PokemonMove[] {
   });
 }
 
+/** variant slug이면 { baseSpecies, variantId }를, 일반 종이면 { baseSpecies, variantId: null }을 반환 */
+function resolveSpeciesOrVariant(species: string): { baseSpecies: string; variantId: string | null } {
+  if (getSpeciesByName(species)) {
+    return { baseSpecies: species, variantId: null };
+  }
+  const variant = getVariants().find((v) => v.id === species);
+  if (variant && getSpeciesByName(variant.baseSpecies)) {
+    return { baseSpecies: variant.baseSpecies, variantId: variant.id };
+  }
+  return { baseSpecies: species, variantId: null };
+}
+
 function pickRandomNature(): string {
   const natures = getNatures();
   return natures.length > 0
@@ -85,7 +97,8 @@ function pickRandomNature(): string {
 }
 
 export function createPokemon(species: string, level: number): OwnedPokemon {
-  const speciesData = getSpeciesByName(species);
+  const { baseSpecies, variantId } = resolveSpeciesOrVariant(species);
+  const speciesData = getSpeciesByName(baseSpecies);
   if (!speciesData) {
     throw new Error(`Unknown species: ${species}`);
   }
@@ -96,8 +109,8 @@ export function createPokemon(species: string, level: number): OwnedPokemon {
 
   return {
     uid: crypto.randomUUID(),
-    species,
-    variantId: null,
+    species: baseSpecies,
+    variantId,
     nickname: null,
     level,
     exp: 0,
@@ -119,7 +132,8 @@ export function createPokemon(species: string, level: number): OwnedPokemon {
 }
 
 export function createWildPokemon(species: string, level: number): WildPokemon {
-  const speciesData = getSpeciesByName(species);
+  const { baseSpecies, variantId } = resolveSpeciesOrVariant(species);
+  const speciesData = getSpeciesByName(baseSpecies);
   if (!speciesData) {
     throw new Error(`Unknown species: ${species}`);
   }
@@ -129,7 +143,8 @@ export function createWildPokemon(species: string, level: number): WildPokemon {
   const moves = buildMoves(speciesData, level);
 
   return {
-    species,
+    species: baseSpecies,
+    variantId: variantId ?? undefined,
     level,
     hp: maxHp,
     maxHp,

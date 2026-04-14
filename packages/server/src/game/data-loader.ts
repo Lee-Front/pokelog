@@ -184,8 +184,16 @@ function normalizeEvolutionEntry(species: string, entry: RawEvolutionEntry | und
   };
 }
 
+function isValidEncounterSpecies(species: string): boolean {
+  if (getSpeciesByName(species)) return true;
+  // variant slug도 유효 — 베이스 종이 존재하면 OK
+  const variant = getVariants().find((v) => v.id === species);
+  if (variant && getSpeciesByName(variant.baseSpecies)) return true;
+  return false;
+}
+
 function normalizeRegionEntry(entry: RegionData["encounters"][number]): RegionData["encounters"][number] | null {
-  if (!entry?.species || !getSpeciesByName(entry.species)) {
+  if (!entry?.species || !isValidEncounterSpecies(entry.species)) {
     return null;
   }
 

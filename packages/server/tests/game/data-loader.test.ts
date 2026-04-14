@@ -91,7 +91,12 @@ describe("data-loader", () => {
     for (const regionId of getRegionNames()) {
       const region = getRegion(regionId);
       expect(region.encounters.length).toBeGreaterThanOrEqual(regionId === "default" ? 20 : 19);
-      expect(region.encounters.every((entry) => Boolean(getSpeciesByName(entry.species)))).toBe(true);
+      // species는 일반 종이거나 variant slug — 둘 다 유효
+      expect(region.encounters.every((entry) => {
+        if (getSpeciesByName(entry.species)) return true;
+        const variant = getVariants().find((v) => v.id === entry.species);
+        return variant && Boolean(getSpeciesByName(variant.baseSpecies));
+      })).toBe(true);
       expect(
         region.encounters.every((entry) => entry.levelRange[0] >= 1 && entry.levelRange[1] >= entry.levelRange[0]),
       ).toBe(true);

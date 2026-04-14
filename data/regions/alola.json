@@ -20,6 +20,12 @@
     { "species": "passimian", "weight": 10, "levelRange": [10, 14] },
     { "species": "jangmo-o", "weight": 12, "levelRange": [10, 14] },
     { "species": "togedemaru", "weight": 8, "levelRange": [12, 16] },
-    { "species": "komala", "weight": 8, "levelRange": [10, 14] }
+    { "species": "komala", "weight": 8, "levelRange": [10, 14] },
+    { "species": "vulpix-alola", "weight": 35, "levelRange": [4, 8] },
+    { "species": "sandshrew-alola", "weight": 30, "levelRange": [5, 9] },
+    { "species": "geodude-alola", "weight": 40, "levelRange": [3, 7] },
+    { "species": "grimer-alola", "weight": 25, "levelRange": [6, 10] },
+    { "species": "meowth-alola", "weight": 35, "levelRange": [4, 8] },
+    { "species": "diglett-alola", "weight": 40, "levelRange": [3, 7] }
   ]
 }
