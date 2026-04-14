@@ -141,6 +141,9 @@ export interface WildPokemon {
   maxHp: number;
   stats: PokemonStats;
   moves: PokemonMove[];
+  nature?: string;
+  gender?: PokemonGender;
+  ability?: string;
 }
 
 export interface PendingEvent {

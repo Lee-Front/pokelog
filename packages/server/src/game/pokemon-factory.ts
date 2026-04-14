@@ -124,7 +124,8 @@ export function createWildPokemon(species: string, level: number): WildPokemon {
     throw new Error(`Unknown species: ${species}`);
   }
 
-  const { maxHp, stats } = buildStats(speciesData, level);
+  const nature = pickRandomNature();
+  const { maxHp, stats } = buildStats(speciesData, level, nature);
   const moves = buildMoves(speciesData, level);
 
   return {
@@ -134,6 +135,9 @@ export function createWildPokemon(species: string, level: number): WildPokemon {
     maxHp,
     stats,
     moves,
+    nature,
+    gender: resolvePokemonGender(speciesData.genderRate, Math.random()),
+    ability: speciesData.abilities?.normal[0] ?? undefined,
   };
 }
 
