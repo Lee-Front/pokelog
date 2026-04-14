@@ -73,7 +73,7 @@ export async function processCommit(
           if (result.leveled) {
             pokemon.level = result.newLevel;
             applyLearnedMoves(pokemon, result.newMoves);
-            const newStats = calculateStatsForLevel(pokemon.species, result.newLevel);
+            const newStats = calculateStatsForLevel(pokemon.species, result.newLevel, pokemon.nature);
             pokemon.maxHp = newStats.maxHp;
             pokemon.hp = Math.min(pokemon.hp, pokemon.maxHp);
             pokemon.stats = newStats.stats;

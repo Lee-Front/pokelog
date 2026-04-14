@@ -197,7 +197,7 @@ adminRoutes.post("/test/commit", async (req, res) => {
         if (result.leveled) {
           poke.level = result.newLevel;
           applyLearnedMoves(poke, result.newMoves);
-          const newStats = calculateStatsForLevel(poke.species, result.newLevel);
+          const newStats = calculateStatsForLevel(poke.species, result.newLevel, poke.nature);
           poke.maxHp = newStats.maxHp;
           poke.hp = Math.min(poke.hp, poke.maxHp);
           poke.stats = newStats.stats;

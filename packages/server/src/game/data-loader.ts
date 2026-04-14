@@ -312,6 +312,10 @@ export function getItemById(id: string): ItemData | undefined {
   return getItems().find((item) => item.id === id);
 }
 
+export function getNatureById(id: string): NatureData | undefined {
+  return getNatures().find((n) => n.id === id);
+}
+
 export function getCatchRateOverrides(): CatchRateOverrides {
   if (!catchRateOverrideCache) {
     catchRateOverrideCache = readJsonFile<CatchRateOverrides>("data/pokemon/catch-rate-overrides.json", {});

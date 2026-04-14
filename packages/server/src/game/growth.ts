@@ -1,4 +1,4 @@
-import { getMoveById, getSpeciesByName, getEvolutions } from "./data-loader.js";
+import { getMoveById, getSpeciesByName, getEvolutions, getNatureById } from "./data-loader.js";
 import { getDamageTakenTotal } from "./battle-progress.js";
 import { getMoveUsageCount } from "./move-usage.js";
 import type {
@@ -56,6 +56,7 @@ export function checkLevelUp(pokemon: OwnedPokemon): {
 export function calculateStatsForLevel(
   species: string,
   level: number,
+  nature?: string,
 ): { hp: number; maxHp: number; stats: PokemonStats } {
   const speciesData = getSpeciesByName(species);
   if (!speciesData) {
@@ -70,6 +71,18 @@ export function calculateStatsForLevel(
     spAttack: Math.floor(((speciesData.baseStats.spAttack * 2 * level) / 100) + 5),
     spDefense: Math.floor(((speciesData.baseStats.spDefense * 2 * level) / 100) + 5),
   };
+
+  if (nature) {
+    const natureData = getNatureById(nature);
+    if (natureData) {
+      if (natureData.increasedStat && natureData.increasedStat in stats) {
+        stats[natureData.increasedStat] = Math.floor(stats[natureData.increasedStat] * 1.1);
+      }
+      if (natureData.decreasedStat && natureData.decreasedStat in stats) {
+        stats[natureData.decreasedStat] = Math.floor(stats[natureData.decreasedStat] * 0.9);
+      }
+    }
+  }
 
   return { hp, maxHp: hp, stats };
 }
@@ -133,7 +146,7 @@ export function evolvePokemon(pokemon: OwnedPokemon, targetSpecies: string): Own
 
   pokemon.species = targetSpecies;
 
-  const evolvedStats = calculateStatsForLevel(targetSpecies, pokemon.level);
+  const evolvedStats = calculateStatsForLevel(targetSpecies, pokemon.level, pokemon.nature);
   pokemon.maxHp = evolvedStats.maxHp;
   pokemon.hp = Math.min(pokemon.hp, pokemon.maxHp);
   pokemon.stats = evolvedStats.stats;

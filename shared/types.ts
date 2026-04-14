@@ -122,6 +122,8 @@ export interface OwnedPokemon {
   moveUsageCounts?: Record<string, number>;
   damageTakenTotal?: number;
   tradeLocked?: boolean;
+  nature?: string;
+  isShiny?: boolean;
 }
 
 export type EggTierId = "common" | "rare" | "legend";

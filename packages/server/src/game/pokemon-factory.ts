@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { getSpecies, getSpeciesByName, getMoves, getMoveById, getAllSpeciesList } from "./data-loader.js";
+import { getSpecies, getSpeciesByName, getMoves, getMoveById, getAllSpeciesList, getNatures, getNatureById } from "./data-loader.js";
 import type {
   SpeciesData,
   MoveData,
@@ -18,7 +18,19 @@ function calcStat(baseStat: number, level: number): number {
   return Math.floor(((baseStat * 2 * level) / 100) + 5);
 }
 
-function buildStats(species: SpeciesData, level: number): { maxHp: number; stats: PokemonStats } {
+function applyNatureModifier(stats: PokemonStats, nature?: string): void {
+  if (!nature) return;
+  const natureData = getNatureById(nature);
+  if (!natureData) return;
+  if (natureData.increasedStat && natureData.increasedStat in stats) {
+    stats[natureData.increasedStat] = Math.floor(stats[natureData.increasedStat] * 1.1);
+  }
+  if (natureData.decreasedStat && natureData.decreasedStat in stats) {
+    stats[natureData.decreasedStat] = Math.floor(stats[natureData.decreasedStat] * 0.9);
+  }
+}
+
+function buildStats(species: SpeciesData, level: number, nature?: string): { maxHp: number; stats: PokemonStats } {
   const maxHp = calcHp(species.baseStats.hp, level);
   const stats: PokemonStats = {
     attack: calcStat(species.baseStats.attack, level),
@@ -27,6 +39,7 @@ function buildStats(species: SpeciesData, level: number): { maxHp: number; stats
     spAttack: calcStat(species.baseStats.spAttack, level),
     spDefense: calcStat(species.baseStats.spDefense, level),
   };
+  applyNatureModifier(stats, nature);
   return { maxHp, stats };
 }
 
@@ -64,13 +77,21 @@ function buildMoves(species: SpeciesData, level: number): PokemonMove[] {
   });
 }
 
+function pickRandomNature(): string {
+  const natures = getNatures();
+  return natures.length > 0
+    ? natures[Math.floor(Math.random() * natures.length)].id
+    : "hardy";
+}
+
 export function createPokemon(species: string, level: number): OwnedPokemon {
   const speciesData = getSpeciesByName(species);
   if (!speciesData) {
     throw new Error(`Unknown species: ${species}`);
   }
 
-  const { maxHp, stats } = buildStats(speciesData, level);
+  const nature = pickRandomNature();
+  const { maxHp, stats } = buildStats(speciesData, level, nature);
   const moves = buildMoves(speciesData, level);
 
   return {
@@ -92,6 +113,8 @@ export function createPokemon(species: string, level: number): OwnedPokemon {
     moveUsageCounts: {},
     damageTakenTotal: 0,
     tradeLocked: false,
+    nature,
+    isShiny: Math.random() < (1 / 4096),
   };
 }
 
