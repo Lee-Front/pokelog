@@ -1,6 +1,6 @@
 # Pokemon PokeAPI Sync Status
 
-Generated: 2026-04-13
+Generated: 2026-04-14
 
 ## Purpose
 
@@ -19,7 +19,7 @@ The current sync pipeline has been executed and generated the following tracked 
 
 - `data/pokemon/species.json`: 905 species
 - `data/pokemon/evolution.json`: 905 evolution entries
-- `data/moves/moves.json`: 937 moves
+- `data/moves/moves.json`: 937 moves (Z-move variants and shadow moves filtered)
 - `data/abilities/abilities.json`: 371 abilities
 - `data/natures/natures.json`: 25 natures
 - `data/items/items.json`: 143 items
@@ -150,9 +150,9 @@ The sync pipeline intentionally does not solve these areas yet:
 
 - region encounter balancing
 - egg gacha pool balancing
-- advanced battle behavior using move `priority`, `meta`, and `statChanges`
-- VariantData and permanent-variant runtime modeling
+- advanced battle behavior using move `meta` and `statChanges` (priority is now implemented)
 - battle-only systems such as Mega Evolution, Gigantamax, and Terastalization
+- reversible form change systems (Castform, Rotom, Aegislash)
 
 Evolution runtime note:
 
@@ -230,9 +230,10 @@ The current variant layer separates:
 Current rules:
 
 - battle forms are never encounter-eligible
-- all variants are currently egg-ineligible
+- regional variants are now egg-eligible (59 variants)
+- `typing` is now populated for 118 variants from PokeAPI
+- `baseStatsOverride` is now populated for 80 variants that differ from base species
 - owned Pokemon now reserve `variantId`, but no gameplay loop writes non-null variant ids yet
-- override fields such as `typing` and `baseStatsOverride` are reserved for later curated fills
 
 Reference:
 
@@ -249,10 +250,45 @@ Trade UX note:
 - locked Pokemon are hidden from candidate lists and also rejected by server-side trade validation
 - the central trade store now keeps all pending trades but prunes resolved trades down to the latest 200 records
 
+## Runtime Owned Pokemon Status
+
+OwnedPokemon now includes the following progression fields:
+
+- `nature`: randomly assigned from 25 natures data on creation, defaults to `"hardy"` (neutral) for legacy Pokemon
+- `isShiny`: 1/4096 chance on creation, defaults to `false` for legacy Pokemon
+- `gender`: assigned from species gender rate data
+- `friendship`: initialized from species `baseHappiness`
+- `heldItem`: equippable via inventory UI and API
+- `abilityId`: assigned from species primary ability
+- `moveUsageCounts`: tracked per-move from battle actions
+- `damageTakenTotal`: cumulative damage tracked from battle actions
+- `tradeLocked`: per-Pokemon trade lock flag
+
+Nature modifiers are applied to stat calculations:
+- `increasedStat` receives 1.1x multiplier
+- `decreasedStat` receives 0.9x multiplier
+- neutral natures (like "hardy") have no stat modification
+
+WildPokemon now also includes `nature`, `gender`, and `ability`.
+
+## Runtime Battle Status
+
+Battle system now supports:
+
+- move `priority` in turn order determination (higher priority goes first, speed breaks ties)
+- Z-move variants and shadow moves (pp=0) are filtered from moves data during sync
+
+Still deferred:
+- move `meta` effects (ailment, drain, flinch, healing, stat chance)
+- move `statChanges` application during battle
+- multi-hit mechanics
+- critical hit rate modifiers
+
 ## Next Recommended Work
 
-1. Decide whether one-off conditions like `turn_upside_down`, `needs_overworld_rain`, `min_damage_taken`, and `min_beauty` should get literal support or curated substitutes.
-2. Populate runtime-significant variant overrides and decide which regional variants should become actual encounter targets.
-3. Extend advanced battle behavior using move `priority`, `meta`, and `statChanges`.
+1. Add regional variants to encounter pools in region data files.
+2. Extend battle behavior to apply move `meta` effects and `statChanges`.
+3. Add reversible form change systems (Castform, Rotom, Aegislash).
 4. Decide whether resolved trade records should also be archived before central-store pruning.
 5. Decide whether trade eligibility should remain opt-out via lock, or move to explicit opt-in per Pokemon.
+6. Region encounter balancing and long-tail species coverage.
