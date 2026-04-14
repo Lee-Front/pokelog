@@ -9,7 +9,7 @@ describe("trade flow", () => {
   });
 
   afterAll(() => {
-    t.cleanup();
+    t?.cleanup();
   });
 
   it("lists empty trades for new user", async () => {

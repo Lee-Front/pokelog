@@ -132,8 +132,8 @@ describe("QA: Cross-System Consistency", () => {
       const variants = getVariants();
       const eggEligibleVariants = variants.filter((v) => v.eggEligible === true);
 
-      // Report count -- there may be zero or more; just verify we can count them
-      expect(eggEligibleVariants.length).toBeGreaterThanOrEqual(0);
+      // Confirm the exact count of regional egg-eligible variants
+      expect(eggEligibleVariants.length).toBe(59);
 
       // The egg-gacha runtime uses getSpecies() to build its pools.
       // getSpecies() returns SpeciesData[], NOT variants.

@@ -9,7 +9,7 @@ describe("QA: API Contract", () => {
   });
 
   afterAll(() => {
-    t.cleanup();
+    t?.cleanup();
   });
 
   // ========================================================

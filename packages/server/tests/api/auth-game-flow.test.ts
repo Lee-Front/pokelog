@@ -1,4 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import fs from "node:fs";
+import path from "node:path";
 import { setupTestApp, type TestApp } from "./test-helpers.js";
 
 describe("auth + game flow", () => {
@@ -9,7 +11,7 @@ describe("auth + game flow", () => {
   });
 
   afterAll(() => {
-    t.cleanup();
+    t?.cleanup();
   });
 
   it("rejects unauthenticated requests", async () => {
@@ -64,6 +66,33 @@ describe("auth + game flow", () => {
     expect(heal.status).toBe(200);
     expect(typeof heal.body.healed).toBe("number");
     expect(heal.body.healed).toBeGreaterThanOrEqual(0);
+  });
+
+  it("heal restores damaged pokemon HP to maxHp", async () => {
+    const { token, userId } = await t.registerAndLogin("healcheck", "charmander");
+    const api = t.authed(token);
+
+    // Get party to find the pokemon uid and maxHp
+    const partyBefore = await api.get("/api/game/party");
+    expect(partyBefore.status).toBe(200);
+    const pokemon = partyBefore.body.party[0];
+
+    // Damage the pokemon by setting HP to 1 via file manipulation
+    const userFile = path.join(t.dataDir, "users", `${userId}.json`);
+    const userData = JSON.parse(fs.readFileSync(userFile, "utf-8"));
+    const pokemonInFile = userData.pokemon.find((p: { uid: string }) => p.uid === pokemon.uid);
+    pokemonInFile.hp = 1;
+    fs.writeFileSync(userFile, JSON.stringify(userData));
+
+    // Heal the party
+    const heal = await api.post("/api/game/heal");
+    expect(heal.status).toBe(200);
+
+    // Verify HP is restored to maxHp
+    const partyAfter = await api.get("/api/game/party");
+    expect(partyAfter.status).toBe(200);
+    const healed = partyAfter.body.party[0];
+    expect(healed.hp).toBe(healed.maxHp);
   });
 
   it("returns region info", async () => {

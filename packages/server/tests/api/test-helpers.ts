@@ -4,6 +4,7 @@
  * 각 테스트 스위트에서 사용:
  *   const { app, registerAndLogin, cleanup } = await setupTestApp();
  */
+import { vi } from "vitest";
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
@@ -35,6 +36,7 @@ export async function setupTestApp() {
   process.env.POKELOG_DATA_DIR = dataDir;
 
   // 캐시 초기화 (이전 테스트 데이터 오염 방지)
+  vi.resetModules();
   const { clearAllCaches } = await import("../../src/game/data-loader.js");
   clearAllCaches();
 

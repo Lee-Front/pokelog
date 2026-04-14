@@ -6,7 +6,9 @@ export default defineConfig({
     globalSetup: "./tests/global-setup.ts",
     // 테스트 타임아웃 (API 통합 테스트가 느릴 수 있음)
     testTimeout: 15000,
-    // 파일 간 병렬 실행 비활성화 — process.env 공유 문제 방지
+    // Tests share process.env for DATA_DIR isolation. Parallel execution
+    // would cause env var race conditions between test suites. Do not
+    // enable without refactoring to dependency injection.
     fileParallelism: false,
   },
 });

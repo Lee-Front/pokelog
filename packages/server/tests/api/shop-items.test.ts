@@ -11,7 +11,7 @@ describe("shop + item usage", () => {
   });
 
   afterAll(() => {
-    t.cleanup();
+    t?.cleanup();
   });
 
   it("lists shop items", async () => {
@@ -27,7 +27,7 @@ describe("shop + item usage", () => {
     expect(typeof shop.body.items.pokeball.name).toBe("string");
   });
 
-  it("buys an item with enough points", async () => {
+  it("rejects purchase when user has insufficient points", async () => {
     const { token, userId } = await t.registerAndLogin();
     const api = t.authed(token);
 
@@ -85,5 +85,59 @@ describe("shop + item usage", () => {
       pokemonUid: pokemon.uid,
     });
     expect(res.status).toBe(400);
+  });
+
+  it("uses a potion successfully on a damaged pokemon", async () => {
+    const { token, userId } = await t.registerAndLogin();
+    const api = t.authed(token);
+
+    // Give user enough points and buy a potion
+    const userFile = path.join(t.dataDir, "users", `${userId}.json`);
+    const userData = JSON.parse(fs.readFileSync(userFile, "utf-8"));
+    userData.points = 10000;
+    fs.writeFileSync(userFile, JSON.stringify(userData));
+
+    const buy = await api.post("/api/shop/buy", { item: "potion", quantity: 1 });
+    expect(buy.status).toBe(200);
+
+    // Damage the pokemon by setting HP to 1 via file manipulation
+    const partyRes = await api.get("/api/game/party");
+    const pokemon = partyRes.body.party[0];
+
+    const damagedData = JSON.parse(fs.readFileSync(userFile, "utf-8"));
+    const pokemonInFile = damagedData.pokemon.find((p: { uid: string }) => p.uid === pokemon.uid);
+    pokemonInFile.hp = 1;
+    fs.writeFileSync(userFile, JSON.stringify(damagedData));
+
+    // Use the potion
+    const useRes = await api.post("/api/shop/use", {
+      item: "potion",
+      pokemonUid: pokemon.uid,
+    });
+    expect(useRes.status).toBe(200);
+    expect(useRes.body.pokemon.hp).toBeGreaterThan(1);
+  });
+
+  it("equips a held item successfully", async () => {
+    const { token, userId } = await t.registerAndLogin();
+    const api = t.authed(token);
+
+    // Get the party pokemon uid
+    const partyRes = await api.get("/api/game/party");
+    const pokemon = partyRes.body.party[0];
+
+    // Add leftovers directly to inventory via file manipulation
+    const userFile = path.join(t.dataDir, "users", `${userId}.json`);
+    const userData = JSON.parse(fs.readFileSync(userFile, "utf-8"));
+    userData.inventory["leftovers"] = 1;
+    fs.writeFileSync(userFile, JSON.stringify(userData));
+
+    // Equip the held item
+    const equipRes = await api.post("/api/game/items/equip", {
+      item: "leftovers",
+      pokemonUid: pokemon.uid,
+    });
+    expect(equipRes.status).toBe(200);
+    expect(equipRes.body.pokemon.heldItem).toBe("leftovers");
   });
 });

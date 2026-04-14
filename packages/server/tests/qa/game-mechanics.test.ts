@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import {
   clearAllCaches,
   getEvolutions,
@@ -302,6 +302,10 @@ describe("QA: Game Mechanics", () => {
   // E8 - Egg tier costs and level ranges
   // ========================================================
   describe("E8: Egg tier costs and level ranges", () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
     it("common cost=120, rare cost=450, legend cost=3200", () => {
       const summaries = getEggTierSummaries();
 
@@ -350,8 +354,6 @@ describe("QA: Game Mechanics", () => {
       const legendMax = hatchEgg({ id: "e6", tier: "legend", createdAt: new Date().toISOString() });
       expect(legendMax.pokemon.level).toBeGreaterThanOrEqual(15);
       expect(legendMax.pokemon.level).toBeLessThanOrEqual(25);
-
-      vi.restoreAllMocks();
     });
   });
 });

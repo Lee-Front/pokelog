@@ -13,6 +13,10 @@ describe("QA: Schema Alignment", () => {
   // B1 - createPokemon returns all 20 OwnedPokemon fields
   // ========================================================
   describe("B1: createPokemon returns all OwnedPokemon fields", () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
     it("createPokemon('bulbasaur', 5) has all 20 fields with correct types", () => {
       vi.spyOn(Math, "random").mockReturnValue(0.5);
 
@@ -124,8 +128,6 @@ describe("QA: Schema Alignment", () => {
       for (const key of expectedKeys) {
         expect(pokemon, `missing key: ${key}`).toHaveProperty(key);
       }
-
-      vi.restoreAllMocks();
     });
   });
 
@@ -133,6 +135,10 @@ describe("QA: Schema Alignment", () => {
   // B2 - createWildPokemon returns all 9 WildPokemon fields
   // ========================================================
   describe("B2: createWildPokemon returns all WildPokemon fields", () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
     it("createWildPokemon('pikachu', 10) has all 9 fields present", () => {
       vi.spyOn(Math, "random").mockReturnValue(0.5);
 
@@ -195,8 +201,6 @@ describe("QA: Schema Alignment", () => {
       for (const key of expectedKeys) {
         expect(wild, `missing key: ${key}`).toHaveProperty(key);
       }
-
-      vi.restoreAllMocks();
     });
   });
 

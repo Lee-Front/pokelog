@@ -127,10 +127,17 @@ describe("QA: Data Integrity", () => {
       }
     }
 
-    // DATA FINDING: 7 evolution targets reference gen-9+ species absent from
-    // the 905-entry dataset: annihilape, archaludon, clodsire, dipplin,
-    // dudunsparce, farigiraf, kingambit.
-    expect(missing, "Evolution targets not in species.json: " + missing.join(", ")).toHaveLength(7);
+    // Gen-9+ species not in our gen-8 dataset — known and expected
+    const GEN9_EVOLUTION_TARGETS = new Set([
+      "annihilape", "archaludon", "clodsire", "dipplin",
+      "dudunsparce", "farigiraf", "kingambit",
+    ]);
+
+    const unexpectedMissing = missing.filter(ref => {
+      const target = ref.split(" -> ")[1];
+      return !GEN9_EVOLUTION_TARGETS.has(target);
+    });
+    expect(unexpectedMissing, "Unexpected missing evolution targets: " + unexpectedMissing.join(", ")).toHaveLength(0);
   });
 
   it("A4: every species has an evolution entry and vice versa", () => {
