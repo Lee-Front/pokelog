@@ -12,7 +12,7 @@ import { recordDamageTaken } from "../game/battle-progress.js";
 import { decrementItem, healPokemon } from "../game/inventory-utils.js";
 import { recordMoveUsage } from "../game/move-usage.js";
 import {
-  checkPreAttack, applyEndOfTurn, tickVolatiles, rollAilment,
+  checkPreAttack, rollAilment,
   isVolatileAilment, addVolatile, rollSleepTurns, rollConfusionTurns, rollTrapTurns,
 } from "../game/status-conditions.js";
 import { getWeatherTypeModifier } from "../game/weather.js";
@@ -99,53 +99,6 @@ function maybeApplyAilment(
   }
 
   return { newStatus: null, newVolatiles: targetVolatiles };
-}
-
-/** 턴 종료 효과 적용 */
-function applyEndOfTurnEffects(
-  battle: BattleState,
-  myPokemon: OwnedPokemon,
-  log: string[],
-): void {
-  // Player end-of-turn
-  const playerEot = applyEndOfTurn(
-    myPokemon.statusCondition,
-    battle.playerVolatile ?? [],
-    myPokemon.maxHp,
-    battle.wild.maxHp,
-  );
-  if (playerEot.damage > 0) {
-    myPokemon.hp = Math.max(0, myPokemon.hp - playerEot.damage);
-  }
-  if (playerEot.healing > 0) {
-    myPokemon.hp = Math.min(myPokemon.maxHp, myPokemon.hp + playerEot.healing);
-  }
-  if (playerEot.opponentHealing > 0) {
-    battle.wild.hp = Math.min(battle.wild.maxHp, battle.wild.hp + playerEot.opponentHealing);
-  }
-  for (const msg of playerEot.messages) log.push(`${myPokemon.species}: ${msg}`);
-
-  // Wild end-of-turn
-  const wildEot = applyEndOfTurn(
-    battle.wild.statusCondition,
-    battle.wildVolatile ?? [],
-    battle.wild.maxHp,
-    myPokemon.maxHp,
-  );
-  if (wildEot.damage > 0) {
-    battle.wild.hp = Math.max(0, battle.wild.hp - wildEot.damage);
-  }
-  if (wildEot.healing > 0) {
-    battle.wild.hp = Math.min(battle.wild.maxHp, battle.wild.hp + wildEot.healing);
-  }
-  if (wildEot.opponentHealing > 0) {
-    myPokemon.hp = Math.min(myPokemon.maxHp, myPokemon.hp + wildEot.opponentHealing);
-  }
-  for (const msg of wildEot.messages) log.push(`야생 ${battle.wild.species}: ${msg}`);
-
-  // Tick volatiles
-  battle.playerVolatile = tickVolatiles(battle.playerVolatile ?? []);
-  battle.wildVolatile = tickVolatiles(battle.wildVolatile ?? []);
 }
 
 /** 기절 처리 — response를 보냈으면 true 반환 */
