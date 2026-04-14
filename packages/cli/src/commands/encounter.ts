@@ -1,7 +1,7 @@
 import { DIM, RED, GRN, YEL, BLU, CYN, BLD, R } from "../ui/colors.js";
 import { apiPost, apiGet } from "../api-client.js";
 import { fetchArt, fetchBallArt, renderHpBar, sideBySide, stripAnsi } from "../ui/display.js";
-import { clearScreen } from "../ui/screen.js";
+import { redraw, clearScreen } from "../ui/screen.js";
 import { enterRaw, waitKey } from "../ui/raw-mode.js";
 import { visualWidth, padRight, artToLines, mergeSideBySide } from "../ui/text.js";
 
@@ -384,6 +384,8 @@ export async function encounterCommand(
   const titleStr = `야생 ${wildInfo.species} Lv.${wildInfo.level}`;
 
   let selectedUid: string | null = null;
+  let lineCount = 0;
+  let first = true;
 
   while (selectedUid === null) {
     const alive = party.filter(p => p.hp > 0);
@@ -396,8 +398,8 @@ export async function encounterCommand(
     }
 
     const lines = buildSelectLines(titleStr, party, selectCursor, selectArt);
-    clearScreen();
-    process.stdout.write(lines.join("\n"));
+    lineCount = redraw(lines, lineCount, first);
+    first = false;
 
     const key = await waitKey();
     if (key === "\x03") { process.stdout.write("\x1b[?25h"); process.exit(0); }
@@ -443,6 +445,8 @@ export async function encounterCommand(
   let partyForced = false;
 
   let stateStale  = true;
+  lineCount = 0;
+  first     = true;
 
   // 현재 배틀 상태
   let wildState: PokemonInfo = { species: wildInfo.species, level: wildInfo.level, hp: 1, maxHp: 1 };
@@ -564,14 +568,13 @@ export async function encounterCommand(
         if (alive.length === 0) {
           battleOver = true;
           battleLog.push(`${RED}전투 패배...${R}`);
-          /* clearScreen handles redraw */
           break;
         }
         subMode     = "party";
         partyForced = true;
         partyCursor = party.findIndex(p => p.hp > 0);
         if (partyCursor < 0) partyCursor = 0;
-        /* clearScreen handles redraw */
+        first = true;
       }
     }
 
@@ -586,8 +589,8 @@ export async function encounterCommand(
     }
 
     const lines = buildFullLines();
-    clearScreen();
-    process.stdout.write(lines.join("\n"));
+    lineCount = redraw(lines, lineCount, first);
+    first = false;
 
     const key = await waitKey();
     if (key === "\x03") { process.stdout.write("\x1b[?25h"); process.exit(0); }
@@ -613,7 +616,7 @@ export async function encounterCommand(
           partyCursor = 0;
           lastPartyArtUid = "";
           partyArt = null;
-          /* clearScreen handles redraw */
+          first = true;
         } else if (action === "도망치기") {
           const runRes = await apiPost("/api/battle/action", { action: "run", data: {} });
           const r = runRes.data as BattleResult;
@@ -752,6 +755,7 @@ export async function encounterCommand(
           inventory[itemKey] = Math.max(0, (inventory[itemKey] ?? 1) - 1);
           stateStale = true;
           subMode    = "menu";
+          first      = true;
         } else {
           // 포션 사용
           if (!myPoke) continue;
@@ -803,6 +807,7 @@ export async function encounterCommand(
           subMode = "menu";
           lastPartyArtUid = "";
           partyArt = null;
+          first = true;
         }
         // partyForced 시 Esc 무시
       }
@@ -839,6 +844,7 @@ export async function encounterCommand(
         subMode         = "menu";
         lastPartyArtUid = "";
         partyArt        = null;
+        first           = true;
       }
     }
   }

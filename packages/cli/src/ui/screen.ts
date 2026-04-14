@@ -3,6 +3,8 @@ import { DIM, GRN, RED, R, YEL } from "./colors.js";
 import { type SelectItem } from "./prompts.js";
 import { enterRaw, waitKey } from "./raw-mode.js";
 
+export { redraw };
+
 export function enterAltScreen(): void {
   process.stdout.write("\x1b[?1049h");
   process.stdout.write("\x1b[2J\x1b[H");

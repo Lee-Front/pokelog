@@ -2,7 +2,7 @@ import { DIM, RED, GRN, YEL, BLU, CYN, BLD, R } from "../ui/colors.js";
 import { apiPost, apiGet } from "../api-client.js";
 import { fetchBallArt, stripAnsi } from "../ui/display.js";
 import { enterRaw, waitKey } from "../ui/raw-mode.js";
-import { clearScreen } from "../ui/screen.js";
+import { redraw } from "../ui/screen.js";
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -75,10 +75,12 @@ async function playHealAnimation(
 ): Promise<void> {
   const slots: SlotState[] = Array(6).fill("empty") as SlotState[];
 
+  let lineCount = 0;
+  let first = true;
   const draw = (status: string) => {
     const frame = buildFrame(slots, ballArt, emptyArt, status);
-    clearScreen();
-    process.stdout.write(frame.join("\n"));
+    lineCount = redraw(frame, lineCount, first);
+    first = false;
   };
 
   draw(`${DIM}...${R}`);
@@ -107,8 +109,8 @@ async function playHealAnimation(
   const frame = buildFrame(slots, ballArt, emptyArt, `${GRN}${BLD}♦ 치료 완료!${R}`);
   frame.push("");
   frame.push(`  ${DIM}아무 키나 누르면 돌아갑니다${R}`);
-  clearScreen();
-  process.stdout.write(frame.join("\n"));
+  lineCount = redraw(frame, lineCount, first);
+  first = false;
 }
 
 // ─── 커맨드 진입점 ──────────────────────────────────────────────

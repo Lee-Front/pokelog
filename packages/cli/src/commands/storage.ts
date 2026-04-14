@@ -1,7 +1,7 @@
 import { BLD, CYN, DIM, GRN, R, RED, YEL } from "../ui/colors.js";
 import { apiGet, apiPost } from "../api-client.js";
 import { fetchArt } from "../ui/display.js";
-import { clearScreen } from "../ui/screen.js";
+import { redraw } from "../ui/screen.js";
 import { artToLines, padRight } from "../ui/text.js";
 import { enterRaw, waitKey } from "../ui/raw-mode.js";
 import { getPendingEvolutions, resolvePendingEvolutionForPokemon } from "./evolutions.js";
@@ -197,6 +197,8 @@ export async function storageCommand() {
   let currentArt: string | null = null;
   let lastSpecies = "";
   let message = "";
+  let lineCount = 0;
+  let first = true;
 
   async function refreshAll() {
     const [freshData, pending] = await Promise.all([fetchData(), getPendingEvolutions()]);
@@ -222,8 +224,7 @@ export async function storageCommand() {
       lastSpecies = species;
     }
 
-    clearScreen();
-    process.stdout.write(
+    lineCount = redraw(
       buildLines(
         party,
         storage,
@@ -234,8 +235,10 @@ export async function storageCommand() {
         currentArt,
         message,
         pendingEvolutionUids,
-      ).join("\n"),
+      ),
+      lineCount, first,
     );
+    first = false;
     message = "";
 
     const key = await waitKey();
@@ -305,6 +308,7 @@ export async function storageCommand() {
       await refreshAll();
       lastSpecies = "";
       currentArt = null;
+      first = true;
       enterRaw();
       continue;
     }
@@ -336,6 +340,7 @@ export async function storageCommand() {
     await refreshAll();
     lastSpecies = "";
     currentArt = null;
+    first = true;
   }
 
   process.stdout.write("\x1b[?25h");

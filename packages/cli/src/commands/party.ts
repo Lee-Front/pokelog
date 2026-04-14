@@ -3,7 +3,7 @@ import { apiGet, apiPut } from "../api-client.js";
 import { fetchArt } from "../ui/display.js";
 import { artToLines, padRight } from "../ui/text.js";
 import { enterRaw, waitKey } from "../ui/raw-mode.js";
-import { clearScreen } from "../ui/screen.js";
+import { redraw } from "../ui/screen.js";
 import { getPendingEvolutions, resolvePendingEvolutionForPokemon } from "./evolutions.js";
 import { pokemonCommand } from "./pokemon.js";
 
@@ -85,6 +85,8 @@ export async function partyCommand() {
   let currentArt: string | null = null;
   let lastSpecies = "";
   let message = "";
+  let lineCount = 0;
+  let first = true;
 
   async function refreshParty() {
     const response = await apiGet("/api/game/party");
@@ -114,8 +116,8 @@ export async function partyCommand() {
     }
 
     const lines = buildLines(party, cursor, currentArt, pendingEvolutionUids, message);
-    clearScreen();
-    process.stdout.write(lines.join("\n"));
+    lineCount = redraw(lines, lineCount, first);
+    first = false;
     message = "";
 
     const key = await waitKey();
@@ -154,6 +156,7 @@ export async function partyCommand() {
     await refreshPendingEvolutions();
     lastSpecies = "";
     currentArt = null;
+    first = true;
     enterRaw();
   }
 

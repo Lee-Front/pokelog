@@ -3,7 +3,7 @@ import { apiGet, apiPost } from "../api-client.js";
 import { fetchArt, fetchBallArt } from "../ui/display.js";
 import { enterRaw, waitKey } from "../ui/raw-mode.js";
 import { padRight, artToLines, mergeSideBySide } from "../ui/text.js";
-import { clearScreen } from "../ui/screen.js";
+import { redraw } from "../ui/screen.js";
 
 type InventoryKind = "ball" | "healing" | "evolution" | "held" | "other";
 
@@ -247,6 +247,8 @@ export async function inventoryCommand() {
   let catalog: Record<string, InventoryCatalogEntry> = {};
   let party: PartyMon[] = [];
   let targets: PartyMon[] = [];
+  let lineCount = 0;
+  let first = true;
 
   async function refreshInventory() {
     const response = await apiGet("/api/game/inventory");
@@ -278,10 +280,11 @@ export async function inventoryCommand() {
         lastArtKey = artKey;
       }
 
-      clearScreen();
-      process.stdout.write(
-        buildItemsLines(categoryIndex, categoryItems, itemIndex, currentArt, message, catalog).join("\n"),
+      lineCount = redraw(
+        buildItemsLines(categoryIndex, categoryItems, itemIndex, currentArt, message, catalog),
+        lineCount, first,
       );
+      first = false;
       message = "";
 
       const key = await waitKey();
@@ -342,6 +345,7 @@ export async function inventoryCommand() {
       targetIndex = 0;
       lastArtKey = "";
       currentArt = null;
+      first = true;
       mode = "targets";
       continue;
     }
@@ -355,10 +359,11 @@ export async function inventoryCommand() {
     }
 
     const itemCount = inventory[selectedItem] ?? 0;
-    clearScreen();
-    process.stdout.write(
-      buildTargetsLines(selectedItem, itemCount, targets, targetIndex, currentArt, message, catalog).join("\n"),
+    lineCount = redraw(
+      buildTargetsLines(selectedItem, itemCount, targets, targetIndex, currentArt, message, catalog),
+      lineCount, first,
     );
+    first = false;
     message = "";
 
     const key = await waitKey();
@@ -370,6 +375,7 @@ export async function inventoryCommand() {
       mode = "items";
       lastArtKey = "";
       currentArt = null;
+      first = true;
       continue;
     }
     if (key === "\x1b[A" && targetIndex > 0) {
@@ -404,6 +410,7 @@ export async function inventoryCommand() {
       mode = "items";
       lastArtKey = "";
       currentArt = null;
+      first = true;
       continue;
     }
 
@@ -412,6 +419,7 @@ export async function inventoryCommand() {
       mode = "items";
       lastArtKey = "";
       currentArt = null;
+      first = true;
       continue;
     }
 

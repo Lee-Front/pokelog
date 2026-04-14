@@ -3,7 +3,7 @@ import { apiGet, apiPost } from "../api-client.js";
 import { fetchBallArt, stripAnsi } from "../ui/display.js";
 import { enterRaw, waitKey } from "../ui/raw-mode.js";
 import { visualWidth, padRight, artToLines, mergeSideBySide } from "../ui/text.js";
-import { clearScreen } from "../ui/screen.js";
+import { redraw } from "../ui/screen.js";
 
 type ShopItem = {
   name: string;
@@ -152,6 +152,8 @@ export async function shopCommand() {
   let msg      = "";
   let currentArt: string | null = null;
   let lastItemKey = "";
+  let lineCount = 0;
+  let first     = true;
 
   // 카테고리별 아이템 배열 빌드
   function getCatItems(ci: number) {
@@ -172,8 +174,8 @@ export async function shopCommand() {
     }
 
     const lines = buildLines(catIdx, itemIdx, catItems, currentArt, points, inventory, msg);
-    clearScreen();
-    process.stdout.write(lines.join("\n"));
+    lineCount = redraw(lines, lineCount, first);
+    first = false;
     msg = "";
 
     const key = await waitKey();

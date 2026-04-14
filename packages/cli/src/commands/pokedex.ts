@@ -3,7 +3,7 @@ import { apiGet } from "../api-client.js";
 import { fetchArt, stripAnsi } from "../ui/display.js";
 import { enterRaw, waitKey } from "../ui/raw-mode.js";
 import { visualWidth, padRight, artToLines } from "../ui/text.js";
-import { clearScreen } from "../ui/screen.js";
+import { redraw } from "../ui/screen.js";
 
 type SpeciesEntry = { id: number; species: string; name: string };
 
@@ -107,6 +107,8 @@ export async function pokedexCommand() {
   let scroll      = 0;
   let currentArt: string | null = null;
   let lastSpecies = "";
+  let lineCount   = 0;
+  let first       = true;
 
   while (true) {
     const entry  = allSpecies[cursor];
@@ -121,8 +123,8 @@ export async function pokedexCommand() {
     }
 
     const lines = buildLines(allSpecies, cursor, scroll, seenSet, caughtSet, currentArt, isSeen);
-    clearScreen();
-    process.stdout.write(lines.join("\n"));
+    lineCount = redraw(lines, lineCount, first);
+    first = false;
 
     const key = await waitKey();
     if (key === "\x03") { process.stdout.write("\x1b[?25h"); process.exit(0); }
