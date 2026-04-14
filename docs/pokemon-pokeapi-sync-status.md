@@ -337,10 +337,30 @@ Weather system:
 - Type modifiers: sun boosts fire/weakens water, rain inverse
 - Chip damage: hail (non-ice), sandstorm (non-rock/ground/steel)
 
+## Battle Transformation Status
+
+Primal Reversion (2 species):
+- Groudon + Red Orb → auto-activates on battle start
+- Kyogre + Blue Orb → auto-activates on battle start
+- Both revert on battle end
+
+Mega Evolution (48 species):
+- Player selects mega: true during fight action
+- Requires species-specific mega stone held + key-stone in inventory
+- Rayquaza: needs dragon-ascent move, no mega stone
+- Once per battle (shared with Gigantamax)
+- Changes typing and stats via variant overrides
+
+Gigantamax (32 species):
+- Player selects gigantamax: true during fight action
+- Requires hasGigantamaxFactor + dynamax-band
+- HP 1.5x for 3 turns, then auto-reverts
+- Once per battle (shared with Mega)
+
 ## Next Recommended Work
 
 1. Implement fusion form changes (Kyurem, Necrozma, Calyrex — 3 species).
-2. Design Mega Evolution / Gigantamax / Primal Reversion system.
-3. Add multi-hit mechanics (`meta.minHits`/`meta.maxHits`).
-4. Add critical hit rate modifiers (`meta.critRate`).
-5. Decide whether resolved trade records should be archived before pruning.
+2. Add multi-hit mechanics (`meta.minHits`/`meta.maxHits`).
+3. Add critical hit rate modifiers (`meta.critRate`).
+4. Decide whether resolved trade records should be archived before pruning.
+5. Add G-Max exclusive moves (26 moves).
