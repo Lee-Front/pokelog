@@ -18,5 +18,3 @@ export function getDataDir(): string {
     : path.join(PROJECT_ROOT, "pokelog-data");
 }
 
-/** @deprecated Use getDataDir() — 하위 호환용, 모듈 로드 시점에 고정됨 */
-export const DATA_DIR = getDataDir();

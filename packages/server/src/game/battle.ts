@@ -89,6 +89,9 @@ export function calculateDamage(
     return { damage: 0, missed: false, effectiveness: 0, message };
   }
 
+  // STAB (Same-Type Attack Bonus)
+  const stab = attackerTypes.includes(move.type) ? 1.5 : 1.0;
+
   // Random factor
   const randomFactor = 0.85 + Math.random() * 0.15;
 
@@ -96,6 +99,7 @@ export function calculateDamage(
   const level = attackerLevel;
   const damage = Math.floor(
     (((2 * level / 5 + 2) * move.power * atk / def) / 50 + 2)
+    * stab
     * typeMultiplier
     * randomFactor,
   );

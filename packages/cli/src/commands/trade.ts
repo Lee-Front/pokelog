@@ -1,39 +1,20 @@
 import { apiGet, apiPost } from "../api-client.js";
 import { rawSelect, rawConfirm, separator, inputPrompt } from "../ui/prompts.js";
-import { DIM, R, YEL, GRN, RED, CYN } from "../ui/colors.js";
-
-type TradeView = {
-  id: string;
-  status: string;
-  direction: "incoming" | "outgoing";
-  requester: {
-    userId: string;
-    nickname: string;
-    pokemonUid: string;
-    species: string | null;
-    speciesName: string | null;
-  };
-  responder: {
-    userId: string;
-    nickname: string;
-    pokemonUid: string;
-    species: string | null;
-    speciesName: string | null;
-  };
-};
+import {
+  formatTradeLine,
+  formatTradeItem,
+  formatCandidateLine,
+  buildTradeMenuItems,
+  getTradeActions,
+  parseTradeChoice,
+  type TradeView,
+  type TradePokemonCandidate,
+} from "../logic/trade.js";
+import { DIM, R, GRN } from "../ui/colors.js";
 
 type TradeUserSearchResult = {
   id: string;
   nickname: string;
-};
-
-type TradePokemonCandidate = {
-  uid: string;
-  species: string;
-  speciesName: string;
-  nickname: string | null;
-  level: number;
-  location: "party" | "storage";
 };
 
 type TradeCandidatesResponse = {
@@ -48,23 +29,6 @@ type TradeCandidatesResponse = {
     pokemon: TradePokemonCandidate[];
   };
 };
-
-function formatTradeLine(trade: TradeView): string {
-  const left = `${trade.requester.nickname} [${trade.requester.userId}]`;
-  const right = `${trade.responder.nickname} [${trade.responder.userId}]`;
-  const leftPokemon = trade.requester.speciesName ?? trade.requester.species ?? trade.requester.pokemonUid;
-  const rightPokemon = trade.responder.speciesName ?? trade.responder.species ?? trade.responder.pokemonUid;
-  return `${trade.id} | ${trade.status} | ${trade.direction} | ${leftPokemon} <-> ${rightPokemon} | ${left} -> ${right}`;
-}
-
-function formatTradeItem(trade: TradeView): string {
-  const arrow = trade.direction === "incoming" ? `${GRN}← 받은 요청${R}` : `${CYN}→ 보낸 요청${R}`;
-  const leftPoke = trade.requester.speciesName ?? trade.requester.species ?? "?";
-  const rightPoke = trade.responder.speciesName ?? trade.responder.species ?? "?";
-  const partner = trade.direction === "incoming" ? trade.requester.nickname : trade.responder.nickname;
-  const statusColor = trade.status === "pending" ? YEL : DIM;
-  return `${arrow} ${partner}  ${leftPoke} ↔ ${rightPoke}  ${statusColor}${trade.status}${R}`;
-}
 
 export async function tradeCommand() {
   while (true) {
@@ -201,13 +165,6 @@ async function resolveTargetUserId(query: string): Promise<string | null> {
   return selected;
 }
 
-function formatTradePokemonCandidate(candidate: TradePokemonCandidate): string {
-  const name = candidate.nickname
-    ? `${candidate.nickname} (${candidate.speciesName})`
-    : candidate.speciesName;
-  const location = candidate.location === "party" ? "Party" : "Storage";
-  return `${name} | Lv.${candidate.level} | ${location} | ${candidate.uid}`;
-}
 
 async function chooseTradePokemon(
   message: string,
@@ -236,7 +193,7 @@ async function chooseTradePokemon(
     message,
     [
       ...candidates.map((candidate) => ({
-        name: formatTradePokemonCandidate(candidate),
+        name: formatCandidateLine(candidate),
         value: candidate.uid,
       })),
       { name: "Cancel", value: "__cancel__" },

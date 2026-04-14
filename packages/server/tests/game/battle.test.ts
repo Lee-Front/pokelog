@@ -35,7 +35,7 @@ describe("calculateDamage", () => {
     const result = calculateDamage(10, attackerStats, defenderStats, move, ["normal"], ["normal"]);
 
     expect(result.missed).toBe(false);
-    expect(result.damage).toBe(6);
+    expect(result.damage).toBe(10); // STAB 1.5x: normal move + normal attacker
     expect(result.effectiveness).toBe(1.0);
   });
 
@@ -59,7 +59,7 @@ describe("calculateDamage", () => {
     const result = calculateDamage(10, attackerStats, defenderStats, move, ["fire"], ["grass"]);
 
     expect(result.missed).toBe(false);
-    expect(result.damage).toBe(15);
+    expect(result.damage).toBe(23); // STAB 1.5x: fire move + fire attacker
     expect(result.effectiveness).toBe(2.0);
     expect(result.message).toBe("효과가 굉장했다!");
   });
@@ -84,7 +84,7 @@ describe("calculateDamage", () => {
     const result = calculateDamage(10, attackerStats, defenderStats, move, ["fire"], ["water"]);
 
     expect(result.missed).toBe(false);
-    expect(result.damage).toBe(3);
+    expect(result.damage).toBe(5); // STAB 1.5x: fire move + fire attacker
     expect(result.effectiveness).toBe(0.5);
     expect(result.message).toBe("효과가 별로인 듯하다...");
   });

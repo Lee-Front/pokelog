@@ -2,12 +2,7 @@
  * Trade 커맨드 순수 로직 — I/O 없음, 테스트 가능
  */
 
-const GRN = "\x1b[32m";
-const RED = "\x1b[31m";
-const CYN = "\x1b[36m";
-const YEL = "\x1b[33m";
-const DIM = "\x1b[90m";
-const R = "\x1b[0m";
+import { GRN, RED, CYN, YEL, DIM, R } from "../ui/colors.js";
 
 export type TradeDirection = "incoming" | "outgoing";
 

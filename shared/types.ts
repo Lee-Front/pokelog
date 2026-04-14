@@ -136,7 +136,7 @@ export interface OwnedEgg {
 
 export interface WildPokemon {
   species: string;
-  variantId?: string;
+  variantId?: string | null;
   level: number;
   hp: number;
   maxHp: number;

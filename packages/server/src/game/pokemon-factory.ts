@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
-import { getSpecies, getSpeciesByName, getMoves, getMoveById, getAllSpeciesList, getNatures, getNatureById, getVariants } from "./data-loader.js";
+import { getSpecies, getSpeciesByName, getMoves, getMoveById, getAllSpeciesList, getNatures, getVariants } from "./data-loader.js";
+import { applyNatureModifier } from "./growth.js";
 import type {
   SpeciesData,
   MoveData,
@@ -16,18 +17,6 @@ function calcHp(baseHp: number, level: number): number {
 
 function calcStat(baseStat: number, level: number): number {
   return Math.floor(((baseStat * 2 * level) / 100) + 5);
-}
-
-function applyNatureModifier(stats: PokemonStats, nature?: string): void {
-  if (!nature) return;
-  const natureData = getNatureById(nature);
-  if (!natureData) return;
-  if (natureData.increasedStat && natureData.increasedStat in stats) {
-    stats[natureData.increasedStat] = Math.floor(stats[natureData.increasedStat] * 1.1);
-  }
-  if (natureData.decreasedStat && natureData.decreasedStat in stats) {
-    stats[natureData.decreasedStat] = Math.floor(stats[natureData.decreasedStat] * 0.9);
-  }
 }
 
 function buildStats(species: SpeciesData, level: number, nature?: string): { maxHp: number; stats: PokemonStats } {
@@ -144,7 +133,7 @@ export function createWildPokemon(species: string, level: number): WildPokemon {
 
   return {
     species: baseSpecies,
-    variantId: variantId ?? undefined,
+    variantId: variantId ?? null,
     level,
     hp: maxHp,
     maxHp,

@@ -44,7 +44,7 @@ describe("variant encounter", () => {
   it("createWildPokemon with regular species has no variantId", () => {
     const wild = createWildPokemon("pikachu", 10);
     expect(wild.species).toBe("pikachu");
-    expect(wild.variantId).toBeUndefined();
+    expect(wild.variantId).toBeNull();
   });
 
   it("createPokemon with regular species has variantId null", () => {

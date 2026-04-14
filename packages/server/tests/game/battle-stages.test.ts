@@ -157,10 +157,10 @@ describe("calculateDamage with stat stages", () => {
       description: "",
     };
 
-    // Without stages — should produce same result as before
+    // Without stages — STAB 1.5x applies (normal move + normal attacker)
     const result = calculateDamage(10, attackerStats, defenderStats, move, ["normal"], ["normal"]);
     expect(result.missed).toBe(false);
-    expect(result.damage).toBe(6);
+    expect(result.damage).toBe(10);
   });
 
   it("uses spAttack/spDefense stages for special moves", () => {

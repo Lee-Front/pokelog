@@ -2,11 +2,7 @@
  * 순수 포맷팅 유틸리티 — I/O 없음, 테스트 가능
  */
 
-const RED = "\x1b[31m";
-const YEL = "\x1b[33m";
-const GRN = "\x1b[32m";
-const DIM = "\x1b[90m";
-const R = "\x1b[0m";
+import { RED, YEL, GRN, DIM, R } from "../ui/colors.js";
 
 /** HP 비율 → ANSI 색상 코드 */
 export function hpColor(current: number, max: number): string {

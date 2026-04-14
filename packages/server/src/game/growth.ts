@@ -53,6 +53,19 @@ export function checkLevelUp(pokemon: OwnedPokemon): {
   };
 }
 
+/** 성격 보정 적용 — stats 객체를 직접 변경 */
+export function applyNatureModifier(stats: PokemonStats, nature?: string): void {
+  if (!nature) return;
+  const natureData = getNatureById(nature);
+  if (!natureData) return;
+  if (natureData.increasedStat && natureData.increasedStat in stats) {
+    stats[natureData.increasedStat] = Math.floor(stats[natureData.increasedStat] * 1.1);
+  }
+  if (natureData.decreasedStat && natureData.decreasedStat in stats) {
+    stats[natureData.decreasedStat] = Math.floor(stats[natureData.decreasedStat] * 0.9);
+  }
+}
+
 export function calculateStatsForLevel(
   species: string,
   level: number,
@@ -72,17 +85,7 @@ export function calculateStatsForLevel(
     spDefense: Math.floor(((speciesData.baseStats.spDefense * 2 * level) / 100) + 5),
   };
 
-  if (nature) {
-    const natureData = getNatureById(nature);
-    if (natureData) {
-      if (natureData.increasedStat && natureData.increasedStat in stats) {
-        stats[natureData.increasedStat] = Math.floor(stats[natureData.increasedStat] * 1.1);
-      }
-      if (natureData.decreasedStat && natureData.decreasedStat in stats) {
-        stats[natureData.decreasedStat] = Math.floor(stats[natureData.decreasedStat] * 0.9);
-      }
-    }
-  }
+  applyNatureModifier(stats, nature);
 
   return { hp, maxHp: hp, stats };
 }

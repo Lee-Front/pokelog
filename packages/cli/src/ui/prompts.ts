@@ -1,6 +1,6 @@
 import { stripAnsi } from "./display.js";
 import { CYN, DIM, R } from "./colors.js";
-import { enterRaw, waitKey } from "./raw-mode.js";
+import { enterRaw, waitKey, handleCtrlC } from "./raw-mode.js";
 
 interface SelectChoice<T> {
   name: string;
@@ -222,7 +222,6 @@ export async function numberPrompt(message: string): Promise<number> {
 }
 
 export async function rawConfirm(message: string): Promise<boolean> {
-  const { enterRaw, waitKey, handleCtrlC } = await import("./raw-mode.js");
   process.stdout.write(`  ${message} (y/n) `);
   enterRaw();
   while (true) {

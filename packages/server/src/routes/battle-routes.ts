@@ -7,7 +7,7 @@ import { calculateDamage, determineTurnOrder, applyStatChanges, defaultStatStage
 import { attemptCapture, getCatchRate } from "../game/capture.js";
 import { createPokemon } from "../game/pokemon-factory.js";
 import { getMoveById, getSpeciesByName } from "../game/data-loader.js";
-import type { BattleState, OwnedPokemon, UserData, StatStages } from "../../../../shared/types.js";
+import type { BattleState, MoveData, OwnedPokemon, UserData, StatStages } from "../../../../shared/types.js";
 import { recordDamageTaken } from "../game/battle-progress.js";
 import { decrementItem, healPokemon } from "../game/inventory-utils.js";
 import { recordMoveUsage } from "../game/move-usage.js";
@@ -30,11 +30,11 @@ function wildAttack(
   defenderStages?: StatStages,
 ) {
   const availableMoves = wildMoves.filter((m) => m.pp > 0);
-  if (availableMoves.length === 0) return { damage: 0, moveId: null, moveData: null as any, message: "야생 포켓몬이 발버둥쳤다!" };
+  if (availableMoves.length === 0) return { damage: 0, moveId: null, moveData: null, message: "야생 포켓몬이 발버둥쳤다!" };
 
   const chosen = availableMoves[Math.floor(Math.random() * availableMoves.length)];
-  const moveData = getMoveById(chosen.id);
-  if (!moveData) return { damage: 0, moveId: chosen.id, moveData: null as any, message: "" };
+  const moveData: MoveData | null = getMoveById(chosen.id) ?? null;
+  if (!moveData) return { damage: 0, moveId: chosen.id, moveData: null, message: "" };
 
   chosen.pp -= 1;
 
@@ -57,19 +57,19 @@ function hasAlivePartyMembers(user: { party: string[]; pokemon: Array<{ uid: str
 }
 
 /** 기절 처리 — response를 보냈으면 true 반환 */
-function handleFainted(
+async function handleFainted(
   user: UserData, pokemon: OwnedPokemon, battle: BattleState,
   log: string[], res: Response,
-): boolean {
+): Promise<boolean> {
   if (pokemon.hp > 0) return false;
   log.push(`${pokemon.species}이(가) 쓰러졌다!`);
   if (hasAlivePartyMembers(user, pokemon.uid)) {
-    saveUser(user);
+    await saveUser(user);
     res.json({ log, battleState: battle, result: "fainted" });
     return true;
   }
   user.battleState = null;
-  saveUser(user);
+  await saveUser(user);
   res.json({ log, battleState: null, result: "lose" });
   return true;
 }
@@ -131,10 +131,10 @@ function applyMetaEffects(
 }
 
 /** 야생 공격 후 기절 체크 — response를 보냈으면 true 반환 */
-function doWildAttackAndCheck(
+async function doWildAttackAndCheck(
   user: UserData, myPokemon: OwnedPokemon, battle: BattleState,
   log: string[], res: Response,
-): boolean {
+): Promise<boolean> {
   const wildResult = wildAttack(
     battle.wild.species, battle.wild.level, battle.wild.stats,
     battle.wild.moves, myPokemon.stats, myPokemon.species,
@@ -158,7 +158,7 @@ function doWildAttackAndCheck(
     maybeApplyStatChanges(battle, wildResult.moveData, false, log);
   }
 
-  return handleFainted(user, myPokemon, battle, log, res);
+  return await handleFainted(user, myPokemon, battle, log, res);
 }
 
 battleRoutes.post("/start", async (req, res) => {
@@ -292,10 +292,10 @@ async function handleFight(
     if (playerCausedFlinch) {
       log.push(`야생 ${battle.wild.species}은(는) 풀이 죽어 움직이지 못했다!`);
     } else {
-      if (doWildAttackAndCheck(user, myPokemon, battle, log, res)) return;
+      if (await doWildAttackAndCheck(user, myPokemon, battle, log, res)) return;
     }
   } else {
-    if (doWildAttackAndCheck(user, myPokemon, battle, log, res)) return;
+    if (await doWildAttackAndCheck(user, myPokemon, battle, log, res)) return;
     playerAttack();
     if (battle.wild.hp <= 0) {
       log.push(`야생 ${battle.wild.species}이(가) 쓰러졌다!`);
@@ -356,7 +356,7 @@ async function handleCatch(
   }
 
   log.push("잡지 못했다...");
-  if (doWildAttackAndCheck(user, myPokemon, battle, log, res)) return;
+  if (await doWildAttackAndCheck(user, myPokemon, battle, log, res)) return;
 
   await saveUser(user);
   res.json({ log, battleState: battle, result: "continue" });
@@ -390,7 +390,7 @@ async function handleItem(
   healPokemon(target, shopItem.healAmount);
   log.push(`${shopItem.name}을(를) 사용했다! HP가 ${shopItem.healAmount} 회복되었다!`);
 
-  if (doWildAttackAndCheck(user, myPokemon, battle, log, res)) return;
+  if (await doWildAttackAndCheck(user, myPokemon, battle, log, res)) return;
 
   await saveUser(user);
   res.json({ log, battleState: battle, result: "continue" });
@@ -413,10 +413,11 @@ async function handleSwitch(
 
   const forced = data?.forced === true;
   battle.myPokemonUid = newUid;
+  battle.playerStatStages = defaultStatStages();
   log.push(`${newPokemon.species}(으)로 교체했다!`);
 
   if (!forced) {
-    if (doWildAttackAndCheck(user, newPokemon, battle, log, res)) return;
+    if (await doWildAttackAndCheck(user, newPokemon, battle, log, res)) return;
   }
 
   await saveUser(user);
