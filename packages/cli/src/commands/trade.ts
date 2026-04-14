@@ -1,5 +1,6 @@
 import { apiGet, apiPost } from "../api-client.js";
-import { rawSelect } from "../ui/prompts.js";
+import { rawSelect, rawConfirm, separator, inputPrompt } from "../ui/prompts.js";
+import { DIM, R, YEL, GRN, RED, CYN } from "../ui/colors.js";
 
 type TradeView = {
   id: string;
@@ -56,21 +57,89 @@ function formatTradeLine(trade: TradeView): string {
   return `${trade.id} | ${trade.status} | ${trade.direction} | ${leftPokemon} <-> ${rightPokemon} | ${left} -> ${right}`;
 }
 
+function formatTradeItem(trade: TradeView): string {
+  const arrow = trade.direction === "incoming" ? `${GRN}← 받은 요청${R}` : `${CYN}→ 보낸 요청${R}`;
+  const leftPoke = trade.requester.speciesName ?? trade.requester.species ?? "?";
+  const rightPoke = trade.responder.speciesName ?? trade.responder.species ?? "?";
+  const partner = trade.direction === "incoming" ? trade.requester.nickname : trade.responder.nickname;
+  const statusColor = trade.status === "pending" ? YEL : DIM;
+  return `${arrow} ${partner}  ${leftPoke} ↔ ${rightPoke}  ${statusColor}${trade.status}${R}`;
+}
+
 export async function tradeCommand() {
-  const response = await apiGet("/api/game/trades");
-  if (!response.ok) {
-    console.error(`Error: ${response.data.error}`);
-    return;
-  }
+  while (true) {
+    const response = await apiGet("/api/game/trades");
+    if (!response.ok) {
+      console.error(`Error: ${response.data.error}`);
+      return;
+    }
 
-  const trades = (response.data.trades ?? []) as TradeView[];
-  if (trades.length === 0) {
-    console.log("No trades.");
-    return;
-  }
+    const trades = (response.data.trades ?? []) as TradeView[];
 
-  for (const trade of trades) {
-    console.log(formatTradeLine(trade));
+    const items: Array<{ name: string; value: string } | { separator: string }> = [];
+
+    if (trades.length > 0) {
+      const pending = trades.filter((t) => t.status === "pending");
+      const resolved = trades.filter((t) => t.status !== "pending");
+
+      if (pending.length > 0) {
+        items.push(separator(`  ${YEL}── 대기 중 ──${R}`));
+        for (const trade of pending) {
+          items.push({ name: `  ${formatTradeItem(trade)}`, value: `trade:${trade.id}` });
+        }
+      }
+      if (resolved.length > 0) {
+        items.push(separator(`  ${DIM}── 완료 ──${R}`));
+        for (const trade of resolved.slice(0, 10)) {
+          items.push({ name: `  ${DIM}${formatTradeItem(trade)}${R}`, value: `resolved:${trade.id}` });
+        }
+      }
+    } else {
+      items.push(separator(`  ${DIM}교환 내역이 없습니다${R}`));
+    }
+
+    items.push(separator(" "));
+    items.push({ name: "  새 교환 요청", value: "__new__" });
+    items.push({ name: "  ← 돌아가기", value: "__back__" });
+
+    const choice = await rawSelect("교환", items, { pageSize: 16 });
+    if (!choice || choice === "__back__") return;
+
+    if (choice === "__new__") {
+      const query = await inputPrompt("상대 닉네임 또는 ID:");
+      if (!query) continue;
+      await tradeRequestCommand(query);
+      continue;
+    }
+
+    if (choice.startsWith("trade:")) {
+      const tradeId = choice.slice(6);
+      const trade = trades.find((t) => t.id === tradeId);
+      if (!trade) continue;
+
+      const actionItems: Array<{ name: string; value: string }> = [];
+      if (trade.direction === "incoming") {
+        actionItems.push({ name: `${GRN}수락${R}`, value: "accept" });
+        actionItems.push({ name: `${RED}거절${R}`, value: "reject" });
+      } else {
+        actionItems.push({ name: `${RED}취소${R}`, value: "cancel" });
+      }
+      actionItems.push({ name: "← 돌아가기", value: "__back__" });
+
+      const action = await rawSelect(
+        `${formatTradeItem(trade)}`,
+        actionItems,
+      );
+
+      if (action === "accept") {
+        const confirmed = await rawConfirm("정말 수락하시겠습니까?");
+        if (confirmed) await tradeAcceptCommand(tradeId);
+      } else if (action === "reject") {
+        await tradeRejectCommand(tradeId);
+      } else if (action === "cancel") {
+        await tradeCancelCommand(tradeId);
+      }
+    }
   }
 }
 

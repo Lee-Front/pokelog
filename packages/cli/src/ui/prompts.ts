@@ -220,3 +220,21 @@ export async function numberPrompt(message: string): Promise<number> {
   const val = await rawInput(message + " ");
   return parseInt(val ?? "", 10) || 0;
 }
+
+export async function rawConfirm(message: string): Promise<boolean> {
+  const { enterRaw, waitKey, handleCtrlC } = await import("./raw-mode.js");
+  process.stdout.write(`  ${message} (y/n) `);
+  enterRaw();
+  while (true) {
+    const key = await waitKey();
+    handleCtrlC(key);
+    if (key === "y" || key === "Y") {
+      process.stdout.write("y\n");
+      return true;
+    }
+    if (key === "n" || key === "N" || key === "\x1b") {
+      process.stdout.write("n\n");
+      return false;
+    }
+  }
+}

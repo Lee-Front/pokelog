@@ -208,7 +208,6 @@ async function executeCommand(line: string): Promise<boolean> {
       break;
     case "trade":
       await tradeCommand();
-      preserveOutput = true;
       break;
     case "region":
       await regionCommand(args[0]);
