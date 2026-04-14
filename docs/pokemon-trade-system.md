@@ -15,7 +15,6 @@ The project now supports:
 - explicit trade requests from one user to another
 - user search by id or nickname substring before making a request
 - trade candidate listing for both sides before confirming a request
-- per-Pokemon trade lock flags
 - responder-side accept or reject
 - requester-side cancel
 - actual Pokemon exchange between two user accounts
@@ -63,19 +62,14 @@ Current route flow:
 - `POST /api/game/trades/:id/accept`
 - `POST /api/game/trades/:id/reject`
 - `POST /api/game/trades/:id/cancel`
-- `POST /api/game/trades/lock`
-- `POST /api/game/trades/unlock`
-
 Current CLI flow:
 
-- `pokelog trade`
+- `pokelog trade` (인터랙티브 TUI — 목록/수락/거절/취소/새 요청)
 - `pokelog trade search <query>`
 - `pokelog trade request <userId> [myPokemonUid] [theirPokemonUid]`
 - `pokelog trade accept <tradeId>`
 - `pokelog trade reject <tradeId>`
 - `pokelog trade cancel <tradeId>`
-- `pokelog trade lock <pokemonUid>`
-- `pokelog trade unlock <pokemonUid>`
 
 Current targeting rule:
 
@@ -88,17 +82,7 @@ Tradeable candidate rule:
 
 - party and storage Pokemon are both eligible
 - a Pokemon currently active in battle is excluded from candidate lists
-- a Pokemon marked `tradeLocked` is excluded from candidate lists
 - candidate rows show species name, nickname, level, location, and uid
-
-Trade lock rule:
-
-- each owned Pokemon now carries a `tradeLocked` flag
-- newly created Pokemon default to unlocked
-- legacy user data is normalized to unlocked on load
-- locked Pokemon are rejected both at candidate-list time and at actual request validation time
-- Pokemon detail, party, and storage views now surface trade lock state in the CLI
-- Pokemon detail can toggle the flag directly, and party/storage screens now expose the same toggle on `L`
 
 ## Exchange Rule
 
