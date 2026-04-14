@@ -61,7 +61,7 @@ function isEncounterEligible(kind) {
 }
 
 function isEggEligible(kind) {
-  return false;
+  return kind === "regional";
 }
 
 function main() {

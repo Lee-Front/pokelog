@@ -5,8 +5,9 @@ import { syncMoves } from "./pokeapi/moves.mjs";
 import { syncNatures } from "./pokeapi/natures.mjs";
 import { readJsonFile, projectPath } from "./pokeapi/common.mjs";
 import { syncSpecies } from "./pokeapi/species.mjs";
+import { syncVariants } from "./pokeapi/variants.mjs";
 
-const TASKS = ["natures", "abilities", "items", "moves", "species", "evolutions"];
+const TASKS = ["natures", "abilities", "items", "moves", "species", "evolutions", "variants"];
 
 function parseArgs(argv) {
   const args = {
@@ -57,6 +58,7 @@ async function main() {
     moves: () => syncMoves(args),
     species: () => syncSpecies({ ...args, speciesSlugs: baseSpeciesSlugs }),
     evolutions: () => syncEvolutions({ ...args, speciesSlugs: baseSpeciesSlugs }),
+    variants: () => syncVariants(args),
   };
 
   const selectedTasks = args.only ? TASKS.filter((task) => task === args.only) : TASKS;

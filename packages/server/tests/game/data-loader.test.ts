@@ -125,7 +125,7 @@ describe("data-loader", () => {
       baseSpecies: "vulpix",
       kind: "regional",
       encounterEligible: true,
-      eggEligible: false,
+      eggEligible: true,
     });
 
     const megaCharizard = getVariantById("charizard-mega-x");
