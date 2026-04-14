@@ -19,105 +19,108 @@ import { shopCommand } from "./commands/shop.js";
 import { statusCommand } from "./commands/status.js";
 import { storageCommand } from "./commands/storage.js";
 import { tradeCommand } from "./commands/trade.js";
-import { getCurrentServer, getCurrentServerName, getToken, hasNoServers } from "./config.js";
+import { getCurrentServer, getToken } from "./config.js";
 import { BLD, CYN, DIM, GRN, R, RED, YEL } from "./ui/colors.js";
 import { fetchArt, fetchHeaderData, invalidateHeaderCache } from "./ui/display.js";
 import { enterRaw, waitKey } from "./ui/raw-mode.js";
 import { enterAltScreen, leaveAltScreen, redraw, inputFrame, resetScreen } from "./ui/screen.js";
-import { artToLines, padRight } from "./ui/text.js";
+import { artToLines, padRight, visualWidth } from "./ui/text.js";
 
 // ── 메뉴 정의 ───────────────────────────────────────────────────
 
-type MenuItem = {
+type MenuLeaf = {
   label: string;
   cmd: string;
   desc: string;
-  auth?: boolean;     // 로그인 필요
-  server?: boolean;   // 서버 연결 필요
+  auth?: boolean;
+  server?: boolean;
 };
 
-type MenuSection = {
-  title: string;
-  items: MenuItem[];
+type MenuGroup = {
+  label: string;
+  desc: string;
+  auth?: boolean;
+  server?: boolean;
+  children: MenuNode[];
 };
 
-const MENU_SECTIONS: MenuSection[] = [
+type MenuNode = MenuLeaf | MenuGroup;
+
+function isGroup(node: MenuNode): node is MenuGroup {
+  return "children" in node;
+}
+
+const MENU_TREE: MenuNode[] = [
+  { label: "야생",   cmd: "encounters", desc: "야생 이벤트",   auth: true, server: true },
   {
-    title: "Game",
-    items: [
-      { label: "상태",     cmd: "status",      desc: "현재 상태 보기",       auth: true, server: true },
-      { label: "야생",     cmd: "encounters",  desc: "야생 이벤트 보기",     auth: true, server: true },
-      { label: "파티",     cmd: "party",       desc: "파티 보기",            auth: true, server: true },
-      { label: "도감",     cmd: "pokedex",     desc: "도감 보기",            auth: true, server: true },
-      { label: "가방",     cmd: "inventory",   desc: "인벤토리 보기",        auth: true, server: true },
-      { label: "회복",     cmd: "heal",        desc: "파티 회복",            auth: true, server: true },
-      { label: "알",       cmd: "egg",         desc: "알 구매 / 부화",       auth: true, server: true },
-      { label: "상점",     cmd: "shop",        desc: "상점 열기",            auth: true, server: true },
-      { label: "보관함",   cmd: "storage",     desc: "보관함 보기",          auth: true, server: true },
-      { label: "랭킹",     cmd: "ranking",     desc: "랭킹 보기",           auth: true, server: true },
-      { label: "이력",     cmd: "history",     desc: "소스별 적립 이력 보기", auth: true, server: true },
+    label: "포켓몬", desc: "파티 / 보관함 / 도감", auth: true, server: true,
+    children: [
+      { label: "파티",   cmd: "party",   desc: "파티 보기" },
+      { label: "보관함", cmd: "storage", desc: "보관함 보기" },
+      { label: "도감",   cmd: "pokedex", desc: "도감 보기" },
+    ],
+  },
+  { label: "가방",   cmd: "inventory", desc: "인벤토리",       auth: true, server: true },
+  { label: "회복",   cmd: "heal",      desc: "파티 회복",      auth: true, server: true },
+  {
+    label: "상점", desc: "상점 / 알", auth: true, server: true,
+    children: [
+      { label: "상점", cmd: "shop", desc: "아이템 구매" },
+      { label: "알",   cmd: "egg",  desc: "알 구매 / 부화" },
     ],
   },
   {
-    title: "Server",
-    items: [
-      { label: "서버 참가",  cmd: "join",    desc: "서버 참가" },
-      { label: "서버 목록",  cmd: "servers", desc: "서버 목록 보기" },
-      { label: "서버 나가기", cmd: "leave",  desc: "현재 서버 나가기", server: true },
+    label: "기록", desc: "상태 / 랭킹 / 이력", auth: true, server: true,
+    children: [
+      { label: "상태", cmd: "status",  desc: "현재 상태 보기" },
+      { label: "랭킹", cmd: "ranking", desc: "랭킹 보기" },
+      { label: "이력", cmd: "history", desc: "적립 이력 보기" },
     ],
   },
   {
-    title: "Account",
-    items: [
-      { label: "회원가입",   cmd: "register",  desc: "회원가입" },
-      { label: "로그인",     cmd: "login",     desc: "로그인" },
-      { label: "로그아웃",   cmd: "logout",    desc: "로그아웃",     auth: true },
-      { label: "닉네임",     cmd: "nickname",  desc: "닉네임 변경",  auth: true },
-      { label: "연동",       cmd: "connect",   desc: "연동 관리",    auth: true },
-      { label: "디버그",     cmd: "debug",     desc: "디버그 메뉴",  auth: true },
+    label: "서버", desc: "서버 관리",
+    children: [
+      { label: "서버 참가",   cmd: "join",    desc: "서버 참가" },
+      { label: "서버 목록",   cmd: "servers", desc: "서버 목록 보기" },
+      { label: "서버 나가기", cmd: "leave",   desc: "현재 서버 나가기", server: true },
     ],
   },
   {
-    title: "System",
-    items: [
-      { label: "종료",  cmd: "quit", desc: "프로그램 종료" },
+    label: "계정", desc: "계정 관리",
+    children: [
+      { label: "회원가입", cmd: "register", desc: "회원가입" },
+      { label: "로그인",   cmd: "login",    desc: "로그인" },
+      { label: "로그아웃", cmd: "logout",   desc: "로그아웃",   auth: true },
+      { label: "닉네임",   cmd: "nickname", desc: "닉네임 변경", auth: true },
+      { label: "연동",     cmd: "connect",  desc: "연동 관리",   auth: true },
+      { label: "디버그",   cmd: "debug",    desc: "디버그 메뉴", auth: true },
     ],
   },
+  { label: "종료", cmd: "quit", desc: "프로그램 종료" },
 ];
 
-// ── 전체 항목 평탄화 (separator 포함) ────────────────────────────
+// ── 메뉴 필터링 ─────────────────────────────────────────────────
 
-type FlatEntry =
-  | { type: "separator"; title: string }
-  | { type: "item"; item: MenuItem; sectionIdx: number; itemIdx: number };
-
-function buildFlatMenu(loggedIn: boolean, hasServer: boolean): FlatEntry[] {
-  const flat: FlatEntry[] = [];
-  for (let s = 0; s < MENU_SECTIONS.length; s++) {
-    const section = MENU_SECTIONS[s];
-    const visibleItems = section.items.filter((item) => {
-      if (item.auth && !loggedIn) return false;
-      if (item.server && !hasServer) return false;
-      return true;
-    });
-    if (visibleItems.length === 0) continue;
-    flat.push({ type: "separator", title: section.title });
-    for (let i = 0; i < visibleItems.length; i++) {
-      flat.push({ type: "item", item: visibleItems[i], sectionIdx: s, itemIdx: i });
+function filterMenu(nodes: MenuNode[], loggedIn: boolean, hasServer: boolean): MenuNode[] {
+  const result: MenuNode[] = [];
+  for (const node of nodes) {
+    if (node.auth && !loggedIn) continue;
+    if (node.server && !hasServer) continue;
+    if (isGroup(node)) {
+      const children = filterMenu(node.children, loggedIn, hasServer);
+      if (children.length > 0) {
+        result.push({ ...node, children });
+      }
+    } else {
+      result.push(node);
     }
   }
-  return flat;
+  return result;
 }
 
-function getSelectableIndices(flat: FlatEntry[]): number[] {
-  return flat
-    .map((entry, idx) => (entry.type === "item" ? idx : -1))
-    .filter((idx) => idx >= 0);
-}
+// ── 스크롤 / 화면 ───────────────────────────────────────────────
 
-// ── 화면 빌드 ────────────────────────────────────────────────────
-
-const MENU_W = 32;
+const VISIBLE_ITEMS = 9;
 const ART_GAP = "   ";
 
 function buildHeaderLines(
@@ -139,44 +142,47 @@ function buildHeaderLines(
 }
 
 function buildMenuLines(
-  flat: FlatEntry[],
-  selectableIndices: number[],
-  cursorIdx: number,
+  items: MenuNode[],
+  cursor: number,
+  scroll: number,
+  breadcrumb: string[],
   art: string | null,
   headerLines: string[],
   message: string,
 ): string[] {
-  const cursor = selectableIndices[cursorIdx];
+  // 메뉴 라인 빌드
   const menuLines: string[] = [];
 
-  for (let i = 0; i < flat.length; i++) {
-    const entry = flat[i];
-    if (entry.type === "separator") {
-      if (menuLines.length > 0) menuLines.push("");
-      menuLines.push(`${CYN}${BLD}── ${entry.title} ──${R}`);
-    } else {
-      const active = i === cursor;
-      const pointer = active ? `${YEL}>${R}` : " ";
-      const label = active
-        ? `${BLD}${entry.item.label}${R}`
-        : entry.item.label;
-      const desc = `${DIM}${entry.item.desc}${R}`;
-      menuLines.push(`${pointer} ${padRight(label, 10)} ${desc}`);
-    }
+  // breadcrumb 표시
+  if (breadcrumb.length > 0) {
+    menuLines.push(`${DIM}${breadcrumb.join(" > ")}${R}`);
+    menuLines.push("");
   }
 
-  // 좌측: 아트, 우측: 메뉴
+  const end = Math.min(scroll + VISIBLE_ITEMS, items.length);
+  if (scroll > 0) {
+    menuLines.push(`  ${DIM}▲${R}`);
+  }
+
+  for (let i = scroll; i < end; i++) {
+    const node = items[i];
+    const active = i === cursor;
+    const pointer = active ? `${YEL}>${R}` : " ";
+    const label = active ? `${BLD}${node.label}${R}` : node.label;
+    const arrow = isGroup(node) ? ` ${DIM}▸${R}` : "";
+    const desc = `${DIM}${node.desc}${R}`;
+    menuLines.push(`${pointer} ${padRight(label, 10)}${arrow} ${desc}`);
+  }
+
+  if (end < items.length) {
+    menuLines.push(`  ${DIM}▼${R}`);
+  }
+
+  // 좌: 아트, 우: 메뉴 병합
   const artLines = artToLines(art);
-  const artWidth = Math.max(0, ...artLines.map((l) => {
-    let w = 0;
-    for (const ch of l.replace(/\x1b\[[0-9;]*m/g, "")) {
-      const c = ch.codePointAt(0) ?? 0;
-      w += (c >= 0x1100 && c <= 0x115F) || (c >= 0x2E80 && c <= 0xA4CF) ||
-           (c >= 0xAC00 && c <= 0xD7AF) || (c >= 0xF900 && c <= 0xFAFF) ||
-           (c >= 0xFF01 && c <= 0xFF60) ? 2 : 1;
-    }
-    return w;
-  }), 20);
+  const artWidth = artLines.length > 0
+    ? Math.max(...artLines.map((l) => visualWidth(l)))
+    : 20;
 
   const rows = Math.max(artLines.length, menuLines.length);
   const merged: string[] = [];
@@ -186,13 +192,18 @@ function buildMenuLines(
     merged.push(`  ${left}${ART_GAP}${right}`);
   }
 
+  // 하단 안내
+  const hint = breadcrumb.length > 0
+    ? `${DIM}↑↓ 이동   Enter 선택   Esc 뒤로${R}`
+    : `${DIM}↑↓ 이동   Enter 선택${R}`;
+
   const lines = [
     "",
     ...headerLines,
     "",
     `  ${BLD}P O K E L O G${R}`,
     `  ${DIM}${"─".repeat(52)}${R}`,
-    `  ${DIM}↑↓ 이동   Enter 선택${R}`,
+    `  ${hint}`,
     "",
     ...merged,
     "",
@@ -207,39 +218,36 @@ function buildMenuLines(
 
 // ── 명령 실행 ────────────────────────────────────────────────────
 
-async function executeCommand(cmd: string, args: string[]): Promise<"continue" | "quit"> {
+async function executeCommand(cmd: string): Promise<"continue" | "quit"> {
   await resetScreen(cmd);
 
   switch (cmd) {
-    case "join":
-      if (args[0]) await joinCommand(args[0]);
-      else {
-        const url = await inputFrame("서버 URL을 입력하세요:");
-        if (url) await joinCommand(url);
-      }
+    case "join": {
+      const url = await inputFrame("서버 URL을 입력하세요:");
+      if (url) await joinCommand(url);
       break;
-    case "servers":   await serversCommand(); break;
-    case "leave":     await leaveCommand(); break;
-    case "status":    await statusCommand(); break;
+    }
+    case "servers":    await serversCommand(); break;
+    case "leave":      await leaveCommand(); break;
+    case "status":     await statusCommand(); break;
     case "encounters": await eventsCommand(); break;
-    case "party":     await partyCommand(); break;
-    case "pokedex":   await pokedexCommand(); break;
-    case "inventory": await inventoryCommand(); break;
-    case "trade":     await tradeCommand(); break;
-    case "region":    await regionCommand(args[0]); break;
+    case "party":      await partyCommand(); break;
+    case "pokedex":    await pokedexCommand(); break;
+    case "inventory":  await inventoryCommand(); break;
+    case "trade":      await tradeCommand(); break;
     case "evolutions": await evolutionsCommand(); break;
-    case "heal":      await healCommand(); break;
-    case "egg":       await eggCommand(); break;
-    case "shop":      await shopCommand(); break;
-    case "storage":   await storageCommand(); break;
-    case "ranking":   await rankingCommand(args[0] || "exp"); break;
-    case "history":   await historyCommand(); break;
-    case "nickname":  await nicknameCommand(args[0]); break;
-    case "login":     await loginCommand(); break;
-    case "logout":    await logoutCommand(); break;
-    case "register":  await registerCommand(); break;
-    case "connect":   await connectCommand(); break;
-    case "debug":     await debugCommand(); break;
+    case "heal":       await healCommand(); break;
+    case "egg":        await eggCommand(); break;
+    case "shop":       await shopCommand(); break;
+    case "storage":    await storageCommand(); break;
+    case "ranking":    await rankingCommand("exp"); break;
+    case "history":    await historyCommand(); break;
+    case "nickname":   await nicknameCommand(); break;
+    case "login":      await loginCommand(); break;
+    case "logout":     await logoutCommand(); break;
+    case "register":   await registerCommand(); break;
+    case "connect":    await connectCommand(); break;
+    case "debug":      await debugCommand(); break;
     case "quit":
     case "exit":
       return "quit";
@@ -266,7 +274,30 @@ export async function interactiveMode() {
   let message = "";
   let lineCount = 0;
   let first = true;
-  let cursorIdx = 0;
+
+  // 메뉴 스택: [{ items, cursor, scroll }]
+  type MenuFrame = { items: MenuNode[]; cursor: number; scroll: number; title?: string };
+  const menuStack: MenuFrame[] = [];
+
+  function currentFrame(): MenuFrame {
+    return menuStack[menuStack.length - 1];
+  }
+
+  function pushMenu(items: MenuNode[], title: string) {
+    menuStack.push({ items, cursor: 0, scroll: 0, title });
+    first = true;
+  }
+
+  function popMenu() {
+    if (menuStack.length > 1) {
+      menuStack.pop();
+      first = true;
+    }
+  }
+
+  function getBreadcrumb(): string[] {
+    return menuStack.slice(1).map((f) => f.title ?? "").filter(Boolean);
+  }
 
   while (true) {
     // 상태 갱신
@@ -285,25 +316,36 @@ export async function interactiveMode() {
       headerData.online,
     );
 
-    // 아트: 로그인 시 리드 포켓몬, 아닐 때 ho-oh
+    // 아트
     const artSpecies = loggedIn && headerData.leadPokemon
       ? headerData.leadPokemon
       : "ho-oh";
     const art = await fetchArt(artSpecies);
 
-    // 메뉴 빌드
-    const flat = buildFlatMenu(loggedIn, hasServer);
-    const selectableIndices = getSelectableIndices(flat);
-    if (cursorIdx >= selectableIndices.length) {
-      cursorIdx = 0;
+    // 루트 메뉴 빌드 (상태 변경 시 갱신)
+    const rootItems = filterMenu(MENU_TREE, loggedIn, hasServer);
+    if (menuStack.length === 0) {
+      menuStack.push({ items: rootItems, cursor: 0, scroll: 0 });
+    } else {
+      // 루트 메뉴 항목 갱신 (로그인/서버 상태 변경 반영)
+      menuStack[0].items = rootItems;
     }
 
     enterRaw();
 
-    // 내부 키 루프 (상태가 바뀌지 않는 동안)
     let needRefresh = false;
     while (!needRefresh) {
-      const lines = buildMenuLines(flat, selectableIndices, cursorIdx, art, headerLines, message);
+      const frame = currentFrame();
+      // 커서 범위 보정
+      frame.cursor = Math.min(frame.cursor, Math.max(0, frame.items.length - 1));
+      // 스크롤 보정
+      if (frame.cursor < frame.scroll) frame.scroll = frame.cursor;
+      if (frame.cursor >= frame.scroll + VISIBLE_ITEMS) frame.scroll = frame.cursor - VISIBLE_ITEMS + 1;
+
+      const lines = buildMenuLines(
+        frame.items, frame.cursor, frame.scroll,
+        getBreadcrumb(), art, headerLines, message,
+      );
       lineCount = redraw(lines, lineCount, first);
       first = false;
       message = "";
@@ -317,39 +359,63 @@ export async function interactiveMode() {
       }
 
       if (key === "\x1b[A") {
-        if (cursorIdx > 0) cursorIdx--;
+        if (frame.cursor > 0) frame.cursor--;
         continue;
       }
 
       if (key === "\x1b[B") {
-        if (cursorIdx < selectableIndices.length - 1) cursorIdx++;
+        if (frame.cursor < frame.items.length - 1) frame.cursor++;
+        continue;
+      }
+
+      if (key === "\x1b" || key === "q") {
+        if (menuStack.length > 1) {
+          popMenu();
+        }
         continue;
       }
 
       if (key !== "\r") continue;
 
-      // 선택된 항목 실행
-      const flatIdx = selectableIndices[cursorIdx];
-      const entry = flat[flatIdx];
-      if (!entry || entry.type !== "item") continue;
+      const selected = frame.items[frame.cursor];
+      if (!selected) continue;
 
+      if (isGroup(selected)) {
+        // 서브메뉴로 진입 — 뒤로 항목 추가
+        const backItem: MenuLeaf = { label: "뒤로", cmd: "__back__", desc: "" };
+        const subItems: MenuNode[] = [
+          ...filterMenu(selected.children, loggedIn, hasServer),
+          backItem,
+        ];
+        pushMenu(subItems, selected.label);
+        continue;
+      }
+
+      // 뒤로
+      if (selected.cmd === "__back__") {
+        popMenu();
+        continue;
+      }
+
+      // 명령 실행
       process.stdout.write("\x1b[?25h");
 
-      const result = await executeCommand(entry.item.cmd, []);
+      const result = await executeCommand(selected.cmd);
       if (result === "quit") {
         leaveAltScreen();
         return;
       }
 
       // 로그인 상태 갱신
-      if (entry.item.cmd === "login" || entry.item.cmd === "register") {
+      if (selected.cmd === "login" || selected.cmd === "register") {
         loggedIn = !!(await getToken());
       }
-      if (entry.item.cmd === "logout") {
+      if (selected.cmd === "logout") {
         loggedIn = false;
       }
 
-      // 메뉴로 돌아올 때 전체 새로 그리기
+      // 메뉴로 돌아올 때 — 루트로 복귀, 전체 새로 그리기
+      menuStack.length = 0;
       first = true;
       needRefresh = true;
     }
