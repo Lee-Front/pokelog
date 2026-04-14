@@ -283,8 +283,13 @@ Battle system now supports:
 - `meta.flinchChance` causes target to skip turn when attacker goes first
 - Z-move variants and shadow moves (pp=0) are filtered from moves data during sync
 
+Status conditions now implemented:
+- Primary (one at a time, persists after battle): poison, burn, paralysis, sleep, freeze
+- Volatile (stackable, battle-only): confusion, trap, leech-seed, nightmare, yawn, ingrain, perish-song, disable, torment, embargo, heal-block, infatuation
+- Burn halves physical attack, paralysis halves speed
+- Heal command clears primary status
+
 Still deferred:
-- move `meta.ailment` (status conditions need a separate state machine)
 - multi-hit mechanics (`meta.minHits`/`meta.maxHits`)
 - critical hit rate modifiers (`meta.critRate`)
 
