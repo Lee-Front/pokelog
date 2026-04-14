@@ -1,0 +1,179 @@
+{
+  "rotom": {
+    "type": "catalog",
+    "forms": {
+      "rotom-heat": { "item": null },
+      "rotom-wash": { "item": null },
+      "rotom-frost": { "item": null },
+      "rotom-fan": { "item": null },
+      "rotom-mow": { "item": null }
+    },
+    "revertForm": null
+  },
+  "shaymin": {
+    "type": "toggle",
+    "forms": {
+      "shaymin-sky": { "item": "gracidea" }
+    },
+    "revertForm": null
+  },
+  "giratina": {
+    "type": "held-item",
+    "forms": {
+      "giratina-origin": { "item": "griseous-orb" }
+    },
+    "revertForm": null
+  },
+  "dialga": {
+    "type": "held-item",
+    "forms": {
+      "dialga-origin": { "item": "adamant-crystal" }
+    },
+    "revertForm": null
+  },
+  "palkia": {
+    "type": "held-item",
+    "forms": {
+      "palkia-origin": { "item": "lustrous-globe" }
+    },
+    "revertForm": null
+  },
+  "tornadus": {
+    "type": "toggle",
+    "forms": {
+      "tornadus-therian": { "item": "reveal-glass" }
+    },
+    "revertForm": null
+  },
+  "thundurus": {
+    "type": "toggle",
+    "forms": {
+      "thundurus-therian": { "item": "reveal-glass" }
+    },
+    "revertForm": null
+  },
+  "landorus": {
+    "type": "toggle",
+    "forms": {
+      "landorus-therian": { "item": "reveal-glass" }
+    },
+    "revertForm": null
+  },
+  "enamorus": {
+    "type": "toggle",
+    "forms": {
+      "enamorus-therian": { "item": "reveal-glass" }
+    },
+    "revertForm": null
+  },
+  "hoopa": {
+    "type": "toggle",
+    "forms": {
+      "hoopa-unbound": { "item": "prison-bottle" }
+    },
+    "revertForm": null
+  },
+  "deoxys": {
+    "type": "toggle",
+    "forms": {
+      "deoxys-attack": { "item": "meteorite" },
+      "deoxys-defense": { "item": "meteorite" },
+      "deoxys-speed": { "item": "meteorite" }
+    },
+    "revertForm": null
+  },
+  "genesect": {
+    "type": "held-item",
+    "forms": {
+      "genesect-burn": { "item": "burn-drive" },
+      "genesect-chill": { "item": "chill-drive" },
+      "genesect-douse": { "item": "douse-drive" },
+      "genesect-shock": { "item": "shock-drive" }
+    },
+    "revertForm": null
+  },
+  "arceus": {
+    "type": "held-item",
+    "forms": {
+      "arceus-bug": { "item": "insect-plate" },
+      "arceus-dark": { "item": "dread-plate" },
+      "arceus-dragon": { "item": "draco-plate" },
+      "arceus-electric": { "item": "zap-plate" },
+      "arceus-fairy": { "item": "pixie-plate" },
+      "arceus-fighting": { "item": "fist-plate" },
+      "arceus-fire": { "item": "flame-plate" },
+      "arceus-flying": { "item": "sky-plate" },
+      "arceus-ghost": { "item": "spooky-plate" },
+      "arceus-grass": { "item": "meadow-plate" },
+      "arceus-ground": { "item": "earth-plate" },
+      "arceus-ice": { "item": "icicle-plate" },
+      "arceus-poison": { "item": "toxic-plate" },
+      "arceus-psychic": { "item": "mind-plate" },
+      "arceus-rock": { "item": "stone-plate" },
+      "arceus-steel": { "item": "iron-plate" },
+      "arceus-water": { "item": "splash-plate" }
+    },
+    "revertForm": null
+  },
+  "silvally": {
+    "type": "held-item",
+    "forms": {
+      "silvally-bug": { "item": "bug-memory" },
+      "silvally-dark": { "item": "dark-memory" },
+      "silvally-dragon": { "item": "dragon-memory" },
+      "silvally-electric": { "item": "electric-memory" },
+      "silvally-fairy": { "item": "fairy-memory" },
+      "silvally-fighting": { "item": "fighting-memory" },
+      "silvally-fire": { "item": "fire-memory" },
+      "silvally-flying": { "item": "flying-memory" },
+      "silvally-ghost": { "item": "ghost-memory" },
+      "silvally-grass": { "item": "grass-memory" },
+      "silvally-ground": { "item": "ground-memory" },
+      "silvally-ice": { "item": "ice-memory" },
+      "silvally-poison": { "item": "poison-memory" },
+      "silvally-psychic": { "item": "psychic-memory" },
+      "silvally-rock": { "item": "rock-memory" },
+      "silvally-steel": { "item": "steel-memory" },
+      "silvally-water": { "item": "water-memory" }
+    },
+    "revertForm": null
+  },
+  "oricorio": {
+    "type": "nectar",
+    "forms": {
+      "oricorio-pau": { "item": "yellow-nectar" },
+      "oricorio-pom-pom": { "item": "pink-nectar" },
+      "oricorio-sensu": { "item": "purple-nectar" }
+    },
+    "revertForm": null
+  },
+  "furfrou": {
+    "type": "catalog",
+    "forms": {
+      "furfrou-dandy": { "item": null },
+      "furfrou-debutante": { "item": null },
+      "furfrou-diamond": { "item": null },
+      "furfrou-heart": { "item": null },
+      "furfrou-kabuki": { "item": null },
+      "furfrou-la-reine": { "item": null },
+      "furfrou-matron": { "item": null },
+      "furfrou-pharaoh": { "item": null },
+      "furfrou-star": { "item": null }
+    },
+    "revertForm": null
+  },
+  "zacian": {
+    "type": "held-item",
+    "forms": {
+      "zacian-crowned": { "item": "rusted-sword" }
+    },
+    "revertForm": null
+  },
+  "zamazenta": {
+    "type": "held-item",
+    "forms": {
+      "zamazenta-crowned": { "item": "rusted-shield" }
+    },
+    "revertForm": null
+  }
+}

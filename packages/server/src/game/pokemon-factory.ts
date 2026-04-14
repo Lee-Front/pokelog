@@ -19,7 +19,7 @@ function calcStat(baseStat: number, level: number): number {
   return Math.floor(((baseStat * 2 * level) / 100) + 5);
 }
 
-function buildStats(species: SpeciesData, level: number, nature?: string, variantId?: string | null): { maxHp: number; stats: PokemonStats } {
+export function buildStats(species: SpeciesData, level: number, nature?: string, variantId?: string | null): { maxHp: number; stats: PokemonStats } {
   const baseStats = { ...species.baseStats };
 
   // Apply variant stat overrides

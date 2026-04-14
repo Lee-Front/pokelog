@@ -18,11 +18,19 @@ export interface EquipAction {
   type: "equip" | "unequip" | "evolve" | "back";
 }
 
-export function buildPokemonActions(pokemon: PokemonSummary, hasPendingEvolution: boolean): Array<{ name: string; value: string }> {
+export function buildPokemonActions(
+  pokemon: PokemonSummary,
+  hasPendingEvolution: boolean,
+  hasFormChange = false,
+): Array<{ name: string; value: string }> {
   const actions: Array<{ name: string; value: string }> = [];
 
   if (hasPendingEvolution) {
     actions.push({ name: "Resolve pending evolution", value: "evolve" });
+  }
+
+  if (hasFormChange) {
+    actions.push({ name: "Form Change", value: "form-change" });
   }
 
   if (pokemon.heldItem) {

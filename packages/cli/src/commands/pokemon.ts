@@ -3,10 +3,12 @@ import { apiGet, apiPost } from "../api-client.js";
 import { fetchArt, renderHpBar, sideBySide } from "../ui/display.js";
 import { selectAction } from "../ui/prompts.js";
 import { getPendingEvolutions, resolvePendingEvolutionForPokemon } from "./evolutions.js";
+import { getFormChangeActions } from "../logic/form-change.js";
 
 type PokemonDetail = {
   uid: string;
   species: string;
+  variantId?: string | null;
   nickname: string | null;
   level: number;
   exp: number;
@@ -109,10 +111,19 @@ export async function pokemonCommand(uid: string) {
       console.log(statsStr);
     }
 
+    // Check form change availability
+    const formRulesRes = await apiGet(`/api/game/form-change/rules/${pokemon.species}`);
+    const formChangeForms: string[] = formRulesRes.ok ? (formRulesRes.data.forms as string[]) : [];
+    const formChangeActions = getFormChangeActions(formChangeForms, pokemon.variantId);
+    const hasFormChange = formChangeActions.length > 0;
+
     console.log();
     const action = await selectAction("", [
       ...(hasPendingEvolution
         ? [{ name: "Resolve pending evolution", value: "evolve" as const }]
+        : []),
+      ...(hasFormChange
+        ? [{ name: "Form Change", value: "form-change" as const }]
         : []),
       ...(pokemon.heldItem
         ? [{ name: `Unequip ${pokemon.heldItem}`, value: "unequip" as const }]
@@ -129,6 +140,24 @@ export async function pokemonCommand(uid: string) {
       if (result !== "resolved") {
         return;
       }
+    }
+
+    if (action === "form-change") {
+      const formChoice = await selectAction("Select form", [
+        ...formChangeActions.map((a) => ({ name: a.name, value: a.value })),
+        { name: "Cancel", value: "cancel" },
+      ]);
+      if (formChoice === "cancel") continue;
+
+      const targetFormId = formChoice === "__revert__" ? null : formChoice;
+      const formRes = await apiPost("/api/game/form-change", {
+        pokemonUid: uid,
+        targetFormId,
+      });
+      if (!formRes.ok) {
+        console.error(`Error: ${String(formRes.data.error)}`);
+      }
+      continue;
     }
 
     if (action === "equip") {

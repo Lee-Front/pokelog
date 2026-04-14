@@ -11,6 +11,8 @@ import { equipHeldItem, HeldItemError, unequipHeldItem } from "../game/held-item
 import { buildInventoryCatalogEntry } from "../game/inventory-catalog.js";
 import { PendingEvolutionError, resolvePendingEvolutionChoice } from "../game/pending-evolution.js";
 import { buildLevelEvolutionContext, getEvolutionBranchDiagnostics } from "../game/growth.js";
+import { applyFormChange, FormChangeError, getAvailableForms, getFormChangeRules, hasFormChangeRules } from "../game/form-change.js";
+import { buildStats } from "../game/pokemon-factory.js";
 import {
   acceptTradeRequest,
   cancelTradeRequest,
@@ -810,6 +812,78 @@ gameRoutes.post("/eggs/hatch", async (req: AuthRequest, res: Response) => {
   } catch (err) {
     console.error("Egg hatch error:", err);
     res.status(500).json({ error: "알 부화 중 오류가 발생했습니다" });
+  }
+});
+
+gameRoutes.get("/form-change/rules/:species", async (req: AuthRequest, res: Response) => {
+  try {
+    const species = req.params.species;
+    if (!hasFormChangeRules(species)) {
+      res.status(404).json({ error: `${species} cannot change forms.` });
+      return;
+    }
+
+    const forms = getAvailableForms(species);
+    const rules = getFormChangeRules();
+    const rule = rules[species];
+
+    res.json({ species, rule, forms });
+  } catch (err) {
+    console.error("Form change rules error:", err);
+    res.status(500).json({ error: "Failed to load form change rules." });
+  }
+});
+
+gameRoutes.post("/form-change", async (req: AuthRequest, res: Response) => {
+  try {
+    const { pokemonUid, targetFormId } = req.body;
+    if (!pokemonUid) {
+      res.status(400).json({ error: "pokemonUid is required." });
+      return;
+    }
+
+    const user = await getUser(req.userId!);
+    if (!user) {
+      res.status(404).json({ error: "User not found." });
+      return;
+    }
+
+    const pokemon = user.pokemon.find((p) => p.uid === pokemonUid)
+      ?? user.storage.find((p) => p.uid === pokemonUid);
+
+    if (!pokemon) {
+      res.status(404).json({ error: "Pokemon not found." });
+      return;
+    }
+
+    const result = applyFormChange(user, pokemonUid, targetFormId ?? null);
+
+    // Recalculate stats with variant override
+    const speciesData = getSpeciesByName(pokemon.species);
+    if (speciesData) {
+      const { maxHp, stats } = buildStats(speciesData, pokemon.level, pokemon.nature, pokemon.variantId);
+      const hpRatio = pokemon.maxHp > 0 ? pokemon.hp / pokemon.maxHp : 1;
+      pokemon.maxHp = maxHp;
+      pokemon.hp = Math.max(1, Math.round(maxHp * hpRatio));
+      pokemon.stats = stats;
+    }
+
+    await saveUser(user);
+
+    const formLabel = pokemon.variantId ?? pokemon.species;
+    res.json({
+      message: `${pokemon.species} changed to ${formLabel}.`,
+      pokemon,
+      previousVariantId: result.previousVariantId,
+    });
+  } catch (err) {
+    if (err instanceof FormChangeError) {
+      res.status(err.status).json({ error: err.message });
+      return;
+    }
+
+    console.error("Form change error:", err);
+    res.status(500).json({ error: "Failed to change form." });
   }
 });
 
