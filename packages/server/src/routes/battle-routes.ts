@@ -41,7 +41,7 @@ function wildAttack(
     getTypes(wildSpecies), getTypes(targetSpecies),
   );
 
-  return { damage: result.damage, moveId: chosen.id, message: result.message, missed: result.missed };
+  return { damage: result.damage, moveId: chosen.id, message: result.message, missed: result.missed, priority: moveData.priority ?? 0 };
 }
 
 function hasAlivePartyMembers(user: { party: string[]; pokemon: Array<{ uid: string; hp: number }> }, excludeUid: string): boolean {
@@ -158,7 +158,18 @@ async function handleFight(
   const selectedMove = myMove;
   const selectedMoveData = moveData;
 
-  const turnOrder = determineTurnOrder(myPokemon.stats.speed, battle.wild.stats.speed);
+  // Pre-select wild move to get its priority for turn order
+  const wildAvailableMoves = battle.wild.moves.filter((m) => m.pp > 0);
+  const wildChosenMove = wildAvailableMoves.length > 0
+    ? wildAvailableMoves[Math.floor(Math.random() * wildAvailableMoves.length)]
+    : null;
+  const wildMoveData = wildChosenMove ? getMoveById(wildChosenMove.id) : null;
+  const wildPriority = wildMoveData?.priority ?? 0;
+
+  const turnOrder = determineTurnOrder(
+    myPokemon.stats.speed, battle.wild.stats.speed,
+    selectedMoveData.priority ?? 0, wildPriority,
+  );
 
   function playerAttack() {
     selectedMove.pp -= 1;

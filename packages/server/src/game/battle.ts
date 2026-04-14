@@ -72,7 +72,15 @@ export function calculateDamage(
   return { damage, missed: false, effectiveness: typeMultiplier, message };
 }
 
-export function determineTurnOrder(mySpeed: number, wildSpeed: number): "player" | "wild" {
+export function determineTurnOrder(
+  mySpeed: number,
+  wildSpeed: number,
+  myPriority: number = 0,
+  wildPriority: number = 0,
+): "player" | "wild" {
+  if (myPriority !== wildPriority) {
+    return myPriority > wildPriority ? "player" : "wild";
+  }
   if (mySpeed > wildSpeed) return "player";
   if (wildSpeed > mySpeed) return "wild";
   return Math.random() < 0.5 ? "player" : "wild";

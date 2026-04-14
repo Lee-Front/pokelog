@@ -39,7 +39,15 @@ export async function syncMoves(options = {}) {
     options.concurrency ?? 10,
   );
 
-  const data = details
+  const filtered = details.filter((move) => {
+    // Skip Z-move variants (e.g., acid-downpour--physical)
+    if (move.name.includes("--")) return false;
+    // Skip shadow moves (Colosseum/XD, pp === 0)
+    if (move.pp === 0 || move.pp === null) return false;
+    return true;
+  });
+
+  const data = filtered
     .map((move) => ({
       id: move.name,
       name: pickLocalizedName(move.names, move.name),
