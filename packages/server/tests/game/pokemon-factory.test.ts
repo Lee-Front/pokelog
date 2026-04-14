@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createPokemon, createWildPokemon } from "../../src/game/pokemon-factory.js";
+import { createPokemon, createWildPokemon, wildPokemonToOwned } from "../../src/game/pokemon-factory.js";
 
 describe("createPokemon", () => {
   afterEach(() => {
@@ -74,5 +74,80 @@ describe("createWildPokemon", () => {
 
   it("throws an Error for an unknown species", () => {
     expect(() => createWildPokemon("fakemon", 5)).toThrow("Unknown species: fakemon");
+  });
+
+  it("applies variant baseStatsOverride for arcanine-hisui", () => {
+    // Use a fixed random to get a neutral nature (hardy) so stats are predictable
+    vi.spyOn(Math, "random").mockReturnValue(0.0);
+
+    const base = createWildPokemon("arcanine", 50);
+    const variant = createWildPokemon("arcanine-hisui", 50);
+
+    // arcanine-hisui overrides: hp 90→95, attack 110→115, spAttack 100→95, speed 95→90
+    // defense and spDefense remain unchanged at 80
+    expect(variant.variantId).toBe("arcanine-hisui");
+    expect(variant.species).toBe("arcanine");
+
+    // HP should differ because base hp changed from 90 to 95
+    expect(variant.maxHp).toBeGreaterThan(base.maxHp);
+
+    // Attack should be higher (110→115)
+    expect(variant.stats.attack).toBeGreaterThan(base.stats.attack);
+
+    // Speed should be lower (95→90)
+    expect(variant.stats.speed).toBeLessThan(base.stats.speed);
+
+    // Defense should be the same (not overridden)
+    expect(variant.stats.defense).toBe(base.stats.defense);
+    expect(variant.stats.spDefense).toBe(base.stats.spDefense);
+  });
+
+  it("includes isShiny field", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    const wild = createWildPokemon("rattata", 3);
+    expect(typeof wild.isShiny).toBe("boolean");
+  });
+});
+
+describe("wildPokemonToOwned", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("preserves all fields from the wild pokemon", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+
+    const wild = createWildPokemon("bulbasaur", 10);
+    // Simulate battle damage
+    wild.hp = 5;
+
+    const owned = wildPokemonToOwned(wild);
+
+    expect(owned.species).toBe(wild.species);
+    expect(owned.level).toBe(wild.level);
+    expect(owned.hp).toBe(5); // preserves battle HP
+    expect(owned.maxHp).toBe(wild.maxHp);
+    expect(owned.stats).toEqual(wild.stats);
+    expect(owned.moves).toEqual(wild.moves);
+    expect(owned.nature).toBe(wild.nature);
+    expect(owned.gender).toBe(wild.gender);
+    expect(owned.isShiny).toBe(wild.isShiny);
+    expect(owned.variantId).toBe(wild.variantId);
+    expect(owned.uid).toEqual(expect.any(String));
+    expect(owned.caughtAt).toEqual(expect.any(String));
+    expect(owned.exp).toBe(0);
+    expect(owned.tradeLocked).toBe(false);
+  });
+
+  it("preserves variantId from a variant wild pokemon", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+
+    const wild = createWildPokemon("arcanine-hisui", 30);
+    const owned = wildPokemonToOwned(wild);
+
+    expect(owned.variantId).toBe("arcanine-hisui");
+    expect(owned.species).toBe("arcanine");
+    expect(owned.stats).toEqual(wild.stats);
+    expect(owned.maxHp).toBe(wild.maxHp);
   });
 });

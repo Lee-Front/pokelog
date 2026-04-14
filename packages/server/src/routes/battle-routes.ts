@@ -3,10 +3,10 @@ import type { Response } from "express";
 import { authMiddleware, type AuthRequest } from "../middleware/auth-middleware.js";
 import { getUser, saveUser } from "../storage/user-store.js";
 import { getConfig } from "../storage/config-store.js";
-import { calculateDamage, determineTurnOrder, applyStatChanges, defaultStatStages } from "../game/battle.js";
+import { calculateDamage, determineTurnOrder, applyStatChanges, defaultStatStages, applyStatStageMultiplier } from "../game/battle.js";
 import { attemptCapture, getCatchRate } from "../game/capture.js";
-import { createPokemon } from "../game/pokemon-factory.js";
-import { getMoveById, getSpeciesByName } from "../game/data-loader.js";
+import { wildPokemonToOwned } from "../game/pokemon-factory.js";
+import { getMoveById, getSpeciesByName, getVariants } from "../game/data-loader.js";
 import type { BattleState, MoveData, OwnedPokemon, UserData, StatStages } from "../../../../shared/types.js";
 import { recordDamageTaken } from "../game/battle-progress.js";
 import { decrementItem, healPokemon } from "../game/inventory-utils.js";
@@ -15,7 +15,11 @@ import { recordMoveUsage } from "../game/move-usage.js";
 export const battleRoutes = Router();
 battleRoutes.use(authMiddleware);
 
-function getTypes(species: string): string[] {
+function getTypes(species: string, variantId?: string | null): string[] {
+  if (variantId) {
+    const variant = getVariants().find(v => v.id === variantId);
+    if (variant?.typing) return variant.typing;
+  }
   return getSpeciesByName(species)?.types ?? [];
 }
 
@@ -28,11 +32,14 @@ function wildAttack(
   targetSpecies: string,
   attackerStages?: StatStages,
   defenderStages?: StatStages,
+  preSelectedMove?: { id: string; pp: number; maxPp: number },
+  wildVariantId?: string | null,
+  targetVariantId?: string | null,
 ) {
   const availableMoves = wildMoves.filter((m) => m.pp > 0);
   if (availableMoves.length === 0) return { damage: 0, moveId: null, moveData: null, message: "야생 포켓몬이 발버둥쳤다!" };
 
-  const chosen = availableMoves[Math.floor(Math.random() * availableMoves.length)];
+  const chosen = preSelectedMove ?? availableMoves[Math.floor(Math.random() * availableMoves.length)];
   const moveData: MoveData | null = getMoveById(chosen.id) ?? null;
   if (!moveData) return { damage: 0, moveId: chosen.id, moveData: null, message: "" };
 
@@ -40,7 +47,7 @@ function wildAttack(
 
   const result = calculateDamage(
     wildLevel, wildStats, targetStats, moveData,
-    getTypes(wildSpecies), getTypes(targetSpecies),
+    getTypes(wildSpecies, wildVariantId), getTypes(targetSpecies, targetVariantId),
     attackerStages, defenderStages,
   );
 
@@ -74,10 +81,10 @@ async function handleFainted(
   return true;
 }
 
-/** stat change 적용 (statChance 확인 포함) */
+/** stat change 적용 (statChance 확인 포함, move target에 따라 적용 대상 결정) */
 function maybeApplyStatChanges(
   battle: BattleState,
-  moveData: { statChanges?: Array<{ stat: string; change: number }>; meta?: { statChance?: number } },
+  moveData: { statChanges?: Array<{ stat: string; change: number }>; meta?: { statChance?: number }; target?: string },
   isPlayerMove: boolean,
   log: string[],
 ): void {
@@ -86,12 +93,27 @@ function maybeApplyStatChanges(
   const chance = moveData.meta?.statChance ?? 100;
   if (Math.random() * 100 >= chance) return;
 
-  if (isPlayerMove) {
-    battle.playerStatStages = applyStatChanges(battle.playerStatStages ?? defaultStatStages(), changes);
-  } else {
-    battle.wildStatStages = applyStatChanges(battle.wildStatStages ?? defaultStatStages(), changes);
-  }
+  // Determine target: self-targeting moves buff the user, other moves debuff the target
+  const targetsSelf = moveData.target === "user" || moveData.target === "user-and-allies" || moveData.target === "users-field";
+
   for (const { stat, change } of changes) {
+    const isSelfBuff = targetsSelf || change > 0;
+    // Positive changes (buffs) → apply to move user
+    // Negative changes (debuffs) on opponent-targeting moves → apply to defender
+    if (isSelfBuff) {
+      if (isPlayerMove) {
+        battle.playerStatStages = applyStatChanges(battle.playerStatStages ?? defaultStatStages(), [{ stat, change }]);
+      } else {
+        battle.wildStatStages = applyStatChanges(battle.wildStatStages ?? defaultStatStages(), [{ stat, change }]);
+      }
+    } else {
+      // Debuff applies to the opponent
+      if (isPlayerMove) {
+        battle.wildStatStages = applyStatChanges(battle.wildStatStages ?? defaultStatStages(), [{ stat, change }]);
+      } else {
+        battle.playerStatStages = applyStatChanges(battle.playerStatStages ?? defaultStatStages(), [{ stat, change }]);
+      }
+    }
     const direction = change > 0 ? "올랐다" : "내려갔다";
     log.push(`${stat} 스탯이 ${direction}!`);
   }
@@ -134,11 +156,14 @@ function applyMetaEffects(
 async function doWildAttackAndCheck(
   user: UserData, myPokemon: OwnedPokemon, battle: BattleState,
   log: string[], res: Response,
+  preSelectedWildMove?: { id: string; pp: number; maxPp: number },
 ): Promise<boolean> {
   const wildResult = wildAttack(
     battle.wild.species, battle.wild.level, battle.wild.stats,
     battle.wild.moves, myPokemon.stats, myPokemon.species,
     battle.wildStatStages, battle.playerStatStages,
+    preSelectedWildMove,
+    battle.wild.variantId, myPokemon.variantId,
   );
   const previousHp = myPokemon.hp;
   myPokemon.hp = Math.max(0, myPokemon.hp - wildResult.damage);
@@ -146,8 +171,8 @@ async function doWildAttackAndCheck(
   log.push(`야생 ${battle.wild.species}의 공격! ${wildResult.damage} 데미지!`);
   if (wildResult.message) log.push(wildResult.message);
 
-  // Apply meta effects for wild pokemon
-  if (wildResult.moveData) {
+  // Apply meta effects for wild pokemon (only if the attack didn't miss)
+  if (wildResult.moveData && !wildResult.missed) {
     const metaResult = applyMetaEffects(wildResult.moveData, wildResult.damage, battle.wild.hp, battle.wild.maxHp);
     if (metaResult.hpChange !== 0) {
       battle.wild.hp = Math.max(0, Math.min(battle.wild.maxHp, battle.wild.hp + metaResult.hpChange));
@@ -241,8 +266,10 @@ async function handleFight(
   const wildMoveData = wildChosenMove ? getMoveById(wildChosenMove.id) : null;
   const wildPriority = wildMoveData?.priority ?? 0;
 
+  const playerSpeed = applyStatStageMultiplier(myPokemon.stats.speed, battle.playerStatStages?.speed ?? 0);
+  const wildSpeed = applyStatStageMultiplier(battle.wild.stats.speed, battle.wildStatStages?.speed ?? 0);
   const turnOrder = determineTurnOrder(
-    myPokemon.stats.speed, battle.wild.stats.speed,
+    playerSpeed, wildSpeed,
     selectedMoveData.priority ?? 0, wildPriority,
   );
 
@@ -253,7 +280,7 @@ async function handleFight(
     recordMoveUsage(myPokemon, selectedMove.id);
     const result = calculateDamage(
       myPokemon.level, myPokemon.stats, battle.wild.stats, selectedMoveData,
-      getTypes(myPokemon.species), getTypes(battle.wild.species),
+      getTypes(myPokemon.species, myPokemon.variantId), getTypes(battle.wild.species, battle.wild.variantId),
       battle.playerStatStages, battle.wildStatStages,
     );
     battle.wild.hp = Math.max(0, battle.wild.hp - result.damage);
@@ -292,10 +319,10 @@ async function handleFight(
     if (playerCausedFlinch) {
       log.push(`야생 ${battle.wild.species}은(는) 풀이 죽어 움직이지 못했다!`);
     } else {
-      if (await doWildAttackAndCheck(user, myPokemon, battle, log, res)) return;
+      if (await doWildAttackAndCheck(user, myPokemon, battle, log, res, wildChosenMove ?? undefined)) return;
     }
   } else {
-    if (await doWildAttackAndCheck(user, myPokemon, battle, log, res)) return;
+    if (await doWildAttackAndCheck(user, myPokemon, battle, log, res, wildChosenMove ?? undefined)) return;
     playerAttack();
     if (battle.wild.hp <= 0) {
       log.push(`야생 ${battle.wild.species}이(가) 쓰러졌다!`);
@@ -334,8 +361,7 @@ async function handleCatch(
 
   if (caught) {
     log.push(`야생 ${battle.wild.species}을(를) 잡았다!`);
-    const newPokemon = createPokemon(battle.wild.species, battle.wild.level);
-    newPokemon.hp = battle.wild.hp;
+    const newPokemon = wildPokemonToOwned(battle.wild);
 
     if (user.party.length < 6) {
       user.pokemon.push(newPokemon);

@@ -145,6 +145,7 @@ export interface WildPokemon {
   nature?: string;
   gender?: PokemonGender;
   ability?: string;
+  isShiny?: boolean;
 }
 
 export interface PendingEvent {

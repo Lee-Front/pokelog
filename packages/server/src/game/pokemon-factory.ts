@@ -19,14 +19,24 @@ function calcStat(baseStat: number, level: number): number {
   return Math.floor(((baseStat * 2 * level) / 100) + 5);
 }
 
-function buildStats(species: SpeciesData, level: number, nature?: string): { maxHp: number; stats: PokemonStats } {
-  const maxHp = calcHp(species.baseStats.hp, level);
+function buildStats(species: SpeciesData, level: number, nature?: string, variantId?: string | null): { maxHp: number; stats: PokemonStats } {
+  const baseStats = { ...species.baseStats };
+
+  // Apply variant stat overrides
+  if (variantId) {
+    const variant = getVariants().find(v => v.id === variantId);
+    if (variant?.baseStatsOverride) {
+      Object.assign(baseStats, variant.baseStatsOverride);
+    }
+  }
+
+  const maxHp = calcHp(baseStats.hp, level);
   const stats: PokemonStats = {
-    attack: calcStat(species.baseStats.attack, level),
-    defense: calcStat(species.baseStats.defense, level),
-    speed: calcStat(species.baseStats.speed, level),
-    spAttack: calcStat(species.baseStats.spAttack, level),
-    spDefense: calcStat(species.baseStats.spDefense, level),
+    attack: calcStat(baseStats.attack, level),
+    defense: calcStat(baseStats.defense, level),
+    speed: calcStat(baseStats.speed, level),
+    spAttack: calcStat(baseStats.spAttack, level),
+    spDefense: calcStat(baseStats.spDefense, level),
   };
   applyNatureModifier(stats, nature);
   return { maxHp, stats };
@@ -93,7 +103,7 @@ export function createPokemon(species: string, level: number): OwnedPokemon {
   }
 
   const nature = pickRandomNature();
-  const { maxHp, stats } = buildStats(speciesData, level, nature);
+  const { maxHp, stats } = buildStats(speciesData, level, nature, variantId);
   const moves = buildMoves(speciesData, level);
 
   return {
@@ -128,7 +138,7 @@ export function createWildPokemon(species: string, level: number): WildPokemon {
   }
 
   const nature = pickRandomNature();
-  const { maxHp, stats } = buildStats(speciesData, level, nature);
+  const { maxHp, stats } = buildStats(speciesData, level, nature, variantId);
   const moves = buildMoves(speciesData, level);
 
   return {
@@ -142,6 +152,33 @@ export function createWildPokemon(species: string, level: number): WildPokemon {
     nature,
     gender: resolvePokemonGender(speciesData.genderRate, Math.random()),
     ability: speciesData.abilities?.normal[0] ?? undefined,
+    isShiny: Math.random() < (1 / 4096),
+  };
+}
+
+export function wildPokemonToOwned(wild: WildPokemon): OwnedPokemon {
+  const speciesData = getSpeciesByName(wild.species);
+  return {
+    uid: crypto.randomUUID(),
+    species: wild.species,
+    variantId: wild.variantId ?? null,
+    nickname: null,
+    level: wild.level,
+    exp: 0,
+    hp: wild.hp,
+    maxHp: wild.maxHp,
+    stats: { ...wild.stats },
+    moves: wild.moves.map(m => ({ ...m })),
+    caughtAt: new Date().toISOString(),
+    gender: wild.gender ?? null,
+    friendship: speciesData?.baseHappiness ?? 70,
+    heldItem: null,
+    abilityId: wild.ability ?? speciesData?.abilities?.normal[0] ?? null,
+    moveUsageCounts: {},
+    damageTakenTotal: 0,
+    tradeLocked: false,
+    nature: wild.nature ?? "hardy",
+    isShiny: wild.isShiny ?? false,
   };
 }
 
