@@ -103,7 +103,7 @@ describe("calculateDamage with stat stages", () => {
   it("applies stat stages to attack and defense", () => {
     // random() call 1: accuracy check → 0.5 (hit for accuracy 100)
     // random() call 2: randomFactor → 0.0 (gives 0.85)
-    randomSpy.mockReturnValueOnce(0.5).mockReturnValueOnce(0.0);
+    randomSpy.mockReturnValueOnce(0.5).mockReturnValueOnce(0.5).mockReturnValueOnce(0.0);
 
     const attackerStats: PokemonStats = { attack: 50, defense: 40, speed: 30, spAttack: 40, spDefense: 40 };
     const defenderStats: PokemonStats = { attack: 40, defense: 40, speed: 30, spAttack: 40, spDefense: 40 };
@@ -123,7 +123,7 @@ describe("calculateDamage with stat stages", () => {
     const baseline = calculateDamage(10, attackerStats, defenderStats, move, ["normal"], ["normal"]);
 
     // With +2 attack stage: attack effectively doubles (50 -> 100)
-    randomSpy.mockReturnValueOnce(0.5).mockReturnValueOnce(0.0);
+    randomSpy.mockReturnValueOnce(0.5).mockReturnValueOnce(0.5).mockReturnValueOnce(0.0);
     const boosted = calculateDamage(
       10, attackerStats, defenderStats, move, ["normal"], ["normal"],
       { attack: 2, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
@@ -131,7 +131,7 @@ describe("calculateDamage with stat stages", () => {
     expect(boosted.damage).toBeGreaterThan(baseline.damage);
 
     // With +2 defense stage on defender: defense doubles (40 -> 80)
-    randomSpy.mockReturnValueOnce(0.5).mockReturnValueOnce(0.0);
+    randomSpy.mockReturnValueOnce(0.5).mockReturnValueOnce(0.5).mockReturnValueOnce(0.0);
     const walled = calculateDamage(
       10, attackerStats, defenderStats, move, ["normal"], ["normal"],
       undefined,
@@ -141,7 +141,7 @@ describe("calculateDamage with stat stages", () => {
   });
 
   it("works without stat stages (backward compatible)", () => {
-    randomSpy.mockReturnValueOnce(0.5).mockReturnValueOnce(0.0);
+    randomSpy.mockReturnValueOnce(0.5).mockReturnValueOnce(0.5).mockReturnValueOnce(0.0);
 
     const attackerStats: PokemonStats = { attack: 50, defense: 40, speed: 30, spAttack: 40, spDefense: 40 };
     const defenderStats: PokemonStats = { attack: 40, defense: 40, speed: 30, spAttack: 40, spDefense: 40 };
@@ -164,7 +164,7 @@ describe("calculateDamage with stat stages", () => {
   });
 
   it("uses spAttack/spDefense stages for special moves", () => {
-    randomSpy.mockReturnValueOnce(0.5).mockReturnValueOnce(0.0);
+    randomSpy.mockReturnValueOnce(0.5).mockReturnValueOnce(0.5).mockReturnValueOnce(0.0);
 
     const attackerStats: PokemonStats = { attack: 40, defense: 40, speed: 30, spAttack: 60, spDefense: 40 };
     const defenderStats: PokemonStats = { attack: 40, defense: 40, speed: 30, spAttack: 40, spDefense: 40 };
@@ -184,7 +184,7 @@ describe("calculateDamage with stat stages", () => {
     const baseline = calculateDamage(10, attackerStats, defenderStats, move, ["fire"], ["normal"]);
 
     // With +2 spAttack stage
-    randomSpy.mockReturnValueOnce(0.5).mockReturnValueOnce(0.0);
+    randomSpy.mockReturnValueOnce(0.5).mockReturnValueOnce(0.5).mockReturnValueOnce(0.0);
     const boosted = calculateDamage(
       10, attackerStats, defenderStats, move, ["fire"], ["normal"],
       { attack: 0, defense: 0, spAttack: 2, spDefense: 0, speed: 0 },

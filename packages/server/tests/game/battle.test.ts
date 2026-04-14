@@ -16,7 +16,7 @@ describe("calculateDamage", () => {
   it("calculates physical damage with neutral effectiveness", () => {
     // random() call 1: accuracy check (hit if < accuracy/100) → 0.5 (hit for accuracy 100)
     // random() call 2: randomFactor → 0.0 (gives 0.85)
-    randomSpy.mockReturnValueOnce(0.5).mockReturnValueOnce(0.0);
+    randomSpy.mockReturnValueOnce(0.5).mockReturnValueOnce(0.5).mockReturnValueOnce(0.0);
 
     const attackerStats: PokemonStats = { attack: 50, defense: 40, speed: 30, spAttack: 40, spDefense: 40 };
     const defenderStats: PokemonStats = { attack: 40, defense: 40, speed: 30, spAttack: 40, spDefense: 40 };
@@ -40,7 +40,7 @@ describe("calculateDamage", () => {
   });
 
   it("calculates super effective damage (fire vs grass = 2.0)", () => {
-    randomSpy.mockReturnValueOnce(0.5).mockReturnValueOnce(0.0);
+    randomSpy.mockReturnValueOnce(0.5).mockReturnValueOnce(0.5).mockReturnValueOnce(0.0);
 
     const attackerStats: PokemonStats = { attack: 50, defense: 40, speed: 30, spAttack: 60, spDefense: 40 };
     const defenderStats: PokemonStats = { attack: 40, defense: 40, speed: 30, spAttack: 40, spDefense: 40 };
@@ -65,7 +65,7 @@ describe("calculateDamage", () => {
   });
 
   it("calculates not very effective damage (fire vs water = 0.5)", () => {
-    randomSpy.mockReturnValueOnce(0.5).mockReturnValueOnce(0.0);
+    randomSpy.mockReturnValueOnce(0.5).mockReturnValueOnce(0.5).mockReturnValueOnce(0.0);
 
     const attackerStats: PokemonStats = { attack: 50, defense: 40, speed: 30, spAttack: 60, spDefense: 40 };
     const defenderStats: PokemonStats = { attack: 40, defense: 40, speed: 30, spAttack: 40, spDefense: 40 };
@@ -90,7 +90,7 @@ describe("calculateDamage", () => {
   });
 
   it("calculates no effect (electric vs ground = 0)", () => {
-    randomSpy.mockReturnValueOnce(0.5).mockReturnValueOnce(0.0);
+    randomSpy.mockReturnValueOnce(0.5).mockReturnValueOnce(0.5).mockReturnValueOnce(0.0);
 
     const attackerStats: PokemonStats = { attack: 50, defense: 40, speed: 30, spAttack: 60, spDefense: 40 };
     const defenderStats: PokemonStats = { attack: 40, defense: 40, speed: 30, spAttack: 40, spDefense: 40 };
@@ -158,6 +158,181 @@ describe("calculateDamage", () => {
     const result = calculateDamage(10, attackerStats, defenderStats, move, ["normal"], ["normal"]);
 
     expect(result.damage).toBe(0);
+  });
+
+  it("applies critical hit multiplier", () => {
+    // Non-crit run: accuracy hit, crit miss (0.5*24=12>=1), randomFactor 0.0
+    randomSpy.mockReturnValueOnce(0.5).mockReturnValueOnce(0.5).mockReturnValueOnce(0.0);
+
+    const attackerStats: PokemonStats = { attack: 50, defense: 40, speed: 30, spAttack: 40, spDefense: 40 };
+    const defenderStats: PokemonStats = { attack: 40, defense: 40, speed: 30, spAttack: 40, spDefense: 40 };
+
+    const move: MoveData = {
+      id: "tackle",
+      name: "몸통박치기",
+      type: "normal",
+      category: "physical",
+      power: 40,
+      accuracy: 100,
+      pp: 35,
+      description: "",
+    };
+
+    const noCrit = calculateDamage(10, attackerStats, defenderStats, move, ["normal"], ["normal"]);
+    expect(noCrit.critical).toBe(false);
+
+    // Crit run: accuracy hit, crit hit (0.0*24=0<1), randomFactor 0.0
+    randomSpy.mockReturnValueOnce(0.5).mockReturnValueOnce(0.0).mockReturnValueOnce(0.0);
+    const withCrit = calculateDamage(10, attackerStats, defenderStats, move, ["normal"], ["normal"]);
+    expect(withCrit.critical).toBe(true);
+    expect(withCrit.damage).toBe(Math.floor(noCrit.damage * 1.5));
+  });
+
+  it("critical hit ignores negative attacker stages", () => {
+    const attackerStats: PokemonStats = { attack: 50, defense: 40, speed: 30, spAttack: 40, spDefense: 40 };
+    const defenderStats: PokemonStats = { attack: 40, defense: 40, speed: 30, spAttack: 40, spDefense: 40 };
+
+    const move: MoveData = {
+      id: "tackle",
+      name: "몸통박치기",
+      type: "normal",
+      category: "physical",
+      power: 40,
+      accuracy: 100,
+      pp: 35,
+      description: "",
+    };
+
+    // Non-crit with -2 attack stage: accuracy, no crit, randomFactor
+    randomSpy.mockReturnValueOnce(0.5).mockReturnValueOnce(0.5).mockReturnValueOnce(0.0);
+    const noCritDebuffed = calculateDamage(
+      10, attackerStats, defenderStats, move, ["normal"], ["normal"],
+      { attack: -2, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+    );
+
+    // Crit with -2 attack stage: should ignore the -2 and use 0
+    randomSpy.mockReturnValueOnce(0.5).mockReturnValueOnce(0.0).mockReturnValueOnce(0.0);
+    const critDebuffed = calculateDamage(
+      10, attackerStats, defenderStats, move, ["normal"], ["normal"],
+      { attack: -2, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+    );
+
+    // Crit with no stage debuff (baseline)
+    randomSpy.mockReturnValueOnce(0.5).mockReturnValueOnce(0.0).mockReturnValueOnce(0.0);
+    const critNoDebuff = calculateDamage(10, attackerStats, defenderStats, move, ["normal"], ["normal"]);
+
+    expect(critDebuffed.critical).toBe(true);
+    // Crit should ignore -2 attack, so damage equals crit with stage 0
+    expect(critDebuffed.damage).toBe(critNoDebuff.damage);
+    // And crit-debuffed should be much higher than non-crit-debuffed
+    expect(critDebuffed.damage).toBeGreaterThan(noCritDebuffed.damage);
+  });
+
+  it("critical hit ignores positive defender stages", () => {
+    const attackerStats: PokemonStats = { attack: 50, defense: 40, speed: 30, spAttack: 40, spDefense: 40 };
+    const defenderStats: PokemonStats = { attack: 40, defense: 40, speed: 30, spAttack: 40, spDefense: 40 };
+
+    const move: MoveData = {
+      id: "tackle",
+      name: "몸통박치기",
+      type: "normal",
+      category: "physical",
+      power: 40,
+      accuracy: 100,
+      pp: 35,
+      description: "",
+    };
+
+    // Non-crit with +2 defense stage on defender
+    randomSpy.mockReturnValueOnce(0.5).mockReturnValueOnce(0.5).mockReturnValueOnce(0.0);
+    const noCritBuffed = calculateDamage(
+      10, attackerStats, defenderStats, move, ["normal"], ["normal"],
+      undefined,
+      { attack: 0, defense: 2, spAttack: 0, spDefense: 0, speed: 0 },
+    );
+
+    // Crit with +2 defense stage on defender: should ignore the +2
+    randomSpy.mockReturnValueOnce(0.5).mockReturnValueOnce(0.0).mockReturnValueOnce(0.0);
+    const critBuffed = calculateDamage(
+      10, attackerStats, defenderStats, move, ["normal"], ["normal"],
+      undefined,
+      { attack: 0, defense: 2, spAttack: 0, spDefense: 0, speed: 0 },
+    );
+
+    // Crit with no defense buff (baseline)
+    randomSpy.mockReturnValueOnce(0.5).mockReturnValueOnce(0.0).mockReturnValueOnce(0.0);
+    const critNoBuff = calculateDamage(10, attackerStats, defenderStats, move, ["normal"], ["normal"]);
+
+    expect(critBuffed.critical).toBe(true);
+    // Crit should ignore +2 defense, so damage equals crit with stage 0
+    expect(critBuffed.damage).toBe(critNoBuff.damage);
+    // And crit-buffed should be much higher than non-crit-buffed
+    expect(critBuffed.damage).toBeGreaterThan(noCritBuffed.damage);
+  });
+
+  it("no critical hit when critRate is 0 and roll is high", () => {
+    // accuracy hit, crit roll high (0.9*24=21.6>=1 → no crit), randomFactor 0.0
+    randomSpy.mockReturnValueOnce(0.5).mockReturnValueOnce(0.9).mockReturnValueOnce(0.0);
+
+    const attackerStats: PokemonStats = { attack: 50, defense: 40, speed: 30, spAttack: 40, spDefense: 40 };
+    const defenderStats: PokemonStats = { attack: 40, defense: 40, speed: 30, spAttack: 40, spDefense: 40 };
+
+    const move: MoveData = {
+      id: "tackle",
+      name: "몸통박치기",
+      type: "normal",
+      category: "physical",
+      power: 40,
+      accuracy: 100,
+      pp: 35,
+      description: "",
+    };
+
+    const result = calculateDamage(10, attackerStats, defenderStats, move, ["normal"], ["normal"]);
+    expect(result.critical).toBe(false);
+  });
+
+  it("DamageResult includes critical field", () => {
+    // Test miss case
+    randomSpy.mockReturnValueOnce(0.5);
+    const attackerStats: PokemonStats = { attack: 50, defense: 40, speed: 30, spAttack: 40, spDefense: 40 };
+    const defenderStats: PokemonStats = { attack: 40, defense: 40, speed: 30, spAttack: 40, spDefense: 40 };
+
+    const missMove: MoveData = {
+      id: "test-miss",
+      name: "test",
+      type: "normal",
+      category: "physical",
+      power: 40,
+      accuracy: 0,
+      pp: 10,
+      description: "",
+    };
+    const missResult = calculateDamage(10, attackerStats, defenderStats, missMove, ["normal"], ["normal"]);
+    expect(missResult).toHaveProperty("critical");
+    expect(missResult.critical).toBe(false);
+
+    // Test hit case (no crit)
+    randomSpy.mockReturnValueOnce(0.5).mockReturnValueOnce(0.5).mockReturnValueOnce(0.0);
+    const hitMove: MoveData = {
+      id: "tackle",
+      name: "몸통박치기",
+      type: "normal",
+      category: "physical",
+      power: 40,
+      accuracy: 100,
+      pp: 35,
+      description: "",
+    };
+    const hitResult = calculateDamage(10, attackerStats, defenderStats, hitMove, ["normal"], ["normal"]);
+    expect(hitResult).toHaveProperty("critical");
+    expect(hitResult.critical).toBe(false);
+
+    // Test hit case (with crit)
+    randomSpy.mockReturnValueOnce(0.5).mockReturnValueOnce(0.0).mockReturnValueOnce(0.0);
+    const critResult = calculateDamage(10, attackerStats, defenderStats, hitMove, ["normal"], ["normal"]);
+    expect(critResult).toHaveProperty("critical");
+    expect(critResult.critical).toBe(true);
   });
 });
 

@@ -63,4 +63,49 @@ describe("trade-store", () => {
     expect(stored.some((trade) => trade.id === "resolved-0")).toBe(false);
     expect(stored.some((trade) => trade.id === `resolved-${tradeStoreModule.MAX_RESOLVED_TRADES + 4}`)).toBe(true);
   });
+
+  it("archives trades beyond MAX_RESOLVED_TRADES instead of dropping", async () => {
+    const count = tradeStoreModule.MAX_RESOLVED_TRADES + 5;
+    const trades = Array.from({ length: count }, (_, index) => (
+      createResolvedTrade(
+        `r-${index}`,
+        new Date(Date.UTC(2026, 3, 1, 0, 0, index)).toISOString(),
+      )
+    ));
+
+    await tradeStoreModule.saveTrades(trades);
+    // Allow fire-and-forget archiveTrades to settle
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
+    const active = await tradeStoreModule.getTrades();
+    expect(active.filter((t) => t.status !== "pending")).toHaveLength(tradeStoreModule.MAX_RESOLVED_TRADES);
+
+    const archivePath = path.join(tmpDir, "trades", "trades-archive.json");
+    const archived = JSON.parse(fs.readFileSync(archivePath, "utf-8")) as TradeRecord[];
+    expect(archived).toHaveLength(5);
+
+    // The oldest 5 should be archived (indices 0..4 — lowest updatedAt)
+    for (let i = 0; i < 5; i++) {
+      expect(archived.some((t) => t.id === `r-${i}`)).toBe(true);
+    }
+  });
+
+  it("getArchivedTrades returns archived records", async () => {
+    const count = tradeStoreModule.MAX_RESOLVED_TRADES + 3;
+    const trades = Array.from({ length: count }, (_, index) => (
+      createResolvedTrade(
+        `a-${index}`,
+        new Date(Date.UTC(2026, 3, 2, 0, 0, index)).toISOString(),
+      )
+    ));
+
+    await tradeStoreModule.saveTrades(trades);
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
+    const archived = await tradeStoreModule.getArchivedTrades();
+    expect(archived).toHaveLength(3);
+    for (let i = 0; i < 3; i++) {
+      expect(archived.some((t) => t.id === `a-${i}`)).toBe(true);
+    }
+  });
 });

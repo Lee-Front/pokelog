@@ -26,7 +26,7 @@ import {
 } from "../game/battle-forms.js";
 import {
   checkPrimalReversion, canMegaEvolve, canGigantamax,
-  getTransformedStats, applyGmaxHp, revertGmaxHp,
+  getTransformedStats, applyGmaxHp, revertGmaxHp, getGmaxMove,
 } from "../game/battle-transformations.js";
 
 export const battleRoutes = Router();
@@ -651,7 +651,20 @@ async function handleFight(
   }
 
   const selectedMove = myMove;
-  const selectedMoveData = moveData;
+  let selectedMoveData = moveData;
+
+  // G-Max move substitution: when Gigantamaxed, replace matching-type moves
+  if (battle.transformationType === "gigantamax" && selectedMoveData.category !== "status") {
+    const gmaxSpecies = myPokemon.variantId?.replace(/-gmax$/, "") ?? myPokemon.species;
+    const gmaxMoveId = getGmaxMove(gmaxSpecies, selectedMoveData.type);
+    if (gmaxMoveId) {
+      const gmaxMoveData = getMoveById(gmaxMoveId);
+      if (gmaxMoveData) {
+        selectedMoveData = gmaxMoveData;
+        log.push(`${selectedMove.id}이(가) ${gmaxMoveData.name}(으)로 변했다!`);
+      }
+    }
+  }
 
   // Pre-select wild move to get its priority for turn order
   const wildAvailableMoves = battle.wild.moves.filter((m) => m.pp > 0);

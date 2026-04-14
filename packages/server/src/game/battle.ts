@@ -31,6 +31,7 @@ export interface DamageResult {
   missed: boolean;
   effectiveness: number;
   message: string;
+  critical: boolean;
 }
 
 export function calculateDamage(
@@ -49,20 +50,31 @@ export function calculateDamage(
   // Accuracy check
   const accuracyRoll = Math.random() * 100;
   if (accuracyRoll >= move.accuracy) {
-    return { damage: 0, missed: true, effectiveness: 1, message: "공격이 빗나갔다!" };
+    return { damage: 0, missed: true, effectiveness: 1, message: "공격이 빗나갔다!", critical: false };
   }
 
   // Status moves (power 0): skip damage
   if (move.power === 0) {
-    return { damage: 0, missed: false, effectiveness: 1, message: "" };
+    return { damage: 0, missed: false, effectiveness: 1, message: "", critical: false };
   }
 
+  // Critical hit check
+  const critStage = move.meta?.critRate ?? 0;
+  const critThresholds = [24, 8, 2, 1]; // stage 0=1/24, 1=1/8, 2=1/2, 3=always
+  const critDenominator = critThresholds[Math.min(critStage, 3)];
+  const isCritical = Math.random() * critDenominator < 1;
+
   // Determine atk/def based on category, applying stat stages
+  // If critical: ignore negative attacker stages and positive defender stages
   const isPhysical = move.category === "physical";
   const baseAtk = isPhysical ? attackerStats.attack : attackerStats.spAttack;
   const baseDef = isPhysical ? defenderStats.defense : defenderStats.spDefense;
-  const atkStage = attackerStages ? (isPhysical ? attackerStages.attack : attackerStages.spAttack) : 0;
-  const defStage = defenderStages ? (isPhysical ? defenderStages.defense : defenderStages.spDefense) : 0;
+  let atkStage = attackerStages ? (isPhysical ? attackerStages.attack : attackerStages.spAttack) : 0;
+  let defStage = defenderStages ? (isPhysical ? defenderStages.defense : defenderStages.spDefense) : 0;
+  if (isCritical) {
+    atkStage = Math.max(atkStage, 0);
+    defStage = Math.min(defStage, 0);
+  }
   const atk = applyStatStageMultiplier(baseAtk, atkStage);
   const def = applyStatStageMultiplier(baseDef, defStage);
 
@@ -87,11 +99,14 @@ export function calculateDamage(
   }
 
   if (typeMultiplier === 0) {
-    return { damage: 0, missed: false, effectiveness: 0, message };
+    return { damage: 0, missed: false, effectiveness: 0, message, critical: false };
   }
 
   // STAB (Same-Type Attack Bonus)
   const stab = attackerTypes.includes(move.type) ? 1.5 : 1.0;
+
+  // Critical hit multiplier
+  const critMultiplier = isCritical ? 1.5 : 1.0;
 
   // Random factor
   const randomFactor = 0.85 + Math.random() * 0.15;
@@ -103,10 +118,11 @@ export function calculateDamage(
     * stab
     * typeMultiplier
     * weatherModifier
+    * critMultiplier
     * randomFactor,
   );
 
-  return { damage, missed: false, effectiveness: typeMultiplier, message };
+  return { damage, missed: false, effectiveness: typeMultiplier, message, critical: isCritical };
 }
 
 export function determineTurnOrder(

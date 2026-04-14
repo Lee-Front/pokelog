@@ -10,6 +10,10 @@ function tradeStorePath(): string {
   return path.join(getDataDir(), "trades", "trades.json");
 }
 
+function archivePath(): string {
+  return path.join(getDataDir(), "trades", "trades-archive.json");
+}
+
 export async function getTrades(): Promise<TradeRecord[]> {
   const trades = await readJson<TradeRecord[]>(tradeStorePath());
   return Array.isArray(trades) ? trades : [];
@@ -25,10 +29,25 @@ function pruneTrades(trades: TradeRecord[]): TradeRecord[] {
     .filter((trade) => trade.status !== "pending")
     .sort((left, right) => (
       (right.updatedAt || right.createdAt).localeCompare(left.updatedAt || left.createdAt)
-    ))
-    .slice(0, MAX_RESOLVED_TRADES);
+    ));
 
-  return [...pending, ...resolved];
+  if (resolved.length > MAX_RESOLVED_TRADES) {
+    const toArchive = resolved.slice(MAX_RESOLVED_TRADES);
+    archiveTrades(toArchive); // async fire-and-forget
+    return [...pending, ...resolved.slice(0, MAX_RESOLVED_TRADES)];
+  }
+
+  return trades;
+}
+
+async function archiveTrades(trades: TradeRecord[]): Promise<void> {
+  const existing = await readJson<TradeRecord[]>(archivePath()) ?? [];
+  const merged = [...existing, ...trades];
+  await writeJson(archivePath(), merged);
+}
+
+export async function getArchivedTrades(): Promise<TradeRecord[]> {
+  return await readJson<TradeRecord[]>(archivePath()) ?? [];
 }
 
 export function createTradeRecord(input: {

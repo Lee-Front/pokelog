@@ -6,6 +6,7 @@ import {
   applyGmaxHp,
   revertGmaxHp,
   getMegaVariantForItem,
+  getGmaxMove,
 } from "../../src/game/battle-transformations.js";
 import type { OwnedPokemon, BattleState } from "../../../../shared/types.js";
 
@@ -287,6 +288,32 @@ describe("battle-transformations", () => {
       const result = revertGmaxHp(0, 150, 100);
       expect(result.hp).toBe(0);
       expect(result.maxHp).toBe(100);
+    });
+  });
+
+  describe("getGmaxMove", () => {
+    it("returns correct move for charizard + fire", () => {
+      expect(getGmaxMove("charizard", "fire")).toBe("g-max-wildfire");
+    });
+
+    it("returns correct move for venusaur + grass", () => {
+      expect(getGmaxMove("venusaur", "grass")).toBe("g-max-vine-lash");
+    });
+
+    it("returns correct move for urshifu-rapid-strike + water", () => {
+      expect(getGmaxMove("urshifu-rapid-strike", "water")).toBe("g-max-rapid-flow");
+    });
+
+    it("returns null for non-gmax species", () => {
+      expect(getGmaxMove("rattata", "normal")).toBeNull();
+    });
+
+    it("returns null for wrong type on gmax species", () => {
+      expect(getGmaxMove("charizard", "water")).toBeNull();
+    });
+
+    it("returns null for charizard + normal (wrong type)", () => {
+      expect(getGmaxMove("charizard", "normal")).toBeNull();
     });
   });
 });

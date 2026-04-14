@@ -1,6 +1,8 @@
+import { readFileSync } from "node:fs";
 import type { OwnedPokemon, BattleState, PokemonStats } from "../../../../shared/types.js";
 import { getVariants, getSpeciesByName } from "./data-loader.js";
 import { buildStats } from "./pokemon-factory.js";
+import { projectPath } from "../paths.js";
 
 export type TransformationType = "mega" | "gigantamax" | "primal";
 
@@ -197,4 +199,43 @@ export function revertGmaxHp(
 ): { hp: number; maxHp: number } {
   const newHp = Math.floor((hp * originalMaxHp) / maxHp);
   return { hp: newHp, maxHp: originalMaxHp };
+}
+
+// ── G-Max exclusive moves ──
+
+type GmaxMoveEntry = { type: string; move: string };
+type GmaxMoveMap = Record<string, GmaxMoveEntry>;
+
+let gmaxMoveCache: GmaxMoveMap | null = null;
+
+function getGmaxMoveMap(): GmaxMoveMap {
+  if (!gmaxMoveCache) {
+    try {
+      gmaxMoveCache = JSON.parse(
+        readFileSync(projectPath("data/pokemon/gmax-moves.json"), "utf-8"),
+      ) as GmaxMoveMap;
+    } catch {
+      gmaxMoveCache = {};
+    }
+  }
+  return gmaxMoveCache;
+}
+
+/**
+ * Get the G-Max exclusive move for a given species + move type.
+ *
+ * When a Gigantamaxed Pokemon uses a damaging move whose type matches its
+ * exclusive G-Max move type, this function returns the G-Max move ID.
+ *
+ * The `species` parameter should be the base species name (e.g. "charizard"),
+ * or the variant prefix for variant-based gmax forms (e.g. "urshifu-rapid-strike").
+ *
+ * Returns null if there is no matching G-Max move.
+ */
+export function getGmaxMove(species: string, moveType: string): string | null {
+  const map = getGmaxMoveMap();
+  const entry = map[species];
+  if (!entry) return null;
+  if (entry.type !== moveType) return null;
+  return entry.move;
 }
