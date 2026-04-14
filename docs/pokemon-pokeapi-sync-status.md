@@ -313,11 +313,34 @@ Evolution now supports `targetVariantId`:
 - Pokemon detail screen shows held item, nature, gender, shiny status
 - Equip/unequip held items available from pokemon detail screen
 
+## Runtime Form Change Status
+
+Item-based form changes (20 species):
+- catalog: rotom (5 appliance forms)
+- toggle: giratina, shaymin, hoopa, deoxys, dialga, palkia, forces of nature (4), furfrou
+- held-item: arceus (17 plates), silvally (17 memories), genesect (4 drives), zacian, zamazenta
+- nectar: oricorio (4 styles)
+- API: `POST /api/game/form-change { pokemonUid, targetFormId }`
+
+Battle form changes (11 species):
+- Weather: castform (3 forms), cherrim (sunshine)
+- Stance: aegislash (blade/shield)
+- HP threshold: wishiwashi, minior, darmanitan, zygarde
+- Turn-based: morpeko
+- Move-based: meloetta (relic-song)
+- Hit-based: eiscue, cramorant
+- All revert on battle end
+
+Weather system:
+- Types: sun, rain, hail, sandstorm (5-turn duration)
+- Moves: sunny-day, rain-dance, hail, sandstorm
+- Type modifiers: sun boosts fire/weakens water, rain inverse
+- Chip damage: hail (non-ice), sandstorm (non-rock/ground/steel)
+
 ## Next Recommended Work
 
-1. Add reversible form change systems (Castform, Rotom, Aegislash).
-2. Implement battle `meta.ailment` status conditions (poison, burn, paralysis, sleep, freeze).
-3. Decide whether resolved trade records should also be archived before central-store pruning.
-4. Decide whether trade eligibility should remain opt-out via lock, or move to explicit opt-in per Pokemon.
-5. Region encounter balancing and long-tail species coverage.
-6. CI/CD pipeline with test gates and coverage tracking.
+1. Implement fusion form changes (Kyurem, Necrozma, Calyrex — 3 species).
+2. Design Mega Evolution / Gigantamax / Primal Reversion system.
+3. Add multi-hit mechanics (`meta.minHits`/`meta.maxHits`).
+4. Add critical hit rate modifiers (`meta.critRate`).
+5. Decide whether resolved trade records should be archived before pruning.
