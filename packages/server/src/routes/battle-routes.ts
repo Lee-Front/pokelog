@@ -6,7 +6,7 @@ import { getConfig } from "../storage/config-store.js";
 import { calculateDamage, determineTurnOrder, applyStatChanges, defaultStatStages, applyStatStageMultiplier } from "../game/battle.js";
 import { attemptCapture, getCatchRate } from "../game/capture.js";
 import { wildPokemonToOwned } from "../game/pokemon-factory.js";
-import { getMoveById, getSpeciesByName, getVariants } from "../game/data-loader.js";
+import { getMoveById } from "../game/data-loader.js";
 import type { BattleState, MoveData, OwnedPokemon, UserData, StatStages, PrimaryStatus, VolatileStatus } from "../../../../shared/types.js";
 import { recordDamageTaken } from "../game/battle-progress.js";
 import { decrementItem, healPokemon } from "../game/inventory-utils.js";
@@ -15,205 +15,27 @@ import {
   checkPreAttack, applyEndOfTurn, tickVolatiles, rollAilment,
   isVolatileAilment, addVolatile, rollSleepTurns, rollConfusionTurns, rollTrapTurns,
 } from "../game/status-conditions.js";
+import { getWeatherTypeModifier } from "../game/weather.js";
 import {
-  getWeatherFromMove, getWeatherTypeModifier, getWeatherDamage,
-  tickWeather, getDefaultWeatherTurns,
-} from "../game/weather.js";
-import {
-  checkPostAttackForm, checkHpThresholdForm, checkTurnForm,
-  checkWeatherForm, checkFirstHitForm, checkPostSurfForm,
+  checkPostAttackForm, checkTurnForm,
+  checkFirstHitForm, checkPostSurfForm,
   checkMoveForm, getBattleEndForm,
 } from "../game/battle-forms.js";
 import {
   checkPrimalReversion, canMegaEvolve, canGigantamax,
   getTransformedStats, applyGmaxHp, revertGmaxHp, getGmaxMove,
 } from "../game/battle-transformations.js";
+import { getEffectiveTypes } from "../game/pokemon-state.js";
+import {
+  applyBattleFormChange, maybeSetWeather, applyWeatherEndOfTurn,
+  checkHpForms, revertBattleForms, wildAttack,
+} from "../game/battle-state.js";
 
 export const battleRoutes = Router();
 battleRoutes.use(authMiddleware);
 
 function getTypes(species: string, variantId?: string | null, battleForm?: string | null): string[] {
-  // Battle form takes priority over variantId
-  const formToCheck = battleForm ?? variantId;
-  if (formToCheck) {
-    const variant = getVariants().find(v => v.id === formToCheck);
-    if (variant?.typing) return variant.typing;
-  }
-  return getSpeciesByName(species)?.types ?? [];
-}
-
-/** Apply a form change result for player or wild, updating BattleState and log */
-function applyBattleFormChange(
-  battle: BattleState,
-  result: { newForm: string | null; message: string } | null,
-  side: "player" | "wild",
-  log: string[],
-): void {
-  if (!result) return;
-  if (side === "player") {
-    battle.playerBattleForm = result.newForm;
-  } else {
-    battle.wildBattleForm = result.newForm;
-  }
-  const prefix = side === "wild" ? `야생 ${battle.wild.species}: ` : "";
-  log.push(`${prefix}${result.message}`);
-}
-
-/** Set weather from a move, and trigger weather-based form changes */
-function maybeSetWeather(
-  battle: BattleState,
-  moveId: string,
-  playerSpecies: string,
-  log: string[],
-): void {
-  const weather = getWeatherFromMove(moveId);
-  if (!weather) return;
-
-  battle.weather = weather;
-  battle.weatherTurns = getDefaultWeatherTurns();
-
-  const weatherNames: Record<string, string> = {
-    sun: "쾌청", rain: "비", hail: "싸라기눈", sandstorm: "모래바람",
-  };
-  log.push(`${weatherNames[weather] ?? weather} 상태가 되었다!`);
-
-  // Check weather-based form changes for both sides
-  applyBattleFormChange(
-    battle,
-    checkWeatherForm(playerSpecies, battle.weather, battle.playerBattleForm ?? null),
-    "player", log,
-  );
-  applyBattleFormChange(
-    battle,
-    checkWeatherForm(battle.wild.species, battle.weather, battle.wildBattleForm ?? null),
-    "wild", log,
-  );
-}
-
-/** Apply end-of-turn weather damage and tick weather counter */
-function applyWeatherEndOfTurn(
-  battle: BattleState,
-  myPokemon: OwnedPokemon,
-  log: string[],
-): void {
-  if (!battle.weather) return;
-
-  // Weather chip damage
-  const playerTypes = getTypes(myPokemon.species, myPokemon.variantId, battle.playerBattleForm);
-  const wildTypes = getTypes(battle.wild.species, battle.wild.variantId, battle.wildBattleForm);
-
-  const playerWeatherDmg = getWeatherDamage(battle.weather, playerTypes, myPokemon.maxHp);
-  if (playerWeatherDmg > 0) {
-    myPokemon.hp = Math.max(0, myPokemon.hp - playerWeatherDmg);
-    log.push(`${myPokemon.species}이(가) 날씨로 ${playerWeatherDmg} 데미지를 받았다!`);
-  }
-
-  const wildWeatherDmg = getWeatherDamage(battle.weather, wildTypes, battle.wild.maxHp);
-  if (wildWeatherDmg > 0) {
-    battle.wild.hp = Math.max(0, battle.wild.hp - wildWeatherDmg);
-    log.push(`야생 ${battle.wild.species}이(가) 날씨로 ${wildWeatherDmg} 데미지를 받았다!`);
-  }
-
-  // Tick weather
-  const tick = tickWeather(battle.weather, battle.weatherTurns);
-  battle.weather = tick.weather;
-  battle.weatherTurns = tick.turns;
-
-  if (tick.expired) {
-    log.push("날씨가 원래대로 돌아왔다!");
-    // Weather-form pokemon revert when weather ends
-    applyBattleFormChange(
-      battle,
-      checkWeatherForm(myPokemon.species, undefined, battle.playerBattleForm ?? null),
-      "player", log,
-    );
-    applyBattleFormChange(
-      battle,
-      checkWeatherForm(battle.wild.species, undefined, battle.wildBattleForm ?? null),
-      "wild", log,
-    );
-  }
-}
-
-/** Check HP-threshold form changes for both sides */
-function checkHpForms(
-  battle: BattleState,
-  myPokemon: OwnedPokemon,
-  log: string[],
-): void {
-  applyBattleFormChange(
-    battle,
-    checkHpThresholdForm(myPokemon.species, myPokemon.hp, myPokemon.maxHp, myPokemon.level, battle.playerBattleForm ?? myPokemon.variantId ?? null),
-    "player", log,
-  );
-  applyBattleFormChange(
-    battle,
-    checkHpThresholdForm(battle.wild.species, battle.wild.hp, battle.wild.maxHp, battle.wild.level, battle.wildBattleForm ?? battle.wild.variantId ?? null),
-    "wild", log,
-  );
-}
-
-/** Revert battle forms at end of battle */
-function revertBattleForms(battle: BattleState, myPokemon: OwnedPokemon): void {
-  // Revert gigantamax HP if active
-  if (battle.transformationType === "gigantamax" && battle.playerPreTransformMaxHp != null) {
-    const reverted = revertGmaxHp(myPokemon.hp, myPokemon.maxHp, battle.playerPreTransformMaxHp);
-    myPokemon.hp = reverted.hp;
-    myPokemon.maxHp = reverted.maxHp;
-  }
-
-  // If mega/primal had stat overrides, revert stats to original
-  if (battle.transformationType === "mega" || battle.transformationType === "primal") {
-    const originalStats = getTransformedStats(myPokemon, myPokemon.variantId ?? "");
-    myPokemon.stats = originalStats.stats;
-    myPokemon.maxHp = originalStats.maxHp;
-    if (myPokemon.hp > myPokemon.maxHp) myPokemon.hp = myPokemon.maxHp;
-  }
-
-  // Clear transformation state
-  battle.transformationType = null;
-  battle.transformationUsed = undefined;
-  battle.gmaxTurnsRemaining = undefined;
-  battle.playerPreTransformMaxHp = undefined;
-
-  // Only clear battle form tracking — don't change the pokemon's actual variantId
-  battle.playerBattleForm = undefined;
-  battle.wildBattleForm = undefined;
-}
-
-function wildAttack(
-  wildSpecies: string,
-  wildLevel: number,
-  wildStats: { attack: number; defense: number; speed: number; spAttack: number; spDefense: number },
-  wildMoves: { id: string; pp: number; maxPp: number }[],
-  targetStats: { attack: number; defense: number; speed: number; spAttack: number; spDefense: number },
-  targetSpecies: string,
-  attackerStages?: StatStages,
-  defenderStages?: StatStages,
-  preSelectedMove?: { id: string; pp: number; maxPp: number },
-  wildVariantId?: string | null,
-  targetVariantId?: string | null,
-  weatherModifier: number = 1,
-  wildBattleForm?: string | null,
-  targetBattleForm?: string | null,
-) {
-  const availableMoves = wildMoves.filter((m) => m.pp > 0);
-  if (availableMoves.length === 0) return { damage: 0, moveId: null, moveData: null, message: "야생 포켓몬이 발버둥쳤다!" };
-
-  const chosen = preSelectedMove ?? availableMoves[Math.floor(Math.random() * availableMoves.length)];
-  const moveData: MoveData | null = getMoveById(chosen.id) ?? null;
-  if (!moveData) return { damage: 0, moveId: chosen.id, moveData: null, message: "" };
-
-  chosen.pp -= 1;
-
-  const result = calculateDamage(
-    wildLevel, wildStats, targetStats, moveData,
-    getTypes(wildSpecies, wildVariantId, wildBattleForm), getTypes(targetSpecies, targetVariantId, targetBattleForm),
-    attackerStages, defenderStages,
-    weatherModifier,
-  );
-
-  return { damage: result.damage, moveId: chosen.id, moveData, message: result.message, missed: result.missed, priority: moveData.priority ?? 0 };
+  return getEffectiveTypes(species, variantId, battleForm);
 }
 
 function hasAlivePartyMembers(user: { party: string[]; pokemon: Array<{ uid: string; hp: number }> }, excludeUid: string): boolean {
