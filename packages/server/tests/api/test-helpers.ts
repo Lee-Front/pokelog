@@ -10,8 +10,7 @@ import path from "node:path";
 import os from "node:os";
 import supertest from "supertest";
 
-// 환경변수 설정 — auth.ts가 import 시점에 체크하므로 가장 먼저 실행
-process.env.POKELOG_JWT_SECRET = "test-secret-for-vitest";
+// POKELOG_JWT_SECRET은 vitest globalSetup(tests/global-setup.ts)에서 설정됨
 
 export async function setupTestApp() {
   // 테스트마다 격리된 임시 데이터 디렉토리

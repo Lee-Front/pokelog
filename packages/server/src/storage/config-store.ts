@@ -1,10 +1,12 @@
 import path from "node:path";
 import { readJson, writeJson } from "./json-store.js";
 import type { ServerConfig } from "../../../../shared/types.js";
-import { DATA_DIR } from "../paths.js";
+import { getDataDir } from "../paths.js";
 import { DEFAULT_INTEGRATION_REWARD_RULES, mergeIntegrationRewardRules } from "../integrations/event-catalog.js";
 
-const CONFIG_PATH = path.join(DATA_DIR, "config.json");
+function getConfigPath() {
+  return path.join(getDataDir(), "config.json");
+}
 
 const DEFAULT_EVOLUTION_SHOP_ITEMS = {
   "black-augurite": { name: "Black Augurite", price: 3000 },
@@ -96,7 +98,7 @@ export const DEFAULT_CONFIG: ServerConfig = {
 };
 
 export async function getConfig(): Promise<ServerConfig> {
-  const config = await readJson<ServerConfig>(CONFIG_PATH);
+  const config = await readJson<ServerConfig>(getConfigPath());
   if (!config) {
     return { ...DEFAULT_CONFIG };
   }
@@ -142,5 +144,5 @@ export async function getConfig(): Promise<ServerConfig> {
 }
 
 export async function saveConfig(config: ServerConfig): Promise<void> {
-  await writeJson(CONFIG_PATH, config);
+  await writeJson(getConfigPath(), config);
 }

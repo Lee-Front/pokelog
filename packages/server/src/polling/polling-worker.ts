@@ -11,7 +11,7 @@ import {
 import { processCommit } from "./commit-processor.js";
 import path from "node:path";
 import fs from "node:fs/promises";
-import { DATA_DIR } from "../paths.js";
+import { getDataDir } from "../paths.js";
 import { getAllUsers, isGitIntegration, normalizeRepoUrl, saveUser } from "../storage/user-store.js";
 import { pollNotionIntegration } from "../integrations/notion-polling.js";
 import { pollJiraIntegration } from "../integrations/jira-polling.js";
@@ -19,12 +19,14 @@ import { pollSlackIntegration } from "../integrations/slack-polling.js";
 import type { GitIntegration, JiraIntegration, SlackIntegration, UserData } from "../../../../shared/types.js";
 import { getUser } from "../storage/user-store.js";
 
-const REPOS_DIR = path.join(DATA_DIR, "repos");
+function getReposDir() {
+  return path.join(getDataDir(), "repos");
+}
 
 function repoLocalDir(url: string): string {
   // Convert URL to safe directory name
   const name = url.replace(/[^a-zA-Z0-9]/g, "_").replace(/_+/g, "_");
-  return path.join(REPOS_DIR, name + ".git");
+  return path.join(getReposDir(), name + ".git");
 }
 
 async function ensureBareClone(url: string, authMode?: string, token?: string): Promise<string> {

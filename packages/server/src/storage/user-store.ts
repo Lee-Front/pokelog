@@ -2,14 +2,14 @@ import path from "node:path";
 import fs from "node:fs/promises";
 import { readJson, writeJson } from "./json-store.js";
 import type { GitIntegration, Integration, OwnedPokemon, UserData } from "../../../../shared/types.js";
-import { DATA_DIR } from "../paths.js";
+import { getDataDir } from "../paths.js";
 import { getSpeciesByName } from "../game/data-loader.js";
 import { normalizeDamageTakenTotal } from "../game/battle-progress.js";
 import { resolvePokemonGender, seededGenderRoll } from "../game/pokemon-gender.js";
 import { normalizeMoveUsageCounts } from "../game/move-usage.js";
 
 function userPath(userId: string): string {
-  return path.join(DATA_DIR, "users", `${userId}.json`);
+  return path.join(getDataDir(), "users", `${userId}.json`);
 }
 
 export async function getUser(userId: string): Promise<UserData | null> {
@@ -22,7 +22,7 @@ export async function saveUser(userData: UserData): Promise<void> {
 }
 
 export async function getAllUsers(): Promise<UserData[]> {
-  const usersDir = path.join(DATA_DIR, "users");
+  const usersDir = path.join(getDataDir(), "users");
   try {
     const files = await fs.readdir(usersDir);
     const users: UserData[] = [];

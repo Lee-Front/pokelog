@@ -1,13 +1,13 @@
 import path from "node:path";
 import crypto from "node:crypto";
 import type { TradeRecord } from "../../../../shared/types.js";
-import { DATA_DIR } from "../paths.js";
+import { getDataDir } from "../paths.js";
 import { readJson, writeJson } from "./json-store.js";
 
 export const MAX_RESOLVED_TRADES = 200;
 
 function tradeStorePath(): string {
-  return path.join(DATA_DIR, "trades", "trades.json");
+  return path.join(getDataDir(), "trades", "trades.json");
 }
 
 export async function getTrades(): Promise<TradeRecord[]> {
