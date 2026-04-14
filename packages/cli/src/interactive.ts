@@ -64,10 +64,10 @@ const MENU_TREE: MenuNode[] = [
   { label: "가방",   cmd: "inventory", desc: "인벤토리",       auth: true, server: true },
   { label: "회복",   cmd: "heal",      desc: "파티 회복",      auth: true, server: true },
   {
-    label: "상점", desc: "상점 / 알", auth: true, server: true,
+    label: "상점", desc: "상점 / 뽑기", auth: true, server: true,
     children: [
       { label: "상점", cmd: "shop", desc: "아이템 구매" },
-      { label: "알",   cmd: "egg",  desc: "알 구매 / 부화" },
+      { label: "뽑기", cmd: "egg",  desc: "포켓몬 가챠" },
     ],
   },
   {

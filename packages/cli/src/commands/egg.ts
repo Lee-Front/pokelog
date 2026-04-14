@@ -1,7 +1,9 @@
 import { apiGet, apiPost } from "../api-client.js";
-import { BLD, DIM, GRN, RED, R, YEL } from "../ui/colors.js";
-import { separator } from "../ui/prompts.js";
-import { formatScreenMessage, runMenuLoop, type ScreenMessage } from "../ui/screen.js";
+import { BLD, DIM, GRN, RED, R, YEL, CYN } from "../ui/colors.js";
+import { fetchArt } from "../ui/display.js";
+import { enterRaw, waitKey } from "../ui/raw-mode.js";
+import { redraw } from "../ui/screen.js";
+import { artToLines, padRight } from "../ui/text.js";
 
 interface EggTier {
   tier: string;
@@ -9,130 +11,211 @@ interface EggTier {
   cost: number;
 }
 
-interface OwnedEgg {
-  id: string;
-  tier: string;
-  createdAt: string;
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function formatEggLabel(egg: OwnedEgg, tiers: EggTier[], index: number): string {
-  const label = tiers.find((tier) => tier.tier === egg.tier)?.label ?? egg.tier;
-  const createdAt = new Date(egg.createdAt).toLocaleString("ko-KR", {
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-  return `${label.padEnd(12)} ${DIM}#${String(index + 1).padStart(2, "0")}  ${createdAt}${R}`;
-}
+// ── 뽑기 연출 ───────────────────────────────────────────────────
 
-export async function eggCommand() {
-  type EggScreenState = { message: ScreenMessage | null };
-  type EggScreenData = { points: number; tiers: EggTier[]; eggs: OwnedEgg[] };
+const ROLL_FRAMES = ["◐", "◓", "◑", "◒"];
 
-  try {
-    await runMenuLoop<EggScreenState, EggScreenData, string>({
-      initialState: { message: null },
-      pageSize: 16,
-      load: async () => {
-        const res = await apiGet("/api/game/eggs");
-        if (!res.ok) {
-          throw new Error(String(res.data.error ?? "Failed to load egg info"));
-        }
-        return {
-          points: Number(res.data.points ?? 0),
-          tiers: (res.data.tiers as EggTier[]) ?? [],
-          eggs: (res.data.eggs as OwnedEgg[]) ?? [],
-        };
-      },
-      prompt: () => "Egg menu",
-      items: (data, state) => {
-        const items: Array<{ name: string; value: string; disabled?: boolean } | { separator: string }> = [
-          separator(`  ${BLD}Egg Gacha${R}   ${DIM}Points:${R} ${YEL}${data.points}P${R}`),
-          separator(`  ${DIM}Buy a new egg or hatch one from your inventory.${R}`),
-        ];
-
-        for (const tier of data.tiers) {
-          items.push({
-            name: `Buy   ${tier.label.padEnd(12)} ${YEL}${tier.cost}P${R}`,
-            value: `buy:${tier.tier}`,
-            disabled: data.points < tier.cost,
-          });
-        }
-
-        items.push(separator(" "));
-        items.push(separator(`  ${BLD}Owned Eggs${R}`));
-
-        if (data.eggs.length === 0) {
-          items.push({ name: `${DIM}No eggs in inventory${R}`, value: "__empty__", disabled: true });
-        } else {
-          data.eggs.forEach((egg, index) => {
-            items.push({
-              name: `Hatch ${formatEggLabel(egg, data.tiers, index)}`,
-              value: `hatch:${egg.id}`,
-            });
-          });
-        }
-
-        if (state.message) {
-          items.push(separator(" "));
-          items.push(separator(`  ${formatScreenMessage(state.message)}`));
-        }
-
-        items.push(separator(" "));
-        items.push({ name: "Close", value: "__close__" });
-        return items;
-      },
-      onSelect: async (selected, data, state) => {
-        if (selected === "__close__") {
-          return { state, close: true };
-        }
-
-        if (selected === "__empty__") {
-          return state;
-        }
-
-        if (selected.startsWith("buy:")) {
-          const tier = selected.slice(4);
-          const buyRes = await apiPost("/api/game/eggs/buy", { tier });
-          if (!buyRes.ok) {
-            return { message: { tone: "error", text: String(buyRes.data.error ?? "Failed to buy egg") } };
-          }
-
-          const egg = buyRes.data.egg as OwnedEgg;
-          const tierLabel = data.tiers.find((entry) => entry.tier === egg.tier)?.label ?? egg.tier;
-          const remainingPoints = Number(buyRes.data.remainingPoints ?? 0);
-          return {
-            message: {
-              tone: "success",
-              text: `${tierLabel} purchased   Remaining: ${remainingPoints}P`,
-            },
-          };
-        }
-
-        if (selected.startsWith("hatch:")) {
-          const eggId = selected.slice(6);
-          const hatchRes = await apiPost("/api/game/eggs/hatch", { eggId });
-          if (!hatchRes.ok) {
-            return { message: { tone: "error", text: String(hatchRes.data.error ?? "Failed to hatch egg") } };
-          }
-
-          const pokemon = hatchRes.data.pokemon as { species: string; level: number };
-          const destination = String(hatchRes.data.destination ?? "storage");
-          const destinationLabel = destination === "party" ? "party" : "storage";
-          return {
-            message: {
-              tone: "success",
-              text: `${pokemon.species} Lv.${pokemon.level} hatched   Sent to: ${destinationLabel}`,
-            },
-          };
-        }
-
-        return state;
-      },
-    });
-  } catch (error) {
-    console.log(`  ${RED}${String(error instanceof Error ? error.message : "Failed to load egg info")}${R}`);
+async function playPullAnimation(
+  tierLabel: string,
+  lineCountRef: { value: number; first: boolean },
+): Promise<void> {
+  for (let i = 0; i < 8; i++) {
+    const frame = ROLL_FRAMES[i % ROLL_FRAMES.length];
+    const lines = [
+      "",
+      `  ${BLD}포켓몬 뽑기${R}`,
+      `  ${DIM}${"─".repeat(40)}${R}`,
+      "",
+      `  ${YEL}${frame}${R}  ${tierLabel} 뽑는 중...`,
+      "",
+    ];
+    lineCountRef.value = redraw(lines, lineCountRef.value, lineCountRef.first);
+    lineCountRef.first = false;
+    await sleep(120 + i * 20);
   }
 }
 
+async function showResult(
+  species: string,
+  level: number,
+  destination: string,
+  remainingPoints: number,
+  lineCountRef: { value: number; first: boolean },
+): Promise<void> {
+  const art = await fetchArt(species);
+  const artLines = artToLines(art);
+
+  const infoLines = [
+    `${GRN}${BLD}${species}${R}  ${DIM}Lv.${level}${R}`,
+    "",
+    `${DIM}행선지:${R} ${destination === "party" ? `${GRN}파티${R}` : `${YEL}보관함${R}`}`,
+    `${DIM}잔여 포인트:${R} ${YEL}${remainingPoints}P${R}`,
+    "",
+    `${DIM}아무 키나 누르면 돌아갑니다${R}`,
+  ];
+
+  const rightWidth = Math.max(0, ...artLines.map((l) => {
+    let w = 0;
+    for (const ch of l.replace(/\x1b\[[0-9;]*m/g, "")) {
+      const c = ch.codePointAt(0) ?? 0;
+      w += (c >= 0x1100 && c <= 0x115F) || (c >= 0x2E80 && c <= 0xA4CF) ||
+           (c >= 0xAC00 && c <= 0xD7AF) || (c >= 0xF900 && c <= 0xFAFF) ||
+           (c >= 0xFF01 && c <= 0xFF60) ? 2 : 1;
+    }
+    return w;
+  }), 20);
+
+  const rows = Math.max(artLines.length, infoLines.length);
+  const merged: string[] = [];
+  for (let i = 0; i < rows; i++) {
+    const left = padRight(artLines[i] ?? "", rightWidth);
+    const right = infoLines[i] ?? "";
+    merged.push(`  ${left}   ${right}`);
+  }
+
+  const lines = [
+    "",
+    `  ${BLD}포켓몬 뽑기${R}`,
+    `  ${DIM}${"─".repeat(40)}${R}`,
+    "",
+    ...merged,
+    "",
+  ];
+
+  lineCountRef.value = redraw(lines, lineCountRef.value, true);
+  lineCountRef.first = false;
+  await waitKey();
+}
+
+// ── 메인 UI ─────────────────────────────────────────────────────
+
+function buildMenuLines(
+  tiers: EggTier[],
+  cursor: number,
+  points: number,
+  message: string,
+): string[] {
+  const lines = [
+    "",
+    `  ${BLD}포켓몬 뽑기${R}   ${DIM}보유 포인트:${R} ${YEL}${points}P${R}`,
+    `  ${DIM}${"─".repeat(40)}${R}`,
+    `  ${DIM}↑↓ 이동   Enter 뽑기   Esc 뒤로${R}`,
+    "",
+  ];
+
+  for (let i = 0; i < tiers.length; i++) {
+    const tier = tiers[i];
+    const active = i === cursor;
+    const canAfford = points >= tier.cost;
+    const pointer = active ? `${YEL}>${R}` : " ";
+
+    const label = active
+      ? `${BLD}${tier.label}${R}`
+      : canAfford
+        ? `\x1b[37m${tier.label}${R}`
+        : `${DIM}${tier.label}${R}`;
+
+    const price = canAfford
+      ? `${YEL}${tier.cost}P${R}`
+      : `${DIM}${tier.cost}P${R}`;
+
+    const tag = !canAfford ? ` ${RED}부족${R}` : "";
+    lines.push(`${pointer} ${padRight(label, 14)} ${price}${tag}`);
+  }
+
+  lines.push("");
+  lines.push(`  ${active(cursor, tiers.length)} ${DIM}뒤로${R}`);
+  lines.push("");
+
+  if (message) {
+    lines.push(`  ${message}`, "");
+  }
+
+  return lines;
+}
+
+function active(cursor: number, backIdx: number): string {
+  return cursor === backIdx ? `${YEL}>${R}` : " ";
+}
+
+export async function eggCommand() {
+  enterRaw();
+
+  const res = await apiGet("/api/game/eggs");
+  if (!res.ok) {
+    process.stdout.write(`  ${RED}${res.data.error}${R}\n`);
+    return;
+  }
+
+  let points = Number(res.data.points ?? 0);
+  const tiers = (res.data.tiers as EggTier[]) ?? [];
+
+  if (tiers.length === 0) {
+    process.stdout.write(`  ${DIM}뽑기 가능한 티어가 없습니다.${R}\n`);
+    return;
+  }
+
+  const totalOptions = tiers.length + 1; // tiers + 뒤로
+  let cursor = 0;
+  let lineCount = 0;
+  let first = true;
+  let message = "";
+
+  while (true) {
+    cursor = Math.min(cursor, totalOptions - 1);
+    const lines = buildMenuLines(tiers, cursor, points, message);
+    lineCount = redraw(lines, lineCount, first);
+    first = false;
+    message = "";
+
+    const key = await waitKey();
+    if (key === "\x03") {
+      process.stdout.write("\x1b[?25h");
+      process.exit(0);
+    }
+    if (key === "\x1b" || key === "q") break;
+
+    if (key === "\x1b[A" && cursor > 0) {
+      cursor--;
+      continue;
+    }
+    if (key === "\x1b[B" && cursor < totalOptions - 1) {
+      cursor++;
+      continue;
+    }
+    if (key !== "\r") continue;
+
+    // 뒤로
+    if (cursor === tiers.length) break;
+
+    const tier = tiers[cursor];
+    if (points < tier.cost) {
+      message = `${RED}포인트가 부족합니다 (필요: ${tier.cost}P)${R}`;
+      continue;
+    }
+
+    // 뽑기 실행
+    const ref = { value: lineCount, first: true };
+    await playPullAnimation(tier.label, ref);
+
+    const pullRes = await apiPost("/api/game/eggs/pull", { tier: tier.tier });
+    if (!pullRes.ok) {
+      message = `${RED}${pullRes.data.error}${R}`;
+      first = true;
+      continue;
+    }
+
+    const pokemon = pullRes.data.pokemon as { species: string; level: number };
+    const destination = String(pullRes.data.destination ?? "storage");
+    points = Number(pullRes.data.remainingPoints ?? 0);
+
+    await showResult(pokemon.species, pokemon.level, destination, points, ref);
+    first = true;
+  }
+
+  process.stdout.write("\x1b[?25h");
+}

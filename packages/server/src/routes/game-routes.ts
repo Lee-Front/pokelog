@@ -816,6 +816,57 @@ gameRoutes.post("/eggs/hatch", async (req: AuthRequest, res: Response) => {
   }
 });
 
+gameRoutes.post("/eggs/pull", async (req: AuthRequest, res: Response) => {
+  try {
+    const user = await getUser(req.userId!);
+    if (!user) {
+      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+      return;
+    }
+
+    const tier = String(req.body.tier ?? "");
+    const tierInfo = getEggTierSummaries().find((entry) => entry.tier === tier);
+    if (!tierInfo) {
+      res.status(400).json({ error: "올바른 티어를 선택해주세요 (common, rare, legend)" });
+      return;
+    }
+
+    if (user.points < tierInfo.cost) {
+      res.status(400).json({ error: `포인트가 부족합니다 (필요: ${tierInfo.cost}, 보유: ${user.points})` });
+      return;
+    }
+
+    const egg = createEgg(tierInfo.tier);
+    user.points -= tierInfo.cost;
+
+    const { pokemon } = hatchEgg(egg);
+
+    let destination: "party" | "storage" = "storage";
+    if (user.party.length < MAX_PARTY_SIZE) {
+      user.pokemon.push(pokemon);
+      user.party.push(pokemon.uid);
+      destination = "party";
+    } else {
+      user.storage.push(pokemon);
+    }
+
+    if (!user.pokedex.includes(pokemon.species)) {
+      user.pokedex.push(pokemon.species);
+    }
+
+    await saveUser(user);
+    res.json({
+      pokemon,
+      destination,
+      cost: tierInfo.cost,
+      remainingPoints: user.points,
+    });
+  } catch (err) {
+    console.error("Egg pull error:", err);
+    res.status(500).json({ error: "뽑기 중 오류가 발생했습니다" });
+  }
+});
+
 gameRoutes.get("/form-change/rules/:species", async (req: AuthRequest, res: Response) => {
   try {
     const species = req.params.species;
