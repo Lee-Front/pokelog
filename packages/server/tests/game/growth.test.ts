@@ -91,6 +91,31 @@ describe("calculateStatsForLevel", () => {
     const result = calculateStatsForLevel("charmander", 10);
     expect(result.stats.speed).toBe(18);
   });
+
+  it("applies nature stat increase (adamant: +attack, -spAttack)", () => {
+    const base = calculateStatsForLevel("charmander", 50);
+    const adamant = calculateStatsForLevel("charmander", 50, "adamant");
+    expect(adamant.stats.attack).toBeGreaterThan(base.stats.attack);
+    expect(adamant.stats.spAttack).toBeLessThan(base.stats.spAttack);
+    // HP is unaffected by nature
+    expect(adamant.hp).toBe(base.hp);
+    // Other stats unchanged
+    expect(adamant.stats.defense).toBe(base.stats.defense);
+    expect(adamant.stats.speed).toBe(base.stats.speed);
+  });
+
+  it("neutral nature (hardy) does not change stats", () => {
+    const base = calculateStatsForLevel("charmander", 50);
+    const hardy = calculateStatsForLevel("charmander", 50, "hardy");
+    expect(hardy.stats).toEqual(base.stats);
+    expect(hardy.hp).toBe(base.hp);
+  });
+
+  it("returns same stats when nature is undefined", () => {
+    const noNature = calculateStatsForLevel("charmander", 50);
+    const undefinedNature = calculateStatsForLevel("charmander", 50, undefined);
+    expect(noNature.stats).toEqual(undefinedNature.stats);
+  });
 });
 
 describe("checkEvolution", () => {

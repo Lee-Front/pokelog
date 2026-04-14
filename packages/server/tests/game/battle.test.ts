@@ -187,4 +187,21 @@ describe("determineTurnOrder", () => {
     randomSpy.mockReturnValueOnce(0.7);
     expect(determineTurnOrder(50, 50)).toBe("wild");
   });
+
+  it("higher priority goes first regardless of speed", () => {
+    // 플레이어가 느리지만 priority가 높으면 선공
+    expect(determineTurnOrder(30, 100, 1, 0)).toBe("player");
+    // 야생이 느리지만 priority가 높으면 야생 선공
+    expect(determineTurnOrder(100, 30, 0, 1)).toBe("wild");
+  });
+
+  it("same priority falls back to speed", () => {
+    expect(determineTurnOrder(80, 50, 0, 0)).toBe("player");
+    expect(determineTurnOrder(50, 80, 1, 1)).toBe("wild");
+  });
+
+  it("negative priority goes last", () => {
+    // 플레이어가 빠르지만 priority -1이면 야생 선공
+    expect(determineTurnOrder(100, 30, -1, 0)).toBe("wild");
+  });
 });
