@@ -51,7 +51,8 @@ function isGroup(node: MenuNode): node is MenuGroup {
 }
 
 const MENU_TREE: MenuNode[] = [
-  { label: "야생",   cmd: "encounters", desc: "야생 이벤트",   auth: true, server: true },
+  { label: "야생",     cmd: "encounters", desc: "야생 이벤트",   auth: true, server: true },
+  { label: "바이옴",   cmd: "region",     desc: "바이옴 이동",   auth: true, server: true },
   {
     label: "포켓몬", desc: "파티 / 보관함 / 도감", auth: true, server: true,
     children: [
@@ -231,6 +232,7 @@ async function executeCommand(cmd: string): Promise<"continue" | "quit"> {
     case "leave":      await leaveCommand(); break;
     case "status":     await statusCommand(); break;
     case "encounters": await eventsCommand(); break;
+    case "region":     await regionCommand(); break;
     case "party":      await partyCommand(); break;
     case "pokedex":    await pokedexCommand(); break;
     case "inventory":  await inventoryCommand(); break;
