@@ -238,8 +238,26 @@ export function getSpecies(): SpeciesData[] {
   return speciesCache!;
 }
 
+let speciesAliasCache: Record<string, string> | null = null;
+
+function getSpeciesAliases(): Record<string, string> {
+  if (!speciesAliasCache) {
+    speciesAliasCache = readJsonFile<Record<string, string>>("data/pokemon/pokeapi-species-aliases.json", {});
+  }
+  return speciesAliasCache!;
+}
+
 export function getSpeciesByName(species: string): SpeciesData | undefined {
-  return getSpecies().find((s) => s.species === species);
+  const all = getSpecies();
+  const exact = all.find((s) => s.species === species);
+  if (exact) return exact;
+
+  // alias 조회: "aegislash" → "aegislash-shield"
+  const aliases = getSpeciesAliases();
+  const aliased = aliases[species];
+  if (aliased) return all.find((s) => s.species === aliased);
+
+  return undefined;
 }
 
 export function getMoves(): MoveData[] {
@@ -359,5 +377,6 @@ export function clearAllCaches(): void {
   itemsCache = null;
   variantsCache = null;
   catchRateOverrideCache = null;
+  speciesAliasCache = null;
   regionCache.clear();
 }

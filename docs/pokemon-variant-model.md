@@ -85,13 +85,14 @@ The first runtime version uses conservative flags:
 - `battle-form` variants are never encounter-eligible
 - `battle-form` variants are never egg-eligible
 - `regional` and `permanent-form` variants are marked encounter-eligible
-- all variants are currently marked egg-ineligible
+- `regional` variants are marked egg-eligible (59 variants)
+- `permanent-form` and `battle-form` variants remain egg-ineligible
 
-Why egg-ineligible for now:
+Note on egg eligibility:
 
-- the current egg loop is intentionally base-species only
-- regional or cosmetic inheritance rules are not designed yet
-- this avoids mixing breeding policy into the first-pass variant table
+- the egg-gacha runtime currently queries base species only (via `getSpecies()`)
+- variant `eggEligible` flags are reserved for future use when the egg loop is extended to include variant species
+- regional variants are flagged as egg-eligible in data to prepare for this extension
 
 ## Current File Status
 
