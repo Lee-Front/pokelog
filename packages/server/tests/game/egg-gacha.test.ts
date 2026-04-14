@@ -37,8 +37,7 @@ describe("egg-gacha", () => {
     expect(species!.isBaby).toBe(false);
     expect(Boolean(species!.isLegendary || species!.isMythical)).toBe(false);
     expect(species!.rawCaptureRate).toBeGreaterThanOrEqual(120);
-    expect(result.pokemon.level).toBeGreaterThanOrEqual(1);
-    expect(result.pokemon.level).toBeLessThanOrEqual(6);
+    expect(result.pokemon.level).toBe(1);
   });
 
   it("hatches rare eggs from baby or low-capture base-stage species", () => {
@@ -51,8 +50,7 @@ describe("egg-gacha", () => {
     expect(getPreEvolutionTargets().has(result.pokemon.species)).toBe(false);
     expect(Boolean(species!.isLegendary || species!.isMythical)).toBe(false);
     expect(Boolean(species!.isBaby || (species!.rawCaptureRate ?? 0) < 120)).toBe(true);
-    expect(result.pokemon.level).toBeGreaterThanOrEqual(5);
-    expect(result.pokemon.level).toBeLessThanOrEqual(12);
+    expect(result.pokemon.level).toBe(5);
   });
 
   it("hatches legend eggs from legendary or mythical base-stage species", () => {
@@ -64,7 +62,6 @@ describe("egg-gacha", () => {
     expect(species).toBeDefined();
     expect(getPreEvolutionTargets().has(result.pokemon.species)).toBe(false);
     expect(Boolean(species!.isLegendary || species!.isMythical)).toBe(true);
-    expect(result.pokemon.level).toBeGreaterThanOrEqual(15);
-    expect(result.pokemon.level).toBeLessThanOrEqual(25);
+    expect(result.pokemon.level).toBe(15);
   });
 });

@@ -47,7 +47,7 @@ describe("trade flow", () => {
 
     // user2가 교환 목록에서 확인
     const trades2 = await api2.get("/api/game/trades");
-    expect(trades2.body.trades.length).toBeGreaterThan(0);
+    expect(trades2.body.trades.length).toBe(1);
 
     // user2가 수락
     const accept = await api2.post(`/api/game/trades/${tradeId}/accept`);
@@ -59,6 +59,65 @@ describe("trade flow", () => {
     const newParty2 = await api2.get("/api/game/party");
     expect(newParty1.body.party[0].species).toBe("squirtle");
     expect(newParty2.body.party[0].species).toBe("charmander");
+  });
+
+  it("rejects a trade request", async () => {
+    const user1 = await t.registerAndLogin("rejecter1", "charmander");
+    const user2 = await t.registerAndLogin("rejecter2", "squirtle");
+    const api1 = t.authed(user1.token);
+    const api2 = t.authed(user2.token);
+
+    const party1 = await api1.get("/api/game/party");
+    const party2 = await api2.get("/api/game/party");
+
+    const req = await api1.post("/api/game/trades/request", {
+      targetUserId: user2.userId,
+      myPokemonUid: party1.body.party[0].uid,
+      targetPokemonUid: party2.body.party[0].uid,
+    });
+    expect(req.status).toBe(201);
+    const tradeId = req.body.trade.id;
+
+    const reject = await api2.post(`/api/game/trades/${tradeId}/reject`);
+    expect(reject.status).toBe(200);
+    expect(reject.body.trade.status).toBe("rejected");
+  });
+
+  it("cancels a trade request", async () => {
+    const user1 = await t.registerAndLogin("canceler1", "charmander");
+    const user2 = await t.registerAndLogin("canceler2", "squirtle");
+    const api1 = t.authed(user1.token);
+    const api2 = t.authed(user2.token);
+
+    const party1 = await api1.get("/api/game/party");
+    const party2 = await api2.get("/api/game/party");
+
+    const req = await api1.post("/api/game/trades/request", {
+      targetUserId: user2.userId,
+      myPokemonUid: party1.body.party[0].uid,
+      targetPokemonUid: party2.body.party[0].uid,
+    });
+    expect(req.status).toBe(201);
+    const tradeId = req.body.trade.id;
+
+    const cancel = await api1.post(`/api/game/trades/${tradeId}/cancel`);
+    expect(cancel.status).toBe(200);
+    expect(cancel.body.trade.status).toBe("cancelled");
+  });
+
+  it("returns error for trade with nonexistent target user", async () => {
+    const user1 = await t.registerAndLogin("traderalone", "charmander");
+    const api1 = t.authed(user1.token);
+
+    const party1 = await api1.get("/api/game/party");
+
+    const req = await api1.post("/api/game/trades/request", {
+      targetUserId: "nonexistentuser",
+      myPokemonUid: party1.body.party[0].uid,
+      targetPokemonUid: "fake-uid",
+    });
+    expect(req.status).toBe(400);
+    expect(req.body.error).toBeDefined();
   });
 
   it("locks pokemon from trading", async () => {

@@ -1,4 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import fs from "node:fs";
+import path from "node:path";
 import { setupTestApp, type TestApp } from "./test-helpers.js";
 
 describe("shop + item usage", () => {
@@ -21,6 +23,8 @@ describe("shop + item usage", () => {
     expect(shop.body.items).toBeDefined();
     expect(typeof shop.body.items).toBe("object");
     expect(shop.body.items.pokeball).toBeDefined();
+    expect(typeof shop.body.items.pokeball.price).toBe("number");
+    expect(typeof shop.body.items.pokeball.name).toBe("string");
   });
 
   it("buys an item with enough points", async () => {
@@ -31,6 +35,24 @@ describe("shop + item usage", () => {
     const res = await api.post("/api/shop/buy", { item: "potion", quantity: 1 });
     // 포인트 부족 → 400
     expect(res.status).toBe(400);
+  });
+
+  it("buys an item with sufficient points", async () => {
+    const { token, userId } = await t.registerAndLogin();
+    const api = t.authed(token);
+
+    // Give the user enough points by manipulating the user data file
+    const userFile = path.join(t.dataDir, "users", `${userId}.json`);
+    const userData = JSON.parse(fs.readFileSync(userFile, "utf-8"));
+    userData.points = 10000;
+    fs.writeFileSync(userFile, JSON.stringify(userData));
+
+    const res = await api.post("/api/shop/buy", { item: "pokeball", quantity: 2 });
+    expect(res.status).toBe(200);
+    expect(typeof res.body.points).toBe("number");
+    expect(res.body.points).toBeLessThan(10000);
+    expect(res.body.inventory).toBeDefined();
+    expect(typeof res.body.message).toBe("string");
   });
 
   it("uses a potion on damaged pokemon", async () => {

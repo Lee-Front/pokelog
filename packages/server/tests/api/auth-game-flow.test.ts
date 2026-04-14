@@ -19,7 +19,8 @@ describe("auth + game flow", () => {
 
   it("registers a new user with starter pokemon", async () => {
     const { token, userId } = await t.registerAndLogin("player1", "charmander");
-    expect(token).toBeTruthy();
+    expect(typeof token).toBe("string");
+    expect(token.length).toBeGreaterThan(0);
 
     const api = t.authed(token);
     const status = await api.get("/api/game/status");
@@ -38,12 +39,12 @@ describe("auth + game flow", () => {
     expect(party.body.party[0].species).toBe("squirtle");
     expect(party.body.party[0].level).toBe(5);
     // nature 배정 확인
-    expect(party.body.party[0].nature).toBeDefined();
     expect(typeof party.body.party[0].nature).toBe("string");
+    expect(party.body.party[0].nature.length).toBeGreaterThan(0);
     // isShiny 배정 확인
     expect(typeof party.body.party[0].isShiny).toBe("boolean");
     // gender 배정 확인
-    expect(party.body.party[0].gender).toBeDefined();
+    expect(["male", "female", "genderless"]).toContain(party.body.party[0].gender);
   });
 
   it("shows pokedex with starter species", async () => {
@@ -61,7 +62,8 @@ describe("auth + game flow", () => {
 
     const heal = await api.post("/api/game/heal");
     expect(heal.status).toBe(200);
-    expect(heal.body.healed).toBeDefined();
+    expect(typeof heal.body.healed).toBe("number");
+    expect(heal.body.healed).toBeGreaterThanOrEqual(0);
   });
 
   it("returns region info", async () => {
@@ -70,7 +72,8 @@ describe("auth + game flow", () => {
 
     const status = await api.get("/api/game/status");
     expect(status.status).toBe(200);
-    expect(status.body.region).toBeDefined();
+    expect(typeof status.body.region).toBe("string");
+    expect(status.body.region.length).toBeGreaterThan(0);
   });
 
   it("prevents duplicate registration", async () => {
@@ -84,5 +87,58 @@ describe("auth + game flow", () => {
       starter: "charmander",
     });
     expect(res.status).toBe(409);
+  });
+
+  it("rejects login with wrong password", async () => {
+    await t.registerAndLogin("wrongpw");
+    const res = await t.request.post("/api/auth/login").send({
+      id: "wrongpw",
+      password: "incorrect",
+    });
+    expect(res.status).toBe(401);
+  });
+
+  it("rejects login with nonexistent user", async () => {
+    const res = await t.request.post("/api/auth/login").send({
+      id: "nosuchuser",
+      password: "whatever",
+    });
+    expect(res.status).toBe(401);
+  });
+
+  it("rejects invalid starter pokemon", async () => {
+    const res = await t.request.post("/api/auth/register").send({
+      id: "badstarter",
+      password: "pass",
+      nickname: "badstarter",
+      starter: "pikachu",
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it("party pokemon has moves array with at least 1 move", async () => {
+    const { token } = await t.registerAndLogin("movescheck", "charmander");
+    const api = t.authed(token);
+
+    const party = await api.get("/api/game/party");
+    expect(party.status).toBe(200);
+    const pokemon = party.body.party[0];
+    expect(Array.isArray(pokemon.moves)).toBe(true);
+    expect(pokemon.moves.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("party pokemon has stats with attack, defense, speed, spAttack, spDefense", async () => {
+    const { token } = await t.registerAndLogin("statscheck", "squirtle");
+    const api = t.authed(token);
+
+    const party = await api.get("/api/game/party");
+    expect(party.status).toBe(200);
+    const stats = party.body.party[0].stats;
+    expect(typeof stats).toBe("object");
+    expect(typeof stats.attack).toBe("number");
+    expect(typeof stats.defense).toBe("number");
+    expect(typeof stats.speed).toBe("number");
+    expect(typeof stats.spAttack).toBe("number");
+    expect(typeof stats.spDefense).toBe("number");
   });
 });

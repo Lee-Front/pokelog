@@ -192,4 +192,40 @@ describe("trade", () => {
       responderPokemonUid: bobPokemon.uid,
     })).rejects.toThrow("trade-locked");
   });
+
+  it("rejects a pending trade request", async () => {
+    const alicePokemon = factoryModule.createPokemon("kadabra", 30);
+    const bobPokemon = factoryModule.createPokemon("machoke", 30);
+    await userStoreModule.saveUser(createUser("alice", "Alice", alicePokemon));
+    await userStoreModule.saveUser(createUser("bob", "Bob", bobPokemon));
+
+    const trade = await tradeModule.createTradeRequest({
+      requesterUserId: "alice",
+      responderUserId: "bob",
+      requesterPokemonUid: alicePokemon.uid,
+      responderPokemonUid: bobPokemon.uid,
+    });
+
+    const rejected = await tradeModule.rejectTradeRequest("bob", trade.id);
+
+    expect(rejected.status).toBe("rejected");
+  });
+
+  it("cancels a pending trade request", async () => {
+    const alicePokemon = factoryModule.createPokemon("kadabra", 30);
+    const bobPokemon = factoryModule.createPokemon("machoke", 30);
+    await userStoreModule.saveUser(createUser("alice", "Alice", alicePokemon));
+    await userStoreModule.saveUser(createUser("bob", "Bob", bobPokemon));
+
+    const trade = await tradeModule.createTradeRequest({
+      requesterUserId: "alice",
+      responderUserId: "bob",
+      requesterPokemonUid: alicePokemon.uid,
+      responderPokemonUid: bobPokemon.uid,
+    });
+
+    const cancelled = await tradeModule.cancelTradeRequest("alice", trade.id);
+
+    expect(cancelled.status).toBe("cancelled");
+  });
 });
