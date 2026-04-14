@@ -158,6 +158,7 @@ export interface PendingEvent {
 export interface PendingEvolutionOption {
   branchId: string;
   targetSpecies: string;
+  targetVariantId?: string;
   targetName: string;
 }
 
@@ -185,11 +186,21 @@ export interface TradeRecord {
   resolvedAt?: string;
 }
 
+export interface StatStages {
+  attack: number;
+  defense: number;
+  spAttack: number;
+  spDefense: number;
+  speed: number;
+}
+
 export interface BattleState {
   eventId: string;
   myPokemonUid: string;
   turn: number;
   wild: WildPokemon;
+  playerStatStages?: StatStages;
+  wildStatStages?: StatStages;
 }
 
 export interface LogEntry {

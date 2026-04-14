@@ -138,13 +138,14 @@ function resolveEvolutionAbilityId(species: string, currentAbilityId: string | n
   return speciesData.abilities.normal[0] ?? speciesData.abilities.hidden ?? null;
 }
 
-export function evolvePokemon(pokemon: OwnedPokemon, targetSpecies: string): OwnedPokemon {
+export function evolvePokemon(pokemon: OwnedPokemon, targetSpecies: string, targetVariantId?: string | null): OwnedPokemon {
   const targetSpeciesData = getSpeciesByName(targetSpecies);
   if (!targetSpeciesData) {
     throw new Error(`Unknown evolution target: ${targetSpecies}`);
   }
 
   pokemon.species = targetSpecies;
+  pokemon.variantId = targetVariantId ?? null;
 
   const evolvedStats = calculateStatsForLevel(targetSpecies, pokemon.level, pokemon.nature);
   pokemon.maxHp = evolvedStats.maxHp;
@@ -629,8 +630,13 @@ export function checkEvolution(species: string, level: number, context: Omit<Evo
   return branch.targetSpecies;
 }
 
-export function getEvolutionItemUseTarget(species: string, item: string): string | null {
-  return checkEvolution(species, 0, { usedItem: item });
+export function getEvolutionItemUseTarget(species: string, item: string): { targetSpecies: string; targetVariantId?: string } | null {
+  const branch = resolveEvolution(species, { level: 0, usedItem: item });
+  if (!branch) {
+    return null;
+  }
+
+  return { targetSpecies: branch.targetSpecies, targetVariantId: branch.targetVariantId };
 }
 
 export function getEvolutionBranches(species: string): EvolutionBranch[] {

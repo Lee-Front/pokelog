@@ -29,6 +29,7 @@ function buildOption(branch: EvolutionBranch): PendingEvolutionOption {
   return {
     branchId: branch.id,
     targetSpecies: branch.targetSpecies,
+    ...(branch.targetVariantId ? { targetVariantId: branch.targetVariantId } : {}),
     targetName: target?.name ?? branch.targetSpecies,
   };
 }
@@ -83,7 +84,7 @@ export function resolvePendingEvolutionChoice(
     throw new PendingEvolutionError("Pokemon species no longer matches the pending evolution.");
   }
 
-  evolvePokemon(pokemon, option.targetSpecies);
+  evolvePokemon(pokemon, option.targetSpecies, option.targetVariantId);
   if (!user.pokedex.includes(option.targetSpecies)) {
     user.pokedex.push(option.targetSpecies);
   }

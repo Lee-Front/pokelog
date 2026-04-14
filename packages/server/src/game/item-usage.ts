@@ -71,18 +71,18 @@ export function useInventoryItem(
     };
   }
 
-  const evolutionTarget = getEvolutionItemUseTarget(pokemon.species, item);
-  if (!evolutionTarget) {
+  const evolutionResult = getEvolutionItemUseTarget(pokemon.species, item);
+  if (!evolutionResult) {
     throw new ItemUseError(`Cannot use ${itemName} on ${getPokemonDisplayName(pokemon)}.`);
   }
 
   const previousSpecies = pokemon.species;
   decrementItem(user.inventory, item);
   clearPendingEvolutionForPokemon(user, pokemon.uid);
-  evolvePokemon(pokemon, evolutionTarget);
+  evolvePokemon(pokemon, evolutionResult.targetSpecies, evolutionResult.targetVariantId);
 
-  if (!user.pokedex.includes(evolutionTarget)) {
-    user.pokedex.push(evolutionTarget);
+  if (!user.pokedex.includes(evolutionResult.targetSpecies)) {
+    user.pokedex.push(evolutionResult.targetSpecies);
   }
 
   return {

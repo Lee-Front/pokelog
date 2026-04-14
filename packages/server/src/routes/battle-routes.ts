@@ -3,11 +3,11 @@ import type { Response } from "express";
 import { authMiddleware, type AuthRequest } from "../middleware/auth-middleware.js";
 import { getUser, saveUser } from "../storage/user-store.js";
 import { getConfig } from "../storage/config-store.js";
-import { calculateDamage, determineTurnOrder } from "../game/battle.js";
+import { calculateDamage, determineTurnOrder, applyStatChanges, defaultStatStages } from "../game/battle.js";
 import { attemptCapture, getCatchRate } from "../game/capture.js";
 import { createPokemon } from "../game/pokemon-factory.js";
 import { getMoveById, getSpeciesByName } from "../game/data-loader.js";
-import type { BattleState, OwnedPokemon, UserData } from "../../../../shared/types.js";
+import type { BattleState, OwnedPokemon, UserData, StatStages } from "../../../../shared/types.js";
 import { recordDamageTaken } from "../game/battle-progress.js";
 import { decrementItem, healPokemon } from "../game/inventory-utils.js";
 import { recordMoveUsage } from "../game/move-usage.js";
@@ -26,22 +26,25 @@ function wildAttack(
   wildMoves: { id: string; pp: number; maxPp: number }[],
   targetStats: { attack: number; defense: number; speed: number; spAttack: number; spDefense: number },
   targetSpecies: string,
+  attackerStages?: StatStages,
+  defenderStages?: StatStages,
 ) {
   const availableMoves = wildMoves.filter((m) => m.pp > 0);
-  if (availableMoves.length === 0) return { damage: 0, moveId: null, message: "야생 포켓몬이 발버둥쳤다!" };
+  if (availableMoves.length === 0) return { damage: 0, moveId: null, moveData: null as any, message: "야생 포켓몬이 발버둥쳤다!" };
 
   const chosen = availableMoves[Math.floor(Math.random() * availableMoves.length)];
   const moveData = getMoveById(chosen.id);
-  if (!moveData) return { damage: 0, moveId: chosen.id, message: "" };
+  if (!moveData) return { damage: 0, moveId: chosen.id, moveData: null as any, message: "" };
 
   chosen.pp -= 1;
 
   const result = calculateDamage(
     wildLevel, wildStats, targetStats, moveData,
     getTypes(wildSpecies), getTypes(targetSpecies),
+    attackerStages, defenderStages,
   );
 
-  return { damage: result.damage, moveId: chosen.id, message: result.message, missed: result.missed, priority: moveData.priority ?? 0 };
+  return { damage: result.damage, moveId: chosen.id, moveData, message: result.message, missed: result.missed, priority: moveData.priority ?? 0 };
 }
 
 function hasAlivePartyMembers(user: { party: string[]; pokemon: Array<{ uid: string; hp: number }> }, excludeUid: string): boolean {
@@ -71,6 +74,62 @@ function handleFainted(
   return true;
 }
 
+/** stat change 적용 (statChance 확인 포함) */
+function maybeApplyStatChanges(
+  battle: BattleState,
+  moveData: { statChanges?: Array<{ stat: string; change: number }>; meta?: { statChance?: number } },
+  isPlayerMove: boolean,
+  log: string[],
+): void {
+  const changes = moveData.statChanges;
+  if (!changes || changes.length === 0) return;
+  const chance = moveData.meta?.statChance ?? 100;
+  if (Math.random() * 100 >= chance) return;
+
+  if (isPlayerMove) {
+    battle.playerStatStages = applyStatChanges(battle.playerStatStages ?? defaultStatStages(), changes);
+  } else {
+    battle.wildStatStages = applyStatChanges(battle.wildStatStages ?? defaultStatStages(), changes);
+  }
+  for (const { stat, change } of changes) {
+    const direction = change > 0 ? "올랐다" : "내려갔다";
+    log.push(`${stat} 스탯이 ${direction}!`);
+  }
+}
+
+/** meta 효과 적용 (drain, healing) */
+function applyMetaEffects(
+  moveData: { meta?: { drain?: number; healing?: number } },
+  damage: number,
+  attackerHp: number,
+  attackerMaxHp: number,
+): { hpChange: number; messages: string[] } {
+  let hpChange = 0;
+  const messages: string[] = [];
+  const meta = moveData.meta;
+  if (!meta) return { hpChange, messages };
+
+  if (meta.drain && meta.drain !== 0) {
+    const drainAmount = Math.floor(damage * meta.drain / 100);
+    hpChange += drainAmount;
+    if (drainAmount > 0) {
+      messages.push(`체력을 흡수했다!`);
+    } else if (drainAmount < 0) {
+      messages.push(`반동 데미지를 받았다!`);
+    }
+  }
+
+  if (meta.healing && meta.healing !== 0) {
+    const healAmount = Math.floor(attackerMaxHp * meta.healing / 100);
+    hpChange += healAmount;
+    if (healAmount > 0) {
+      messages.push(`체력을 회복했다!`);
+    }
+  }
+
+  return { hpChange, messages };
+}
+
 /** 야생 공격 후 기절 체크 — response를 보냈으면 true 반환 */
 function doWildAttackAndCheck(
   user: UserData, myPokemon: OwnedPokemon, battle: BattleState,
@@ -79,12 +138,26 @@ function doWildAttackAndCheck(
   const wildResult = wildAttack(
     battle.wild.species, battle.wild.level, battle.wild.stats,
     battle.wild.moves, myPokemon.stats, myPokemon.species,
+    battle.wildStatStages, battle.playerStatStages,
   );
   const previousHp = myPokemon.hp;
   myPokemon.hp = Math.max(0, myPokemon.hp - wildResult.damage);
   recordDamageTaken(myPokemon, previousHp - myPokemon.hp);
   log.push(`야생 ${battle.wild.species}의 공격! ${wildResult.damage} 데미지!`);
   if (wildResult.message) log.push(wildResult.message);
+
+  // Apply meta effects for wild pokemon
+  if (wildResult.moveData) {
+    const metaResult = applyMetaEffects(wildResult.moveData, wildResult.damage, battle.wild.hp, battle.wild.maxHp);
+    if (metaResult.hpChange !== 0) {
+      battle.wild.hp = Math.max(0, Math.min(battle.wild.maxHp, battle.wild.hp + metaResult.hpChange));
+    }
+    for (const msg of metaResult.messages) log.push(msg);
+
+    // Apply stat changes for wild pokemon
+    maybeApplyStatChanges(battle, wildResult.moveData, false, log);
+  }
+
   return handleFainted(user, myPokemon, battle, log, res);
 }
 
@@ -131,6 +204,8 @@ battleRoutes.post("/start", async (req, res) => {
       myPokemonUid: pokemonUid,
       turn: 0,
       wild: { ...event.pokemon },
+      playerStatStages: defaultStatStages(),
+      wildStatStages: defaultStatStages(),
     };
 
     user.battleState = battleState;
@@ -171,16 +246,37 @@ async function handleFight(
     selectedMoveData.priority ?? 0, wildPriority,
   );
 
+  let playerCausedFlinch = false;
+
   function playerAttack() {
     selectedMove.pp -= 1;
     recordMoveUsage(myPokemon, selectedMove.id);
     const result = calculateDamage(
       myPokemon.level, myPokemon.stats, battle.wild.stats, selectedMoveData,
       getTypes(myPokemon.species), getTypes(battle.wild.species),
+      battle.playerStatStages, battle.wildStatStages,
     );
     battle.wild.hp = Math.max(0, battle.wild.hp - result.damage);
     log.push(`${myPokemon.species}의 ${selectedMoveData.name}! ${result.missed ? "빗나갔다!" : `${result.damage} 데미지!`}`);
     if (result.message) log.push(result.message);
+
+    if (!result.missed) {
+      // Apply meta effects for player
+      const metaResult = applyMetaEffects(selectedMoveData, result.damage, myPokemon.hp, myPokemon.maxHp);
+      if (metaResult.hpChange !== 0) {
+        myPokemon.hp = Math.max(0, Math.min(myPokemon.maxHp, myPokemon.hp + metaResult.hpChange));
+      }
+      for (const msg of metaResult.messages) log.push(msg);
+
+      // Apply stat changes for player
+      maybeApplyStatChanges(battle, selectedMoveData, true, log);
+
+      // Check flinch (only effective if player goes first)
+      const flinchChance = selectedMoveData.meta?.flinchChance ?? 0;
+      if (flinchChance > 0 && Math.random() * 100 < flinchChance) {
+        playerCausedFlinch = true;
+      }
+    }
   }
 
   if (turnOrder === "player") {
@@ -193,7 +289,11 @@ async function handleFight(
       res.json({ log, battleState: null, result: "win" });
       return;
     }
-    if (doWildAttackAndCheck(user, myPokemon, battle, log, res)) return;
+    if (playerCausedFlinch) {
+      log.push(`야생 ${battle.wild.species}은(는) 풀이 죽어 움직이지 못했다!`);
+    } else {
+      if (doWildAttackAndCheck(user, myPokemon, battle, log, res)) return;
+    }
   } else {
     if (doWildAttackAndCheck(user, myPokemon, battle, log, res)) return;
     playerAttack();

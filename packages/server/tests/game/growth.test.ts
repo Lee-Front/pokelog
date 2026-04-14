@@ -146,7 +146,9 @@ describe("checkEvolution", () => {
   });
 
   it("supports item-use evolution lookup", () => {
-    expect(getEvolutionItemUseTarget("pikachu", "thunder-stone")).toBe("raichu");
+    const result = getEvolutionItemUseTarget("pikachu", "thunder-stone");
+    expect(result).not.toBeNull();
+    expect(result!.targetSpecies).toBe("raichu");
     expect(getEvolutionItemUseTarget("pikachu", "moon-stone")).toBeNull();
   });
 

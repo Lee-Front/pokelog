@@ -212,10 +212,10 @@ adminRoutes.post("/test/commit", async (req, res) => {
             },
           );
           if (matchingBranches.length === 1) {
-            const evolved = matchingBranches[0].targetSpecies;
+            const evolvedBranch = matchingBranches[0];
             clearPendingEvolutionForPokemon(user, poke.uid);
-            evolvePokemon(poke, evolved);
-            if (!user.pokedex.includes(evolved)) user.pokedex.push(evolved);
+            evolvePokemon(poke, evolvedBranch.targetSpecies, evolvedBranch.targetVariantId);
+            if (!user.pokedex.includes(evolvedBranch.targetSpecies)) user.pokedex.push(evolvedBranch.targetSpecies);
           } else if (matchingBranches.length > 1) {
             queuePendingEvolution(user, poke, matchingBranches);
           }

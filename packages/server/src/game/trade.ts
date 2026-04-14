@@ -158,7 +158,7 @@ function maybeApplyTradeEvolution(
   }
 
   const fromSpecies = pokemon.species;
-  evolvePokemon(pokemon, branch.targetSpecies);
+  evolvePokemon(pokemon, branch.targetSpecies, branch.targetVariantId);
 
   if (branch.conditions.some((condition) => condition.type === "held-item")) {
     pokemon.heldItem = null;

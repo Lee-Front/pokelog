@@ -1,5 +1,30 @@
 import { getTypeChart } from "./data-loader.js";
-import type { PokemonStats, MoveData } from "../../../../shared/types.js";
+import type { PokemonStats, MoveData, StatStages } from "../../../../shared/types.js";
+
+export function defaultStatStages(): StatStages {
+  return { attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 };
+}
+
+export function applyStatStageMultiplier(baseStat: number, stage: number): number {
+  // Pokemon stat stage multipliers: stage -6 to +6
+  // Positive: (2+stage)/2, Negative: 2/(2+|stage|)
+  const clamped = Math.max(-6, Math.min(6, stage));
+  if (clamped >= 0) return Math.floor(baseStat * (2 + clamped) / 2);
+  return Math.floor(baseStat * 2 / (2 + Math.abs(clamped)));
+}
+
+export function applyStatChanges(
+  stages: StatStages,
+  changes: Array<{ stat: string; change: number }>,
+): StatStages {
+  const result = { ...stages };
+  for (const { stat, change } of changes) {
+    if (stat in result) {
+      result[stat as keyof StatStages] = Math.max(-6, Math.min(6, result[stat as keyof StatStages] + change));
+    }
+  }
+  return result;
+}
 
 export interface DamageResult {
   damage: number;
@@ -15,6 +40,8 @@ export function calculateDamage(
   move: MoveData,
   attackerTypes: string[],
   defenderTypes: string[],
+  attackerStages?: StatStages,
+  defenderStages?: StatStages,
 ): DamageResult {
   const typeChart = getTypeChart();
 
@@ -29,10 +56,14 @@ export function calculateDamage(
     return { damage: 0, missed: false, effectiveness: 1, message: "" };
   }
 
-  // Determine atk/def based on category
+  // Determine atk/def based on category, applying stat stages
   const isPhysical = move.category === "physical";
-  const atk = isPhysical ? attackerStats.attack : attackerStats.spAttack;
-  const def = isPhysical ? defenderStats.defense : defenderStats.spDefense;
+  const baseAtk = isPhysical ? attackerStats.attack : attackerStats.spAttack;
+  const baseDef = isPhysical ? defenderStats.defense : defenderStats.spDefense;
+  const atkStage = attackerStages ? (isPhysical ? attackerStages.attack : attackerStages.spAttack) : 0;
+  const defStage = defenderStages ? (isPhysical ? defenderStages.defense : defenderStages.spDefense) : 0;
+  const atk = applyStatStageMultiplier(baseAtk, atkStage);
+  const def = applyStatStageMultiplier(baseDef, defStage);
 
   // Type effectiveness: product of chart values for each defender type
   let typeMultiplier = 1;
