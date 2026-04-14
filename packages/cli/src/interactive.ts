@@ -168,7 +168,7 @@ function buildMenuLines(
     const node = items[i];
     const active = i === cursor;
     const pointer = active ? `${YEL}>${R}` : " ";
-    const label = active ? `${BLD}${node.label}${R}` : node.label;
+    const label = active ? `${BLD}${node.label}${R}` : `\x1b[37m${node.label}${R}`;
     const arrow = isGroup(node) ? ` ${DIM}▸${R}` : "";
     const desc = `${DIM}${node.desc}${R}`;
     menuLines.push(`${pointer} ${padRight(label, 10)}${arrow} ${desc}`);
