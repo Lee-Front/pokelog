@@ -6,7 +6,7 @@ export function resolvePokemonGender(genderRate: number | undefined, randomValue
     return "genderless";
   }
 
-  if (genderRate <= 0) {
+  if (genderRate === 0) {
     return "male";
   }
 

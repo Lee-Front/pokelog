@@ -27,6 +27,8 @@ function createUserData(): UserData {
     storage: [],
     log: [],
     integrations: [],
+    pendingEvolutions: [],
+    currentRegion: "default",
   };
 }
 
@@ -72,7 +74,7 @@ describe("useInventoryItem", () => {
     user.inventory = { "thunder-stone": 1 };
 
     const result = useInventoryItem(user, "thunder-stone", pokemon.uid);
-    const expectedStats = calculateStatsForLevel("raichu", 20);
+    const expectedStats = calculateStatsForLevel("raichu", 20, pokemon.nature);
 
     expect(result.kind).toBe("evolution");
     expect(result.previousSpecies).toBe("pikachu");

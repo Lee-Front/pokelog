@@ -26,6 +26,8 @@ function makeUser(): UserData {
     storage: [],
     log: [],
     integrations: [],
+    pendingEvolutions: [],
+    currentRegion: "default",
   };
 }
 
