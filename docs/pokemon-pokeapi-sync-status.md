@@ -289,8 +289,21 @@ Status conditions now implemented:
 - Burn halves physical attack, paralysis halves speed
 - Heal command clears primary status
 
+Critical hit system:
+- Crit roll based on move `meta.critRate` (stage 0=1/24, 1=1/8, 2=1/2, 3=always)
+- 1.5x damage multiplier, ignores negative attacker / positive defender stat stages
+- 26 moves have critRate > 0
+
+G-Max exclusive moves:
+- 32 G-Max moves added to moves.json (total 969 moves)
+- Auto-substituted when Gigantamaxed pokemon uses matching-type damaging move
+- Mapping in `data/pokemon/gmax-moves.json`
+
+Trade record archiving:
+- Resolved trades beyond 200 are archived to `trades-archive.json` instead of dropped
+- `getArchivedTrades()` available for reading archived records
+
 Still deferred:
-- critical hit rate modifiers (`meta.critRate`) — data exists, 26 moves have critRate > 0
 - multi-hit mechanics (`meta.minHits`/`meta.maxHits`) — excluded (1:1 전투 전용)
 
 ## Runtime Variant Encounter Status
@@ -369,8 +382,6 @@ Gigantamax (32 species):
 
 ## Next Recommended Work
 
-1. Implement fusion form changes (Kyurem, Necrozma, Calyrex — 3 species).
-2. Add multi-hit mechanics (`meta.minHits`/`meta.maxHits`).
-3. Add critical hit rate modifiers (`meta.critRate`).
-4. Decide whether resolved trade records should be archived before pruning.
-5. Add G-Max exclusive moves (26 moves).
+1. Implement fusion form changes (Kyurem, Necrozma, Calyrex — 3 species, 현재 제외).
+2. Terastallization system (Gen 9 scope 확장 시).
+3. PvP battle system (실시간 대전).
