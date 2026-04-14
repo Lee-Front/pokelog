@@ -1,18 +1,12 @@
 import type { OwnedPokemon, ShopItem, UserData } from "../../../../shared/types.js";
-import { getItems, getSpeciesByName } from "./data-loader.js";
+import { getItems } from "./data-loader.js";
+import { GameRuleError } from "./game-errors.js";
 import { evolvePokemon, getEvolutionItemUseTarget } from "./growth.js";
 import { decrementItem, healPokemon } from "./inventory-utils.js";
 import { clearPendingEvolutionForPokemon } from "./pending-evolution.js";
+import { getDisplaySpeciesName } from "./pokemon-state.js";
 
-export class ItemUseError extends Error {
-  status: number;
-
-  constructor(message: string, status = 400) {
-    super(message);
-    this.name = "ItemUseError";
-    this.status = status;
-  }
-}
+export { GameRuleError as ItemUseError };
 
 export interface ItemUseResult {
   kind: "healing" | "evolution";
@@ -35,7 +29,7 @@ function getPokemonDisplayName(pokemon: OwnedPokemon): string {
     return pokemon.nickname;
   }
 
-  return getSpeciesByName(pokemon.species)?.name ?? pokemon.species;
+  return getDisplaySpeciesName(pokemon.species);
 }
 
 export function useInventoryItem(
@@ -45,19 +39,19 @@ export function useInventoryItem(
   shopItem?: ShopItem,
 ): ItemUseResult {
   if (!user.inventory[item] || user.inventory[item] <= 0) {
-    throw new ItemUseError("Item not found in inventory.");
+    throw new GameRuleError("Item not found in inventory.");
   }
 
   const pokemon = user.pokemon.find((entry) => entry.uid === pokemonUid);
   if (!pokemon) {
-    throw new ItemUseError("Pokemon not found in party.", 404);
+    throw new GameRuleError("Pokemon not found in party.", 404);
   }
 
   const itemName = getItemDisplayName(item, shopItem);
 
   if (shopItem?.healAmount) {
     if (pokemon.hp >= pokemon.maxHp) {
-      throw new ItemUseError("Pokemon does not need healing.");
+      throw new GameRuleError("Pokemon does not need healing.");
     }
 
     decrementItem(user.inventory, item);
@@ -73,7 +67,7 @@ export function useInventoryItem(
 
   const evolutionResult = getEvolutionItemUseTarget(pokemon.species, item);
   if (!evolutionResult) {
-    throw new ItemUseError(`Cannot use ${itemName} on ${getPokemonDisplayName(pokemon)}.`);
+    throw new GameRuleError(`Cannot use ${itemName} on ${getPokemonDisplayName(pokemon)}.`);
   }
 
   const previousSpecies = pokemon.species;

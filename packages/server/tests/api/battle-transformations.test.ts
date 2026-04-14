@@ -12,6 +12,13 @@ describe("battle-transformations API", () => {
     t?.cleanup();
   });
 
+  function findMoveId(
+    pokemon: { moves: Array<{ id: string }> },
+    preferredMoveId: string,
+  ): string {
+    return pokemon.moves.find((move) => move.id === preferredMoveId)?.id ?? pokemon.moves[0].id;
+  }
+
   it("primal reversion activates automatically on battle start for groudon + red-orb", async () => {
     const { token, userId } = await t.registerAndLogin("primal1", "charmander");
     const api = t.authed(token);
@@ -121,6 +128,73 @@ describe("battle-transformations API", () => {
     expect(fight.body.log.some((l: string) => l.includes("메가진화"))).toBe(true);
   });
 
+  it("reverts mega stats after the battle ends", async () => {
+    const { token, userId } = await t.registerAndLogin("megaend", "charmander");
+    const api = t.authed(token);
+
+    const give = await t.admin().post("/api/admin/test/give-pokemon", {
+      userId,
+      species: "charizard",
+      level: 80,
+    });
+    expect(give.status).toBe(200);
+    const charizardUid = (give.body as { pokemon: { uid: string } }).pokemon.uid;
+
+    await t.admin().post("/api/admin/test/give-item", { userId, item: "charizardite-x", quantity: 1 });
+    await t.admin().post("/api/admin/test/give-item", { userId, item: "key-stone", quantity: 1 });
+
+    const equip = await api.post("/api/game/items/equip", {
+      item: "charizardite-x",
+      pokemonUid: charizardUid,
+    });
+    expect(equip.status).toBe(200);
+
+    const beforeParty = await api.get("/api/game/party");
+    const beforeCharizard = (beforeParty.body as { party: Array<{ uid: string; stats: { attack: number } }> }).party
+      .find((pokemon) => pokemon.uid === charizardUid)!;
+    const baseAttack = beforeCharizard.stats.attack;
+
+    const enc = await t.admin().post("/api/admin/test/encounter", {
+      userId,
+      species: "magikarp",
+      level: 5,
+    });
+    expect(enc.status).toBe(200);
+    const eventId = (enc.body as { event: { id: string } }).event.id;
+
+    const start = await api.post("/api/battle/start", {
+      eventId,
+      pokemonUid: charizardUid,
+    });
+    expect(start.status).toBe(200);
+
+    const battleParty = await api.get("/api/game/party");
+    const battleCharizard = (battleParty.body as { party: Array<{ uid: string; moves: Array<{ id: string }> }> }).party
+      .find((pokemon) => pokemon.uid === charizardUid)!;
+    const moveId = findMoveId(battleCharizard, "scary-face");
+
+    const fight = await api.post("/api/battle/action", {
+      action: "fight",
+      data: { moveId, mega: true },
+    });
+    expect(fight.status).toBe(200);
+    expect((fight.body as { battleState?: { playerBattleForm?: string } }).battleState?.playerBattleForm).toBe("charizard-mega-x");
+
+    const duringParty = await api.get("/api/game/party");
+    const transformedCharizard = (duringParty.body as { party: Array<{ uid: string; stats: { attack: number } }> }).party
+      .find((pokemon) => pokemon.uid === charizardUid)!;
+    expect(transformedCharizard.stats.attack).toBeGreaterThan(baseAttack);
+
+    const run = await api.post("/api/battle/action", { action: "run" });
+    expect(run.status).toBe(200);
+    expect((run.body as { battleState: null }).battleState).toBeNull();
+
+    const afterParty = await api.get("/api/game/party");
+    const revertedCharizard = (afterParty.body as { party: Array<{ uid: string; stats: { attack: number } }> }).party
+      .find((pokemon) => pokemon.uid === charizardUid)!;
+    expect(revertedCharizard.stats.attack).toBe(baseAttack);
+  });
+
   it("rejects mega evolution twice in same battle", async () => {
     const { token, userId } = await t.registerAndLogin("mega2", "charmander");
     const api = t.authed(token);
@@ -192,24 +266,20 @@ describe("battle-transformations API", () => {
       userId,
       species: "charizard",
       level: 80,
+      hasGigantamaxFactor: true,
     });
     expect(give.status).toBe(200);
-    const charizardUid = give.body.pokemon.uid;
+    const charizardUid = (give.body as { pokemon: { uid: string } }).pokemon.uid;
 
-    // We need to directly set hasGigantamaxFactor on the pokemon.
-    // Use the user store directly through admin. Since we can't do that via API,
-    // we'll modify via the test data dir. But test-helpers don't expose that easily.
-    // Instead, let's check if the test infrastructure supports it or skip the deeper test.
-    // For now, just test the validation path (no factor).
     await t.admin().post("/api/admin/test/give-item", { userId, item: "dynamax-band", quantity: 1 });
 
     const enc = await t.admin().post("/api/admin/test/encounter", {
       userId,
-      species: "rattata",
+      species: "magikarp",
       level: 5,
     });
     expect(enc.status).toBe(200);
-    const eventId = enc.body.event.id;
+    const eventId = (enc.body as { event: { id: string } }).event.id;
 
     const start = await api.post("/api/battle/start", {
       eventId,
@@ -218,16 +288,47 @@ describe("battle-transformations API", () => {
     expect(start.status).toBe(200);
 
     const party = await api.get("/api/game/party");
-    const charizard = party.body.party.find((p: { uid: string }) => p.uid === charizardUid);
-    const moveId = charizard.moves[0].id;
+    const charizard = (party.body as { party: Array<{ uid: string; maxHp: number; moves: Array<{ id: string }> }> }).party
+      .find((p) => p.uid === charizardUid)!;
+    const baseMaxHp = charizard.maxHp;
+    const moveId = findMoveId(charizard, "scary-face");
 
-    // Try gigantamax without factor - should fail
-    const fight = await api.post("/api/battle/action", {
+    const fight1 = await api.post("/api/battle/action", {
       action: "fight",
       data: { moveId, gigantamax: true },
     });
-    expect(fight.status).toBe(400);
-    expect(fight.body.error).toContain("팩터");
+    expect(fight1.status).toBe(200);
+    expect((fight1.body as { battleState?: { playerBattleForm?: string | null; transformationType?: string | null; gmaxTurnsRemaining?: number } }).battleState?.playerBattleForm).toBe("charizard-gmax");
+    expect((fight1.body as { battleState?: { transformationType?: string | null } }).battleState?.transformationType).toBe("gigantamax");
+    expect((fight1.body as { battleState?: { gmaxTurnsRemaining?: number } }).battleState?.gmaxTurnsRemaining).toBe(2);
+
+    const duringParty = await api.get("/api/game/party");
+    const gmaxCharizard = (duringParty.body as { party: Array<{ uid: string; maxHp: number }> }).party
+      .find((pokemon) => pokemon.uid === charizardUid)!;
+    expect(gmaxCharizard.maxHp).toBeGreaterThan(baseMaxHp);
+
+    const fight2 = await api.post("/api/battle/action", {
+      action: "fight",
+      data: { moveId },
+    });
+    expect(fight2.status).toBe(200);
+    expect((fight2.body as { battleState?: { playerBattleForm?: string | null; gmaxTurnsRemaining?: number } }).battleState?.playerBattleForm).toBe("charizard-gmax");
+    expect((fight2.body as { battleState?: { gmaxTurnsRemaining?: number } }).battleState?.gmaxTurnsRemaining).toBe(1);
+
+    const fight3 = await api.post("/api/battle/action", {
+      action: "fight",
+      data: { moveId },
+    });
+    expect(fight3.status).toBe(200);
+    expect((fight3.body as { result: string }).result).toBe("continue");
+    expect((fight3.body as { battleState?: { playerBattleForm?: string | null; transformationType?: string | null } }).battleState?.playerBattleForm).toBeNull();
+    expect((fight3.body as { battleState?: { transformationType?: string | null } }).battleState?.transformationType).toBeNull();
+
+    const afterParty = await api.get("/api/game/party");
+    const revertedCharizard = (afterParty.body as { party: Array<{ uid: string; maxHp: number; hp: number }> }).party
+      .find((pokemon) => pokemon.uid === charizardUid)!;
+    expect(revertedCharizard.maxHp).toBe(baseMaxHp);
+    expect(revertedCharizard.hp).toBeLessThanOrEqual(baseMaxHp);
   });
 
   it("rejects mega without key-stone", async () => {

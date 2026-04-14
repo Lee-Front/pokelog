@@ -1,17 +1,10 @@
 import type { OwnedPokemon, UserData } from "../../../../shared/types.js";
 import { getItemById } from "./data-loader.js";
+import { GameRuleError } from "./game-errors.js";
 import { decrementItem, incrementItem } from "./inventory-utils.js";
 import { isHoldableItem } from "./inventory-catalog.js";
 
-export class HeldItemError extends Error {
-  status: number;
-
-  constructor(message: string, status = 400) {
-    super(message);
-    this.name = "HeldItemError";
-    this.status = status;
-  }
-}
+export { GameRuleError as HeldItemError };
 
 export interface HeldItemResult {
   item: string;
@@ -27,7 +20,7 @@ function getHeldItemName(itemId: string): string {
 function getPartyPokemon(user: UserData, pokemonUid: string): OwnedPokemon {
   const pokemon = user.pokemon.find((entry) => entry.uid === pokemonUid);
   if (!pokemon) {
-    throw new HeldItemError("Pokemon not found in party.", 404);
+    throw new GameRuleError("Pokemon not found in party.", 404);
   }
 
   return pokemon;
@@ -35,17 +28,17 @@ function getPartyPokemon(user: UserData, pokemonUid: string): OwnedPokemon {
 
 export function equipHeldItem(user: UserData, pokemonUid: string, itemId: string): HeldItemResult {
   if (!user.inventory[itemId] || user.inventory[itemId] <= 0) {
-    throw new HeldItemError("Item not found in inventory.");
+    throw new GameRuleError("Item not found in inventory.");
   }
   if (!isHoldableItem(itemId)) {
-    throw new HeldItemError("This item cannot be held.");
+    throw new GameRuleError("This item cannot be held.");
   }
 
   const pokemon = getPartyPokemon(user, pokemonUid);
   const previousHeldItem = pokemon.heldItem ?? null;
 
   if (previousHeldItem === itemId) {
-    throw new HeldItemError("Pokemon is already holding that item.");
+    throw new GameRuleError("Pokemon is already holding that item.");
   }
 
   decrementItem(user.inventory, itemId);
@@ -66,7 +59,7 @@ export function unequipHeldItem(user: UserData, pokemonUid: string): { pokemon: 
   const pokemon = getPartyPokemon(user, pokemonUid);
   const heldItem = pokemon.heldItem;
   if (!heldItem) {
-    throw new HeldItemError("Pokemon is not holding an item.");
+    throw new GameRuleError("Pokemon is not holding an item.");
   }
 
   incrementItem(user.inventory, heldItem);

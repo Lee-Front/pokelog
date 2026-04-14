@@ -4,6 +4,10 @@ import {
   resolvePreAttack,
   determineBattleTurnOrder,
   applyEndOfTurnBattle,
+  maybeApplyAilment,
+  maybeApplyStatChanges,
+  applyMetaEffects,
+  hasAlivePartyMembers,
 } from "../../src/game/battle-state.js";
 import type {
   BattleState,
@@ -490,5 +494,239 @@ describe("applyEndOfTurnBattle", () => {
     const confusionAfter = battle.playerVolatile?.find((v) => v.id === "confusion");
     // After tick: turnsRemaining goes to 0 and should be removed
     expect(confusionAfter).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// maybeApplyAilment
+// ---------------------------------------------------------------------------
+
+describe("maybeApplyAilment", () => {
+  let randomSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    randomSpy = vi.spyOn(Math, "random");
+  });
+
+  afterEach(() => {
+    randomSpy.mockRestore();
+  });
+
+  it("returns no status change when move has no ailment", () => {
+    const move = makeMove(); // no meta.ailment
+    const log: string[] = [];
+    const result = maybeApplyAilment(move, null, [], log);
+
+    expect(result.newStatus).toBeNull();
+    expect(result.newVolatiles).toEqual([]);
+    expect(log).toHaveLength(0);
+  });
+
+  it("returns no status change when ailment is 'none'", () => {
+    const move = makeMove({ meta: { ailment: "none", ailmentChance: 100 } });
+    const log: string[] = [];
+    const result = maybeApplyAilment(move, null, [], log);
+
+    expect(result.newStatus).toBeNull();
+  });
+
+  it("applies burn status with 100% chance", () => {
+    randomSpy.mockReturnValue(0.1); // roll succeeds
+    const move = makeMove({ meta: { ailment: "burn", ailmentChance: 100 } });
+    const log: string[] = [];
+    const result = maybeApplyAilment(move, null, [], log);
+
+    expect(result.newStatus).toBe("burn");
+    expect(log.some((m) => m.includes("화상"))).toBe(true);
+  });
+
+  it("does not apply status when target already has a status condition", () => {
+    randomSpy.mockReturnValue(0.1);
+    const move = makeMove({ meta: { ailment: "burn", ailmentChance: 100 } });
+    const log: string[] = [];
+    // Target already has poison — burn should not apply
+    const result = maybeApplyAilment(move, "poison", [], log);
+
+    expect(result.newStatus).toBeNull();
+  });
+
+  it("applies sleep and returns sleepTurns", () => {
+    randomSpy.mockReturnValue(0.1);
+    const move = makeMove({ meta: { ailment: "sleep", ailmentChance: 100 } });
+    const log: string[] = [];
+    const result = maybeApplyAilment(move, null, [], log);
+
+    expect(result.newStatus).toBe("sleep");
+    expect(result.sleepTurns).toBeGreaterThan(0);
+  });
+
+  it("applies volatile confusion status", () => {
+    // Volatile ailment chance uses its own roll
+    randomSpy.mockReturnValue(0.1); // roll succeeds (< ailmentChance/100)
+    const move = makeMove({ meta: { ailment: "confusion", ailmentChance: 100 } });
+    const log: string[] = [];
+    const result = maybeApplyAilment(move, null, [], log);
+
+    expect(result.newStatus).toBeNull();
+    expect(result.newVolatiles.some((v) => v.id === "confusion")).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// maybeApplyStatChanges
+// ---------------------------------------------------------------------------
+
+describe("maybeApplyStatChanges", () => {
+  let randomSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    randomSpy = vi.spyOn(Math, "random");
+  });
+
+  afterEach(() => {
+    randomSpy.mockRestore();
+  });
+
+  it("does nothing when no stat changes defined", () => {
+    randomSpy.mockReturnValue(0.1);
+    const battle = makeBattle();
+    const move = makeMove(); // no statChanges
+    const log: string[] = [];
+    const before = { ...battle.playerStatStages };
+
+    maybeApplyStatChanges(battle, move, true, log);
+
+    expect(battle.playerStatStages).toEqual(before);
+    expect(log).toHaveLength(0);
+  });
+
+  it("applies self-buff to player when player uses buff move", () => {
+    randomSpy.mockReturnValue(0.0); // chance check passes
+    const battle = makeBattle();
+    const move = makeMove({
+      statChanges: [{ stat: "attack", change: 1 }],
+      target: "user",
+    });
+    const log: string[] = [];
+
+    maybeApplyStatChanges(battle, move, true, log);
+
+    expect(battle.playerStatStages?.attack).toBe(1);
+    expect(log.some((m) => m.includes("올랐다"))).toBe(true);
+  });
+
+  it("applies debuff to wild when player uses debuff move targeting opponent", () => {
+    randomSpy.mockReturnValue(0.0);
+    const battle = makeBattle();
+    const move = makeMove({
+      statChanges: [{ stat: "defense", change: -1 }],
+      target: "selected-pokemon",
+    });
+    const log: string[] = [];
+
+    maybeApplyStatChanges(battle, move, true, log);
+
+    expect(battle.wildStatStages?.defense).toBe(-1);
+  });
+
+  it("skips stat change when chance roll fails", () => {
+    randomSpy.mockReturnValue(0.99); // chance check: 0.99*100=99 >= chance → skip
+    const battle = makeBattle();
+    const move = makeMove({
+      statChanges: [{ stat: "attack", change: 1 }],
+      meta: { statChance: 30 },
+    });
+    const log: string[] = [];
+
+    maybeApplyStatChanges(battle, move, true, log);
+
+    expect(battle.playerStatStages?.attack).toBe(0);
+    expect(log).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// applyMetaEffects
+// ---------------------------------------------------------------------------
+
+describe("applyMetaEffects", () => {
+  it("returns zero hp change when no meta", () => {
+    const move = makeMove(); // no meta
+    const result = applyMetaEffects(move, 30, 50, 100);
+
+    expect(result.hpChange).toBe(0);
+    expect(result.messages).toHaveLength(0);
+  });
+
+  it("calculates drain healing as percentage of damage", () => {
+    const move = makeMove({ meta: { drain: 50 } });
+    const result = applyMetaEffects(move, 40, 50, 100);
+
+    // 50% of 40 damage = 20 HP gain
+    expect(result.hpChange).toBe(20);
+    expect(result.messages.some((m) => m.includes("흡수"))).toBe(true);
+  });
+
+  it("calculates recoil damage as negative drain", () => {
+    const move = makeMove({ meta: { drain: -33 } });
+    const result = applyMetaEffects(move, 60, 50, 100);
+
+    // -33% of 60 = -19 (floor)
+    expect(result.hpChange).toBeLessThan(0);
+    expect(result.messages.some((m) => m.includes("반동"))).toBe(true);
+  });
+
+  it("calculates healing as percentage of max hp", () => {
+    const move = makeMove({ meta: { healing: 50 } });
+    const result = applyMetaEffects(move, 0, 50, 100);
+
+    // 50% of maxHp=100 = 50 HP
+    expect(result.hpChange).toBe(50);
+    expect(result.messages.some((m) => m.includes("회복"))).toBe(true);
+  });
+
+  it("combines drain and healing when both are present", () => {
+    const move = makeMove({ meta: { drain: 50, healing: 25 } });
+    const result = applyMetaEffects(move, 40, 50, 100);
+
+    // drain: 50% of 40 = 20; healing: 25% of 100 = 25 → total 45
+    expect(result.hpChange).toBe(45);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// hasAlivePartyMembers
+// ---------------------------------------------------------------------------
+
+describe("hasAlivePartyMembers", () => {
+  it("returns false when no other party members exist", () => {
+    const user = {
+      party: ["uid-1"],
+      pokemon: [{ uid: "uid-1", hp: 50 }],
+    };
+    expect(hasAlivePartyMembers(user, "uid-1")).toBe(false);
+  });
+
+  it("returns true when another party member is alive", () => {
+    const user = {
+      party: ["uid-1", "uid-2"],
+      pokemon: [
+        { uid: "uid-1", hp: 0 },
+        { uid: "uid-2", hp: 50 },
+      ],
+    };
+    expect(hasAlivePartyMembers(user, "uid-1")).toBe(true);
+  });
+
+  it("returns false when all other party members are fainted", () => {
+    const user = {
+      party: ["uid-1", "uid-2", "uid-3"],
+      pokemon: [
+        { uid: "uid-1", hp: 50 },
+        { uid: "uid-2", hp: 0 },
+        { uid: "uid-3", hp: 0 },
+      ],
+    };
+    expect(hasAlivePartyMembers(user, "uid-1")).toBe(false);
   });
 });

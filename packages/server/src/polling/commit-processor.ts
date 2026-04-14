@@ -8,10 +8,10 @@ import {
   applyLearnedMoves,
   buildLevelEvolutionContext,
   checkLevelUp,
-  calculateStatsForLevel,
   evolvePokemon,
   getMatchingEvolutionBranches,
 } from "../game/growth.js";
+import { calculateStatsForLevel } from "../game/pokemon-stats.js";
 import { getCommitByteChanges } from "./git-client.js";
 import type { CommitInfo } from "./git-client.js";
 import { getRegion } from "../game/data-loader.js";

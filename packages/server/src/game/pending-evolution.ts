@@ -7,17 +7,10 @@ import type {
   UserData,
 } from "../../../../shared/types.js";
 import { getSpeciesByName } from "./data-loader.js";
+import { GameRuleError } from "./game-errors.js";
 import { evolvePokemon } from "./growth.js";
 
-export class PendingEvolutionError extends Error {
-  status: number;
-
-  constructor(message: string, status = 400) {
-    super(message);
-    this.name = "PendingEvolutionError";
-    this.status = status;
-  }
-}
+export { GameRuleError as PendingEvolutionError };
 
 function getPokemonByUid(user: UserData, pokemonUid: string): OwnedPokemon | undefined {
   return user.pokemon.find((pokemon) => pokemon.uid === pokemonUid)
@@ -68,20 +61,20 @@ export function resolvePendingEvolutionChoice(
   const pendingEvolutions = user.pendingEvolutions ?? [];
   const pendingEvolution = pendingEvolutions.find((entry) => entry.id === pendingEvolutionId);
   if (!pendingEvolution) {
-    throw new PendingEvolutionError("Pending evolution not found.", 404);
+    throw new GameRuleError("Pending evolution not found.", 404);
   }
 
   const option = pendingEvolution.options.find((entry) => entry.branchId === branchId);
   if (!option) {
-    throw new PendingEvolutionError("Evolution option not found.", 404);
+    throw new GameRuleError("Evolution option not found.", 404);
   }
 
   const pokemon = getPokemonByUid(user, pendingEvolution.pokemonUid);
   if (!pokemon) {
-    throw new PendingEvolutionError("Pokemon not found.", 404);
+    throw new GameRuleError("Pokemon not found.", 404);
   }
   if (pokemon.species !== pendingEvolution.sourceSpecies) {
-    throw new PendingEvolutionError("Pokemon species no longer matches the pending evolution.");
+    throw new GameRuleError("Pokemon species no longer matches the pending evolution.");
   }
 
   evolvePokemon(pokemon, option.targetSpecies, option.targetVariantId);

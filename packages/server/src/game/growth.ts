@@ -1,6 +1,7 @@
-import { getMoveById, getSpeciesByName, getEvolutions, getNatureById } from "./data-loader.js";
+import { getMoveById, getSpeciesByName, getEvolutions } from "./data-loader.js";
 import { getDamageTakenTotal } from "./battle-progress.js";
 import { getMoveUsageCount } from "./move-usage.js";
+import { calculateStatsForLevel } from "./pokemon-stats.js";
 import type {
   EvolutionBranch,
   EvolutionCondition,
@@ -8,8 +9,9 @@ import type {
   OwnedPokemon,
   PokemonGender,
   PokemonMove,
-  PokemonStats,
 } from "../../../../shared/types.js";
+
+export { calculateStatsForLevel };
 
 const LOCATION_REGION_ALIASES: Record<string, string[]> = {
   alola: ["vast-poni-canyon", "blush-mountain", "mount-lanakila"],
@@ -54,42 +56,6 @@ export function checkLevelUp(pokemon: OwnedPokemon): {
 }
 
 /** 성격 보정 적용 — stats 객체를 직접 변경 */
-export function applyNatureModifier(stats: PokemonStats, nature?: string): void {
-  if (!nature) return;
-  const natureData = getNatureById(nature);
-  if (!natureData) return;
-  if (natureData.increasedStat && natureData.increasedStat in stats) {
-    stats[natureData.increasedStat] = Math.floor(stats[natureData.increasedStat] * 1.1);
-  }
-  if (natureData.decreasedStat && natureData.decreasedStat in stats) {
-    stats[natureData.decreasedStat] = Math.floor(stats[natureData.decreasedStat] * 0.9);
-  }
-}
-
-export function calculateStatsForLevel(
-  species: string,
-  level: number,
-  nature?: string,
-): { hp: number; maxHp: number; stats: PokemonStats } {
-  const speciesData = getSpeciesByName(species);
-  if (!speciesData) {
-    throw new Error(`Unknown species: ${species}`);
-  }
-
-  const hp = Math.floor(((speciesData.baseStats.hp * 2 * level) / 100) + level + 10);
-  const stats: PokemonStats = {
-    attack: Math.floor(((speciesData.baseStats.attack * 2 * level) / 100) + 5),
-    defense: Math.floor(((speciesData.baseStats.defense * 2 * level) / 100) + 5),
-    speed: Math.floor(((speciesData.baseStats.speed * 2 * level) / 100) + 5),
-    spAttack: Math.floor(((speciesData.baseStats.spAttack * 2 * level) / 100) + 5),
-    spDefense: Math.floor(((speciesData.baseStats.spDefense * 2 * level) / 100) + 5),
-  };
-
-  applyNatureModifier(stats, nature);
-
-  return { hp, maxHp: hp, stats };
-}
-
 function buildMoveSlot(moveId: string): PokemonMove {
   const moveData = getMoveById(moveId);
   const pp = moveData?.pp ?? 10;

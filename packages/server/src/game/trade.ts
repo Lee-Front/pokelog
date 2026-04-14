@@ -1,14 +1,15 @@
 import type { OwnedPokemon, TradeRecord, UserData } from "../../../../shared/types.js";
 import { getUser, saveUser } from "../storage/user-store.js";
-import { getSpeciesByName } from "./data-loader.js";
 import { createTradeRecord, getTrades, saveTrades } from "../storage/trade-store.js";
+import { GameRuleError } from "./game-errors.js";
 import { evolvePokemon, resolveTradeEvolution } from "./growth.js";
+import { getDisplaySpeciesName } from "./pokemon-state.js";
 
 type PokemonSlot =
   | { container: "party"; index: number }
   | { container: "storage"; index: number };
 
-export class TradeError extends Error {}
+export { GameRuleError as TradeError };
 
 export interface TradePokemonCandidate {
   uid: string;
@@ -50,11 +51,11 @@ function findPokemon(user: UserData, uid: string): { pokemon: OwnedPokemon; slot
 function ensureTradeablePokemon(user: UserData, uid: string, ownerLabel: string) {
   const found = findPokemon(user, uid);
   if (!found) {
-    throw new TradeError(`${ownerLabel} does not own the selected Pokemon.`);
+    throw new GameRuleError(`${ownerLabel} does not own the selected Pokemon.`);
   }
 
   if (user.battleState?.myPokemonUid === uid) {
-    throw new TradeError(`${ownerLabel} cannot trade a Pokemon that is currently battling.`);
+    throw new GameRuleError(`${ownerLabel} cannot trade a Pokemon that is currently battling.`);
   }
 
   return found;
@@ -77,7 +78,7 @@ function listTradeablePokemon(user: UserData): TradePokemonCandidate[] {
     candidates.push({
       uid: pokemon.uid,
       species: pokemon.species,
-      speciesName: getSpeciesByName(pokemon.species)?.name ?? pokemon.species,
+      speciesName: getDisplaySpeciesName(pokemon.species),
       nickname: pokemon.nickname,
       level: pokemon.level,
       location: "party",
@@ -92,7 +93,7 @@ function listTradeablePokemon(user: UserData): TradePokemonCandidate[] {
     candidates.push({
       uid: pokemon.uid,
       species: pokemon.species,
-      speciesName: getSpeciesByName(pokemon.species)?.name ?? pokemon.species,
+      speciesName: getDisplaySpeciesName(pokemon.species),
       nickname: pokemon.nickname,
       level: pokemon.level,
       location: "storage",
@@ -165,7 +166,7 @@ function maybeApplyTradeEvolution(
 function getTradeById(trades: TradeRecord[], tradeId: string): TradeRecord {
   const trade = trades.find((entry) => entry.id === tradeId);
   if (!trade) {
-    throw new TradeError("Trade request not found.");
+    throw new GameRuleError("Trade request not found.");
   }
   return trade;
 }
@@ -180,7 +181,7 @@ export async function listTradeCandidates(requesterUserId: string, responderUser
   responder: { userId: string; nickname: string; pokemon: TradePokemonCandidate[] };
 }> {
   if (requesterUserId === responderUserId) {
-    throw new TradeError("You cannot trade with yourself.");
+    throw new GameRuleError("You cannot trade with yourself.");
   }
 
   const [requester, responder] = await Promise.all([
@@ -189,7 +190,7 @@ export async function listTradeCandidates(requesterUserId: string, responderUser
   ]);
 
   if (!requester || !responder) {
-    throw new TradeError("Both users must exist before trade candidates can be listed.");
+    throw new GameRuleError("Both users must exist before trade candidates can be listed.");
   }
 
   return {
@@ -213,7 +214,7 @@ export async function createTradeRequest(input: {
   responderPokemonUid: string;
 }): Promise<TradeRecord> {
   if (input.requesterUserId === input.responderUserId) {
-    throw new TradeError("You cannot trade with yourself.");
+    throw new GameRuleError("You cannot trade with yourself.");
   }
 
   const [requester, responder, trades] = await Promise.all([
@@ -223,7 +224,7 @@ export async function createTradeRequest(input: {
   ]);
 
   if (!requester || !responder) {
-    throw new TradeError("Both users must exist before a trade can be requested.");
+    throw new GameRuleError("Both users must exist before a trade can be requested.");
   }
 
   ensureTradeablePokemon(requester, input.requesterPokemonUid, "Requester");
@@ -238,7 +239,7 @@ export async function createTradeRequest(input: {
   ));
 
   if (duplicatePending) {
-    throw new TradeError("An identical pending trade request already exists.");
+    throw new GameRuleError("An identical pending trade request already exists.");
   }
 
   const trade = createTradeRecord(input);
@@ -252,11 +253,11 @@ export async function cancelTradeRequest(userId: string, tradeId: string): Promi
   const trade = getTradeById(trades, tradeId);
 
   if (trade.requesterUserId !== userId) {
-    throw new TradeError("Only the requester can cancel this trade.");
+    throw new GameRuleError("Only the requester can cancel this trade.");
   }
 
   if (trade.status !== "pending") {
-    throw new TradeError("Only pending trades can be cancelled.");
+    throw new GameRuleError("Only pending trades can be cancelled.");
   }
 
   trade.status = "cancelled";
@@ -271,11 +272,11 @@ export async function rejectTradeRequest(userId: string, tradeId: string): Promi
   const trade = getTradeById(trades, tradeId);
 
   if (trade.responderUserId !== userId) {
-    throw new TradeError("Only the target user can reject this trade.");
+    throw new GameRuleError("Only the target user can reject this trade.");
   }
 
   if (trade.status !== "pending") {
-    throw new TradeError("Only pending trades can be rejected.");
+    throw new GameRuleError("Only pending trades can be rejected.");
   }
 
   trade.status = "rejected";
@@ -296,11 +297,11 @@ export async function acceptTradeRequest(userId: string, tradeId: string): Promi
   const trade = getTradeById(trades, tradeId);
 
   if (trade.responderUserId !== userId) {
-    throw new TradeError("Only the target user can accept this trade.");
+    throw new GameRuleError("Only the target user can accept this trade.");
   }
 
   if (trade.status !== "pending") {
-    throw new TradeError("Only pending trades can be accepted.");
+    throw new GameRuleError("Only pending trades can be accepted.");
   }
 
   const [requester, responder] = await Promise.all([
@@ -309,7 +310,7 @@ export async function acceptTradeRequest(userId: string, tradeId: string): Promi
   ]);
 
   if (!requester || !responder) {
-    throw new TradeError("Both users must exist before a trade can be completed.");
+    throw new GameRuleError("Both users must exist before a trade can be completed.");
   }
 
   const requesterFound = ensureTradeablePokemon(requester, trade.requesterPokemonUid, "Requester");

@@ -2,6 +2,7 @@ import type { OwnedPokemon, UserData } from "../../../../shared/types.js";
 import { projectPath } from "../paths.js";
 import { readFileSync } from "node:fs";
 import { getVariantsByBaseSpecies } from "./data-loader.js";
+import { GameRuleError } from "./game-errors.js";
 import { decrementItem } from "./inventory-utils.js";
 
 export interface FormChangeRule {
@@ -10,15 +11,7 @@ export interface FormChangeRule {
   revertForm: string | null;
 }
 
-export class FormChangeError extends Error {
-  status: number;
-
-  constructor(message: string, status = 400) {
-    super(message);
-    this.name = "FormChangeError";
-    this.status = status;
-  }
-}
+export { GameRuleError as FormChangeError };
 
 let rulesCache: Record<string, FormChangeRule> | null = null;
 
@@ -98,7 +91,7 @@ export function resolveFormChange(
   const rule = rules[species];
 
   if (!rule) {
-    throw new FormChangeError(`${species} cannot change forms.`);
+    throw new GameRuleError(`${species} cannot change forms.`);
   }
 
   // Reverting to base form
@@ -108,7 +101,7 @@ export function resolveFormChange(
 
   const formEntry = rule.forms[targetFormId];
   if (!formEntry) {
-    throw new FormChangeError(`${targetFormId} is not a valid form for ${species}.`);
+    throw new GameRuleError(`${targetFormId} is not a valid form for ${species}.`);
   }
 
   const result: { variantId: string | null; consumeItem?: string } = {
@@ -138,7 +131,7 @@ export function applyFormChange(
     ?? user.storage.find((p) => p.uid === pokemonUid);
 
   if (!pokemon) {
-    throw new FormChangeError("Pokemon not found.", 404);
+    throw new GameRuleError("Pokemon not found.", 404);
   }
 
   const species = getBaseSpecies(pokemon);
@@ -146,7 +139,7 @@ export function applyFormChange(
   const rule = rules[species];
 
   if (!rule) {
-    throw new FormChangeError(`${species} cannot change forms.`);
+    throw new GameRuleError(`${species} cannot change forms.`);
   }
 
   const previousVariantId = pokemon.variantId ?? null;
@@ -168,19 +161,19 @@ export function applyFormChange(
 
   const formEntry = rule.forms[targetFormId];
   if (!formEntry) {
-    throw new FormChangeError(`${targetFormId} is not a valid form for ${species}.`);
+    throw new GameRuleError(`${targetFormId} is not a valid form for ${species}.`);
   }
 
   // Handle item logic based on rule type
   if (rule.type === "held-item") {
     const requiredItem = formEntry.item;
     if (!requiredItem) {
-      throw new FormChangeError(`No item defined for form ${targetFormId}.`);
+      throw new GameRuleError(`No item defined for form ${targetFormId}.`);
     }
 
     // Check inventory for the item
     if (!user.inventory[requiredItem] || user.inventory[requiredItem] <= 0) {
-      throw new FormChangeError(`You need a ${requiredItem} to change to this form.`);
+      throw new GameRuleError(`You need a ${requiredItem} to change to this form.`);
     }
 
     // If pokemon is already holding a form item, return it to inventory
@@ -197,7 +190,7 @@ export function applyFormChange(
     const requiredItem = formEntry.item;
     if (requiredItem) {
       if (!user.inventory[requiredItem] || user.inventory[requiredItem] <= 0) {
-        throw new FormChangeError(`You need a ${requiredItem} to change to this form.`);
+        throw new GameRuleError(`You need a ${requiredItem} to change to this form.`);
       }
       decrementItem(user.inventory, requiredItem);
     }
@@ -208,7 +201,7 @@ export function applyFormChange(
     const requiredItem = formEntry.item;
     if (requiredItem) {
       if (!user.inventory[requiredItem] || user.inventory[requiredItem] <= 0) {
-        throw new FormChangeError(`You need a ${requiredItem} to change to this form.`);
+        throw new GameRuleError(`You need a ${requiredItem} to change to this form.`);
       }
       // Don't consume — toggle items are reusable
     }

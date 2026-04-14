@@ -4,7 +4,8 @@ import { getUser, saveUser } from "../storage/user-store.js";
 import { getConfig } from "../storage/config-store.js";
 import { authMiddleware } from "../middleware/auth-middleware.js";
 import { incrementItem } from "../game/inventory-utils.js";
-import { ItemUseError, useInventoryItem } from "../game/item-usage.js";
+import { useInventoryItem } from "../game/item-usage.js";
+import { GameRuleError } from "../game/game-errors.js";
 
 export const shopRoutes = Router();
 shopRoutes.use(authMiddleware);
@@ -110,7 +111,7 @@ shopRoutes.post("/use", async (req, res) => {
       inventory: user.inventory,
     });
   } catch (err) {
-    if (err instanceof ItemUseError) {
+    if (err instanceof GameRuleError) {
       res.status(err.status).json({ error: err.message });
       return;
     }

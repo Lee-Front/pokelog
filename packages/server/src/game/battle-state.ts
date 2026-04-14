@@ -165,8 +165,24 @@ export function revertBattleForms(
 // Helpers shared by executePlayerAttack and battle-routes helpers
 // ---------------------------------------------------------------------------
 
+/**
+ * Returns true if the user's party (excluding the given uid) contains at least
+ * one alive pokemon. Used to determine lose vs. fainted outcome.
+ */
+export function hasAlivePartyMembers(
+  user: { party: string[]; pokemon: Array<{ uid: string; hp: number }> },
+  excludeUid: string,
+): boolean {
+  return user.party
+    .filter((uid) => uid !== excludeUid)
+    .some((uid) => {
+      const p = user.pokemon.find((pk) => pk.uid === uid);
+      return p != null && p.hp > 0;
+    });
+}
+
 /** 기술 사용 후 ailment 부여 처리 */
-function applyAilmentToTarget(
+export function maybeApplyAilment(
   moveData: MoveData,
   targetStatus: PrimaryStatus | null | undefined,
   targetVolatiles: VolatileStatus[],
@@ -216,9 +232,10 @@ function applyAilmentToTarget(
 }
 
 /** meta 효과 적용 (drain, healing) */
-function computeMetaEffects(
+export function applyMetaEffects(
   moveData: { meta?: { drain?: number; healing?: number } },
   damage: number,
+  _attackerHp: number,
   attackerMaxHp: number,
 ): { hpChange: number; messages: string[] } {
   let hpChange = 0;
@@ -247,8 +264,8 @@ function computeMetaEffects(
   return { hpChange, messages };
 }
 
-/** stat change 적용 */
-function applyStatChangesToBattle(
+/** stat change 적용 (statChance 확인 포함, move target에 따라 적용 대상 결정) */
+export function maybeApplyStatChanges(
   battle: BattleState,
   moveData: { statChanges?: Array<{ stat: string; change: number }>; meta?: { statChance?: number }; target?: string },
   isPlayerMove: boolean,
@@ -328,17 +345,17 @@ export function executePlayerAttack(
 
   if (!result.missed) {
     // Apply meta effects for player
-    const metaResult = computeMetaEffects(moveData, result.damage, player.maxHp);
+    const metaResult = applyMetaEffects(moveData, result.damage, player.hp, player.maxHp);
     if (metaResult.hpChange !== 0) {
       player.hp = Math.max(0, Math.min(player.maxHp, player.hp + metaResult.hpChange));
     }
     for (const msg of metaResult.messages) log.push(msg);
 
     // Apply stat changes for player
-    applyStatChangesToBattle(battle, moveData, true, log);
+    maybeApplyStatChanges(battle, moveData, true, log);
 
     // Apply ailment to wild from player attack
-    const ailmentResult = applyAilmentToTarget(
+    const ailmentResult = maybeApplyAilment(
       moveData,
       battle.wild.statusCondition,
       battle.wildVolatile ?? [],

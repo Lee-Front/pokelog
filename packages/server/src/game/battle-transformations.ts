@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import type { OwnedPokemon, BattleState, PokemonStats } from "../../../../shared/types.js";
-import { getVariants, getSpeciesByName } from "./data-loader.js";
-import { buildStats } from "./pokemon-factory.js";
+import { getVariants } from "./data-loader.js";
+import { buildStatsForPokemon } from "./pokemon-stats.js";
 import { projectPath } from "../paths.js";
 
 export type TransformationType = "mega" | "gigantamax" | "primal";
@@ -171,11 +171,11 @@ export function getTransformedStats(
   pokemon: OwnedPokemon,
   variantId: string,
 ): { maxHp: number; stats: PokemonStats } {
-  const speciesData = getSpeciesByName(pokemon.species);
-  if (!speciesData) {
+  try {
+    return buildStatsForPokemon(pokemon, variantId);
+  } catch {
     return { maxHp: pokemon.maxHp, stats: { ...pokemon.stats } };
   }
-  return buildStats(speciesData, pokemon.level, pokemon.nature, variantId);
 }
 
 // ── Gigantamax HP ──

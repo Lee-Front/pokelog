@@ -7,12 +7,14 @@ import { getAllSpecies } from "../game/pokemon-factory.js";
 import { getRegion, getRegionNames, getSpeciesByName } from "../game/data-loader.js";
 import { healPokemon } from "../game/inventory-utils.js";
 import { createEgg, getEggTierSummaries, hatchEgg } from "../game/egg-gacha.js";
-import { equipHeldItem, HeldItemError, unequipHeldItem } from "../game/held-item-usage.js";
+import { equipHeldItem, unequipHeldItem } from "../game/held-item-usage.js";
 import { buildInventoryCatalogEntry } from "../game/inventory-catalog.js";
-import { PendingEvolutionError, resolvePendingEvolutionChoice } from "../game/pending-evolution.js";
+import { resolvePendingEvolutionChoice } from "../game/pending-evolution.js";
 import { buildLevelEvolutionContext, getEvolutionBranchDiagnostics } from "../game/growth.js";
-import { applyFormChange, FormChangeError, getAvailableForms, getFormChangeRules, hasFormChangeRules } from "../game/form-change.js";
-import { buildStats } from "../game/pokemon-factory.js";
+import { applyFormChange, getAvailableForms, getFormChangeRules, hasFormChangeRules } from "../game/form-change.js";
+import { GameRuleError } from "../game/game-errors.js";
+import { buildStats } from "../game/pokemon-stats.js";
+import { getDisplaySpeciesName } from "../game/pokemon-state.js";
 import {
   acceptTradeRequest,
   cancelTradeRequest,
@@ -20,7 +22,6 @@ import {
   listTradeCandidates,
   listTradesForUser,
   rejectTradeRequest,
-  TradeError,
 } from "../game/trade.js";
 const MAX_PARTY_SIZE = 6;
 
@@ -63,14 +64,14 @@ async function buildTradeView(
       nickname: requester?.account.nickname ?? trade.requesterUserId,
       pokemonUid: trade.requesterPokemonUid,
       species: requesterPokemon?.species ?? null,
-      speciesName: requesterPokemon ? (getSpeciesByName(requesterPokemon.species)?.name ?? requesterPokemon.species) : null,
+      speciesName: requesterPokemon ? getDisplaySpeciesName(requesterPokemon.species) : null,
     },
     responder: {
       userId: trade.responderUserId,
       nickname: responder?.account.nickname ?? trade.responderUserId,
       pokemonUid: trade.responderPokemonUid,
       species: responderPokemon?.species ?? null,
-      speciesName: responderPokemon ? (getSpeciesByName(responderPokemon.species)?.name ?? responderPokemon.species) : null,
+      speciesName: responderPokemon ? getDisplaySpeciesName(responderPokemon.species) : null,
     },
   };
 }
@@ -331,7 +332,7 @@ gameRoutes.get("/trades/candidates/:userId", async (req: AuthRequest, res: Respo
     const candidates = await listTradeCandidates(req.userId!, req.params.userId);
     res.json(candidates);
   } catch (err) {
-    if (err instanceof TradeError) {
+    if (err instanceof GameRuleError) {
       res.status(400).json({ error: err.message });
       return;
     }
@@ -358,7 +359,7 @@ gameRoutes.post("/trades/request", async (req: AuthRequest, res: Response) => {
 
     res.status(201).json({ trade: await buildTradeView(req.userId!, trade) });
   } catch (err) {
-    if (err instanceof TradeError) {
+    if (err instanceof GameRuleError) {
       res.status(400).json({ error: err.message });
       return;
     }
@@ -379,7 +380,7 @@ gameRoutes.post("/trades/:id/accept", async (req: AuthRequest, res: Response) =>
       responderEvolution: result.responderEvolution,
     });
   } catch (err) {
-    if (err instanceof TradeError) {
+    if (err instanceof GameRuleError) {
       res.status(400).json({ error: err.message });
       return;
     }
@@ -394,7 +395,7 @@ gameRoutes.post("/trades/:id/reject", async (req: AuthRequest, res: Response) =>
     const trade = await rejectTradeRequest(req.userId!, req.params.id);
     res.json({ trade: await buildTradeView(req.userId!, trade) });
   } catch (err) {
-    if (err instanceof TradeError) {
+    if (err instanceof GameRuleError) {
       res.status(400).json({ error: err.message });
       return;
     }
@@ -409,7 +410,7 @@ gameRoutes.post("/trades/:id/cancel", async (req: AuthRequest, res: Response) =>
     const trade = await cancelTradeRequest(req.userId!, req.params.id);
     res.json({ trade: await buildTradeView(req.userId!, trade) });
   } catch (err) {
-    if (err instanceof TradeError) {
+    if (err instanceof GameRuleError) {
       res.status(400).json({ error: err.message });
       return;
     }
@@ -519,7 +520,7 @@ gameRoutes.post("/evolutions/resolve", async (req: AuthRequest, res: Response) =
       remainingPending: user.pendingEvolutions ?? [],
     });
   } catch (err) {
-    if (err instanceof PendingEvolutionError) {
+    if (err instanceof GameRuleError) {
       res.status(err.status).json({ error: err.message });
       return;
     }
@@ -553,7 +554,7 @@ gameRoutes.post("/items/equip", async (req: AuthRequest, res: Response) => {
       inventory: user.inventory,
     });
   } catch (err) {
-    if (err instanceof HeldItemError) {
+    if (err instanceof GameRuleError) {
       res.status(err.status).json({ error: err.message });
       return;
     }
@@ -586,7 +587,7 @@ gameRoutes.post("/items/unequip", async (req: AuthRequest, res: Response) => {
       inventory: user.inventory,
     });
   } catch (err) {
-    if (err instanceof HeldItemError) {
+    if (err instanceof GameRuleError) {
       res.status(err.status).json({ error: err.message });
       return;
     }
@@ -877,7 +878,7 @@ gameRoutes.post("/form-change", async (req: AuthRequest, res: Response) => {
       previousVariantId: result.previousVariantId,
     });
   } catch (err) {
-    if (err instanceof FormChangeError) {
+    if (err instanceof GameRuleError) {
       res.status(err.status).json({ error: err.message });
       return;
     }

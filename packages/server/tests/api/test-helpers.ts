@@ -7,9 +7,10 @@
 import { vi } from "vitest";
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
+import type { AddressInfo } from "node:net";
 import path from "node:path";
 import os from "node:os";
-import supertest from "supertest";
+import type { Server } from "node:http";
 
 // POKELOG_JWT_SECRET은 vitest globalSetup(tests/global-setup.ts)에서 설정됨
 
@@ -43,7 +44,90 @@ export async function setupTestApp() {
 
   const { createApp } = await import("../../src/app.js");
   const app = createApp();
-  const request = supertest(app);
+  const server = await new Promise<Server>((resolve) => {
+    const instance = app.listen(0, "127.0.0.1", () => resolve(instance));
+  });
+  const address = server.address() as AddressInfo | null;
+  if (!address) {
+    throw new Error("Failed to bind test server");
+  }
+  const baseUrl = `http://127.0.0.1:${address.port}`;
+
+  type TestResponse = {
+    status: number;
+    body: unknown;
+    text: string;
+    headers: Headers;
+  };
+
+  type RequestBuilder = {
+    set: (name: string, value: string) => RequestBuilder;
+    send: (body?: Record<string, unknown>) => Promise<TestResponse>;
+    then: Promise<TestResponse>["then"];
+  };
+
+  function createRequestBuilder(
+    method: string,
+    url: string,
+    defaultHeaders: Record<string, string> = {},
+  ): RequestBuilder {
+    const headers = new Headers(defaultHeaders);
+
+    const execute = async (body?: Record<string, unknown>): Promise<TestResponse> => {
+      const init: RequestInit = {
+        method,
+        headers,
+      };
+
+      if (body !== undefined) {
+        headers.set("content-type", "application/json");
+        init.body = JSON.stringify(body);
+      }
+
+      const response = await fetch(`${baseUrl}${url}`, init);
+      const text = await response.text();
+      let parsed: unknown = undefined;
+
+      if (text.length > 0) {
+        try {
+          parsed = JSON.parse(text);
+        } catch {
+          parsed = undefined;
+        }
+      }
+
+      return {
+        status: response.status,
+        body: parsed,
+        text,
+        headers: response.headers,
+      };
+    };
+
+    return {
+      set(name: string, value: string) {
+        headers.set(name, value);
+        return this;
+      },
+      send(body?: Record<string, unknown>) {
+        return execute(body);
+      },
+      then(onfulfilled, onrejected) {
+        return execute().then(onfulfilled, onrejected);
+      },
+    };
+  }
+
+  function createClient(defaultHeaders: Record<string, string> = {}) {
+    return {
+      get: (url: string) => createRequestBuilder("GET", url, defaultHeaders),
+      post: (url: string) => createRequestBuilder("POST", url, defaultHeaders),
+      put: (url: string) => createRequestBuilder("PUT", url, defaultHeaders),
+      delete: (url: string) => createRequestBuilder("DELETE", url, defaultHeaders),
+    };
+  }
+
+  const request = createClient();
 
   async function registerAndLogin(
     id?: string,
@@ -65,30 +149,45 @@ export async function setupTestApp() {
   }
 
   function authed(token: string) {
+    const client = createClient({ Authorization: `Bearer ${token}` });
     return {
-      get: (url: string) => request.get(url).set("Authorization", `Bearer ${token}`),
+      get: (url: string) => client.get(url),
       post: (url: string, body?: Record<string, unknown>) => {
-        const req = request.post(url).set("Authorization", `Bearer ${token}`);
+        const req = client.post(url);
         return body ? req.send(body) : req.send();
       },
       put: (url: string, body?: Record<string, unknown>) => {
-        const req = request.put(url).set("Authorization", `Bearer ${token}`);
+        const req = client.put(url);
+        return body ? req.send(body) : req.send();
+      },
+      delete: (url: string, body?: Record<string, unknown>) => {
+        const req = client.delete(url);
         return body ? req.send(body) : req.send();
       },
     };
   }
 
   function admin() {
+    const client = createClient({ "x-admin-key": "test-admin-key" });
     return {
-      get: (url: string) => request.get(url).set("x-admin-key", "test-admin-key"),
+      get: (url: string) => client.get(url),
       post: (url: string, body?: Record<string, unknown>) => {
-        const req = request.post(url).set("x-admin-key", "test-admin-key");
+        const req = client.post(url);
+        return body ? req.send(body) : req.send();
+      },
+      delete: (url: string, body?: Record<string, unknown>) => {
+        const req = client.delete(url);
         return body ? req.send(body) : req.send();
       },
     };
   }
 
   function cleanup() {
+    try {
+      server.close();
+    } catch {
+      // ignore server close errors
+    }
     try {
       fs.rmSync(dataDir, { recursive: true, force: true });
     } catch {

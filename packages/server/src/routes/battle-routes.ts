@@ -30,76 +30,11 @@ import {
   applyBattleFormChange, maybeSetWeather, applyWeatherEndOfTurn,
   checkHpForms, revertBattleForms, wildAttack,
   executePlayerAttack, resolvePreAttack, determineBattleTurnOrder, applyEndOfTurnBattle,
+  maybeApplyAilment, maybeApplyStatChanges, applyMetaEffects, hasAlivePartyMembers,
 } from "../game/battle-state.js";
 
 export const battleRoutes = Router();
 battleRoutes.use(authMiddleware);
-
-function getTypes(species: string, variantId?: string | null, battleForm?: string | null): string[] {
-  return getEffectiveTypes(species, variantId, battleForm);
-}
-
-function hasAlivePartyMembers(user: { party: string[]; pokemon: Array<{ uid: string; hp: number }> }, excludeUid: string): boolean {
-  return user.party
-    .filter((uid) => uid !== excludeUid)
-    .some((uid) => {
-      const p = user.pokemon.find((pk) => pk.uid === uid);
-      return p != null && p.hp > 0;
-    });
-}
-
-/** 기술 사용 후 ailment 부여 처리 */
-function maybeApplyAilment(
-  moveData: MoveData,
-  targetStatus: PrimaryStatus | null | undefined,
-  targetVolatiles: VolatileStatus[],
-  log: string[],
-): { newStatus: PrimaryStatus | null; newVolatiles: VolatileStatus[]; sleepTurns?: number } {
-  const ailment = moveData.meta?.ailment;
-  const chance = moveData.meta?.ailmentChance ?? 0;
-  if (!ailment || ailment === "none") return { newStatus: null, newVolatiles: targetVolatiles };
-
-  // Try primary status
-  const primary = rollAilment(ailment, chance, targetStatus);
-  if (primary) {
-    const statusNames: Record<string, string> = {
-      poison: "독", burn: "화상", paralysis: "마비", sleep: "잠듦", freeze: "얼음",
-    };
-    log.push(`${statusNames[primary] ?? primary} 상태가 되었다!`);
-    return {
-      newStatus: primary,
-      newVolatiles: targetVolatiles,
-      sleepTurns: primary === "sleep" ? rollSleepTurns() : undefined,
-    };
-  }
-
-  // Try volatile status
-  if (isVolatileAilment(ailment)) {
-    // Roll chance for volatiles too
-    if (chance > 0 && chance < 100) {
-      if (Math.random() * 100 >= chance) return { newStatus: null, newVolatiles: targetVolatiles };
-    }
-    let turns = -1; // permanent by default
-    if (ailment === "confusion") turns = rollConfusionTurns();
-    else if (ailment === "trap") turns = rollTrapTurns();
-    else if (ailment === "disable") turns = 4;
-    else if (ailment === "embargo") turns = 5;
-    else if (ailment === "heal-block") turns = 5;
-    else if (ailment === "yawn") turns = 1;
-    else if (ailment === "perish-song") turns = 3;
-
-    const newVolatiles = addVolatile(targetVolatiles, ailment, turns);
-    if (newVolatiles !== targetVolatiles) {
-      const volNames: Record<string, string> = {
-        confusion: "혼란", trap: "조이기", "leech-seed": "씨뿌리기", infatuation: "사랑",
-      };
-      log.push(`${volNames[ailment] ?? ailment} 상태가 되었다!`);
-    }
-    return { newStatus: null, newVolatiles };
-  }
-
-  return { newStatus: null, newVolatiles: targetVolatiles };
-}
 
 /** 기절 처리 — response를 보냈으면 true 반환 */
 async function handleFainted(
@@ -118,77 +53,6 @@ async function handleFainted(
   await saveUser(user);
   res.json({ log, battleState: null, result: "lose" });
   return true;
-}
-
-/** stat change 적용 (statChance 확인 포함, move target에 따라 적용 대상 결정) */
-function maybeApplyStatChanges(
-  battle: BattleState,
-  moveData: { statChanges?: Array<{ stat: string; change: number }>; meta?: { statChance?: number }; target?: string },
-  isPlayerMove: boolean,
-  log: string[],
-): void {
-  const changes = moveData.statChanges;
-  if (!changes || changes.length === 0) return;
-  const chance = moveData.meta?.statChance ?? 100;
-  if (Math.random() * 100 >= chance) return;
-
-  // Determine target: self-targeting moves buff the user, other moves debuff the target
-  const targetsSelf = moveData.target === "user" || moveData.target === "user-and-allies" || moveData.target === "users-field";
-
-  for (const { stat, change } of changes) {
-    const isSelfBuff = targetsSelf || change > 0;
-    // Positive changes (buffs) → apply to move user
-    // Negative changes (debuffs) on opponent-targeting moves → apply to defender
-    if (isSelfBuff) {
-      if (isPlayerMove) {
-        battle.playerStatStages = applyStatChanges(battle.playerStatStages ?? defaultStatStages(), [{ stat, change }]);
-      } else {
-        battle.wildStatStages = applyStatChanges(battle.wildStatStages ?? defaultStatStages(), [{ stat, change }]);
-      }
-    } else {
-      // Debuff applies to the opponent
-      if (isPlayerMove) {
-        battle.wildStatStages = applyStatChanges(battle.wildStatStages ?? defaultStatStages(), [{ stat, change }]);
-      } else {
-        battle.playerStatStages = applyStatChanges(battle.playerStatStages ?? defaultStatStages(), [{ stat, change }]);
-      }
-    }
-    const direction = change > 0 ? "올랐다" : "내려갔다";
-    log.push(`${stat} 스탯이 ${direction}!`);
-  }
-}
-
-/** meta 효과 적용 (drain, healing) */
-function applyMetaEffects(
-  moveData: { meta?: { drain?: number; healing?: number } },
-  damage: number,
-  attackerHp: number,
-  attackerMaxHp: number,
-): { hpChange: number; messages: string[] } {
-  let hpChange = 0;
-  const messages: string[] = [];
-  const meta = moveData.meta;
-  if (!meta) return { hpChange, messages };
-
-  if (meta.drain && meta.drain !== 0) {
-    const drainAmount = Math.floor(damage * meta.drain / 100);
-    hpChange += drainAmount;
-    if (drainAmount > 0) {
-      messages.push(`체력을 흡수했다!`);
-    } else if (drainAmount < 0) {
-      messages.push(`반동 데미지를 받았다!`);
-    }
-  }
-
-  if (meta.healing && meta.healing !== 0) {
-    const healAmount = Math.floor(attackerMaxHp * meta.healing / 100);
-    hpChange += healAmount;
-    if (healAmount > 0) {
-      messages.push(`체력을 회복했다!`);
-    }
-  }
-
-  return { hpChange, messages };
 }
 
 /** 야생 공격 후 기절 체크 — response를 보냈으면 true 반환 */

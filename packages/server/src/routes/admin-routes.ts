@@ -14,10 +14,10 @@ import {
   applyLearnedMoves,
   buildLevelEvolutionContext,
   checkLevelUp,
-  calculateStatsForLevel,
   evolvePokemon,
   getMatchingEvolutionBranches,
 } from "../game/growth.js";
+import { calculateStatsForLevel } from "../game/pokemon-stats.js";
 import type { ServerConfig } from "../../../../shared/types.js";
 import { INTEGRATION_EVENT_CATALOG } from "../integrations/event-catalog.js";
 import { clearPendingEvolutionForPokemon, queuePendingEvolution } from "../game/pending-evolution.js";
@@ -342,13 +342,16 @@ adminRoutes.post("/test/give-item", async (req, res) => {
 // 포켓몬 직접 지급
 adminRoutes.post("/test/give-pokemon", async (req, res) => {
   try {
-    const { userId, species, level } = req.body;
+    const { userId, species, level, hasGigantamaxFactor } = req.body;
     if (!userId || !species) return res.status(400).json({ error: "userId, species 필요" });
 
     const user = await getUser(userId);
     if (!user) return res.status(404).json({ error: "유저 없음" });
 
     const pokemon = createPokemon(species, level || 5);
+    if (typeof hasGigantamaxFactor === "boolean") {
+      pokemon.hasGigantamaxFactor = hasGigantamaxFactor;
+    }
     user.pokemon.push(pokemon);
     if (user.party.length < 6) {
       user.party.push(pokemon.uid);
@@ -358,7 +361,15 @@ adminRoutes.post("/test/give-pokemon", async (req, res) => {
     if (!user.pokedex.includes(species)) user.pokedex.push(species);
 
     await saveUser(user);
-    res.json({ ok: true, pokemon: { uid: pokemon.uid, species, level: pokemon.level } });
+    res.json({
+      ok: true,
+      pokemon: {
+        uid: pokemon.uid,
+        species,
+        level: pokemon.level,
+        hasGigantamaxFactor: pokemon.hasGigantamaxFactor ?? false,
+      },
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "서버 오류" });
