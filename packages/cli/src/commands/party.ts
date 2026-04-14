@@ -1,8 +1,9 @@
 import { BLD, CYN, DIM, R, YEL } from "../ui/colors.js";
 import { apiGet, apiPut } from "../api-client.js";
-import { fetchArt, redraw } from "../ui/display.js";
+import { fetchArt } from "../ui/display.js";
 import { artToLines, padRight } from "../ui/text.js";
 import { enterRaw, waitKey } from "../ui/raw-mode.js";
+import { clearScreen } from "../ui/screen.js";
 import { getPendingEvolutions, resolvePendingEvolutionForPokemon } from "./evolutions.js";
 import { pokemonCommand } from "./pokemon.js";
 
@@ -81,8 +82,6 @@ export async function partyCommand() {
   const artCache = new Map<string, string | null>();
   let pendingEvolutionUids = new Set<string>();
   let cursor = 0;
-  let lineCount = 0;
-  let first = true;
   let currentArt: string | null = null;
   let lastSpecies = "";
   let message = "";
@@ -115,8 +114,8 @@ export async function partyCommand() {
     }
 
     const lines = buildLines(party, cursor, currentArt, pendingEvolutionUids, message);
-    lineCount = redraw(lines, lineCount, first);
-    first = false;
+    clearScreen();
+    process.stdout.write(lines.join("\n"));
     message = "";
 
     const key = await waitKey();
@@ -153,7 +152,6 @@ export async function partyCommand() {
 
     await refreshParty();
     await refreshPendingEvolutions();
-    first = true;
     lastSpecies = "";
     currentArt = null;
     enterRaw();

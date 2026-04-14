@@ -1,6 +1,7 @@
-import { apiDelete, apiGet, apiPatch, apiPost } from "../api-client.js";
+﻿import { apiDelete, apiGet, apiPatch, apiPost } from "../api-client.js";
 import { BLD, CYN, DIM, GRN, RED, R, YEL } from "../ui/colors.js";
-import { inputPrompt, rawSelect, separator } from "../ui/prompts.js";
+import { inputPrompt, separator } from "../ui/prompts.js";
+import { clearScreen, selectFrame } from "../ui/screen.js";
 
 type Provider = "git" | "github" | "gitlab" | "notion" | "jira" | "slack";
 type Status = "untested" | "testing" | "ok" | "error";
@@ -58,10 +59,6 @@ type MessageTone = "info" | "success" | "warn" | "error";
 interface ScreenMessage {
   tone: MessageTone;
   text: string;
-}
-
-function clearScreen(): void {
-  process.stdout.write("\x1b[2J\x1b[H");
 }
 
 function isGitIntegration(integration: Integration): integration is GitIntegration {
@@ -161,7 +158,7 @@ async function getIntegrations(): Promise<{ integrations: Integration[]; message
   if (!res.ok) {
     return {
       integrations: [],
-      message: { tone: "error", text: `연동 목록을 불러오지 못했습니다: ${String(res.data.error)}` },
+      message: { tone: "error", text: `鞐半彊 氇╇鞚?攵堧煬鞓れ 氇豁枅鞀惦媹雼? ${String(res.data.error)}` },
     };
   }
 
@@ -173,7 +170,7 @@ async function getIntegrations(): Promise<{ integrations: Integration[]; message
 }
 
 async function promptProvider(): Promise<Provider | null> {
-  return rawSelect("추가할 provider를 선택하세요", [
+  return selectFrame("Choose a provider", [
     { name: "Git", value: "git" },
     { name: "Notion", value: "notion" },
     { name: "Jira", value: "jira" },
@@ -185,8 +182,8 @@ async function addGitIntegration(): Promise<{ body?: Record<string, unknown>; me
   const repoUrl = (await inputPrompt("Repository URL:")).trim();
   if (!repoUrl) return {};
 
-  const authMode = await rawSelect("인증 방식을 선택하세요", [
-    { name: "Public (토큰 없이)", value: "public" },
+  const authMode = await selectFrame("Choose an authentication mode", [
+    { name: "Public (韱犿伆 鞐嗢澊)", value: "public" },
     { name: "Private (Personal Access Token)", value: "token" },
   ]);
   if (!authMode) return {};
@@ -197,7 +194,7 @@ async function addGitIntegration(): Promise<{ body?: Record<string, unknown>; me
     if (!token) return {};
   }
 
-  const mode = await rawSelect("집계 방식을 선택하세요", [
+  const mode = await selectFrame("Choose a tracking mode", [
     { name: "Track all commits", value: "all" },
     { name: "Track only specific author emails", value: "emails" },
   ]);
@@ -206,22 +203,22 @@ async function addGitIntegration(): Promise<{ body?: Record<string, unknown>; me
   const emails: string[] = [];
   if (mode === "emails") {
     console.log();
-    console.log(`  ${DIM}이메일을 한 줄씩 입력하세요. 빈 입력이면 종료합니다.${R}`);
+    console.log(`  ${DIM}鞚措鞚检潉 頃?欷勳敥 鞛呺牓頃橃劯鞖? 牍?鞛呺牓鞚措┐ 膦呺頃╇媹雼?${R}`);
     while (true) {
       const email = (await inputPrompt("Author email:")).trim();
       if (!email) break;
       emails.push(email);
     }
     if (emails.length === 0) {
-      return { message: { tone: "warn", text: "이메일 필터 모드에서는 최소 1개의 이메일이 필요합니다." } };
+      return { message: { tone: "warn", text: "鞚措鞚?頃勴劙 氇摐鞐愳劀電?斓滌唽 1臧滌潣 鞚措鞚检澊 頃勳殧頃╇媹雼?" } };
     }
   } else {
     console.log();
-    console.log(`  ${YEL}이 설정은 해당 저장소의 모든 작성자 커밋을 내 활동으로 집계합니다.${R}`);
+    console.log(`  ${YEL}鞚?靹れ爼鞚€ 頃措嫻 鞝€鞛レ唽鞚?氇摖 鞛戩劚鞛?旎る皨鞚?雮?頇滊彊鞙茧 歆戧硠頃╇媹雼?${R}`);
   }
 
   const defaultLabel = repoUrl.replace(/^https?:\/\//, "");
-  const label = (await inputPrompt(`표시 이름 (${defaultLabel}):`)).trim();
+  const label = (await inputPrompt(`響滌嫓 鞚措 (${defaultLabel}):`)).trim();
   return {
     body: {
       provider: "git",
@@ -233,12 +230,12 @@ async function addGitIntegration(): Promise<{ body?: Record<string, unknown>; me
 }
 
 async function addNotionIntegration(): Promise<{ body?: Record<string, unknown> }> {
-  console.log(`  ${YEL}Notion은 Integration이 연결된 페이지만 추적할 수 있습니다.${R}`);
-  console.log(`  ${DIM}최상위 페이지에 연결하면 하위 페이지는 자동으로 포함됩니다.${R}`);
+  console.log(`  ${YEL}Notion鞚€ Integration鞚?鞐瓣舶霅?韼橃澊歆€毵?於旍爜頃?靾?鞛堨姷雼堧嫟.${R}`);
+  console.log(`  ${DIM}斓滌儊鞙?韼橃澊歆€鞐?鞐瓣舶頃橂┐ 頃橃渼 韼橃澊歆€電?鞛愲彊鞙茧 韽暔霅╇媹雼?${R}`);
   console.log();
   const token = (await inputPrompt("Notion Integration Token:")).trim();
   if (!token) return {};
-  const label = (await inputPrompt("표시 이름 (예: Personal Notion):")).trim();
+  const label = (await inputPrompt("響滌嫓 鞚措 (鞓? Personal Notion):")).trim();
   return {
     body: {
       provider: "notion",
@@ -256,7 +253,7 @@ async function addJiraIntegration(): Promise<{ body?: Record<string, unknown> }>
   const apiToken = (await inputPrompt("Jira API token:")).trim();
   if (!apiToken) return {};
   const projectKey = (await inputPrompt("Project key (optional):")).trim();
-  const label = (await inputPrompt(`표시 이름 (${projectKey || baseUrl}):`)).trim();
+  const label = (await inputPrompt(`響滌嫓 鞚措 (${projectKey || baseUrl}):`)).trim();
   return {
     body: {
       provider: "jira",
@@ -276,7 +273,7 @@ async function addSlackIntegration(): Promise<{ body?: Record<string, unknown> }
   if (!botToken) return {};
   const teamId = (await inputPrompt("Team ID (optional):")).trim();
   const channelId = (await inputPrompt("Channel ID (optional):")).trim();
-  const label = (await inputPrompt(`표시 이름 (${teamId || channelId || "Slack"}):`)).trim();
+  const label = (await inputPrompt(`響滌嫓 鞚措 (${teamId || channelId || "Slack"}):`)).trim();
   return {
     body: {
       provider: "slack",
@@ -292,8 +289,8 @@ async function addSlackIntegration(): Promise<{ body?: Record<string, unknown> }
 
 async function addIntegration(): Promise<ScreenMessage | null> {
   clearScreen();
-  console.log(`  ${BLD}새 연동 추가${R}`);
-  console.log(`  ${DIM}Esc를 누르면 언제든 취소됩니다.${R}`);
+  console.log(`  ${BLD}靸?鞐半彊 於旉皜${R}`);
+  console.log(`  ${DIM}Esc毳?雸勲ゴ氅?鞏胳牅霌?旆唽霅╇媹雼?${R}`);
   console.log();
 
   const provider = await promptProvider();
@@ -309,24 +306,24 @@ async function addIntegration(): Promise<ScreenMessage | null> {
 
   const createRes = await apiPost("/api/user/integrations", payload.body);
   if (!createRes.ok) {
-    return { tone: "error", text: `연동을 추가하지 못했습니다: ${String(createRes.data.error)}` };
+    return { tone: "error", text: `鞐半彊鞚?於旉皜頃橃 氇豁枅鞀惦媹雼? ${String(createRes.data.error)}` };
   }
 
   const created = createRes.data.integration as Integration;
   const testRes = await apiPost(`/api/user/integrations/${created.id}/test`);
   if (!testRes.ok) {
-    return { tone: "warn", text: `연동은 저장됐지만 연결 테스트는 실패했습니다: ${String(testRes.data.error)}` };
+    return { tone: "warn", text: `鞐半彊鞚€ 鞝€鞛ル悙歆€毵?鞐瓣舶 韰岇姢韸鸽姅 鞁ろ尐頄堨姷雼堧嫟: ${String(testRes.data.error)}` };
   }
 
   const warning = testRes.data.warning ? ` / ${String(testRes.data.warning)}` : "";
   const pageCount = extractPageCount(testRes.data.metadata);
-  return { tone: "success", text: `${providerLabel(created.provider)} 연동이 추가됐습니다: ${created.label}${pageCount}${warning}` };
+  return { tone: "success", text: `${providerLabel(created.provider)} 鞐半彊鞚?於旉皜霅愳姷雼堧嫟: ${created.label}${pageCount}${warning}` };
 }
 
 async function updateGitEmails(integration: GitIntegration): Promise<ScreenMessage | null> {
   clearScreen();
-  console.log(`  ${BLD}${integration.label} 이메일 필터 수정${R}`);
-  console.log(`  ${DIM}이메일을 한 줄씩 입력하세요. 빈 입력이면 종료합니다.${R}`);
+  console.log(`  ${BLD}${integration.label} 鞚措鞚?頃勴劙 靾橃爼${R}`);
+  console.log(`  ${DIM}鞚措鞚检潉 頃?欷勳敥 鞛呺牓頃橃劯鞖? 牍?鞛呺牓鞚措┐ 膦呺頃╇媹雼?${R}`);
   console.log();
 
   const emails: string[] = [];
@@ -338,19 +335,19 @@ async function updateGitEmails(integration: GitIntegration): Promise<ScreenMessa
 
   const patchRes = await apiPatch(`/api/user/integrations/${integration.id}`, { emails });
   if (!patchRes.ok) {
-    return { tone: "error", text: `이메일 필터를 수정하지 못했습니다: ${String(patchRes.data.error)}` };
+    return { tone: "error", text: `鞚措鞚?頃勴劙毳?靾橃爼頃橃 氇豁枅鞀惦媹雼? ${String(patchRes.data.error)}` };
   }
 
   if (emails.length === 0) {
-    return { tone: "success", text: `이메일 필터를 비웠습니다: ${integration.label} / all commits` };
+    return { tone: "success", text: `鞚措鞚?頃勴劙毳?牍勳洜鞀惦媹雼? ${integration.label} / all commits` };
   }
-  return { tone: "success", text: `이메일 필터를 저장했습니다: ${emails.join(", ")}` };
+  return { tone: "success", text: `鞚措鞚?頃勴劙毳?鞝€鞛ロ枅鞀惦媹雼? ${emails.join(", ")}` };
 }
 
 async function syncIntegration(integration: Integration): Promise<ScreenMessage> {
   const syncRes = await apiPost(`/api/user/integrations/${integration.id}/sync`);
   if (!syncRes.ok) {
-    return { tone: "error", text: `수동 동기화가 실패했습니다: ${String(syncRes.data.error)}` };
+    return { tone: "error", text: `靾橂彊 霃欔赴頇旉皜 鞁ろ尐頄堨姷雼堧嫟: ${String(syncRes.data.error)}` };
   }
 
   const result = (syncRes.data.result ?? {}) as Record<string, unknown>;
@@ -378,18 +375,18 @@ async function editIntegration(integration: Integration): Promise<ScreenMessage 
   console.log();
 
   const choices: Array<{ name: string; value: string }> = [
-    { name: "연결 테스트", value: "test" },
-    { name: "삭제", value: "delete" },
+    { name: "Test integration", value: "test" },
+    { name: "靷牅", value: "delete" },
   ];
   if (["notion", "jira", "slack"].includes(integration.provider)) {
-    choices.unshift({ name: "지금 동기화", value: "sync" });
+    choices.unshift({ name: "Sync now", value: "sync" });
   }
   if (isGitIntegration(integration)) {
-    choices.unshift({ name: "이메일 필터 수정", value: "emails" });
+    choices.unshift({ name: "鞚措鞚?頃勴劙 靾橃爼", value: "emails" });
   }
-  choices.push({ name: "닫기", value: "close" });
+  choices.push({ name: "雼赴", value: "close" });
 
-  const mode = await rawSelect("작업을 선택하세요", choices);
+  const mode = await selectFrame("Choose an action", choices);
   if (!mode || mode === "close") return null;
 
   if (mode === "emails" && isGitIntegration(integration)) {
@@ -403,24 +400,24 @@ async function editIntegration(integration: Integration): Promise<ScreenMessage 
   if (mode === "test") {
     const testRes = await apiPost(`/api/user/integrations/${integration.id}/test`);
     if (!testRes.ok) {
-      return { tone: "error", text: `연결 테스트가 실패했습니다: ${String(testRes.data.error)}` };
+      return { tone: "error", text: `鞐瓣舶 韰岇姢韸戈皜 鞁ろ尐頄堨姷雼堧嫟: ${String(testRes.data.error)}` };
     }
     const warning = testRes.data.warning ? ` / ${String(testRes.data.warning)}` : "";
     const pageCount = extractPageCount(testRes.data.metadata);
-    return { tone: "success", text: `연결 테스트 성공: ${integration.label}${pageCount}${warning}` };
+    return { tone: "success", text: `鞐瓣舶 韰岇姢韸?靹标车: ${integration.label}${pageCount}${warning}` };
   }
 
-  const confirm = await rawSelect(`${integration.label} 연동을 삭제할까요?`, [
-    { name: "삭제", value: "delete" },
-    { name: "취소", value: "cancel" },
+  const confirm = await selectFrame(`${integration.label} 鞐半彊鞚?靷牅頃犼箤鞖?`, [
+    { name: "靷牅", value: "delete" },
+    { name: "旆唽", value: "cancel" },
   ]);
   if (confirm !== "delete") return null;
 
   const deleteRes = await apiDelete(`/api/user/integrations/${integration.id}`);
   if (!deleteRes.ok) {
-    return { tone: "error", text: `연동을 삭제하지 못했습니다: ${String(deleteRes.data.error)}` };
+    return { tone: "error", text: `鞐半彊鞚?靷牅頃橃 氇豁枅鞀惦媹雼? ${String(deleteRes.data.error)}` };
   }
-  return { tone: "success", text: `연동을 삭제했습니다: ${integration.label}` };
+  return { tone: "success", text: `鞐半彊鞚?靷牅頄堨姷雼堧嫟: ${integration.label}` };
 }
 
 export async function connectCommand() {
@@ -431,7 +428,7 @@ export async function connectCommand() {
     printConnectScreen(integrations, flashMessage ?? message);
 
     const items: Array<{ name: string; value: string } | { separator: string }> = [
-      { name: "[+ 새 연동 추가]", value: "__add__" },
+      { name: "[+ 靸?鞐半彊 於旉皜]", value: "__add__" },
       separator(" "),
     ];
 
@@ -443,9 +440,9 @@ export async function connectCommand() {
     }
 
     items.push(separator(" "));
-    items.push({ name: "닫기", value: "__close__" });
+    items.push({ name: "雼赴", value: "__close__" });
 
-    const selected = await rawSelect("작업을 선택하세요. Enter 선택 / Esc 닫기", items, {
+    const selected = await selectFrame("Choose an action. Enter select / Esc close", items, {
       pageSize: 16,
     });
     if (!selected || selected === "__close__") {
@@ -462,10 +459,11 @@ export async function connectCommand() {
 
     const target = integrations.find((integration) => integration.id === selected);
     if (!target) {
-      flashMessage = { tone: "error", text: "선택한 연동을 찾지 못했습니다. 화면을 새로고침합니다." };
+      flashMessage = { tone: "error", text: "靹犿儩頃?鞐半彊鞚?彀眷 氇豁枅鞀惦媹雼? 頇旊┐鞚?靸堧瓿犾龚頃╇媹雼?" };
       continue;
     }
 
     flashMessage = (await editIntegration(target)) ?? undefined;
   }
 }
+

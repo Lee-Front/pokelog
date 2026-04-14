@@ -1,6 +1,7 @@
 import { apiGet, apiPost } from "../api-client.js";
 import { BLD, DIM, GRN, RED, R, YEL } from "../ui/colors.js";
-import { rawSelect, separator } from "../ui/prompts.js";
+import { separator } from "../ui/prompts.js";
+import { formatScreenMessage, runMenuLoop, type ScreenMessage } from "../ui/screen.js";
 
 interface EggTier {
   tier: string;
@@ -26,85 +27,112 @@ function formatEggLabel(egg: OwnedEgg, tiers: EggTier[], index: number): string 
 }
 
 export async function eggCommand() {
-  let message = "";
+  type EggScreenState = { message: ScreenMessage | null };
+  type EggScreenData = { points: number; tiers: EggTier[]; eggs: OwnedEgg[] };
 
-  while (true) {
-    const res = await apiGet("/api/game/eggs");
-    if (!res.ok) {
-      console.log(`  ${RED}${String(res.data.error ?? "Failed to load egg info")}${R}`);
-      return;
-    }
+  try {
+    await runMenuLoop<EggScreenState, EggScreenData, string>({
+      initialState: { message: null },
+      pageSize: 16,
+      load: async () => {
+        const res = await apiGet("/api/game/eggs");
+        if (!res.ok) {
+          throw new Error(String(res.data.error ?? "Failed to load egg info"));
+        }
+        return {
+          points: Number(res.data.points ?? 0),
+          tiers: (res.data.tiers as EggTier[]) ?? [],
+          eggs: (res.data.eggs as OwnedEgg[]) ?? [],
+        };
+      },
+      prompt: () => "Egg menu",
+      items: (data, state) => {
+        const items: Array<{ name: string; value: string; disabled?: boolean } | { separator: string }> = [
+          separator(`  ${BLD}Egg Gacha${R}   ${DIM}Points:${R} ${YEL}${data.points}P${R}`),
+          separator(`  ${DIM}Buy a new egg or hatch one from your inventory.${R}`),
+        ];
 
-    const points = Number(res.data.points ?? 0);
-    const tiers = (res.data.tiers as EggTier[]) ?? [];
-    const eggs = (res.data.eggs as OwnedEgg[]) ?? [];
+        for (const tier of data.tiers) {
+          items.push({
+            name: `Buy   ${tier.label.padEnd(12)} ${YEL}${tier.cost}P${R}`,
+            value: `buy:${tier.tier}`,
+            disabled: data.points < tier.cost,
+          });
+        }
 
-    const items: Array<{ name: string; value: string; disabled?: boolean } | { separator: string }> = [
-      separator(`  ${BLD}Egg Gacha${R}   ${DIM}Points:${R} ${YEL}${points}P${R}`),
-      separator(`  ${DIM}Buy a new egg or hatch one from your inventory.${R}`),
-    ];
+        items.push(separator(" "));
+        items.push(separator(`  ${BLD}Owned Eggs${R}`));
 
-    for (const tier of tiers) {
-      items.push({
-        name: `Buy   ${tier.label.padEnd(12)} ${YEL}${tier.cost}P${R}`,
-        value: `buy:${tier.tier}`,
-        disabled: points < tier.cost,
-      });
-    }
+        if (data.eggs.length === 0) {
+          items.push({ name: `${DIM}No eggs in inventory${R}`, value: "__empty__", disabled: true });
+        } else {
+          data.eggs.forEach((egg, index) => {
+            items.push({
+              name: `Hatch ${formatEggLabel(egg, data.tiers, index)}`,
+              value: `hatch:${egg.id}`,
+            });
+          });
+        }
 
-    items.push(separator(" "));
-    items.push(separator(`  ${BLD}Owned Eggs${R}`));
+        if (state.message) {
+          items.push(separator(" "));
+          items.push(separator(`  ${formatScreenMessage(state.message)}`));
+        }
 
-    if (eggs.length === 0) {
-      items.push({ name: `${DIM}No eggs in inventory${R}`, value: "__empty__", disabled: true });
-    } else {
-      eggs.forEach((egg, index) => {
-        items.push({
-          name: `Hatch ${formatEggLabel(egg, tiers, index)}`,
-          value: `hatch:${egg.id}`,
-        });
-      });
-    }
+        items.push(separator(" "));
+        items.push({ name: "Close", value: "__close__" });
+        return items;
+      },
+      onSelect: async (selected, data, state) => {
+        if (selected === "__close__") {
+          return { state, close: true };
+        }
 
-    if (message) {
-      items.push(separator(" "));
-      items.push(separator(`  ${message}`));
-    }
+        if (selected === "__empty__") {
+          return state;
+        }
 
-    items.push(separator(" "));
-    items.push({ name: "Close", value: "__close__" });
+        if (selected.startsWith("buy:")) {
+          const tier = selected.slice(4);
+          const buyRes = await apiPost("/api/game/eggs/buy", { tier });
+          if (!buyRes.ok) {
+            return { message: { tone: "error", text: String(buyRes.data.error ?? "Failed to buy egg") } };
+          }
 
-    const selected = await rawSelect("Egg menu", items, { pageSize: 16 });
-    if (!selected || selected === "__close__") return;
-    if (selected === "__empty__") continue;
+          const egg = buyRes.data.egg as OwnedEgg;
+          const tierLabel = data.tiers.find((entry) => entry.tier === egg.tier)?.label ?? egg.tier;
+          const remainingPoints = Number(buyRes.data.remainingPoints ?? 0);
+          return {
+            message: {
+              tone: "success",
+              text: `${tierLabel} purchased   Remaining: ${remainingPoints}P`,
+            },
+          };
+        }
 
-    if (selected.startsWith("buy:")) {
-      const tier = selected.slice(4);
-      const buyRes = await apiPost("/api/game/eggs/buy", { tier });
-      if (!buyRes.ok) {
-        message = `${RED}${String(buyRes.data.error ?? "Failed to buy egg")}${R}`;
-        continue;
-      }
+        if (selected.startsWith("hatch:")) {
+          const eggId = selected.slice(6);
+          const hatchRes = await apiPost("/api/game/eggs/hatch", { eggId });
+          if (!hatchRes.ok) {
+            return { message: { tone: "error", text: String(hatchRes.data.error ?? "Failed to hatch egg") } };
+          }
 
-      const egg = buyRes.data.egg as OwnedEgg;
-      const tierLabel = tiers.find((entry) => entry.tier === egg.tier)?.label ?? egg.tier;
-      const remainingPoints = Number(buyRes.data.remainingPoints ?? 0);
-      message = `${GRN}${tierLabel} purchased${R}   ${DIM}Remaining:${R} ${YEL}${remainingPoints}P${R}`;
-      continue;
-    }
+          const pokemon = hatchRes.data.pokemon as { species: string; level: number };
+          const destination = String(hatchRes.data.destination ?? "storage");
+          const destinationLabel = destination === "party" ? "party" : "storage";
+          return {
+            message: {
+              tone: "success",
+              text: `${pokemon.species} Lv.${pokemon.level} hatched   Sent to: ${destinationLabel}`,
+            },
+          };
+        }
 
-    if (selected.startsWith("hatch:")) {
-      const eggId = selected.slice(6);
-      const hatchRes = await apiPost("/api/game/eggs/hatch", { eggId });
-      if (!hatchRes.ok) {
-        message = `${RED}${String(hatchRes.data.error ?? "Failed to hatch egg")}${R}`;
-        continue;
-      }
-
-      const pokemon = hatchRes.data.pokemon as { species: string; level: number };
-      const destination = String(hatchRes.data.destination ?? "storage");
-      const destinationLabel = destination === "party" ? "party" : "storage";
-      message = `${GRN}${BLD}${pokemon.species}${R}${GRN} Lv.${pokemon.level} hatched${R}   ${DIM}Sent to:${R} ${destinationLabel}`;
-    }
+        return state;
+      },
+    });
+  } catch (error) {
+    console.log(`  ${RED}${String(error instanceof Error ? error.message : "Failed to load egg info")}${R}`);
   }
 }
+

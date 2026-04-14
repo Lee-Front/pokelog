@@ -1,6 +1,7 @@
 import { DIM, RED, GRN, YEL, BLU, CYN, BLD, R } from "../ui/colors.js";
 import { apiPost, apiGet } from "../api-client.js";
-import { fetchArt, fetchBallArt, renderHpBar, sideBySide, stripAnsi, redraw } from "../ui/display.js";
+import { fetchArt, fetchBallArt, renderHpBar, sideBySide, stripAnsi } from "../ui/display.js";
+import { clearScreen } from "../ui/screen.js";
 import { enterRaw, waitKey } from "../ui/raw-mode.js";
 import { visualWidth, padRight, artToLines, mergeSideBySide } from "../ui/text.js";
 
@@ -360,7 +361,8 @@ export async function encounterCommand(
       "",
       `  ${DIM}Enter / Esc 뒤로${R}`,
     ];
-    redraw(errLines, 0, true);
+    clearScreen();
+    process.stdout.write(errLines.join("\n"));
     await waitKey();
     return;
   }
@@ -377,8 +379,6 @@ export async function encounterCommand(
   }
 
   let selectCursor = 0;
-  let selectLineCount = 0;
-  let selectFirst = true;
   let selectArt: string | null = null;
   let lastSelectSpecies = "";
   const titleStr = `야생 ${wildInfo.species} Lv.${wildInfo.level}`;
@@ -396,8 +396,8 @@ export async function encounterCommand(
     }
 
     const lines = buildSelectLines(titleStr, party, selectCursor, selectArt);
-    selectLineCount = redraw(lines, selectLineCount, selectFirst);
-    selectFirst = false;
+    clearScreen();
+    process.stdout.write(lines.join("\n"));
 
     const key = await waitKey();
     if (key === "\x03") { process.stdout.write("\x1b[?25h"); process.exit(0); }
@@ -422,7 +422,8 @@ export async function encounterCommand(
       "",
       `  ${DIM}Enter / Esc 뒤로${R}`,
     ];
-    redraw(errLines, 0, true);
+    clearScreen();
+    process.stdout.write(errLines.join("\n"));
     await waitKey();
     return;
   }
@@ -442,8 +443,6 @@ export async function encounterCommand(
   let partyForced = false;
 
   let stateStale  = true;
-  let first       = true;
-  let lineCount   = 0;
 
   // 현재 배틀 상태
   let wildState: PokemonInfo = { species: wildInfo.species, level: wildInfo.level, hp: 1, maxHp: 1 };
@@ -565,14 +564,14 @@ export async function encounterCommand(
         if (alive.length === 0) {
           battleOver = true;
           battleLog.push(`${RED}전투 패배...${R}`);
-          first = true;
+          /* clearScreen handles redraw */
           break;
         }
         subMode     = "party";
         partyForced = true;
         partyCursor = party.findIndex(p => p.hp > 0);
         if (partyCursor < 0) partyCursor = 0;
-        first = true;
+        /* clearScreen handles redraw */
       }
     }
 
@@ -587,8 +586,8 @@ export async function encounterCommand(
     }
 
     const lines = buildFullLines();
-    lineCount = redraw(lines, lineCount, first);
-    first = false;
+    clearScreen();
+    process.stdout.write(lines.join("\n"));
 
     const key = await waitKey();
     if (key === "\x03") { process.stdout.write("\x1b[?25h"); process.exit(0); }
@@ -614,7 +613,7 @@ export async function encounterCommand(
           partyCursor = 0;
           lastPartyArtUid = "";
           partyArt = null;
-          first = true;
+          /* clearScreen handles redraw */
         } else if (action === "도망치기") {
           const runRes = await apiPost("/api/battle/action", { action: "run", data: {} });
           const r = runRes.data as BattleResult;
@@ -802,7 +801,6 @@ export async function encounterCommand(
       else if (key === "\x1b" || key === "q") {
         if (!partyForced) {
           subMode = "menu";
-          first   = true;
           lastPartyArtUid = "";
           partyArt = null;
         }
@@ -841,20 +839,19 @@ export async function encounterCommand(
         subMode         = "menu";
         lastPartyArtUid = "";
         partyArt        = null;
-        first           = true;
       }
     }
   }
 
   // ── 전투 종료 화면 ───────────────────────────────────────────
-  first = true;
   const finalScene = buildSceneLines();
   const finalLines = [
     ...finalScene,
     "",
     `  ${DIM}아무 키나 누르세요...${R}`,
   ];
-  lineCount = redraw(finalLines, lineCount, first);
+  clearScreen();
+  process.stdout.write(finalLines.join("\n"));
   await waitKey();
   process.stdout.write("\x1b[?25h\x1b[2J\x1b[H");
 }

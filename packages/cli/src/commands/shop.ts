@@ -1,8 +1,9 @@
 import { DIM, RED, GRN, YEL, BLU, CYN, BLD, R } from "../ui/colors.js";
 import { apiGet, apiPost } from "../api-client.js";
-import { fetchBallArt, stripAnsi, redraw } from "../ui/display.js";
+import { fetchBallArt, stripAnsi } from "../ui/display.js";
 import { enterRaw, waitKey } from "../ui/raw-mode.js";
 import { visualWidth, padRight, artToLines, mergeSideBySide } from "../ui/text.js";
+import { clearScreen } from "../ui/screen.js";
 
 type ShopItem = {
   name: string;
@@ -149,8 +150,6 @@ export async function shopCommand() {
   let catIdx   = 0;
   let itemIdx  = 0;
   let msg      = "";
-  let lineCount = 0;
-  let first    = true;
   let currentArt: string | null = null;
   let lastItemKey = "";
 
@@ -173,8 +172,8 @@ export async function shopCommand() {
     }
 
     const lines = buildLines(catIdx, itemIdx, catItems, currentArt, points, inventory, msg);
-    lineCount = redraw(lines, lineCount, first);
-    first = false;
+    clearScreen();
+    process.stdout.write(lines.join("\n"));
     msg = "";
 
     const key = await waitKey();
@@ -191,7 +190,6 @@ export async function shopCommand() {
 
       // 수량 입력 (화면 아래에 인라인으로)
       const qty = await rawNumberInput("구매 수량:");
-      first = true; // 수량 입력 후 전체 재그리기
 
       if (qty !== null) {
         const res = await apiPost("/api/shop/buy", { item: sel.key, quantity: qty });

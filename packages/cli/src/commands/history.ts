@@ -1,6 +1,7 @@
 import { apiGet } from "../api-client.js";
 import { BLD, CYN, DIM, GRN, R, YEL } from "../ui/colors.js";
 import { enterRaw, waitKey } from "../ui/raw-mode.js";
+import { clearScreen } from "../ui/screen.js";
 
 interface HistoryTotals {
   [source: string]: {
@@ -17,10 +18,6 @@ interface HistoryEntry {
   points: number;
   exp: number;
   summary: string;
-}
-
-function clearScreen() {
-  process.stdout.write("\x1b[2J\x1b[H");
 }
 
 export async function historyCommand(limit = 20) {

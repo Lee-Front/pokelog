@@ -1,8 +1,9 @@
 import { DIM, RED, GRN, YEL, BLU, CYN, BLD, R } from "../ui/colors.js";
 import { apiGet } from "../api-client.js";
-import { fetchArt, stripAnsi, redraw } from "../ui/display.js";
+import { fetchArt, stripAnsi } from "../ui/display.js";
 import { enterRaw, waitKey } from "../ui/raw-mode.js";
 import { visualWidth, padRight, artToLines } from "../ui/text.js";
+import { clearScreen } from "../ui/screen.js";
 
 type SpeciesEntry = { id: number; species: string; name: string };
 
@@ -104,8 +105,6 @@ export async function pokedexCommand() {
   const artCache  = new Map<string, string | null>();
   let cursor      = 0;
   let scroll      = 0;
-  let first       = true;
-  let lineCount   = 0;
   let currentArt: string | null = null;
   let lastSpecies = "";
 
@@ -122,8 +121,8 @@ export async function pokedexCommand() {
     }
 
     const lines = buildLines(allSpecies, cursor, scroll, seenSet, caughtSet, currentArt, isSeen);
-    lineCount = redraw(lines, lineCount, first);
-    first = false;
+    clearScreen();
+    process.stdout.write(lines.join("\n"));
 
     const key = await waitKey();
     if (key === "\x03") { process.stdout.write("\x1b[?25h"); process.exit(0); }

@@ -1,5 +1,6 @@
 import { apiGet, apiPut, apiPost, apiDelete } from "../api-client.js";
 import { invalidateHeaderCache, printHeader } from "../ui/display.js";
+import { inputFrame } from "../ui/screen.js";
 
 export async function profileCommand(nickname?: string) {
   const path = nickname ? `/api/social/profile/${encodeURIComponent(nickname)}` : "/api/user/profile";
@@ -17,8 +18,7 @@ export async function profileCommand(nickname?: string) {
 
 export async function nicknameCommand(name?: string) {
   if (!name) {
-    const { rawInput } = await import("../ui/prompts.js");
-    const result = await rawInput("새 닉네임: ");
+    const result = await inputFrame("새 닉네임: ");
     if (!result || !result.trim()) return;
     name = result.trim();
   }

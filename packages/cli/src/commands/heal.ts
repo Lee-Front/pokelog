@@ -1,7 +1,8 @@
 import { DIM, RED, GRN, YEL, BLU, CYN, BLD, R } from "../ui/colors.js";
 import { apiPost, apiGet } from "../api-client.js";
-import { fetchBallArt, stripAnsi, redraw } from "../ui/display.js";
+import { fetchBallArt, stripAnsi } from "../ui/display.js";
 import { enterRaw, waitKey } from "../ui/raw-mode.js";
+import { clearScreen } from "../ui/screen.js";
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -73,19 +74,19 @@ async function playHealAnimation(
   emptyArt: string[],
 ): Promise<void> {
   const slots: SlotState[] = Array(6).fill("empty") as SlotState[];
-  let lineCount = 0;
 
-  const draw = (first: boolean, status: string) => {
+  const draw = (status: string) => {
     const frame = buildFrame(slots, ballArt, emptyArt, status);
-    lineCount = redraw(frame, lineCount, first);
+    clearScreen();
+    process.stdout.write(frame.join("\n"));
   };
 
-  draw(true, `${DIM}...${R}`);
+  draw(`${DIM}...${R}`);
   await sleep(400);
 
   for (let i = 0; i < partyCount; i++) {
     slots[i] = "ball";
-    draw(false, `${DIM}포켓몬을 맡기는 중...${R}`);
+    draw(`${DIM}포켓몬을 맡기는 중...${R}`);
     await sleep(250);
   }
 
@@ -94,19 +95,20 @@ async function playHealAnimation(
   for (let f = 0; f < 4; f++) {
     const state: SlotState = f % 2 === 0 ? "glow" : "ball";
     for (let i = 0; i < partyCount; i++) slots[i] = state;
-    draw(false, `${YEL}치료 중...${R}`);
+    draw(`${YEL}치료 중...${R}`);
     await sleep(150);
   }
 
   for (let i = 0; i < partyCount; i++) slots[i] = "done";
-  draw(false, `${GRN}${BLD}♦ 치료 완료!${R}`);
+  draw(`${GRN}${BLD}♦ 치료 완료!${R}`);
   await sleep(500);
 
   // 완료 후 "돌아가기" 안내 추가 (화면 갱신)
   const frame = buildFrame(slots, ballArt, emptyArt, `${GRN}${BLD}♦ 치료 완료!${R}`);
   frame.push("");
   frame.push(`  ${DIM}아무 키나 누르면 돌아갑니다${R}`);
-  lineCount = redraw(frame, lineCount, false);
+  clearScreen();
+  process.stdout.write(frame.join("\n"));
 }
 
 // ─── 커맨드 진입점 ──────────────────────────────────────────────

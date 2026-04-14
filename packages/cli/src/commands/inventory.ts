@@ -1,8 +1,9 @@
 import { DIM, RED, GRN, YEL, CYN, BLD, R } from "../ui/colors.js";
 import { apiGet, apiPost } from "../api-client.js";
-import { fetchArt, fetchBallArt, redraw } from "../ui/display.js";
+import { fetchArt, fetchBallArt } from "../ui/display.js";
 import { enterRaw, waitKey } from "../ui/raw-mode.js";
 import { padRight, artToLines, mergeSideBySide } from "../ui/text.js";
+import { clearScreen } from "../ui/screen.js";
 
 type InventoryKind = "ball" | "healing" | "evolution" | "held" | "other";
 
@@ -239,8 +240,6 @@ export async function inventoryCommand() {
   let itemIndex = 0;
   let targetIndex = 0;
   let selectedItem = "";
-  let lineCount = 0;
-  let firstRender = true;
   let message = "";
   let currentArt: string | null = null;
   let lastArtKey = "";
@@ -279,12 +278,10 @@ export async function inventoryCommand() {
         lastArtKey = artKey;
       }
 
-      lineCount = redraw(
-        buildItemsLines(categoryIndex, categoryItems, itemIndex, currentArt, message, catalog),
-        lineCount,
-        firstRender,
+      clearScreen();
+      process.stdout.write(
+        buildItemsLines(categoryIndex, categoryItems, itemIndex, currentArt, message, catalog).join("\n"),
       );
-      firstRender = false;
       message = "";
 
       const key = await waitKey();
@@ -300,7 +297,7 @@ export async function inventoryCommand() {
         itemIndex = 0;
         lastArtKey = "";
         currentArt = null;
-        firstRender = true;
+        /* clearScreen handles redraw */
         continue;
       }
       if (key === "\x1b[C") {
@@ -308,7 +305,7 @@ export async function inventoryCommand() {
         itemIndex = 0;
         lastArtKey = "";
         currentArt = null;
-        firstRender = true;
+        /* clearScreen handles redraw */
         continue;
       }
       if (key === "\x1b[A" && itemIndex > 0) {
@@ -346,7 +343,6 @@ export async function inventoryCommand() {
       lastArtKey = "";
       currentArt = null;
       mode = "targets";
-      firstRender = true;
       continue;
     }
 
@@ -359,12 +355,10 @@ export async function inventoryCommand() {
     }
 
     const itemCount = inventory[selectedItem] ?? 0;
-    lineCount = redraw(
-      buildTargetsLines(selectedItem, itemCount, targets, targetIndex, currentArt, message, catalog),
-      lineCount,
-      firstRender,
+    clearScreen();
+    process.stdout.write(
+      buildTargetsLines(selectedItem, itemCount, targets, targetIndex, currentArt, message, catalog).join("\n"),
     );
-    firstRender = false;
     message = "";
 
     const key = await waitKey();
@@ -376,7 +370,6 @@ export async function inventoryCommand() {
       mode = "items";
       lastArtKey = "";
       currentArt = null;
-      firstRender = true;
       continue;
     }
     if (key === "\x1b[A" && targetIndex > 0) {
@@ -411,7 +404,6 @@ export async function inventoryCommand() {
       mode = "items";
       lastArtKey = "";
       currentArt = null;
-      firstRender = true;
       continue;
     }
 
@@ -420,7 +412,6 @@ export async function inventoryCommand() {
       mode = "items";
       lastArtKey = "";
       currentArt = null;
-      firstRender = true;
       continue;
     }
 

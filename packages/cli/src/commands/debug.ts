@@ -1,6 +1,7 @@
 import { apiPost } from "../api-client.js";
 import { selectAction, inputPrompt, numberPrompt } from "../ui/prompts.js";
 import { ensureAdminKey, getCurrentUserId, handleAdminAuthFailure } from "./admin-auth.js";
+import { clearScreen } from "../ui/screen.js";
 
 export async function debugCommand() {
   const ready = await ensureAdminKey();
@@ -16,6 +17,9 @@ export async function debugCommand() {
   }
 
   while (true) {
+    clearScreen();
+    console.log("  디버그 메뉴");
+    console.log();
     const action = await selectAction("디버그 메뉴:", [
       { name: "테스트 커밋 발생", value: "commit" },
       { name: "야생 조우 강제 발생", value: "encounter" },

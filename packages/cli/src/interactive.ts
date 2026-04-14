@@ -23,21 +23,8 @@ import { tradeCommand } from "./commands/trade.js";
 import { useCommand } from "./commands/use.js";
 import { getCurrentServer, getCurrentServerName, getToken, hasNoServers } from "./config.js";
 import { BLD, CYN, R } from "./ui/colors.js";
-import { printHeader } from "./ui/display.js";
-import { rawInput, rawSelect, separator } from "./ui/prompts.js";
-
-function enterAltScreen() {
-  process.stdout.write("\x1b[?1049h");
-  process.stdout.write("\x1b[2J\x1b[H");
-}
-
-function leaveAltScreen() {
-  process.stdout.write("\x1b[?1049l");
-}
-
-export function clearScreen() {
-  process.stdout.write("\x1b[2J\x1b[H");
-}
+import { separator } from "./ui/prompts.js";
+import { clearScreen, enterAltScreen, inputFrame, leaveAltScreen, resetScreen, selectFrame } from "./ui/screen.js";
 
 async function printBanner() {
   const { fetchArt } = await import("./ui/display.js");
@@ -92,7 +79,7 @@ async function printHelp() {
   items.push({ name: "닫기", value: "__close__" });
 
   while (true) {
-    const result = await rawSelect("명령 도움말", items, { pageSize: 18 });
+    const result = await selectFrame("명령 도움말", items, { pageSize: 18 });
     if (!result || result === "__close__") return;
     const baseCmd = result.split(/[\s<]/)[0];
     if (baseCmd === "help") continue;
@@ -172,8 +159,7 @@ async function executeCommand(line: string): Promise<boolean> {
   const args = parts.slice(1);
   if (!cmd) return true;
 
-  clearScreen();
-  await printHeader(cmd);
+  await resetScreen(cmd);
   let preserveOutput = false;
 
   switch (cmd) {
@@ -220,7 +206,6 @@ async function executeCommand(line: string): Promise<boolean> {
       break;
     case "egg":
       await eggCommand();
-      preserveOutput = true;
       break;
     case "shop":
       await shopCommand();
@@ -233,7 +218,6 @@ async function executeCommand(line: string): Promise<boolean> {
       break;
     case "history":
       await historyCommand();
-      preserveOutput = true;
       break;
     case "nickname":
       await nicknameCommand(args[0]);
@@ -255,7 +239,6 @@ async function executeCommand(line: string): Promise<boolean> {
       break;
     case "help":
       await printHelp();
-      preserveOutput = true;
       break;
     case "quit":
     case "exit":
@@ -267,8 +250,7 @@ async function executeCommand(line: string): Promise<boolean> {
   }
 
   if (cmd !== "quit" && cmd !== "exit" && !preserveOutput) {
-    clearScreen();
-    await printHeader(null);
+    await resetScreen(null);
   }
 
   return true;
@@ -320,7 +302,7 @@ export async function interactiveMode() {
 
   while (true) {
     const prompt = await getPrompt();
-    const line = (await rawInput(prompt)) ?? "";
+    const line = (await inputFrame(prompt, { preserveFrame: true })) ?? "";
     if (!line.trim()) continue;
 
     const parts = line.trim().split(/\s+/);

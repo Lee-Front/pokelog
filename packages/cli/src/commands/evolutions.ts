@@ -1,5 +1,6 @@
 import { apiGet, apiPost } from "../api-client.js";
-import { rawSelect, separator } from "../ui/prompts.js";
+import { separator } from "../ui/prompts.js";
+import { formatScreenMessage, runMenuLoop, selectFrame, type ScreenMessage } from "../ui/screen.js";
 
 export type PendingEvolutionOption = {
   branchId: string;
@@ -37,7 +38,7 @@ export async function getPendingEvolutions(): Promise<PendingEvolutionEntry[]> {
 }
 
 async function choosePendingEvolutionEntry(entries: PendingEvolutionEntry[]): Promise<PendingEvolutionEntry | null> {
-  const pendingId = await rawSelect(
+  const pendingId = await selectFrame(
     "Choose a Pokemon to evolve",
     [
       ...entries.map((entry) => ({
@@ -57,7 +58,7 @@ async function choosePendingEvolutionEntry(entries: PendingEvolutionEntry[]): Pr
 }
 
 async function resolvePendingEvolutionEntry(selected: PendingEvolutionEntry): Promise<"resolved" | "cancelled" | "error"> {
-  const branchId = await rawSelect(
+  const branchId = await selectFrame(
     `Choose an evolution for ${getPokemonLabel(selected)}`,
     [
       ...selected.options.map((option) => ({
@@ -104,16 +105,53 @@ export async function resolvePendingEvolutionForPokemon(
 }
 
 export async function evolutionsCommand() {
-  const pending = await getPendingEvolutions();
-  if (pending.length === 0) {
-    console.log("No pending evolutions.");
-    return;
-  }
+  type EvolutionScreenState = { message: ScreenMessage | null };
 
-  const selected = await choosePendingEvolutionEntry(pending);
-  if (!selected) {
-    return;
-  }
+  await runMenuLoop<EvolutionScreenState, PendingEvolutionEntry[], string>({
+    initialState: { message: null },
+    load: async () => getPendingEvolutions(),
+    prompt: () => "Pending evolutions",
+    items: (pending, state) => {
+      const items: Array<{ name: string; value: string } | { separator: string }> = [];
 
-  await resolvePendingEvolutionEntry(selected);
+      if (pending.length === 0) {
+        items.push(separator("  No pending evolutions."));
+      } else {
+        for (const entry of pending) {
+          items.push({
+            name: `${getPokemonLabel(entry)} (${entry.options.length} options)`,
+            value: entry.id,
+          });
+        }
+      }
+
+      if (state.message) {
+        items.push(separator(" "));
+        items.push(separator(`  ${formatScreenMessage(state.message)}`));
+      }
+
+      items.push(separator(" "));
+      items.push({ name: "Close", value: "__close__" });
+      return items;
+    },
+    onSelect: async (selected, pending, state) => {
+      if (selected === "__close__") {
+        return { state, close: true };
+      }
+
+      const entry = pending.find((candidate) => candidate.id === selected);
+      if (!entry) {
+        return state;
+      }
+
+      const result = await resolvePendingEvolutionEntry(entry);
+      if (result === "resolved") {
+        return { message: { tone: "success", text: "Evolution completed." } };
+      }
+      if (result === "error") {
+        return { message: { tone: "error", text: "Failed to resolve evolution." } };
+      }
+      return state;
+    },
+  });
 }

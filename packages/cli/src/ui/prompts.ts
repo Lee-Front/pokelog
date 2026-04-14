@@ -1,6 +1,7 @@
 import { stripAnsi } from "./display.js";
 import { CYN, DIM, R } from "./colors.js";
 import { enterRaw, waitKey, handleCtrlC } from "./raw-mode.js";
+import { confirmFrame, inputFrame, passwordFrame, selectFrame } from "./screen.js";
 
 interface SelectChoice<T> {
   name: string;
@@ -27,6 +28,23 @@ function printableChunk(key: string): string {
     return "";
   }
   return key.replace(/[\x00-\x1f\x7f]/g, "");
+}
+
+function clearRenderedLines(lineCount: number): void {
+  if (lineCount <= 0) {
+    return;
+  }
+
+  let out = `\x1b[${lineCount}A`;
+  for (let i = 0; i < lineCount; i++) {
+    out += "\r\x1b[K\n";
+  }
+  out += `\x1b[${lineCount}A\r`;
+  process.stdout.write(out);
+}
+
+function clearCurrentPromptLine(): void {
+  process.stdout.write("\r\x1b[K");
 }
 
 export async function rawSelect<T>(
@@ -97,15 +115,18 @@ export async function rawSelect<T>(
 
     const key = await waitKey();
     if (key === "\x03") {
+      clearRenderedLines(lineCount);
       process.stdout.write("\x1b[?25h");
       process.exit(0);
     }
     if (key === "\x1b" || key === "q") {
+      clearRenderedLines(lineCount);
       process.stdout.write("\x1b[?25h");
       leaveRaw();
       return null;
     }
     if (key === "\r" || key === "\n") {
+      clearRenderedLines(lineCount);
       process.stdout.write("\x1b[?25h");
       leaveRaw();
       const selected = items[cursor] as SelectChoice<T>;
@@ -133,16 +154,17 @@ export async function rawInput(prompt: string): Promise<string | null> {
     const key = await waitKey();
 
     if (key === "\x03") {
-      process.stdout.write("\n\x1b[?25h");
+      clearCurrentPromptLine();
+      process.stdout.write("\x1b[?25h");
       process.exit(0);
     }
     if (key === "\x1b") {
-      process.stdout.write("\n");
+      clearCurrentPromptLine();
       leaveRaw();
       return null;
     }
     if (key === "\r" || key === "\n") {
-      process.stdout.write("\n");
+      clearCurrentPromptLine();
       leaveRaw();
       return buf;
     }
@@ -171,16 +193,17 @@ export async function rawPassword(prompt: string): Promise<string | null> {
     const key = await waitKey();
 
     if (key === "\x03") {
-      process.stdout.write("\n\x1b[?25h");
+      clearCurrentPromptLine();
+      process.stdout.write("\x1b[?25h");
       process.exit(0);
     }
     if (key === "\x1b") {
-      process.stdout.write("\n");
+      clearCurrentPromptLine();
       leaveRaw();
       return null;
     }
     if (key === "\r" || key === "\n") {
-      process.stdout.write("\n");
+      clearCurrentPromptLine();
       leaveRaw();
       return buf;
     }
@@ -204,36 +227,23 @@ export async function selectAction<T extends string>(
   message: string,
   choices: { name: string; value: T }[],
 ): Promise<T> {
-  const result = await rawSelect(message, choices);
+  const result = await selectFrame(message, choices);
   return (result ?? "__back__") as T;
 }
 
 export async function inputPrompt(message: string): Promise<string> {
-  return (await rawInput(message + " ")) ?? "";
+  return (await inputFrame(message + " ")) ?? "";
 }
 
 export async function passwordPrompt(message: string): Promise<string> {
-  return (await rawPassword(message + " ")) ?? "";
+  return (await passwordFrame(message + " ")) ?? "";
 }
 
 export async function numberPrompt(message: string): Promise<number> {
-  const val = await rawInput(message + " ");
+  const val = await inputFrame(message + " ");
   return parseInt(val ?? "", 10) || 0;
 }
 
 export async function rawConfirm(message: string): Promise<boolean> {
-  process.stdout.write(`  ${message} (y/n) `);
-  enterRaw();
-  while (true) {
-    const key = await waitKey();
-    handleCtrlC(key);
-    if (key === "y" || key === "Y") {
-      process.stdout.write("y\n");
-      return true;
-    }
-    if (key === "n" || key === "N" || key === "\x1b") {
-      process.stdout.write("n\n");
-      return false;
-    }
-  }
+  return confirmFrame(message, { yes: "Yes", no: "No" });
 }
