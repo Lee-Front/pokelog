@@ -2,7 +2,6 @@ import { registerCommand, loginCommand, logoutCommand } from "./commands/auth.js
 import { connectCommand } from "./commands/connect.js";
 import { debugCommand } from "./commands/debug.js";
 import { eggCommand } from "./commands/egg.js";
-import { encounterCommand } from "./commands/encounter.js";
 import { evolutionsCommand } from "./commands/evolutions.js";
 import { eventsCommand } from "./commands/events.js";
 import { healCommand } from "./commands/heal.js";
@@ -20,276 +19,241 @@ import { shopCommand } from "./commands/shop.js";
 import { statusCommand } from "./commands/status.js";
 import { storageCommand } from "./commands/storage.js";
 import { tradeCommand } from "./commands/trade.js";
-import { useCommand } from "./commands/use.js";
 import { getCurrentServer, getCurrentServerName, getToken, hasNoServers } from "./config.js";
-import { BLD, CYN, R } from "./ui/colors.js";
-import { separator } from "./ui/prompts.js";
-import { clearScreen, enterAltScreen, inputFrame, leaveAltScreen, resetScreen, selectFrame } from "./ui/screen.js";
+import { BLD, CYN, DIM, GRN, R, RED, YEL } from "./ui/colors.js";
+import { fetchArt, fetchHeaderData, invalidateHeaderCache } from "./ui/display.js";
+import { enterRaw, waitKey } from "./ui/raw-mode.js";
+import { enterAltScreen, leaveAltScreen, redraw, inputFrame, resetScreen } from "./ui/screen.js";
+import { artToLines, padRight } from "./ui/text.js";
 
-async function printBanner() {
-  const { fetchArt } = await import("./ui/display.js");
-  const art = await fetchArt("ho-oh");
-  if (art) console.log(art);
-  console.log();
-}
+// ── 메뉴 정의 ───────────────────────────────────────────────────
 
-const HELP_PAGES: Record<string, Array<{ cmd: string; desc: string }>> = {
-  Game: [
-    { cmd: "status", desc: "현재 상태 보기" },
-    { cmd: "encounters", desc: "야생 이벤트 보기" },
-    { cmd: "party", desc: "파티 보기" },
-    { cmd: "pokedex", desc: "도감 보기" },
-    { cmd: "inventory", desc: "인벤토리 보기" },
-    { cmd: "heal", desc: "파티 회복" },
-    { cmd: "egg", desc: "알 구매 / 부화" },
-    { cmd: "shop", desc: "상점 열기" },
-    { cmd: "storage", desc: "보관함 보기" },
-    { cmd: "ranking", desc: "랭킹 보기" },
-    { cmd: "history", desc: "소스별 적립 이력 보기" },
-  ],
-  Server: [
-    { cmd: "join <url>", desc: "서버 참가" },
-    { cmd: "servers", desc: "서버 목록 보기" },
-    { cmd: "use <name>", desc: "서버 전환" },
-    { cmd: "leave", desc: "현재 서버 나가기" },
-  ],
-  Account: [
-    { cmd: "register", desc: "회원가입" },
-    { cmd: "login", desc: "로그인" },
-    { cmd: "logout", desc: "로그아웃" },
-    { cmd: "nickname", desc: "닉네임 변경" },
-    { cmd: "connect", desc: "연동 관리" },
-    { cmd: "debug", desc: "디버그 메뉴" },
-  ],
-  System: [
-    { cmd: "help", desc: "도움말 보기" },
-    { cmd: "quit", desc: "종료" },
-  ],
+type MenuItem = {
+  label: string;
+  cmd: string;
+  desc: string;
+  auth?: boolean;     // 로그인 필요
+  server?: boolean;   // 서버 연결 필요
 };
 
-async function printHelp() {
-  const items: Array<{ name: string; value: string } | { separator: string }> = [];
-  for (const [category, entries] of Object.entries(HELP_PAGES)) {
-    items.push(separator(`  ${BLD}${CYN}── ${category} ──${R}`));
-    for (const { cmd, desc } of entries) {
-      items.push({ name: `${cmd.padEnd(20)} ${desc}`, value: cmd });
-    }
-  }
-  items.push(separator(" "));
-  items.push({ name: "닫기", value: "__close__" });
+type MenuSection = {
+  title: string;
+  items: MenuItem[];
+};
 
-  while (true) {
-    const result = await selectFrame("명령 도움말", items, { pageSize: 18 });
-    if (!result || result === "__close__") return;
-    const baseCmd = result.split(/[\s<]/)[0];
-    if (baseCmd === "help") continue;
-    await executeCommand(baseCmd);
-    return;
-  }
-}
-
-const AUTH_COMMANDS = new Set([
-  "status",
-  "encounters",
-  "party",
-  "pokedex",
-  "inventory",
-  "trade",
-  "region",
-  "evolutions",
-  "heal",
-  "egg",
-  "shop",
-  "storage",
-  "ranking",
-  "history",
-  "nickname",
-  "logout",
-  "debug",
-  "connect",
-]);
-
-const ALL_COMMANDS = [
-  "status",
-  "encounters",
-  "party",
-  "pokedex",
-  "inventory",
-  "trade",
-  "region",
-  "evolutions",
-  "heal",
-  "egg",
-  "shop",
-  "storage",
-  "ranking",
-  "history",
-  "join",
-  "servers",
-  "use",
-  "leave",
-  "nickname",
-  "login",
-  "logout",
-  "register",
-  "connect",
-  "debug",
-  "help",
-  "quit",
-  "exit",
+const MENU_SECTIONS: MenuSection[] = [
+  {
+    title: "Game",
+    items: [
+      { label: "상태",     cmd: "status",      desc: "현재 상태 보기",       auth: true, server: true },
+      { label: "야생",     cmd: "encounters",  desc: "야생 이벤트 보기",     auth: true, server: true },
+      { label: "파티",     cmd: "party",       desc: "파티 보기",            auth: true, server: true },
+      { label: "도감",     cmd: "pokedex",     desc: "도감 보기",            auth: true, server: true },
+      { label: "가방",     cmd: "inventory",   desc: "인벤토리 보기",        auth: true, server: true },
+      { label: "회복",     cmd: "heal",        desc: "파티 회복",            auth: true, server: true },
+      { label: "알",       cmd: "egg",         desc: "알 구매 / 부화",       auth: true, server: true },
+      { label: "상점",     cmd: "shop",        desc: "상점 열기",            auth: true, server: true },
+      { label: "보관함",   cmd: "storage",     desc: "보관함 보기",          auth: true, server: true },
+      { label: "랭킹",     cmd: "ranking",     desc: "랭킹 보기",           auth: true, server: true },
+      { label: "이력",     cmd: "history",     desc: "소스별 적립 이력 보기", auth: true, server: true },
+    ],
+  },
+  {
+    title: "Server",
+    items: [
+      { label: "서버 참가",  cmd: "join",    desc: "서버 참가" },
+      { label: "서버 목록",  cmd: "servers", desc: "서버 목록 보기" },
+      { label: "서버 나가기", cmd: "leave",  desc: "현재 서버 나가기", server: true },
+    ],
+  },
+  {
+    title: "Account",
+    items: [
+      { label: "회원가입",   cmd: "register",  desc: "회원가입" },
+      { label: "로그인",     cmd: "login",     desc: "로그인" },
+      { label: "로그아웃",   cmd: "logout",    desc: "로그아웃",     auth: true },
+      { label: "닉네임",     cmd: "nickname",  desc: "닉네임 변경",  auth: true },
+      { label: "연동",       cmd: "connect",   desc: "연동 관리",    auth: true },
+      { label: "디버그",     cmd: "debug",     desc: "디버그 메뉴",  auth: true },
+    ],
+  },
+  {
+    title: "System",
+    items: [
+      { label: "종료",  cmd: "quit", desc: "프로그램 종료" },
+    ],
+  },
 ];
 
-function resolveCommand(input: string): string | { ambiguous: string[] } {
-  if (ALL_COMMANDS.includes(input)) return input;
-  const matches = ALL_COMMANDS.filter((cmd) => cmd.startsWith(input));
-  if (matches.length === 1) return matches[0];
-  if (matches.length > 1) return { ambiguous: matches };
-  return input;
+// ── 전체 항목 평탄화 (separator 포함) ────────────────────────────
+
+type FlatEntry =
+  | { type: "separator"; title: string }
+  | { type: "item"; item: MenuItem; sectionIdx: number; itemIdx: number };
+
+function buildFlatMenu(loggedIn: boolean, hasServer: boolean): FlatEntry[] {
+  const flat: FlatEntry[] = [];
+  for (let s = 0; s < MENU_SECTIONS.length; s++) {
+    const section = MENU_SECTIONS[s];
+    const visibleItems = section.items.filter((item) => {
+      if (item.auth && !loggedIn) return false;
+      if (item.server && !hasServer) return false;
+      return true;
+    });
+    if (visibleItems.length === 0) continue;
+    flat.push({ type: "separator", title: section.title });
+    for (let i = 0; i < visibleItems.length; i++) {
+      flat.push({ type: "item", item: visibleItems[i], sectionIdx: s, itemIdx: i });
+    }
+  }
+  return flat;
 }
 
-async function executeCommand(line: string): Promise<boolean> {
-  const parts = line.trim().split(/\s+/);
-  const resolved = resolveCommand(parts[0] ?? "");
-  if (typeof resolved === "object") {
-    console.log(`  모호한 명령입니다: ${resolved.ambiguous.join(", ")}`);
-    return true;
+function getSelectableIndices(flat: FlatEntry[]): number[] {
+  return flat
+    .map((entry, idx) => (entry.type === "item" ? idx : -1))
+    .filter((idx) => idx >= 0);
+}
+
+// ── 화면 빌드 ────────────────────────────────────────────────────
+
+const MENU_W = 32;
+const ART_GAP = "   ";
+
+function buildHeaderLines(
+  serverName: string,
+  nickname: string,
+  region: string,
+  pendingEvents: number,
+  points: number,
+  leadPokemon: string | null,
+  leadLevel: number,
+  online: boolean,
+): string[] {
+  const status = online ? `${GRN}●${R}` : `${RED}● 오프라인${R}`;
+  const line1 = `${DIM}server:${R} ${CYN}${serverName}${R} ${status}   ${DIM}trainer:${R} ${YEL}${nickname}${R}   ${DIM}location:${R} ${GRN}${region}${R}`;
+  const line2 = online
+    ? `${DIM}encounters:${R} ${pendingEvents}   ${DIM}points:${R} ${points}P   ${DIM}lead:${R} ${leadPokemon ? `${leadPokemon} Lv.${leadLevel}` : "-"}`
+    : `${RED}서버에 연결할 수 없습니다.${R}`;
+  return [`  ${line1}`, `  ${line2}`];
+}
+
+function buildMenuLines(
+  flat: FlatEntry[],
+  selectableIndices: number[],
+  cursorIdx: number,
+  art: string | null,
+  headerLines: string[],
+  message: string,
+): string[] {
+  const cursor = selectableIndices[cursorIdx];
+  const menuLines: string[] = [];
+
+  for (let i = 0; i < flat.length; i++) {
+    const entry = flat[i];
+    if (entry.type === "separator") {
+      if (menuLines.length > 0) menuLines.push("");
+      menuLines.push(`${CYN}${BLD}── ${entry.title} ──${R}`);
+    } else {
+      const active = i === cursor;
+      const pointer = active ? `${YEL}>${R}` : " ";
+      const label = active
+        ? `${BLD}${entry.item.label}${R}`
+        : entry.item.label;
+      const desc = `${DIM}${entry.item.desc}${R}`;
+      menuLines.push(`${pointer} ${padRight(label, 10)} ${desc}`);
+    }
   }
 
-  const cmd = resolved;
-  const args = parts.slice(1);
-  if (!cmd) return true;
+  // 좌측: 아트, 우측: 메뉴
+  const artLines = artToLines(art);
+  const artWidth = Math.max(0, ...artLines.map((l) => {
+    let w = 0;
+    for (const ch of l.replace(/\x1b\[[0-9;]*m/g, "")) {
+      const c = ch.codePointAt(0) ?? 0;
+      w += (c >= 0x1100 && c <= 0x115F) || (c >= 0x2E80 && c <= 0xA4CF) ||
+           (c >= 0xAC00 && c <= 0xD7AF) || (c >= 0xF900 && c <= 0xFAFF) ||
+           (c >= 0xFF01 && c <= 0xFF60) ? 2 : 1;
+    }
+    return w;
+  }), 20);
 
+  const rows = Math.max(artLines.length, menuLines.length);
+  const merged: string[] = [];
+  for (let i = 0; i < rows; i++) {
+    const left = padRight(artLines[i] ?? "", artWidth);
+    const right = menuLines[i] ?? "";
+    merged.push(`  ${left}${ART_GAP}${right}`);
+  }
+
+  const lines = [
+    "",
+    ...headerLines,
+    "",
+    `  ${BLD}P O K E L O G${R}`,
+    `  ${DIM}${"─".repeat(52)}${R}`,
+    `  ${DIM}↑↓ 이동   Enter 선택${R}`,
+    "",
+    ...merged,
+    "",
+  ];
+
+  if (message) {
+    lines.push(`  ${message}`, "");
+  }
+
+  return lines;
+}
+
+// ── 명령 실행 ────────────────────────────────────────────────────
+
+async function executeCommand(cmd: string, args: string[]): Promise<"continue" | "quit"> {
   await resetScreen(cmd);
-  let preserveOutput = false;
 
   switch (cmd) {
     case "join":
       if (args[0]) await joinCommand(args[0]);
-      else console.log("사용법: join <url>");
+      else {
+        const url = await inputFrame("서버 URL을 입력하세요:");
+        if (url) await joinCommand(url);
+      }
       break;
-    case "servers":
-      await serversCommand();
-      break;
-    case "use":
-      if (args[0]) await useCommand(args[0]);
-      else console.log("사용법: use <name>");
-      break;
-    case "leave":
-      await leaveCommand();
-      break;
-    case "status":
-      await statusCommand();
-      break;
-    case "encounters":
-      await eventsCommand();
-      break;
-    case "party":
-      await partyCommand();
-      break;
-    case "pokedex":
-      await pokedexCommand();
-      break;
-    case "inventory":
-      await inventoryCommand();
-      break;
-    case "trade":
-      await tradeCommand();
-      break;
-    case "region":
-      await regionCommand(args[0]);
-      break;
-    case "evolutions":
-      await evolutionsCommand();
-      break;
-    case "heal":
-      await healCommand();
-      break;
-    case "egg":
-      await eggCommand();
-      break;
-    case "shop":
-      await shopCommand();
-      break;
-    case "storage":
-      await storageCommand();
-      break;
-    case "ranking":
-      await rankingCommand(args[0] || "exp");
-      break;
-    case "history":
-      await historyCommand();
-      break;
-    case "nickname":
-      await nicknameCommand(args[0]);
-      break;
-    case "login":
-      await loginCommand();
-      break;
-    case "logout":
-      await logoutCommand();
-      break;
-    case "register":
-      await registerCommand();
-      break;
-    case "connect":
-      await connectCommand();
-      break;
-    case "debug":
-      await debugCommand();
-      break;
-    case "help":
-      await printHelp();
-      break;
+    case "servers":   await serversCommand(); break;
+    case "leave":     await leaveCommand(); break;
+    case "status":    await statusCommand(); break;
+    case "encounters": await eventsCommand(); break;
+    case "party":     await partyCommand(); break;
+    case "pokedex":   await pokedexCommand(); break;
+    case "inventory": await inventoryCommand(); break;
+    case "trade":     await tradeCommand(); break;
+    case "region":    await regionCommand(args[0]); break;
+    case "evolutions": await evolutionsCommand(); break;
+    case "heal":      await healCommand(); break;
+    case "egg":       await eggCommand(); break;
+    case "shop":      await shopCommand(); break;
+    case "storage":   await storageCommand(); break;
+    case "ranking":   await rankingCommand(args[0] || "exp"); break;
+    case "history":   await historyCommand(); break;
+    case "nickname":  await nicknameCommand(args[0]); break;
+    case "login":     await loginCommand(); break;
+    case "logout":    await logoutCommand(); break;
+    case "register":  await registerCommand(); break;
+    case "connect":   await connectCommand(); break;
+    case "debug":     await debugCommand(); break;
     case "quit":
     case "exit":
-      leaveAltScreen();
-      return false;
+      return "quit";
     default:
-      console.log(`알 수 없는 명령입니다: ${cmd}`);
       break;
   }
 
-  if (cmd !== "quit" && cmd !== "exit" && !preserveOutput) {
-    await resetScreen(null);
-  }
-
-  return true;
+  return "continue";
 }
 
-async function getPrompt(): Promise<string> {
-  const name = await getCurrentServerName();
-  return name ? `pokelog[${name}]> ` : "pokelog> ";
-}
-
-function printWelcomeGuide() {
-  console.log("  login 또는 register 후 게임 명령을 사용할 수 있습니다.\n");
-}
-
-async function printServerGuide(): Promise<boolean> {
-  const noServers = await hasNoServers();
-  if (noServers) {
-    console.log("  서버가 없습니다.\n");
-    console.log("  join <url> 로 서버에 먼저 연결하세요.\n");
-    return false;
-  }
-
-  const server = await getCurrentServer();
-  if (!server) {
-    console.log("  현재 선택된 서버가 없습니다.\n");
-    console.log("  servers 또는 use <name> 으로 서버를 선택하세요.\n");
-    return false;
-  }
-  return true;
-}
+// ── 메인 루프 ────────────────────────────────────────────────────
 
 export async function interactiveMode() {
   enterAltScreen();
-  await printBanner();
-
-  const serverReady = await printServerGuide();
-  if (serverReady && !(await getToken())) {
-    printWelcomeGuide();
-  }
 
   const cleanup = () => leaveAltScreen();
   process.on("exit", cleanup);
@@ -299,39 +263,95 @@ export async function interactiveMode() {
   });
 
   let loggedIn = !!(await getToken());
+  let message = "";
+  let lineCount = 0;
+  let first = true;
+  let cursorIdx = 0;
 
   while (true) {
-    const prompt = await getPrompt();
-    const line = (await inputFrame(prompt, { preserveFrame: true })) ?? "";
-    if (!line.trim()) continue;
+    // 상태 갱신
+    invalidateHeaderCache();
+    const headerData = await fetchHeaderData();
+    const hasServer = !!(await getCurrentServer());
 
-    const parts = line.trim().split(/\s+/);
-    const resolved = resolveCommand(parts[0] ?? "");
-    const cmd = typeof resolved === "string" ? resolved : parts[0];
+    const headerLines = buildHeaderLines(
+      headerData.serverName,
+      headerData.nickname,
+      headerData.region,
+      headerData.pendingEvents,
+      headerData.points,
+      headerData.leadPokemon,
+      headerData.leadLevel,
+      headerData.online,
+    );
 
-    if (!loggedIn && AUTH_COMMANDS.has(cmd)) {
-      console.log("  로그인 후 사용할 수 있는 명령입니다.\n");
-      continue;
+    // 아트: 로그인 시 리드 포켓몬, 아닐 때 ho-oh
+    const artSpecies = loggedIn && headerData.leadPokemon
+      ? headerData.leadPokemon
+      : "ho-oh";
+    const art = await fetchArt(artSpecies);
+
+    // 메뉴 빌드
+    const flat = buildFlatMenu(loggedIn, hasServer);
+    const selectableIndices = getSelectableIndices(flat);
+    if (cursorIdx >= selectableIndices.length) {
+      cursorIdx = 0;
     }
 
-    try {
-      const shouldContinue = await executeCommand(line);
-      if (!shouldContinue) return;
+    enterRaw();
 
-      if (cmd === "login" || cmd === "register") {
+    // 내부 키 루프 (상태가 바뀌지 않는 동안)
+    let needRefresh = false;
+    while (!needRefresh) {
+      const lines = buildMenuLines(flat, selectableIndices, cursorIdx, art, headerLines, message);
+      lineCount = redraw(lines, lineCount, first);
+      first = false;
+      message = "";
+
+      const key = await waitKey();
+
+      if (key === "\x03") {
+        process.stdout.write("\x1b[?25h");
+        leaveAltScreen();
+        process.exit(0);
+      }
+
+      if (key === "\x1b[A") {
+        if (cursorIdx > 0) cursorIdx--;
+        continue;
+      }
+
+      if (key === "\x1b[B") {
+        if (cursorIdx < selectableIndices.length - 1) cursorIdx++;
+        continue;
+      }
+
+      if (key !== "\r") continue;
+
+      // 선택된 항목 실행
+      const flatIdx = selectableIndices[cursorIdx];
+      const entry = flat[flatIdx];
+      if (!entry || entry.type !== "item") continue;
+
+      process.stdout.write("\x1b[?25h");
+
+      const result = await executeCommand(entry.item.cmd, []);
+      if (result === "quit") {
+        leaveAltScreen();
+        return;
+      }
+
+      // 로그인 상태 갱신
+      if (entry.item.cmd === "login" || entry.item.cmd === "register") {
         loggedIn = !!(await getToken());
       }
-      if (cmd === "logout") {
+      if (entry.item.cmd === "logout") {
         loggedIn = false;
       }
-    } catch (error) {
-      console.error("오류:", error);
-    }
 
-    if (!loggedIn && !["servers", "join", "use", "leave", "help"].includes(cmd)) {
-      clearScreen();
-      await printBanner();
-      printWelcomeGuide();
+      // 메뉴로 돌아올 때 전체 새로 그리기
+      first = true;
+      needRefresh = true;
     }
   }
 }
