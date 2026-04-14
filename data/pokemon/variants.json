@@ -8,7 +8,18 @@
     "sourceArtSlug": "abomasnow-mega",
     "formSuffix": "mega",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "grass",
+      "ice"
+    ],
+    "baseStatsOverride": {
+      "attack": 132,
+      "defense": 105,
+      "spAttack": 132,
+      "spDefense": 105,
+      "speed": 30
+    }
   },
   {
     "id": "absol-mega",
@@ -19,7 +30,15 @@
     "sourceArtSlug": "absol-mega",
     "formSuffix": "mega",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "dark"
+    ],
+    "baseStatsOverride": {
+      "attack": 150,
+      "spAttack": 115,
+      "speed": 115
+    }
   },
   {
     "id": "aegislash-blade",
@@ -30,7 +49,19 @@
     "sourceArtSlug": "aegislash-blade",
     "formSuffix": "blade",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "steel",
+      "ghost"
+    ],
+    "baseStatsOverride": {
+      "hp": 60,
+      "attack": 140,
+      "defense": 50,
+      "spAttack": 140,
+      "spDefense": 50,
+      "speed": 60
+    }
   },
   {
     "id": "aerodactyl-mega",
@@ -41,7 +72,18 @@
     "sourceArtSlug": "aerodactyl-mega",
     "formSuffix": "mega",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "rock",
+      "flying"
+    ],
+    "baseStatsOverride": {
+      "attack": 135,
+      "defense": 85,
+      "spAttack": 70,
+      "spDefense": 95,
+      "speed": 150
+    }
   },
   {
     "id": "aggron-mega",
@@ -52,7 +94,15 @@
     "sourceArtSlug": "aggron-mega",
     "formSuffix": "mega",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "steel"
+    ],
+    "baseStatsOverride": {
+      "attack": 140,
+      "defense": 230,
+      "spDefense": 80
+    }
   },
   {
     "id": "alakazam-mega",
@@ -63,7 +113,16 @@
     "sourceArtSlug": "alakazam-mega",
     "formSuffix": "mega",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "psychic"
+    ],
+    "baseStatsOverride": {
+      "defense": 65,
+      "spAttack": 175,
+      "spDefense": 105,
+      "speed": 150
+    }
   },
   {
     "id": "alcremie-caramel-swirl-berry",
@@ -162,7 +221,10 @@
     "sourceArtSlug": "alcremie-gmax",
     "formSuffix": "gmax",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "fairy"
+    ]
   },
   {
     "id": "alcremie-lemon-cream-berry",
@@ -877,7 +939,16 @@
     "sourceArtSlug": "altaria-mega",
     "formSuffix": "mega",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "dragon",
+      "fairy"
+    ],
+    "baseStatsOverride": {
+      "attack": 110,
+      "defense": 110,
+      "spAttack": 110
+    }
   },
   {
     "id": "ampharos-mega",
@@ -888,7 +959,18 @@
     "sourceArtSlug": "ampharos-mega",
     "formSuffix": "mega",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "electric",
+      "dragon"
+    ],
+    "baseStatsOverride": {
+      "attack": 95,
+      "defense": 105,
+      "spAttack": 165,
+      "spDefense": 110,
+      "speed": 45
+    }
   },
   {
     "id": "arcanine-hisui",
@@ -1150,7 +1232,16 @@
     "sourceArtSlug": "audino-mega",
     "formSuffix": "mega",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "normal",
+      "fairy"
+    ],
+    "baseStatsOverride": {
+      "defense": 126,
+      "spAttack": 80,
+      "spDefense": 126
+    }
   },
   {
     "id": "avalugg-hisui",
@@ -1193,7 +1284,17 @@
     "sourceArtSlug": "banette-mega",
     "formSuffix": "mega",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "ghost"
+    ],
+    "baseStatsOverride": {
+      "attack": 165,
+      "defense": 75,
+      "spAttack": 93,
+      "spDefense": 83,
+      "speed": 75
+    }
   },
   {
     "id": "basculin-blue-striped",
@@ -1248,7 +1349,16 @@
     "sourceArtSlug": "beedrill-mega",
     "formSuffix": "mega",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "bug",
+      "poison"
+    ],
+    "baseStatsOverride": {
+      "attack": 150,
+      "spAttack": 15,
+      "speed": 145
+    }
   },
   {
     "id": "blastoise-gmax",
@@ -1259,7 +1369,10 @@
     "sourceArtSlug": "blastoise-gmax",
     "formSuffix": "gmax",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "water"
+    ]
   },
   {
     "id": "blastoise-mega",
@@ -1270,7 +1383,16 @@
     "sourceArtSlug": "blastoise-mega",
     "formSuffix": "mega",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "water"
+    ],
+    "baseStatsOverride": {
+      "attack": 103,
+      "defense": 120,
+      "spAttack": 135,
+      "spDefense": 115
+    }
   },
   {
     "id": "blaziken-mega",
@@ -1281,7 +1403,18 @@
     "sourceArtSlug": "blaziken-mega",
     "formSuffix": "mega",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "fire",
+      "fighting"
+    ],
+    "baseStatsOverride": {
+      "attack": 160,
+      "defense": 80,
+      "spAttack": 130,
+      "spDefense": 80,
+      "speed": 100
+    }
   },
   {
     "id": "braviary-hisui",
@@ -1337,7 +1470,11 @@
     "sourceArtSlug": "butterfree-gmax",
     "formSuffix": "gmax",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "bug",
+      "flying"
+    ]
   },
   {
     "id": "calyrex-ice-rider",
@@ -1370,7 +1507,18 @@
     "sourceArtSlug": "camerupt-mega",
     "formSuffix": "mega",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "fire",
+      "ground"
+    ],
+    "baseStatsOverride": {
+      "attack": 120,
+      "defense": 100,
+      "spAttack": 145,
+      "spDefense": 105,
+      "speed": 20
+    }
   },
   {
     "id": "castform-rainy",
@@ -1423,7 +1571,11 @@
     "sourceArtSlug": "centiskorch-gmax",
     "formSuffix": "gmax",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "fire",
+      "bug"
+    ]
   },
   {
     "id": "charizard-gmax",
@@ -1434,7 +1586,11 @@
     "sourceArtSlug": "charizard-gmax",
     "formSuffix": "gmax",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "fire",
+      "flying"
+    ]
   },
   {
     "id": "charizard-mega-x",
@@ -1445,7 +1601,16 @@
     "sourceArtSlug": "charizard-mega-x",
     "formSuffix": "mega-x",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "fire",
+      "dragon"
+    ],
+    "baseStatsOverride": {
+      "attack": 130,
+      "defense": 111,
+      "spAttack": 130
+    }
   },
   {
     "id": "charizard-mega-y",
@@ -1456,7 +1621,16 @@
     "sourceArtSlug": "charizard-mega-y",
     "formSuffix": "mega-y",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "fire",
+      "flying"
+    ],
+    "baseStatsOverride": {
+      "attack": 104,
+      "spAttack": 159,
+      "spDefense": 115
+    }
   },
   {
     "id": "cherrim-sunshine",
@@ -1478,7 +1652,10 @@
     "sourceArtSlug": "cinderace-gmax",
     "formSuffix": "gmax",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "fire"
+    ]
   },
   {
     "id": "coalossal-gmax",
@@ -1489,7 +1666,11 @@
     "sourceArtSlug": "coalossal-gmax",
     "formSuffix": "gmax",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "rock",
+      "fire"
+    ]
   },
   {
     "id": "copperajah-gmax",
@@ -1500,7 +1681,10 @@
     "sourceArtSlug": "copperajah-gmax",
     "formSuffix": "gmax",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "steel"
+    ]
   },
   {
     "id": "corsola-galar",
@@ -1531,7 +1715,11 @@
     "sourceArtSlug": "corviknight-gmax",
     "formSuffix": "gmax",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "flying",
+      "steel"
+    ]
   },
   {
     "id": "cramorant-gorging",
@@ -1542,7 +1730,11 @@
     "sourceArtSlug": "cramorant-gorging",
     "formSuffix": "gorging",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "flying",
+      "water"
+    ]
   },
   {
     "id": "cramorant-gulping",
@@ -1553,7 +1745,11 @@
     "sourceArtSlug": "cramorant-gulping",
     "formSuffix": "gulping",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "flying",
+      "water"
+    ]
   },
   {
     "id": "darmanitan-galar",
@@ -1598,7 +1794,19 @@
     "sourceArtSlug": "darmanitan-zen",
     "formSuffix": "zen",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "fire",
+      "psychic"
+    ],
+    "baseStatsOverride": {
+      "hp": 105,
+      "attack": 30,
+      "defense": 105,
+      "spAttack": 140,
+      "spDefense": 105,
+      "speed": 55
+    }
   },
   {
     "id": "darumaka-galar",
@@ -1679,7 +1887,18 @@
     "sourceArtSlug": "deoxys-attack",
     "formSuffix": "attack",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "psychic"
+    ],
+    "baseStatsOverride": {
+      "hp": 50,
+      "attack": 180,
+      "defense": 20,
+      "spAttack": 180,
+      "spDefense": 20,
+      "speed": 150
+    }
   },
   {
     "id": "deoxys-defense",
@@ -1690,7 +1909,18 @@
     "sourceArtSlug": "deoxys-defense",
     "formSuffix": "defense",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "psychic"
+    ],
+    "baseStatsOverride": {
+      "hp": 50,
+      "attack": 70,
+      "defense": 160,
+      "spAttack": 70,
+      "spDefense": 160,
+      "speed": 90
+    }
   },
   {
     "id": "deoxys-speed",
@@ -1701,7 +1931,18 @@
     "sourceArtSlug": "deoxys-speed",
     "formSuffix": "speed",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "psychic"
+    ],
+    "baseStatsOverride": {
+      "hp": 50,
+      "attack": 95,
+      "defense": 90,
+      "spAttack": 95,
+      "spDefense": 90,
+      "speed": 180
+    }
   },
   {
     "id": "dialga-origin",
@@ -1731,7 +1972,18 @@
     "sourceArtSlug": "diancie-mega",
     "formSuffix": "mega",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "rock",
+      "fairy"
+    ],
+    "baseStatsOverride": {
+      "attack": 160,
+      "defense": 110,
+      "spAttack": 160,
+      "spDefense": 110,
+      "speed": 110
+    }
   },
   {
     "id": "diglett-alola",
@@ -1761,7 +2013,11 @@
     "sourceArtSlug": "drednaw-gmax",
     "formSuffix": "gmax",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "water",
+      "rock"
+    ]
   },
   {
     "id": "dugtrio-alola",
@@ -1791,7 +2047,11 @@
     "sourceArtSlug": "duraludon-gmax",
     "formSuffix": "gmax",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "steel",
+      "dragon"
+    ]
   },
   {
     "id": "eevee-gmax",
@@ -1802,7 +2062,10 @@
     "sourceArtSlug": "eevee-gmax",
     "formSuffix": "gmax",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "normal"
+    ]
   },
   {
     "id": "eevee-starter",
@@ -1835,7 +2098,18 @@
     "sourceArtSlug": "eiscue-noice",
     "formSuffix": "noice",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "ice"
+    ],
+    "baseStatsOverride": {
+      "hp": 75,
+      "attack": 80,
+      "defense": 70,
+      "spAttack": 65,
+      "spDefense": 50,
+      "speed": 130
+    }
   },
   {
     "id": "electrode-hisui",
@@ -1895,7 +2169,18 @@
     "sourceArtSlug": "eternatus-eternamax",
     "formSuffix": "eternamax",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "poison",
+      "dragon"
+    ],
+    "baseStatsOverride": {
+      "hp": 255,
+      "attack": 115,
+      "defense": 250,
+      "spAttack": 125,
+      "spDefense": 250
+    }
   },
   {
     "id": "exeggutor-alola",
@@ -1987,7 +2272,11 @@
     "sourceArtSlug": "flapple-gmax",
     "formSuffix": "gmax",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "grass",
+      "dragon"
+    ]
   },
   {
     "id": "floette-blue",
@@ -2207,7 +2496,16 @@
     "sourceArtSlug": "gallade-mega",
     "formSuffix": "mega",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "psychic",
+      "fighting"
+    ],
+    "baseStatsOverride": {
+      "attack": 165,
+      "defense": 95,
+      "speed": 110
+    }
   },
   {
     "id": "garbodor-gmax",
@@ -2218,7 +2516,10 @@
     "sourceArtSlug": "garbodor-gmax",
     "formSuffix": "gmax",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "poison"
+    ]
   },
   {
     "id": "garchomp-mega",
@@ -2229,7 +2530,18 @@
     "sourceArtSlug": "garchomp-mega",
     "formSuffix": "mega",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "dragon",
+      "ground"
+    ],
+    "baseStatsOverride": {
+      "attack": 170,
+      "defense": 115,
+      "spAttack": 120,
+      "spDefense": 95,
+      "speed": 92
+    }
   },
   {
     "id": "gardevoir-mega",
@@ -2240,7 +2552,17 @@
     "sourceArtSlug": "gardevoir-mega",
     "formSuffix": "mega",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "psychic",
+      "fairy"
+    ],
+    "baseStatsOverride": {
+      "attack": 85,
+      "spAttack": 165,
+      "spDefense": 135,
+      "speed": 100
+    }
   },
   {
     "id": "gastrodon-east",
@@ -2306,7 +2628,11 @@
     "sourceArtSlug": "gengar-gmax",
     "formSuffix": "gmax",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "ghost",
+      "poison"
+    ]
   },
   {
     "id": "gengar-mega",
@@ -2317,7 +2643,17 @@
     "sourceArtSlug": "gengar-mega",
     "formSuffix": "mega",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "ghost",
+      "poison"
+    ],
+    "baseStatsOverride": {
+      "defense": 80,
+      "spAttack": 170,
+      "spDefense": 95,
+      "speed": 130
+    }
   },
   {
     "id": "geodude-alola",
@@ -2366,7 +2702,15 @@
     "sourceArtSlug": "glalie-mega",
     "formSuffix": "mega",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "ice"
+    ],
+    "baseStatsOverride": {
+      "attack": 120,
+      "spAttack": 120,
+      "speed": 100
+    }
   },
   {
     "id": "golem-alola",
@@ -2427,7 +2771,16 @@
     "sourceArtSlug": "greninja-ash",
     "formSuffix": "ash",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "water",
+      "dark"
+    ],
+    "baseStatsOverride": {
+      "attack": 145,
+      "spAttack": 153,
+      "speed": 132
+    }
   },
   {
     "id": "grimer-alola",
@@ -2453,7 +2806,11 @@
     "sourceArtSlug": "grimmsnarl-gmax",
     "formSuffix": "gmax",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "dark",
+      "fairy"
+    ]
   },
   {
     "id": "groudon-primal",
@@ -2464,7 +2821,16 @@
     "sourceArtSlug": "groudon-primal",
     "formSuffix": "primal",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "ground",
+      "fire"
+    ],
+    "baseStatsOverride": {
+      "attack": 180,
+      "defense": 160,
+      "spAttack": 150
+    }
   },
   {
     "id": "growlithe-hisui",
@@ -2496,7 +2862,17 @@
     "sourceArtSlug": "gyarados-mega",
     "formSuffix": "mega",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "water",
+      "dark"
+    ],
+    "baseStatsOverride": {
+      "attack": 155,
+      "defense": 109,
+      "spAttack": 70,
+      "spDefense": 130
+    }
   },
   {
     "id": "hatterene-gmax",
@@ -2507,7 +2883,11 @@
     "sourceArtSlug": "hatterene-gmax",
     "formSuffix": "gmax",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "psychic",
+      "fairy"
+    ]
   },
   {
     "id": "heracross-mega",
@@ -2518,7 +2898,17 @@
     "sourceArtSlug": "heracross-mega",
     "formSuffix": "mega",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "bug",
+      "fighting"
+    ],
+    "baseStatsOverride": {
+      "attack": 185,
+      "defense": 115,
+      "spDefense": 105,
+      "speed": 75
+    }
   },
   {
     "id": "hoopa-unbound",
@@ -2549,7 +2939,17 @@
     "sourceArtSlug": "houndoom-mega",
     "formSuffix": "mega",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "dark",
+      "fire"
+    ],
+    "baseStatsOverride": {
+      "defense": 90,
+      "spAttack": 140,
+      "spDefense": 90,
+      "speed": 115
+    }
   },
   {
     "id": "inteleon-gmax",
@@ -2560,7 +2960,10 @@
     "sourceArtSlug": "inteleon-gmax",
     "formSuffix": "gmax",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "water"
+    ]
   },
   {
     "id": "kangaskhan-mega",
@@ -2571,7 +2974,17 @@
     "sourceArtSlug": "kangaskhan-mega",
     "formSuffix": "mega",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "normal"
+    ],
+    "baseStatsOverride": {
+      "attack": 125,
+      "defense": 100,
+      "spAttack": 60,
+      "spDefense": 100,
+      "speed": 100
+    }
   },
   {
     "id": "keldeo-resolute",
@@ -2605,7 +3018,10 @@
     "sourceArtSlug": "kingler-gmax",
     "formSuffix": "gmax",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "water"
+    ]
   },
   {
     "id": "kleavor-noble",
@@ -2627,7 +3043,15 @@
     "sourceArtSlug": "kyogre-primal",
     "formSuffix": "primal",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "water"
+    ],
+    "baseStatsOverride": {
+      "attack": 150,
+      "spAttack": 180,
+      "spDefense": 160
+    }
   },
   {
     "id": "kyurem-black",
@@ -2701,7 +3125,11 @@
     "sourceArtSlug": "lapras-gmax",
     "formSuffix": "gmax",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "water",
+      "ice"
+    ]
   },
   {
     "id": "latias-mega",
@@ -2712,7 +3140,17 @@
     "sourceArtSlug": "latias-mega",
     "formSuffix": "mega",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "dragon",
+      "psychic"
+    ],
+    "baseStatsOverride": {
+      "attack": 100,
+      "defense": 120,
+      "spAttack": 140,
+      "spDefense": 150
+    }
   },
   {
     "id": "latios-mega",
@@ -2723,7 +3161,17 @@
     "sourceArtSlug": "latios-mega",
     "formSuffix": "mega",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "dragon",
+      "psychic"
+    ],
+    "baseStatsOverride": {
+      "attack": 130,
+      "defense": 100,
+      "spAttack": 160,
+      "spDefense": 120
+    }
   },
   {
     "id": "lilligant-hisui",
@@ -2780,7 +3228,16 @@
     "sourceArtSlug": "lopunny-mega",
     "formSuffix": "mega",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "normal",
+      "fighting"
+    ],
+    "baseStatsOverride": {
+      "attack": 136,
+      "defense": 94,
+      "speed": 135
+    }
   },
   {
     "id": "lucario-mega",
@@ -2791,7 +3248,17 @@
     "sourceArtSlug": "lucario-mega",
     "formSuffix": "mega",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "fighting",
+      "steel"
+    ],
+    "baseStatsOverride": {
+      "attack": 145,
+      "defense": 88,
+      "spAttack": 140,
+      "speed": 112
+    }
   },
   {
     "id": "lugia-shadow",
@@ -2857,7 +3324,10 @@
     "sourceArtSlug": "machamp-gmax",
     "formSuffix": "gmax",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "fighting"
+    ]
   },
   {
     "id": "magearna-original",
@@ -2883,7 +3353,16 @@
     "sourceArtSlug": "manectric-mega",
     "formSuffix": "mega",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "electric"
+    ],
+    "baseStatsOverride": {
+      "defense": 80,
+      "spAttack": 135,
+      "spDefense": 80,
+      "speed": 135
+    }
   },
   {
     "id": "marowak-alola",
@@ -2920,7 +3399,16 @@
     "sourceArtSlug": "mawile-mega",
     "formSuffix": "mega",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "steel",
+      "fairy"
+    ],
+    "baseStatsOverride": {
+      "attack": 105,
+      "defense": 125,
+      "spDefense": 95
+    }
   },
   {
     "id": "medicham-mega",
@@ -2931,7 +3419,18 @@
     "sourceArtSlug": "medicham-mega",
     "formSuffix": "mega",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "fighting",
+      "psychic"
+    ],
+    "baseStatsOverride": {
+      "attack": 100,
+      "defense": 85,
+      "spAttack": 80,
+      "spDefense": 85,
+      "speed": 100
+    }
   },
   {
     "id": "melmetal-gmax",
@@ -2942,7 +3441,10 @@
     "sourceArtSlug": "melmetal-gmax",
     "formSuffix": "gmax",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "steel"
+    ]
   },
   {
     "id": "meloetta-pirouette",
@@ -3014,7 +3516,10 @@
     "sourceArtSlug": "meowth-gmax",
     "formSuffix": "gmax",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "normal"
+    ]
   },
   {
     "id": "metagross-mega",
@@ -3025,7 +3530,18 @@
     "sourceArtSlug": "metagross-mega",
     "formSuffix": "mega",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "steel",
+      "psychic"
+    ],
+    "baseStatsOverride": {
+      "attack": 145,
+      "defense": 150,
+      "spAttack": 105,
+      "spDefense": 110,
+      "speed": 110
+    }
   },
   {
     "id": "mewtwo-mega-x",
@@ -3036,7 +3552,16 @@
     "sourceArtSlug": "mewtwo-mega-x",
     "formSuffix": "mega-x",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "psychic",
+      "fighting"
+    ],
+    "baseStatsOverride": {
+      "attack": 190,
+      "defense": 100,
+      "spDefense": 100
+    }
   },
   {
     "id": "mewtwo-mega-y",
@@ -3047,7 +3572,17 @@
     "sourceArtSlug": "mewtwo-mega-y",
     "formSuffix": "mega-y",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "psychic"
+    ],
+    "baseStatsOverride": {
+      "attack": 150,
+      "defense": 70,
+      "spAttack": 194,
+      "spDefense": 120,
+      "speed": 140
+    }
   },
   {
     "id": "minior-blue",
@@ -3316,7 +3851,19 @@
     "sourceArtSlug": "morpeko-hangry",
     "formSuffix": "hangry",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "electric",
+      "dark"
+    ],
+    "baseStatsOverride": {
+      "hp": 58,
+      "attack": 95,
+      "defense": 58,
+      "spAttack": 70,
+      "spDefense": 58,
+      "speed": 97
+    }
   },
   {
     "id": "mr-mime-galar",
@@ -3449,7 +3996,11 @@
     "sourceArtSlug": "orbeetle-gmax",
     "formSuffix": "gmax",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "bug",
+      "psychic"
+    ]
   },
   {
     "id": "oricorio-pau",
@@ -3577,7 +4128,17 @@
     "sourceArtSlug": "pidgeot-mega",
     "formSuffix": "mega",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "normal",
+      "flying"
+    ],
+    "baseStatsOverride": {
+      "defense": 80,
+      "spAttack": 135,
+      "spDefense": 80,
+      "speed": 121
+    }
   },
   {
     "id": "pikachu-alola-cap",
@@ -3630,7 +4191,10 @@
     "sourceArtSlug": "pikachu-gmax",
     "formSuffix": "gmax",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "electric"
+    ]
   },
   {
     "id": "pikachu-hoenn-cap",
@@ -3817,7 +4381,18 @@
     "sourceArtSlug": "pinsir-mega",
     "formSuffix": "mega",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "bug",
+      "flying"
+    ],
+    "baseStatsOverride": {
+      "attack": 155,
+      "defense": 120,
+      "spAttack": 65,
+      "spDefense": 90,
+      "speed": 105
+    }
   },
   {
     "id": "ponyta-galar",
@@ -4000,7 +4575,18 @@
     "sourceArtSlug": "rayquaza-mega",
     "formSuffix": "mega",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "dragon",
+      "flying"
+    ],
+    "baseStatsOverride": {
+      "attack": 180,
+      "defense": 100,
+      "spAttack": 180,
+      "spDefense": 100,
+      "speed": 115
+    }
   },
   {
     "id": "rillaboom-gmax",
@@ -4011,7 +4597,10 @@
     "sourceArtSlug": "rillaboom-gmax",
     "formSuffix": "gmax",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "grass"
+    ]
   },
   {
     "id": "rotom-fan",
@@ -4132,7 +4721,18 @@
     "sourceArtSlug": "sableye-mega",
     "formSuffix": "mega",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "dark",
+      "ghost"
+    ],
+    "baseStatsOverride": {
+      "attack": 85,
+      "defense": 125,
+      "spAttack": 85,
+      "spDefense": 115,
+      "speed": 20
+    }
   },
   {
     "id": "salamence-mega",
@@ -4143,7 +4743,18 @@
     "sourceArtSlug": "salamence-mega",
     "formSuffix": "mega",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "dragon",
+      "flying"
+    ],
+    "baseStatsOverride": {
+      "attack": 145,
+      "defense": 130,
+      "spAttack": 120,
+      "spDefense": 90,
+      "speed": 120
+    }
   },
   {
     "id": "samurott-hisui",
@@ -4177,7 +4788,10 @@
     "sourceArtSlug": "sandaconda-gmax",
     "formSuffix": "gmax",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "ground"
+    ]
   },
   {
     "id": "sandshrew-alola",
@@ -4261,7 +4875,17 @@
     "sourceArtSlug": "sceptile-mega",
     "formSuffix": "mega",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "grass",
+      "dragon"
+    ],
+    "baseStatsOverride": {
+      "attack": 110,
+      "defense": 75,
+      "spAttack": 145,
+      "speed": 145
+    }
   },
   {
     "id": "scizor-mega",
@@ -4272,7 +4896,18 @@
     "sourceArtSlug": "scizor-mega",
     "formSuffix": "mega",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "bug",
+      "steel"
+    ],
+    "baseStatsOverride": {
+      "attack": 150,
+      "defense": 140,
+      "spAttack": 65,
+      "spDefense": 100,
+      "speed": 75
+    }
   },
   {
     "id": "sharpedo-mega",
@@ -4283,7 +4918,18 @@
     "sourceArtSlug": "sharpedo-mega",
     "formSuffix": "mega",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "water",
+      "dark"
+    ],
+    "baseStatsOverride": {
+      "attack": 140,
+      "defense": 70,
+      "spAttack": 110,
+      "spDefense": 65,
+      "speed": 105
+    }
   },
   {
     "id": "shaymin-sky",
@@ -4555,7 +5201,15 @@
     "sourceArtSlug": "slowbro-mega",
     "formSuffix": "mega",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "water",
+      "psychic"
+    ],
+    "baseStatsOverride": {
+      "defense": 180,
+      "spAttack": 130
+    }
   },
   {
     "id": "slowking-galar",
@@ -4614,7 +5268,10 @@
     "sourceArtSlug": "snorlax-gmax",
     "formSuffix": "gmax",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "normal"
+    ]
   },
   {
     "id": "spinda-blank",
@@ -4647,7 +5304,16 @@
     "sourceArtSlug": "steelix-mega",
     "formSuffix": "mega",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "steel",
+      "ground"
+    ],
+    "baseStatsOverride": {
+      "attack": 125,
+      "defense": 230,
+      "spDefense": 95
+    }
   },
   {
     "id": "stunfisk-galar",
@@ -4679,7 +5345,18 @@
     "sourceArtSlug": "swampert-mega",
     "formSuffix": "mega",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "water",
+      "ground"
+    ],
+    "baseStatsOverride": {
+      "attack": 150,
+      "defense": 110,
+      "spAttack": 95,
+      "spDefense": 110,
+      "speed": 70
+    }
   },
   {
     "id": "thundurus-therian",
@@ -4789,7 +5466,17 @@
     "sourceArtSlug": "tyranitar-mega",
     "formSuffix": "mega",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "rock",
+      "dark"
+    ],
+    "baseStatsOverride": {
+      "attack": 164,
+      "defense": 150,
+      "spDefense": 120,
+      "speed": 71
+    }
   },
   {
     "id": "unown-b",
@@ -5108,7 +5795,19 @@
     "sourceArtSlug": "urshifu-rapid-strike-gmax",
     "formSuffix": "rapid-strike-gmax",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "fighting",
+      "water"
+    ],
+    "baseStatsOverride": {
+      "hp": 100,
+      "attack": 130,
+      "defense": 100,
+      "spAttack": 63,
+      "spDefense": 60,
+      "speed": 97
+    }
   },
   {
     "id": "venusaur-gmax",
@@ -5119,7 +5818,11 @@
     "sourceArtSlug": "venusaur-gmax",
     "formSuffix": "gmax",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "grass",
+      "poison"
+    ]
   },
   {
     "id": "venusaur-mega",
@@ -5130,7 +5833,17 @@
     "sourceArtSlug": "venusaur-mega",
     "formSuffix": "mega",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "grass",
+      "poison"
+    ],
+    "baseStatsOverride": {
+      "attack": 100,
+      "defense": 123,
+      "spAttack": 122,
+      "spDefense": 120
+    }
   },
   {
     "id": "vivillon-archipelago",
@@ -5394,7 +6107,18 @@
     "sourceArtSlug": "wishiwashi-school",
     "formSuffix": "school",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "water"
+    ],
+    "baseStatsOverride": {
+      "hp": 45,
+      "attack": 140,
+      "defense": 130,
+      "spAttack": 140,
+      "spDefense": 135,
+      "speed": 30
+    }
   },
   {
     "id": "wormadam-sandy",
@@ -5612,7 +6336,19 @@
     "sourceArtSlug": "zygarde-10",
     "formSuffix": "10",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "dragon",
+      "ground"
+    ],
+    "baseStatsOverride": {
+      "hp": 54,
+      "attack": 100,
+      "defense": 71,
+      "spAttack": 61,
+      "spDefense": 85,
+      "speed": 115
+    }
   },
   {
     "id": "zygarde-complete",
@@ -5623,6 +6359,18 @@
     "sourceArtSlug": "zygarde-complete",
     "formSuffix": "complete",
     "encounterEligible": false,
-    "eggEligible": false
+    "eggEligible": false,
+    "typing": [
+      "dragon",
+      "ground"
+    ],
+    "baseStatsOverride": {
+      "hp": 216,
+      "attack": 100,
+      "defense": 121,
+      "spAttack": 91,
+      "spDefense": 95,
+      "speed": 85
+    }
   }
 ]

@@ -24,6 +24,10 @@ import {
   checkWeatherForm, checkFirstHitForm, checkPostSurfForm,
   checkMoveForm, getBattleEndForm,
 } from "../game/battle-forms.js";
+import {
+  checkPrimalReversion, canMegaEvolve, canGigantamax,
+  getTransformedStats, applyGmaxHp, revertGmaxHp,
+} from "../game/battle-transformations.js";
 
 export const battleRoutes = Router();
 battleRoutes.use(authMiddleware);
@@ -151,9 +155,28 @@ function checkHpForms(
 
 /** Revert battle forms at end of battle */
 function revertBattleForms(battle: BattleState, myPokemon: OwnedPokemon): void {
+  // Revert gigantamax HP if active
+  if (battle.transformationType === "gigantamax" && battle.playerPreTransformMaxHp != null) {
+    const reverted = revertGmaxHp(myPokemon.hp, myPokemon.maxHp, battle.playerPreTransformMaxHp);
+    myPokemon.hp = reverted.hp;
+    myPokemon.maxHp = reverted.maxHp;
+  }
+
+  // If mega/primal had stat overrides, revert stats to original
+  if (battle.transformationType === "mega" || battle.transformationType === "primal") {
+    const originalStats = getTransformedStats(myPokemon, myPokemon.variantId ?? "");
+    myPokemon.stats = originalStats.stats;
+    myPokemon.maxHp = originalStats.maxHp;
+    if (myPokemon.hp > myPokemon.maxHp) myPokemon.hp = myPokemon.maxHp;
+  }
+
+  // Clear transformation state
+  battle.transformationType = null;
+  battle.transformationUsed = undefined;
+  battle.gmaxTurnsRemaining = undefined;
+  battle.playerPreTransformMaxHp = undefined;
+
   // Only clear battle form tracking — don't change the pokemon's actual variantId
-  // The BattleState getting nulled handles revert automatically
-  // This is called before nulling BattleState, so clear explicitly
   battle.playerBattleForm = undefined;
   battle.wildBattleForm = undefined;
 }
@@ -561,6 +584,18 @@ battleRoutes.post("/start", async (req, res) => {
       wildVolatile: [],
     };
 
+    // Check primal reversion for active pokemon
+    const primalForm = checkPrimalReversion(pokemon);
+    if (primalForm) {
+      battleState.playerBattleForm = primalForm;
+      battleState.transformationType = "primal";
+      // Apply primal stats
+      const transformed = getTransformedStats(pokemon, primalForm);
+      pokemon.stats = transformed.stats;
+      pokemon.maxHp = transformed.maxHp;
+      pokemon.hp = Math.min(pokemon.hp, pokemon.maxHp);
+    }
+
     user.battleState = battleState;
     await saveUser(user);
     res.json({ battleState });
@@ -582,6 +617,38 @@ async function handleFight(
 
   const moveData = getMoveById(moveId);
   if (!moveData) { res.status(400).json({ error: "기술 데이터를 찾을 수 없습니다" }); return; }
+
+  // Handle mega evolution
+  const mega = data?.mega as boolean | undefined;
+  if (mega) {
+    const result = canMegaEvolve(myPokemon, battle, user.inventory);
+    if (!result.ok) { res.status(400).json({ error: result.error }); return; }
+    battle.playerBattleForm = result.variantId!;
+    battle.transformationType = "mega";
+    battle.transformationUsed = true;
+    // Apply variant stats
+    const transformed = getTransformedStats(myPokemon, result.variantId!);
+    myPokemon.stats = transformed.stats;
+    myPokemon.maxHp = transformed.maxHp;
+    if (myPokemon.hp > myPokemon.maxHp) myPokemon.hp = myPokemon.maxHp;
+    log.push(`${myPokemon.species}이(가) 메가진화했다!`);
+  }
+
+  // Handle gigantamax
+  const gigantamax = data?.gigantamax as boolean | undefined;
+  if (gigantamax) {
+    const result = canGigantamax(myPokemon, battle, user.inventory);
+    if (!result.ok) { res.status(400).json({ error: result.error }); return; }
+    battle.playerBattleForm = result.variantId!;
+    battle.transformationType = "gigantamax";
+    battle.transformationUsed = true;
+    battle.gmaxTurnsRemaining = 3;
+    battle.playerPreTransformMaxHp = myPokemon.maxHp;
+    const gmaxHp = applyGmaxHp(myPokemon.hp, myPokemon.maxHp);
+    myPokemon.hp = gmaxHp.hp;
+    myPokemon.maxHp = gmaxHp.maxHp;
+    log.push(`${myPokemon.species}이(가) 기가맥스했다!`);
+  }
 
   const selectedMove = myMove;
   const selectedMoveData = moveData;
@@ -794,6 +861,20 @@ async function handleFight(
   // End-of-turn weather damage and tick
   applyWeatherEndOfTurn(battle, myPokemon, log);
 
+  // Gigantamax turn tick
+  if (battle.transformationType === "gigantamax" && battle.gmaxTurnsRemaining != null) {
+    battle.gmaxTurnsRemaining--;
+    if (battle.gmaxTurnsRemaining <= 0) {
+      battle.playerBattleForm = null;
+      battle.transformationType = null;
+      const reverted = revertGmaxHp(myPokemon.hp, myPokemon.maxHp, battle.playerPreTransformMaxHp!);
+      myPokemon.hp = reverted.hp;
+      myPokemon.maxHp = reverted.maxHp;
+      battle.playerPreTransformMaxHp = undefined;
+      log.push("기가맥스가 풀렸다!");
+    }
+  }
+
   // Check if end-of-turn damage KO'd anyone
   if (myPokemon.hp <= 0) {
     if (await handleFainted(user, myPokemon, battle, log, res)) return;
@@ -913,6 +994,23 @@ async function handleSwitch(
   }
 
   const forced = data?.forced === true;
+
+  // Revert transformation on the outgoing pokemon
+  if (battle.transformationType === "gigantamax" && battle.playerPreTransformMaxHp != null) {
+    const reverted = revertGmaxHp(myPokemon.hp, myPokemon.maxHp, battle.playerPreTransformMaxHp);
+    myPokemon.hp = reverted.hp;
+    myPokemon.maxHp = reverted.maxHp;
+  }
+  if (battle.transformationType === "mega" || battle.transformationType === "primal") {
+    const originalStats = getTransformedStats(myPokemon, myPokemon.variantId ?? "");
+    myPokemon.stats = originalStats.stats;
+    myPokemon.maxHp = originalStats.maxHp;
+    if (myPokemon.hp > myPokemon.maxHp) myPokemon.hp = myPokemon.maxHp;
+  }
+  battle.transformationType = null;
+  battle.gmaxTurnsRemaining = undefined;
+  battle.playerPreTransformMaxHp = undefined;
+
   battle.myPokemonUid = newUid;
   battle.playerStatStages = defaultStatStages();
   battle.playerVolatile = [];

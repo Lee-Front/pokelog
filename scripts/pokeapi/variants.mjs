@@ -8,7 +8,7 @@ import {
   writeJsonFile,
 } from "./common.mjs";
 
-const ELIGIBLE_KINDS = new Set(["regional", "permanent-form"]);
+const ELIGIBLE_KINDS = new Set(["regional", "permanent-form", "battle-form"]);
 const STAT_KEYS = ["hp", "attack", "defense", "spAttack", "spDefense", "speed"];
 
 function normalizeTypes(types) {

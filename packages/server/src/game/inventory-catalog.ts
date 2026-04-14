@@ -29,7 +29,7 @@ function getHeldEvolutionItemIds(): Set<string> {
 
 export function isHoldableItem(itemId: string): boolean {
   const item = getItemById(itemId);
-  if (item?.category === "held-items") {
+  if (item?.category === "held-items" || item?.category === "mega-stone") {
     return true;
   }
 

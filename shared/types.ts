@@ -132,6 +132,7 @@ export interface OwnedPokemon {
   isShiny?: boolean;
   statusCondition?: PrimaryStatus | null;
   sleepTurns?: number;
+  hasGigantamaxFactor?: boolean;
 }
 
 export type EggTierId = "common" | "rare" | "legend";
@@ -219,6 +220,10 @@ export interface BattleState {
   weatherTurns?: number;
   playerBattleForm?: string | null;
   wildBattleForm?: string | null;
+  transformationType?: "mega" | "gigantamax" | "primal" | null;
+  transformationUsed?: boolean;
+  gmaxTurnsRemaining?: number;
+  playerPreTransformMaxHp?: number;
 }
 
 export interface LogEntry {
