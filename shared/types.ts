@@ -204,6 +204,8 @@ export interface StatStages {
   speed: number;
 }
 
+export type BattleWeather = "sun" | "rain" | "hail" | "sandstorm";
+
 export interface BattleState {
   eventId: string;
   myPokemonUid: string;
@@ -213,6 +215,10 @@ export interface BattleState {
   wildStatStages?: StatStages;
   playerVolatile?: VolatileStatus[];
   wildVolatile?: VolatileStatus[];
+  weather?: BattleWeather;
+  weatherTurns?: number;
+  playerBattleForm?: string | null;
+  wildBattleForm?: string | null;
 }
 
 export interface LogEntry {

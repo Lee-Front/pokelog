@@ -42,6 +42,7 @@ export function calculateDamage(
   defenderTypes: string[],
   attackerStages?: StatStages,
   defenderStages?: StatStages,
+  weatherModifier: number = 1,
 ): DamageResult {
   const typeChart = getTypeChart();
 
@@ -101,6 +102,7 @@ export function calculateDamage(
     (((2 * level / 5 + 2) * move.power * atk / def) / 50 + 2)
     * stab
     * typeMultiplier
+    * weatherModifier
     * randomFactor,
   );
 
