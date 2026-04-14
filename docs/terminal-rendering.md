@@ -1,69 +1,114 @@
-# 터미널 깜빡임 없는 재그리기 패턴
+# Terminal Rendering
 
-## 원리
+Updated: 2026-04-14
 
-터미널에서 화면을 업데이트할 때 깜빡임이 발생하는 두 가지 원인:
+## Purpose
 
-1. **커서 점프** — 재그리기 중 커서가 화면을 뛰어다니는 게 보임
-2. **중간 프레임** — 여러 번 `write()`를 호출하면 호출 사이에 터미널이 부분적으로 렌더링함
+The CLI is not a chat log.
+Every interactive screen should behave like a terminal application frame:
 
-## 패턴
+- one active frame on screen
+- redraw in place
+- no line accumulation across menu transitions
+- no menu-specific rendering rules scattered across commands
 
-```typescript
-let out = "\x1b[?25l";              // 1. 커서 숨김
-if (lineCount > 0) {
-  out += `\x1b[${lineCount}A\x1b[0J`; // 2. 위로 올리고 아래 지우기 (in-place)
-}
-out += lines.join("\n") + "\n";     // 3. 새 내용
-out += "\x1b[?25h";                 // 4. 커서 복원
-process.stdout.write(out);          // 5. 단 한 번의 write
-lineCount = lines.length;           // 6. 줄 수 추적
-```
+## Current Runtime
 
-## ANSI 코드 설명
+The shared rendering runtime now lives in:
 
-| 코드 | 의미 |
-|------|------|
-| `\x1b[?25l` | 커서 숨김 |
-| `\x1b[?25h` | 커서 표시 |
-| `\x1b[nA` | 커서 n줄 위로 |
-| `\x1b[0J` | 커서 위치부터 화면 끝까지 지우기 |
-| `\x1b[2J\x1b[H` | 전체 화면 지우기 (화면 전환 시에만 사용) |
+- [packages/cli/src/ui/screen.ts](/C:/Users/dlwog/Desktop/project/pokelog/packages/cli/src/ui/screen.ts:1)
+- [packages/cli/src/ui/display.ts](/C:/Users/dlwog/Desktop/project/pokelog/packages/cli/src/ui/display.ts:1)
 
-## 구현 예시
+Core primitives:
 
-```typescript
+- `clearScreen()` and `resetScreen()` for full-screen reset
+- `runMenuLoop()` for persistent redraw-based menu screens
+- `selectFrame()` for framed selection prompts
+- `confirmFrame()` for framed yes/no prompts
+- `inputFrame()` for framed text input
+- `passwordFrame()` for framed masked input
+- `redraw(lines, lineCount, first)` as the low-level in-place renderer
+
+## Rendering Rule
+
+The renderer keeps the current frame height and rewrites the same screen area instead of printing new lines.
+
+Simplified flow:
+
+```ts
 let lineCount = 0;
+let first = true;
 
-const draw = (first: boolean) => {
-  const lines = buildLines(); // 출력할 줄 배열 구성
-
-  let out = "\x1b[?25l";
-  if (first) {
-    out += "\x1b[2J\x1b[H"; // 첫 진입 시 전체 화면 클리어
-    lineCount = 0;
-  } else if (lineCount > 0) {
-    out += `\x1b[${lineCount}A\x1b[0J`; // 이전 내용 덮어쓰기
-  }
-  out += lines.join("\n") + "\n";
-  out += "\x1b[?25h";
-  process.stdout.write(out);
-  lineCount = lines.length;
-};
-
-draw(true);  // 첫 진입
-
-// 이후 업데이트
-draw(false); // 깜빡임 없이 in-place 재그리기
+while (true) {
+  const lines = buildLines();
+  lineCount = redraw(lines, lineCount, first);
+  first = false;
+  const key = await waitKey();
+  await handleKey(key);
+}
 ```
 
-## 주의사항
+This gives the CLI its expected behavior:
 
-- `lineCount` 추적이 어긋나면 이전 내용이 남거나 과도하게 지워짐
-- 추적 외부에서 `console.log` / `process.stdout.write`로 줄을 추가한 경우 (예: 구매 메시지) 다음 `draw(true)`로 초기화
-- 전체 화면 클리어(`\x1b[2J\x1b[H`)는 **화면 전환 시에만** — 매 키입력마다 호출하면 깜빡임 원인이 됨
+- move cursor back to the previous frame
+- overwrite the existing frame
+- clear trailing old lines when the new frame is shorter
+- keep the cursor hidden while redrawing
 
-## 적용된 파일
+## Current Screen Policy
 
-- `packages/cli/src/commands/shop.ts` — 카테고리 선택, 캐러셀
-- `packages/cli/src/commands/heal.ts` — 치료 애니메이션 (동일 원리, `first` 플래그 없이 `redraw` boolean 사용)
+Interactive menu and input flows should go through the shared screen runtime.
+Commands should not implement their own ad-hoc combinations of:
+
+- `console.log()` loops
+- local `lineCount` redraw code
+- per-command `rawSelect()` menus
+- prompt cleanup hacks
+
+The command layer should decide:
+
+- what to show
+- what action was selected
+- how state changes
+
+The screen runtime should own:
+
+- frame redraw
+- cursor visibility
+- page scrolling inside menus
+- prompt/input rendering
+- cancel and close behavior
+
+## Current Adoption
+
+The shared runtime is now wired into the main interactive command flow and the newer full-screen menu flows, including:
+
+- help selection
+- egg purchase flow
+- trade menu
+- pending evolutions menu
+- leave server menu
+- connect/integration menu
+- framed text input and password input used by login/register/profile/connect/trade flows
+
+Some older screen-heavy commands still maintain their own local frame loops:
+
+- party
+- storage
+- inventory
+- shop
+- encounter
+- events
+- heal
+- pokedex
+
+These already redraw in place, but they are not yet fully expressed through a single shared controller abstraction.
+
+## Immediate Standard
+
+From this point forward:
+
+1. New interactive screens must use the shared frame runtime.
+2. Menu transitions must redraw in place instead of appending lines.
+3. Text input should stay inside the same frame model instead of dropping into a separate prompt style.
+4. Command-local rendering logic should only remain where the screen is unusually specialized, and that should be treated as technical debt to extract later.

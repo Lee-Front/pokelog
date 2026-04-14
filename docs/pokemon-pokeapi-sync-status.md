@@ -233,7 +233,7 @@ Current rules:
 - regional variants are now egg-eligible (59 variants)
 - `typing` is now populated for 118 variants from PokeAPI
 - `baseStatsOverride` is now populated for 80 variants that differ from base species
-- owned Pokemon now reserve `variantId`, but no gameplay loop writes non-null variant ids yet
+- owned Pokemon use `variantId` to track their current variant. Form changes (`applyFormChange`) and encounter generation write `variantId` when applicable.
 
 Reference:
 

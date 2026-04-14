@@ -80,7 +80,7 @@
 - **Create trade** -- `POST /api/game/trades/request` `{ targetUserId, myPokemonUid, targetPokemonUid }`
 - **Accept trade** -- `POST /api/game/trades/:id/accept` (pokemon swap, may trigger trade evolution)
 - **Reject/Cancel** -- `POST /api/game/trades/:id/reject` or `/cancel`
-- **Lock/Unlock** -- `POST /api/game/trades/lock` / `/unlock` `{ pokemonUid }`
+- **Lock/Unlock** -- `POST /api/game/trades/lock` / `/unlock` `{ pokemonUid }` (prevent Pokemon from being traded)
 - **List trades** -- `GET /api/game/trades`
 
 ## 7. Social
@@ -98,5 +98,5 @@
   - Affects which wild pokemon appear in encounters
 - **Regional variants** -- e.g. `vulpix-alola` in alola region encounters
   - Variant pokemon preserve `variantId`, have different typing/stats
-- **Trade evolutions** -- equip held item (e.g. metal-coat on Scyther) then trade to trigger evolution
+- **Trade evolutions** -- equip held item (e.g. metal-coat on Scyther) then trade to trigger evolution; some evolutions require trading with a specific Pokemon species (determined by `extra.trade_species` condition in evolution data)
 - **Activity history** -- `GET /api/game/history?limit=20` (commit logs, integration rewards)

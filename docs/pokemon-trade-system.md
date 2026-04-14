@@ -1,31 +1,37 @@
 # Pokemon Trade System
 
-Generated: 2026-04-13
+Updated: 2026-04-14
 
 ## Purpose
 
-This document describes the current first-pass player-to-player trade system.
+This document describes the current player-to-player trade system.
 
-It records what is already implemented, how trade-trigger evolutions are resolved, and what is still intentionally missing.
+It records:
+
+- what is already implemented
+- how the current interactive CLI works
+- how trade-trigger evolutions are resolved
+- what is still intentionally missing
 
 ## Current Scope
 
 The project now supports:
 
 - explicit trade requests from one user to another
-- user search by id or nickname substring before making a request
-- trade candidate listing for both sides before confirming a request
+- user search by id or nickname substring
+- candidate selection for both sides before creating a request
 - responder-side accept or reject
 - requester-side cancel
-- actual Pokemon exchange between two user accounts
+- actual Pokemon exchange between two users
 - trade-trigger evolutions during acceptance
-- `trade_species` partner requirements during acceptance
+- `extra.trade_species` partner requirements during acceptance
 - held-item trade evolutions such as `onix -> steelix`
+- framed interactive CLI flow for listing and acting on trades
 
-The project does not yet support:
+The project still does not support:
 
 - one-way gifts
-- negotiation with multiple offered Pokemon
+- multi-offer negotiation
 - trade chat or comments
 - trade expiration
 
@@ -35,24 +41,15 @@ Trades are stored centrally in:
 
 - `pokelog-data/trades/trades.json`
 
-Each record contains:
+Resolved trade history is no longer simply dropped.
 
-- requester user id
-- requester Pokemon uid
-- responder user id
-- responder Pokemon uid
-- status
-- timestamps
+Current retention behavior:
 
-This keeps trade state out of individual user files and avoids duplicated pending state.
+- pending trades are retained until resolved
+- resolved trades are pruned to the latest 200 active records
+- older resolved records are archived to `trades-archive.json`
 
-Retention rule:
-
-- pending trades are always retained until resolved
-- resolved trades are automatically pruned to the most recent 200 records
-- pruning happens when the central trade store is saved
-
-## Request Flow
+## Route Surface
 
 Current route flow:
 
@@ -62,27 +59,53 @@ Current route flow:
 - `POST /api/game/trades/:id/accept`
 - `POST /api/game/trades/:id/reject`
 - `POST /api/game/trades/:id/cancel`
-Current CLI flow:
 
-- `pokelog trade` (인터랙티브 TUI — 목록/수락/거절/취소/새 요청)
+## Current CLI Surface
+
+Current CLI commands:
+
+- `pokelog trade`
 - `pokelog trade search <query>`
 - `pokelog trade request <userId> [myPokemonUid] [theirPokemonUid]`
 - `pokelog trade accept <tradeId>`
 - `pokelog trade reject <tradeId>`
 - `pokelog trade cancel <tradeId>`
 
-Current targeting rule:
+Interactive behavior:
 
-- the CLI can now search by partial id or nickname
-- `trade request` resolves the first argument through user search
-- if Pokemon uids are omitted, the CLI loads both users' tradeable candidates and asks the user to choose
+- `pokelog trade` opens a framed full-screen trade menu
+- pending trades can be selected from the trade list
+- action prompts use the shared frame renderer
+- new trade requests can resolve target user and Pokemon candidates interactively
+
+## Targeting Rule
+
+Current targeting behavior:
+
+- user search supports partial id or nickname lookup
+- if the query resolves to one user, the CLI uses it directly
+- if it resolves to multiple users, the CLI asks the player to choose
+- if Pokemon uids are omitted, the CLI loads tradeable candidates and asks the player to choose
 - if a Pokemon uid is provided, it must still match a currently tradeable candidate
 
-Tradeable candidate rule:
+## Candidate Rule
 
-- party and storage Pokemon are both eligible
-- a Pokemon currently active in battle is excluded from candidate lists
-- candidate rows show species name, nickname, level, location, and uid
+Tradeable candidates currently include:
+
+- party Pokemon
+- storage Pokemon
+
+Current exclusions:
+
+- Pokemon currently active in battle
+
+Candidate rows show:
+
+- species name
+- nickname
+- level
+- location
+- uid
 
 ## Exchange Rule
 
@@ -99,18 +122,16 @@ Current slot behavior:
 - if the traded Pokemon came from party, the received Pokemon goes into party at the same position
 - if the traded Pokemon came from storage, the received Pokemon goes into storage
 
-This preserves party size and avoids dropping received Pokemon into the wrong collection automatically.
-
 ## Trade Evolution Rule
 
-Trade-trigger evolution is now a dedicated flow, separate from normal level-up checks.
+Trade-trigger evolution is a dedicated flow, separate from normal level-up resolution.
 
 Current implementation:
 
-- normal Pokemon detail diagnostics mark trade evolution as deferred because it needs another user
+- Pokemon detail diagnostics still mark trade evolution as deferred because another user is required
 - actual trade acceptance resolves trade-trigger branches directly
 
-Supported trade evolution families:
+Supported families:
 
 - plain trade
 - trade + held item
@@ -125,17 +146,30 @@ Examples already covered:
 - `karrablast -> escavalier` when traded with `shelmet`
 - `shelmet -> accelgor` when traded with `karrablast`
 
-Held item behavior:
+Held-item behavior:
 
-- if a trade evolution branch depends on `held-item`, the held item is consumed on evolution
+- if a trade evolution branch depends on a held item, that item is consumed on evolution
 
-## Current Limitations
+## What Changed From The Older Plan
 
-- The system currently assumes a two-Pokemon swap only.
-- Trade-trigger branches are supported in the trade flow, but not surfaced as an interactive guided flow inside the full-screen UI yet.
+These older statements are no longer accurate:
 
-## Recommended Next Work
+- "interactive guided flow does not exist yet"
+- "resolved trades are only pruned"
+- "trade lock is part of the current system"
 
-1. Decide whether old resolved trade records should be archived elsewhere before pruning.
-2. Add a richer interactive trade flow instead of command-first trade management only.
-3. Decide whether users should be allowed to request trades against party-only, storage-only, or opt-in marked Pokemon only.
+Current code already has an interactive framed trade menu, archived resolved trade history, and no trade-lock feature.
+
+## Remaining Gaps
+
+Still missing:
+
+- richer negotiation than single-Pokemon-for-single-Pokemon
+- fully unified framed subflows for every deeper trade prompt
+- broader integration of trade flow into other full-screen controllers
+
+## Next Work
+
+1. Keep the framed trade flow on top of the shared screen runtime.
+2. Fold deeper candidate and action subflows into the same top-level controller structure over time.
+3. Extend trade rules only after the current two-sided swap stays stable.
