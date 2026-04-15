@@ -30,7 +30,7 @@ battleRoutes.post("/start", async (req, res) => {
     const { userId } = req as AuthRequest;
     const { eventId, pokemonUid } = req.body;
 
-    if (!eventId || !pokemonUid) {
+    if (typeof eventId !== "string" || typeof pokemonUid !== "string") {
       res.status(400).json({ error: "이벤트 ID와 포켓몬 UID를 입력해주세요" });
       return;
     }
@@ -99,8 +99,8 @@ async function handleFight(
   user: UserData, myPokemon: OwnedPokemon, battle: BattleState,
   data: Record<string, unknown>, log: string[], res: Response,
 ) {
-  const moveId = data?.moveId as string | undefined;
-  if (!moveId) { res.status(400).json({ error: "사용할 기술을 선택해주세요" }); return; }
+  const moveId = data?.moveId;
+  if (typeof moveId !== "string") { res.status(400).json({ error: "사용할 기술을 선택해주세요" }); return; }
 
   const myMove = myPokemon.moves.find((m) => m.id === moveId);
   if (!myMove || myMove.pp <= 0) { res.status(400).json({ error: "사용할 수 없는 기술입니다" }); return; }
@@ -251,7 +251,7 @@ async function handleCatch(
   user: UserData, myPokemon: OwnedPokemon, battle: BattleState,
   data: Record<string, unknown>, log: string[], res: Response,
 ) {
-  const ballType = (data?.ball as string) || "pokeball";
+  const ballType = typeof data?.ball === "string" ? data.ball : "pokeball";
 
   if (!user.inventory[ballType] || user.inventory[ballType] <= 0) {
     res.status(400).json({ error: "볼이 없습니다" });
@@ -302,10 +302,10 @@ async function handleItem(
   user: UserData, myPokemon: OwnedPokemon, battle: BattleState,
   data: Record<string, unknown>, log: string[], res: Response,
 ) {
-  const itemId = data?.item as string | undefined;
-  const targetUid = (data?.pokemonUid as string) || battle.myPokemonUid;
+  const itemId = data?.item;
+  const targetUid = typeof data?.pokemonUid === "string" ? data.pokemonUid : battle.myPokemonUid;
 
-  if (!itemId) { res.status(400).json({ error: "사용할 아이템을 선택해주세요" }); return; }
+  if (typeof itemId !== "string") { res.status(400).json({ error: "사용할 아이템을 선택해주세요" }); return; }
 
   const config = await getConfig();
   const shopItem = config.shop.items[itemId];
@@ -336,8 +336,8 @@ async function handleSwitch(
   user: UserData, myPokemon: OwnedPokemon, battle: BattleState,
   data: Record<string, unknown>, log: string[], res: Response,
 ) {
-  const newUid = data?.pokemonUid as string | undefined;
-  if (!newUid) { res.status(400).json({ error: "교체할 포켓몬을 선택해주세요" }); return; }
+  const newUid = data?.pokemonUid;
+  if (typeof newUid !== "string") { res.status(400).json({ error: "교체할 포켓몬을 선택해주세요" }); return; }
 
   const newPokemon = user.pokemon.find((p) => p.uid === newUid);
   if (!newPokemon) { res.status(404).json({ error: "포켓몬을 찾을 수 없습니다" }); return; }
@@ -394,6 +394,11 @@ battleRoutes.post("/action", async (req, res) => {
   try {
     const { userId } = req as AuthRequest;
     const { action, data } = req.body;
+
+    if (typeof action !== "string") {
+      res.status(400).json({ error: "유효하지 않은 행동입니다" });
+      return;
+    }
 
     const user = await getUser(userId!);
     if (!user) { res.status(404).json({ error: "사용자를 찾을 수 없습니다" }); return; }
