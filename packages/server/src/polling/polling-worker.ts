@@ -214,10 +214,13 @@ export async function pollUserIntegrations(userId: string): Promise<void> {
 let pollingInterval: ReturnType<typeof setInterval> | null = null;
 
 export function startPolling(): void {
+  if (pollingInterval) return;
+
   // Poll immediately, then at interval
   pollAllRepos().catch(console.error);
 
   getConfig().then((config) => {
+    if (pollingInterval) return;
     const intervalMs = config.polling.intervalMinutes * 60 * 1000;
     pollingInterval = setInterval(() => {
       pollAllRepos().catch(console.error);
