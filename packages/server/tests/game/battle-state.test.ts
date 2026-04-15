@@ -730,3 +730,160 @@ describe("hasAlivePartyMembers", () => {
     expect(hasAlivePartyMembers(user, "uid-1")).toBe(false);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Edge cases: stat stage clamping, HP/PP bounds, confusion formula
+// ---------------------------------------------------------------------------
+
+describe("stat stages clamp at ±6", () => {
+  let randomSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    randomSpy = vi.spyOn(Math, "random");
+  });
+
+  afterEach(() => {
+    randomSpy.mockRestore();
+  });
+
+  it("clamps stat stage at +6 when buff would exceed it", () => {
+    randomSpy.mockReturnValue(0.0); // chance check passes
+    const battle = makeBattle({
+      playerStatStages: makeStatStages({ attack: 5 }),
+    });
+    const move = makeMove({
+      statChanges: [{ stat: "attack", change: 3 }],
+      target: "user",
+    });
+    const log: string[] = [];
+
+    maybeApplyStatChanges(battle, move, true, log);
+
+    expect(battle.playerStatStages?.attack).toBe(6);
+  });
+
+  it("clamps stat stage at -6 when debuff would exceed it", () => {
+    randomSpy.mockReturnValue(0.0);
+    const battle = makeBattle({
+      wildStatStages: makeStatStages({ defense: -5 }),
+    });
+    const move = makeMove({
+      statChanges: [{ stat: "defense", change: -3 }],
+      target: "selected-pokemon",
+    });
+    const log: string[] = [];
+
+    maybeApplyStatChanges(battle, move, true, log);
+
+    expect(battle.wildStatStages?.defense).toBe(-6);
+  });
+});
+
+describe("HP never goes below 0 after massive damage", () => {
+  let randomSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    randomSpy = vi.spyOn(Math, "random");
+  });
+
+  afterEach(() => {
+    randomSpy.mockRestore();
+  });
+
+  it("wild HP is clamped to 0 after a high-damage attack", () => {
+    // All rolls succeed: accuracy=hit, crit=no, random factor=max
+    randomSpy.mockReturnValue(0.5);
+
+    const battle = makeBattle({
+      wild: {
+        species: "rattata",
+        level: 5,
+        hp: 10,
+        maxHp: 50,
+        stats: makeStats({ attack: 10, defense: 10, speed: 10, spAttack: 10, spDefense: 10 }),
+        moves: [{ id: "tackle", pp: 35, maxPp: 35 }],
+      },
+    });
+    const player = makePlayerPokemon({
+      level: 100,
+      stats: makeStats({ attack: 999, spAttack: 999 }),
+    });
+    const move = makeMove({ power: 250 });
+    const log: string[] = [];
+
+    executePlayerAttack(battle, player, move, { id: "tackle", pp: 35, maxPp: 35 }, log);
+
+    expect(battle.wild.hp).toBe(0);
+    expect(battle.wild.hp).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe("PP never goes below 0", () => {
+  let randomSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    randomSpy = vi.spyOn(Math, "random");
+  });
+
+  afterEach(() => {
+    randomSpy.mockRestore();
+  });
+
+  it("PP decrements to 0 and does not go negative", () => {
+    randomSpy.mockReturnValue(0.5);
+
+    const battle = makeBattle();
+    const player = makePlayerPokemon();
+    const selectedMove = { id: "tackle", pp: 1, maxPp: 35 };
+    const move = makeMove();
+    const log: string[] = [];
+
+    executePlayerAttack(battle, player, move, selectedMove, log);
+
+    expect(selectedMove.pp).toBe(0);
+    expect(selectedMove.pp).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe("confusion self-damage uses pokemon level", () => {
+  let randomSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    randomSpy = vi.spyOn(Math, "random");
+  });
+
+  afterEach(() => {
+    randomSpy.mockRestore();
+  });
+
+  it("produces different self-damage for different levels", () => {
+    // Both confusion rolls succeed (< 0.33)
+    randomSpy.mockReturnValue(0.1);
+
+    const lowLevelPlayer = makePlayerPokemon({
+      hp: 100,
+      level: 5,
+      stats: makeStats({ attack: 50, defense: 50 }),
+    });
+    const highLevelPlayer = makePlayerPokemon({
+      hp: 100,
+      level: 80,
+      stats: makeStats({ attack: 50, defense: 50 }),
+    });
+    const confusion: VolatileStatus = { id: "confusion", turnsRemaining: 3 };
+
+    const lowResult = resolvePreAttack(lowLevelPlayer, [{ ...confusion }], []);
+    randomSpy.mockReturnValue(0.1);
+    const highResult = resolvePreAttack(highLevelPlayer, [{ ...confusion }], []);
+
+    // Both should be unable to act due to confusion
+    expect(lowResult.canAct).toBe(false);
+    expect(highResult.canAct).toBe(false);
+
+    // Higher level should produce more self-damage with the same stats
+    // Formula: ((2*level/5+2) * 40 * atk/def) / 50 + 2
+    // Level 5:  ((2*5/5+2) * 40 * 50/50) / 50 + 2 = (4*40)/50 + 2 = 5.2 → 5
+    // Level 80: ((2*80/5+2) * 40 * 50/50) / 50 + 2 = (34*40)/50 + 2 = 29.2 → 29
+    expect(highResult.selfDamage!).toBeGreaterThan(lowResult.selfDamage!);
+  });
+});
