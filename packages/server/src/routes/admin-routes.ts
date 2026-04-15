@@ -89,7 +89,7 @@ adminRoutes.get("/config/integration-events", async (_req, res) => {
       rules: config.rewards.integrations,
     });
   } catch {
-    res.status(500).json({ error: "?ì’•ì¾­ ?ã…»ìªŸ" });
+    res.status(500).json({ error: "서버 오류" });
   }
 });
 
