@@ -305,7 +305,11 @@ export async function storageCommand() {
         message = `${RED}Failed to resolve evolution.${R}`;
       }
 
-      await refreshAll();
+      try {
+        await refreshAll();
+      } catch {
+        message = "데이터를 불러오는 데 실패했습니다.";
+      }
       lastSpecies = "";
       currentArt = null;
       first = true;
@@ -337,7 +341,11 @@ export async function storageCommand() {
         : `${RED}${String(response.data.error ?? "Failed to move Pokemon.")}${R}`;
     }
 
-    await refreshAll();
+    try {
+      await refreshAll();
+    } catch {
+      message = "데이터를 불러오는 데 실패했습니다.";
+    }
     lastSpecies = "";
     currentArt = null;
     first = true;

@@ -405,7 +405,12 @@ export async function inventoryCommand() {
     }
 
     message = `${GRN}${response.data.message ?? `${getItemName(selectedItem, catalog)} used successfully.`}${R}`;
-    await Promise.all([refreshInventory(), refreshParty()]);
+    try {
+      await Promise.all([refreshInventory(), refreshParty()]);
+    } catch {
+      message = "데이터를 불러오는 데 실패했습니다.";
+      continue;
+    }
     if ((inventory[selectedItem] ?? 0) <= 0) {
       mode = "items";
       lastArtKey = "";
