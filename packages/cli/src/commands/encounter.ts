@@ -66,23 +66,15 @@ async function playBallThrowAnimation(
   catchResultPromise: Promise<{ data: unknown; ok: boolean }>,
 ): Promise<{ data: unknown; ok: boolean }> {
   let lineCount = 0;
+  let first = true;
 
   const padded = ballArt + "\n\n";
 
   const draw = (rightArt: string) => {
     const content = buildBattleScene(myPoke, wild, myArt, rightArt);
     const lines = content.split("\n");
-    let out = "\x1b[?25l";
-    if (lineCount > 0) {
-      out += `\x1b[${lineCount}A`;
-      out += lines.map(l => "\r" + l + "\x1b[0m\x1b[K").join("\n") + "\n";
-    } else {
-      out += "\x1b[2J\x1b[H";
-      out += content + "\n";
-    }
-    out += "\x1b[?25h";
-    process.stdout.write(out);
-    lineCount = lines.length;
+    lineCount = redraw(lines, lineCount, first);
+    first = false;
   };
 
   draw(padded);
@@ -378,6 +370,17 @@ export async function encounterCommand(
     return artCache.get(species) ?? null;
   }
 
+  async function refreshPartyHp(): Promise<void> {
+    const pr = await apiGet("/api/game/party");
+    if (pr.ok) {
+      const np = pr.data.party as PartyMon[];
+      for (const p of party) {
+        const u = np.find(n => n.uid === p.uid);
+        if (u) { p.hp = u.hp; p.maxHp = u.maxHp; }
+      }
+    }
+  }
+
   let selectCursor = 0;
   let selectArt: string | null = null;
   let lastSelectSpecies = "";
@@ -627,14 +630,7 @@ export async function encounterCommand(
             battleLog.push("도망쳤다!");
           }
           // 파티 HP 갱신
-          const pr = await apiGet("/api/game/party");
-          if (pr.ok) {
-            const np = pr.data.party as PartyMon[];
-            for (const p of party) {
-              const u = np.find(n => n.uid === p.uid);
-              if (u) { p.hp = u.hp; p.maxHp = u.maxHp; }
-            }
-          }
+          await refreshPartyHp();
           stateStale = true;
           subMode    = "menu";
         }
@@ -680,14 +676,7 @@ export async function encounterCommand(
         }
         if (r.rewards) battleLog.push(`보상: EXP +${r.rewards.exp}, ${r.rewards.points}P`);
 
-        const pr = await apiGet("/api/game/party");
-        if (pr.ok) {
-          const np = pr.data.party as PartyMon[];
-          for (const p of party) {
-            const u = np.find(n => n.uid === p.uid);
-            if (u) { p.hp = u.hp; p.maxHp = u.maxHp; }
-          }
-        }
+        await refreshPartyHp();
         stateStale = true;
         subMode    = "menu";
       }
@@ -744,14 +733,7 @@ export async function encounterCommand(
           }
           if (r.rewards) battleLog.push(`보상: EXP +${r.rewards.exp}, ${r.rewards.points}P`);
 
-          const pr = await apiGet("/api/game/party");
-          if (pr.ok) {
-            const np = pr.data.party as PartyMon[];
-            for (const p of party) {
-              const u = np.find(n => n.uid === p.uid);
-              if (u) { p.hp = u.hp; p.maxHp = u.maxHp; }
-            }
-          }
+          await refreshPartyHp();
           inventory[itemKey] = Math.max(0, (inventory[itemKey] ?? 1) - 1);
           stateStale = true;
           subMode    = "menu";
@@ -773,14 +755,7 @@ export async function encounterCommand(
           }
           if (r.rewards) battleLog.push(`보상: EXP +${r.rewards.exp}, ${r.rewards.points}P`);
 
-          const pr = await apiGet("/api/game/party");
-          if (pr.ok) {
-            const np = pr.data.party as PartyMon[];
-            for (const p of party) {
-              const u = np.find(n => n.uid === p.uid);
-              if (u) { p.hp = u.hp; p.maxHp = u.maxHp; }
-            }
-          }
+          await refreshPartyHp();
           inventory[itemKey] = Math.max(0, (inventory[itemKey] ?? 1) - 1);
           stateStale = true;
           subMode    = "menu";
@@ -831,14 +806,7 @@ export async function encounterCommand(
           else if (r.result === "defeat") battleLog.push(`${RED}전투 패배...${R}`);
         }
 
-        const pr = await apiGet("/api/game/party");
-        if (pr.ok) {
-          const np = pr.data.party as PartyMon[];
-          for (const p of party) {
-            const u = np.find(n => n.uid === p.uid);
-            if (u) { p.hp = u.hp; p.maxHp = u.maxHp; }
-          }
-        }
+        await refreshPartyHp();
         partyForced     = false;
         stateStale      = true;
         subMode         = "menu";
