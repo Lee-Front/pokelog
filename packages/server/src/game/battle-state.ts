@@ -210,6 +210,7 @@ export function maybeApplyAilment(
 
   if (isVolatileAilment(ailment)) {
     if (chance > 0 && chance < 100) {
+      // "skip if over": roll >= chance means the effect does NOT apply
       if (Math.random() * 100 >= chance) return { newStatus: null, newVolatiles: targetVolatiles };
     }
     let turns = -1;
@@ -277,6 +278,7 @@ export function maybeApplyStatChanges(
   const changes = moveData.statChanges;
   if (!changes || changes.length === 0) return;
   const chance = moveData.meta?.statChance ?? 100;
+  // "skip if over": roll >= chance means stat changes do NOT apply
   if (Math.random() * 100 >= chance) return;
 
   const targetsSelf = moveData.target === "user" || moveData.target === "user-and-allies" || moveData.target === "users-field";
@@ -370,6 +372,7 @@ export function executePlayerAttack(
     battle.wildVolatile = ailmentResult.newVolatiles;
 
     // Check flinch
+    // "apply if under": roll < chance means flinch IS applied
     const flinchChance = moveData.meta?.flinchChance ?? 0;
     if (flinchChance > 0 && Math.random() * 100 < flinchChance) {
       flinchCaused = true;

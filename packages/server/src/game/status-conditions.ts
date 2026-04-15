@@ -37,6 +37,7 @@ export function rollAilment(
   if (!ailment || ailment === "none") return null;
 
   // Roll the chance
+  // "skip if over": roll >= chance means the ailment does NOT apply
   if (chance > 0 && chance < 100) {
     if (Math.random() * 100 >= chance) return null;
   }
