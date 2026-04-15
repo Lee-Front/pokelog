@@ -19,6 +19,7 @@ import { shopCommand } from "./commands/shop.js";
 import { statusCommand } from "./commands/status.js";
 import { storageCommand } from "./commands/storage.js";
 import { tradeCommand } from "./commands/trade.js";
+import { pvpCommand } from "./commands/pvp.js";
 import { getCurrentServer, getToken } from "./config.js";
 import { BLD, CYN, DIM, GRN, R, RED, YEL } from "./ui/colors.js";
 import { fetchArt, fetchHeaderData, invalidateHeaderCache } from "./ui/display.js";
@@ -52,6 +53,7 @@ function isGroup(node: MenuNode): node is MenuGroup {
 
 const MENU_TREE: MenuNode[] = [
   { label: "야생",     cmd: "encounters", desc: "야생 이벤트",   auth: true, server: true },
+  { label: "대전",     cmd: "pvp",        desc: "PvP 대전",     auth: true, server: true },
   { label: "바이옴",   cmd: "region",     desc: "바이옴 이동",   auth: true, server: true },
   {
     label: "포켓몬", desc: "파티 / 보관함 / 도감", auth: true, server: true,
@@ -237,6 +239,7 @@ async function executeCommand(cmd: string): Promise<"continue" | "quit"> {
     case "pokedex":    await pokedexCommand(); break;
     case "inventory":  await inventoryCommand(); break;
     case "trade":      await tradeCommand(); break;
+    case "pvp":        await pvpCommand(); break;
     case "evolutions": await evolutionsCommand(); break;
     case "heal":       await healCommand(); break;
     case "egg":        await eggCommand(); break;
