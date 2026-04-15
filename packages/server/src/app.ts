@@ -6,6 +6,7 @@ import { getConfig } from "./storage/config-store.js";
 import { authRoutes } from "./routes/auth-routes.js";
 import { userRoutes } from "./routes/user-routes.js";
 import { gameRoutes } from "./routes/game-routes.js";
+import { tradeRoutes } from "./routes/trade-routes.js";
 import { shopRoutes } from "./routes/shop-routes.js";
 import { battleRoutes } from "./routes/battle-routes.js";
 import { socialRoutes } from "./routes/social-routes.js";
@@ -57,6 +58,7 @@ export function createApp() {
   app.use("/api/auth", authRoutes);
   app.use("/api/user", userRoutes);
   app.use("/api/game", gameRoutes);
+  app.use("/api/game", tradeRoutes);
   app.use("/api/shop", shopRoutes);
   app.use("/api/battle", battleRoutes);
   app.use("/api/social", socialRoutes);
