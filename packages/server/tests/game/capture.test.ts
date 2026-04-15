@@ -24,6 +24,10 @@ describe("calculateCaptureChance", () => {
     const chance = calculateCaptureChance(3.0, 5, 100, 0.8);
     expect(chance).toBeLessThanOrEqual(1.0);
   });
+
+  it("handles zero maxHp without NaN", () => {
+    expect(Number.isFinite(calculateCaptureChance(1.0, 0, 0, 0.5))).toBe(true);
+  });
 });
 
 describe("attemptCapture", () => {

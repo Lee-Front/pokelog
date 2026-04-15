@@ -6,6 +6,7 @@ export function calculateCaptureChance(
   maxHp: number,
   baseCatchRate: number,
 ): number {
+  if (maxHp <= 0) return Math.min(1.0, baseCatchRate);
   const chance = ballCatchBonus * (1 - currentHp / maxHp) * 0.5 + baseCatchRate;
   return Math.min(1.0, chance);
 }
