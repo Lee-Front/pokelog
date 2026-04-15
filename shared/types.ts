@@ -1,3 +1,5 @@
+import type { PvpStats } from "./pvp-types.js";
+
 // === Account & User ===
 export interface GitMatching {
   emails: string[];
@@ -135,7 +137,7 @@ export interface OwnedPokemon {
   hasGigantamaxFactor?: boolean;
 }
 
-export type EggTierId = "common" | "rare" | "legend";
+export type EggTierId = "common" | "rare" | "epic" | "legend" | "manaphy";
 
 export interface OwnedEgg {
   id: string;
@@ -259,6 +261,7 @@ export interface UserData {
   storage: OwnedPokemon[];
   log: LogEntry[];
   integrations: Integration[];
+  pvpStats?: PvpStats;
 }
 
 // === Config ===
