@@ -20,8 +20,8 @@ Several system-level consolidations are already in progress.
 
 ### Already Done
 
-- shared CLI screen runtime added at [packages/cli/src/ui/screen.ts](/C:/Users/dlwog/Desktop/project/pokelog/packages/cli/src/ui/screen.ts:1)
-- low-level in-place redraw continues to live at [packages/cli/src/ui/display.ts](/C:/Users/dlwog/Desktop/project/pokelog/packages/cli/src/ui/display.ts:1)
+- shared CLI screen runtime added at `packages/cli/src/ui/screen.ts`
+- low-level in-place redraw continues to live at `packages/cli/src/ui/display.ts`
 - framed menu/input helpers now exist:
   - `runMenuLoop`
   - `selectFrame`
@@ -29,19 +29,28 @@ Several system-level consolidations are already in progress.
   - `inputFrame`
   - `passwordFrame`
 - several interactive CLI flows were moved onto the shared frame runtime:
-  - help
-  - egg
-  - trade
-  - evolutions
-  - leave
-  - connect
+  - help, egg, trade, evolutions, leave, connect, events, servers, region
   - nickname input
   - login/register/connect/trade input through prompt wrappers
 - shared Pokemon runtime helpers added:
-  - [packages/server/src/game/pokemon-state.ts](/C:/Users/dlwog/Desktop/project/pokelog/packages/server/src/game/pokemon-state.ts:1)
-  - [packages/server/src/game/pokemon-stats.ts](/C:/Users/dlwog/Desktop/project/pokelog/packages/server/src/game/pokemon-stats.ts:1)
+  - `packages/server/src/game/pokemon-state.ts` (`findPokemonByUid`, `getPartyPokemon`)
+  - `packages/server/src/game/pokemon-stats.ts`
 - typing/stat resolution has started moving onto those shared helpers
 - battle transformation coverage was extended and server tests passed earlier in the session
+- `game-routes.ts` split into 5 domain route files (trade, egg, evolution, item, storage) — 962 to 295 lines
+- `user-routes.ts` integration parsers extracted to `integrations/integration-parsers.ts` — 530 to 363 lines
+- `handleFainted` and `doWildAttackAndCheck` separated from Express Response (HTTP/game logic split)
+- `TradePokemonCandidate` moved to `shared/types.ts`
+- Dead code removed: `clearFormChangeRulesCache`, `prompts.ts` raw functions
+- Battle routes request body validation added
+- Admin config PUT switched to whitelist
+- `json-store` now logs parse errors (vs silent null)
+- Polling worker duplicate interval guard
+- Trade archive await (was fire-and-forget)
+- Confusion self-damage now uses actual pokemon level
+- Capture chance division-by-zero guard
+- CLI terminal safety: Ctrl+C cursor restore, command execution try-catch, Promise.all error handling
+- Tests: 492 to 599 (7 untested game modules covered, battle/shop error cases, edge cases, deterministic egg tests)
 
 ### Already Updated Docs
 
@@ -52,98 +61,27 @@ Several system-level consolidations are already in progress.
 
 ## Highest-Priority Remaining Work
 
-### 1. Split `battle-routes.ts`
+### 1. Split `battle-routes.ts` — DONE
 
-This is the biggest remaining system debt.
+Battle-routes is now 438 lines and acts as a clean orchestrator. Turn logic, battle helpers, and state mutation live in `battle-state.ts`. HTTP parsing/response assembly stays in the route file.
 
-Target:
+### 2. Finish CLI runtime consolidation — DONE
 
-- keep HTTP parsing/response assembly in the route file
-- move turn logic into shared battle engine modules
-- move battle state mutation into shared helpers
-- keep type/stat resolution on `pokemon-state.ts` and `pokemon-stats.ts`
+Events, evolutions, leave, connect, trade, servers, and region screens migrated to the shared screen runtime. Remaining screens (party, storage, inventory, shop, encounter, heal, pokedex) were assessed and are already integrated via `redraw()` — no further migration needed.
 
-Relevant files:
+### 3. Remove legacy raw prompt debt — DONE
 
-- [packages/server/src/routes/battle-routes.ts](/C:/Users/dlwog/Desktop/project/pokelog/packages/server/src/routes/battle-routes.ts:1)
-- [packages/server/src/game/battle-state.ts](/C:/Users/dlwog/Desktop/project/pokelog/packages/server/src/game/battle-state.ts:1)
-- [packages/server/src/game/pokemon-state.ts](/C:/Users/dlwog/Desktop/project/pokelog/packages/server/src/game/pokemon-state.ts:1)
-- [packages/server/src/game/pokemon-stats.ts](/C:/Users/dlwog/Desktop/project/pokelog/packages/server/src/game/pokemon-stats.ts:1)
-
-Expected outcome:
-
-- route file stops being the de facto battle engine
-- battle transformations/weather/form reversion stop living as route-local logic
-
-### 2. Finish CLI runtime consolidation for the old frame-heavy screens
-
-Some older screens already redraw in place, but still manage their own local loops.
-
-Target screens:
-
-- [packages/cli/src/commands/party.ts](/C:/Users/dlwog/Desktop/project/pokelog/packages/cli/src/commands/party.ts:1)
-- [packages/cli/src/commands/storage.ts](/C:/Users/dlwog/Desktop/project/pokelog/packages/cli/src/commands/storage.ts:1)
-- [packages/cli/src/commands/inventory.ts](/C:/Users/dlwog/Desktop/project/pokelog/packages/cli/src/commands/inventory.ts:1)
-- [packages/cli/src/commands/shop.ts](/C:/Users/dlwog/Desktop/project/pokelog/packages/cli/src/commands/shop.ts:1)
-- [packages/cli/src/commands/encounter.ts](/C:/Users/dlwog/Desktop/project/pokelog/packages/cli/src/commands/encounter.ts:1)
-- [packages/cli/src/commands/events.ts](/C:/Users/dlwog/Desktop/project/pokelog/packages/cli/src/commands/events.ts:1)
-- [packages/cli/src/commands/heal.ts](/C:/Users/dlwog/Desktop/project/pokelog/packages/cli/src/commands/heal.ts:1)
-- [packages/cli/src/commands/pokedex.ts](/C:/Users/dlwog/Desktop/project/pokelog/packages/cli/src/commands/pokedex.ts:1)
-
-Target:
-
-- reduce command-local `lineCount` / `first` / ad-hoc redraw loops
-- move toward one shared screen controller model
-- keep the no-accumulation rule enforced by runtime, not by each command
-
-### 3. Remove legacy raw prompt debt after callers are gone
-
-The command layer now mostly goes through the frame runtime, but `ui/prompts.ts` still contains legacy raw prompt implementations.
-
-Relevant file:
-
-- [packages/cli/src/ui/prompts.ts](/C:/Users/dlwog/Desktop/project/pokelog/packages/cli/src/ui/prompts.ts:1)
-
-Target:
-
-- audit remaining direct callers
-- remove or minimize `rawSelect`, `rawInput`, `rawPassword`, `rawConfirm`
-- keep wrappers only if required for compatibility
-
-This is a cleanup step, not the first refactor target.
+`rawSelect`, `rawInput`, `rawPassword`, `rawConfirm` deleted from `prompts.ts`. Zero callers remained.
 
 ## Medium-Priority Remaining Work
 
 ### 4. Consolidate held-item and progression rule helpers
 
-The project still has item/evolution/form rule logic spread across multiple files.
+Assessed. Files (`held-item-usage.ts`, `growth.ts`, `form-change.ts`, `battle-transformations.ts`) are reasonably well-separated already. No urgent action needed.
 
-Likely consolidation targets:
+### 5. Bring the remaining docs up to the new baseline — DONE
 
-- held-item condition checks
-- equip/unequip rule helpers
-- evolution context builder
-- shared Pokemon mutation/update pipeline
-
-Relevant files:
-
-- [packages/server/src/game/held-item-usage.ts](/C:/Users/dlwog/Desktop/project/pokelog/packages/server/src/game/held-item-usage.ts:1)
-- [packages/server/src/game/growth.ts](/C:/Users/dlwog/Desktop/project/pokelog/packages/server/src/game/growth.ts:1)
-- [packages/server/src/game/form-change.ts](/C:/Users/dlwog/Desktop/project/pokelog/packages/server/src/game/form-change.ts:1)
-- [packages/server/src/game/battle-transformations.ts](/C:/Users/dlwog/Desktop/project/pokelog/packages/server/src/game/battle-transformations.ts:1)
-
-### 5. Bring the remaining docs up to the new baseline
-
-Still likely outdated:
-
-- [docs/pokemon-pokeapi-sync-status.md](/C:/Users/dlwog/Desktop/project/pokelog/docs/pokemon-pokeapi-sync-status.md:1)
-- possibly [docs/user-journey.md](/C:/Users/dlwog/Desktop/project/pokelog/docs/user-journey.md:1) if the CLI flow wording should reflect the shared screen runtime more explicitly
-
-Target:
-
-- remove statements that say variants are only reserved
-- remove statements that say interactive trade flow does not exist
-- keep system docs aligned with the current shared runtime and shared Pokemon-state direction
+`docs/pokemon-pokeapi-sync-status.md` and `docs/user-journey.md` updated. Stale variant and trade evolution statements fixed.
 
 ## Known Cautions
 
@@ -177,13 +115,12 @@ It currently builds, but if this file is touched again:
 - prefer normalizing its prompt copy while editing
 - avoid accidental wide refactors unless the task is specifically connect UX cleanup
 
-## Recommended Order
+## Recommended Order (Current Priorities)
 
-1. Split `battle-routes.ts`
-2. Consolidate old frame-heavy CLI screens onto the shared controller model
-3. Clean up legacy prompt functions
-4. Consolidate held-item/progression rule helpers
-5. Update remaining stale docs
+1. `getAllUsers()` scaling (TODO documented, needs index-based lookup)
+2. Structured logging (replace `console.log`/`console.error` with proper logger)
+3. Rate limiting middleware
+4. UserData type splitting (God Object into domain-specific types)
 
 ## Verification Checklist
 

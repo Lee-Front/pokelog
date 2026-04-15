@@ -46,7 +46,7 @@ npm.cmd run build -w packages/server && npm.cmd run build -w packages/cli && npm
 - Modify: `packages/server/src/routes/battle-routes.ts:36-221`
 - Reference: `packages/server/src/game/battle-state.ts`
 
-- [ ] **Step 1: Verify battle-state.ts exports match route-local functions**
+- [x] **Step 1: Verify battle-state.ts exports match route-local functions**
 
 Read both files side-by-side. Confirm these 6 functions exist in `battle-state.ts` with compatible signatures:
 - `applyBattleFormChange`
@@ -56,7 +56,7 @@ Read both files side-by-side. Confirm these 6 functions exist in `battle-state.t
 - `revertBattleForms`
 - `wildAttack`
 
-- [ ] **Step 2: Write a test that exercises existing battle flow end-to-end**
+- [x] **Step 2: Write a test that exercises existing battle flow end-to-end**
 
 Run the existing test suite first to establish a green baseline:
 ```bash
@@ -64,20 +64,20 @@ npm.cmd run test -w packages/server
 ```
 Record the output. All tests must pass before any changes.
 
-- [ ] **Step 3: Replace local helpers with imports from battle-state.ts**
+- [x] **Step 3: Replace local helpers with imports from battle-state.ts**
 
 In `battle-routes.ts`:
 1. Add import: `import { applyBattleFormChange, maybeSetWeather, applyWeatherEndOfTurn, checkHpForms, revertBattleForms, wildAttack } from '../game/battle-state.js'`
 2. Delete the local definitions of all 6 functions (lines ~36–221)
 3. Remove any imports that were only used by the deleted local functions (if they're already imported in battle-state.ts)
 
-- [ ] **Step 4: Build and test**
+- [x] **Step 4: Build and test**
 ```bash
 npm.cmd run build -w packages/server && npm.cmd run test -w packages/server
 ```
 Expected: all tests pass, no type errors.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 ```bash
 git add packages/server/src/routes/battle-routes.ts
 git commit -m "refactor: replace battle-routes local helpers with battle-state imports"
@@ -94,7 +94,7 @@ git commit -m "refactor: replace battle-routes local helpers with battle-state i
 - Modify: `packages/server/src/game/battle-state.ts`
 - Test: `packages/server/tests/api/battle-transformations.test.ts` (existing, verify no regression)
 
-- [ ] **Step 1: Write failing test for `executePlayerAttack`**
+- [x] **Step 1: Write failing test for `executePlayerAttack`**
 
 Create test in `packages/server/tests/game/battle-state.test.ts`:
 ```typescript
@@ -112,13 +112,13 @@ describe('executePlayerAttack', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 ```bash
 npm.cmd run test -w packages/server -- --run tests/game/battle-state.test.ts
 ```
 Expected: FAIL — `executePlayerAttack` not exported.
 
-- [ ] **Step 3: Extract `executePlayerAttack` into battle-state.ts**
+- [x] **Step 3: Extract `executePlayerAttack` into battle-state.ts**
 
 Move the nested `playerAttack()` logic (lines ~739–830 of battle-routes.ts) into a standalone exported function in `battle-state.ts`:
 ```typescript
@@ -142,12 +142,12 @@ export function executePlayerAttack(params: {
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 ```bash
 npm.cmd run test -w packages/server -- --run tests/game/battle-state.test.ts
 ```
 
-- [ ] **Step 5: Extract `resolvePreAttack` helper**
+- [x] **Step 5: Extract `resolvePreAttack` helper**
 
 Extract pre-attack sleep/status check logic (lines ~672–706) into:
 ```typescript
@@ -159,7 +159,7 @@ export function resolvePreAttack(pokemon: OwnedPokemon, statusCondition: string 
 }
 ```
 
-- [ ] **Step 6: Extract `determineBattleTurnOrder` helper**
+- [x] **Step 6: Extract `determineBattleTurnOrder` helper**
 
 Extract speed calculation + turn order (lines ~708–735) into:
 ```typescript
@@ -175,20 +175,20 @@ export function determineBattleTurnOrder(params: {
 }): 'player' | 'wild'
 ```
 
-- [ ] **Step 7: Extract `applyEndOfTurnBattle` helper**
+- [x] **Step 7: Extract `applyEndOfTurnBattle` helper**
 
 Extract end-of-turn logic (lines ~867–898) covering status ticks, gigantamax countdown, and faint checks.
 
-- [ ] **Step 8: Wire handleFight to use extracted functions**
+- [x] **Step 8: Wire handleFight to use extracted functions**
 
 Replace the inline logic in `handleFight` with calls to the new exported functions. `handleFight` should become a thin orchestrator: validate input → call battle engine functions → save state → return response.
 
-- [ ] **Step 9: Build and test full suite**
+- [x] **Step 9: Build and test full suite**
 ```bash
 npm.cmd run build -w packages/server && npm.cmd run test -w packages/server
 ```
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 ```bash
 git add packages/server/src/game/battle-state.ts packages/server/src/routes/battle-routes.ts packages/server/tests/game/battle-state.test.ts
 git commit -m "refactor: extract turn engine from handleFight into battle-state"
@@ -204,27 +204,27 @@ Move `maybeApplyAilment`, `maybeApplyStatChanges`, `applyMetaEffects`, `applyEnd
 - Modify: `packages/server/src/routes/battle-routes.ts:224-531`
 - Modify: `packages/server/src/game/battle-state.ts`
 
-- [ ] **Step 1: Write failing tests for key helpers**
+- [x] **Step 1: Write failing tests for key helpers**
 
 Add tests to `packages/server/tests/game/battle-state.test.ts` for:
 - `maybeApplyAilment` — given a move with ailment data, returns new status
 - `maybeApplyStatChanges` — given stat change data, returns modified stages
 - `applyEndOfTurnEffects` — given status condition, returns hp change
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
-- [ ] **Step 3: Move functions to battle-state.ts and export them**
+- [x] **Step 3: Move functions to battle-state.ts and export them**
 
 Move these 7 functions from battle-routes.ts into battle-state.ts with proper type signatures. Update battle-routes.ts to import them.
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
-- [ ] **Step 5: Build and test full suite**
+- [x] **Step 5: Build and test full suite**
 ```bash
 npm.cmd run build -w packages/server && npm.cmd run test -w packages/server
 ```
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 ```bash
 git add packages/server/src/game/battle-state.ts packages/server/src/routes/battle-routes.ts packages/server/tests/game/battle-state.test.ts
 git commit -m "refactor: extract battle helper functions from routes to battle-state"
@@ -242,7 +242,7 @@ Migrate `events.ts`, `pokedex.ts`, and `heal.ts` — the three simplest screens.
 - Modify: `packages/cli/src/commands/heal.ts` (143 lines — animation, minimal change)
 - Reference: `packages/cli/src/commands/egg.ts` (migration pattern example)
 
-- [ ] **Step 1: Migrate events.ts to runMenuLoop**
+- [x] **Step 1: Migrate events.ts to runMenuLoop**
 
 Replace the custom loop (lines 87–149) with `runMenuLoop`:
 - State: `{ message: ScreenMessage | null }`
@@ -250,36 +250,36 @@ Replace the custom loop (lines 87–149) with `runMenuLoop`:
 - onSelect: call `encounterCommand()` for the selected event
 - Remove local `lineCount`, `first`, `redraw()` variables
 
-- [ ] **Step 2: Build CLI and manual smoke test**
+- [x] **Step 2: Build CLI and manual smoke test**
 ```bash
 npm.cmd run build -w packages/cli
 ```
 
-- [ ] **Step 3: Commit events.ts**
+- [x] **Step 3: Commit events.ts**
 ```bash
 git add packages/cli/src/commands/events.ts
 git commit -m "refactor: migrate events screen to shared screen runtime"
 ```
 
-- [ ] **Step 4: Migrate pokedex.ts to selectFrame or runMenuLoop**
+- [x] **Step 4: Migrate pokedex.ts to selectFrame or runMenuLoop**
 
 Replace the custom loop (lines 112–143) with `selectFrame` or `runMenuLoop`:
 - Items: pokedex entries with pagination
 - Use `pageSize` option for scrolling
 - Remove local `lineCount`, `first`, `redraw()` variables
 
-- [ ] **Step 5: Build CLI and commit pokedex.ts**
+- [x] **Step 5: Build CLI and commit pokedex.ts**
 ```bash
 npm.cmd run build -w packages/cli
 git add packages/cli/src/commands/pokedex.ts
 git commit -m "refactor: migrate pokedex screen to shared screen runtime"
 ```
 
-- [ ] **Step 6: Review heal.ts — keep animation, remove only unnecessary local state**
+- [x] **Step 6: Review heal.ts — keep animation, remove only unnecessary local state**
 
 `heal.ts` is animation-only (not interactive). If it uses `lineCount`/`first` just for redraw tracking, remove those and use `clearScreen()` from screen.ts between animation frames. Otherwise leave it as-is.
 
-- [ ] **Step 7: Build CLI and commit heal.ts (if changed)**
+- [x] **Step 7: Build CLI and commit heal.ts (if changed)**
 ```bash
 npm.cmd run build -w packages/cli
 git add packages/cli/src/commands/heal.ts
@@ -297,41 +297,41 @@ Migrate `shop.ts`, `inventory.ts`, and `party.ts`.
 - Modify: `packages/cli/src/commands/inventory.ts` (431 lines)
 - Modify: `packages/cli/src/commands/party.ts` (173 lines)
 
-- [ ] **Step 1: Migrate shop.ts to runMenuLoop**
+- [x] **Step 1: Migrate shop.ts to runMenuLoop**
 
 - State: `{ category: string; message: ScreenMessage | null }`
 - Replace `rawNumberInput()` with `inputFrame()` for quantity
 - Items: shop items filtered by category
 - Remove local `lineCount`, `first`, `redraw()` variables
 
-- [ ] **Step 2: Build and commit shop.ts**
+- [x] **Step 2: Build and commit shop.ts**
 ```bash
 npm.cmd run build -w packages/cli
 git add packages/cli/src/commands/shop.ts
 git commit -m "refactor: migrate shop screen to shared screen runtime"
 ```
 
-- [ ] **Step 3: Migrate inventory.ts to runMenuLoop**
+- [x] **Step 3: Migrate inventory.ts to runMenuLoop**
 
 - State: `{ mode: 'items' | 'targets'; message: ScreenMessage | null; selectedItem?: string }`
 - Use state transitions for mode switches
 - Items: category-filtered inventory or target pokemon list depending on mode
 - Remove local `lineCount`, `firstRender`, `redraw()` variables
 
-- [ ] **Step 4: Build and commit inventory.ts**
+- [x] **Step 4: Build and commit inventory.ts**
 ```bash
 npm.cmd run build -w packages/cli
 git add packages/cli/src/commands/inventory.ts
 git commit -m "refactor: migrate inventory screen to shared screen runtime"
 ```
 
-- [ ] **Step 5: Migrate party.ts to runMenuLoop or selectFrame**
+- [x] **Step 5: Migrate party.ts to runMenuLoop or selectFrame**
 
 - Items: party pokemon list with status indicators
 - Art display: render in the `header` callback of `runMenuLoop` if supported, otherwise build the frame manually and use `selectFrame`
 - Remove local `lineCount`, `first`, `redraw()` variables
 
-- [ ] **Step 6: Build and commit party.ts**
+- [x] **Step 6: Build and commit party.ts**
 ```bash
 npm.cmd run build -w packages/cli
 git add packages/cli/src/commands/party.ts
@@ -349,7 +349,7 @@ These two screens are the most complex migrations. `storage.ts` (366 lines) has 
 - Modify: `packages/cli/src/commands/encounter.ts` (~860 lines)
 - Reference: `packages/cli/src/ui/screen.ts` (shared runtime API)
 
-- [ ] **Step 1: Migrate storage.ts**
+- [x] **Step 1: Migrate storage.ts**
 
 `storage.ts` has dual-panel navigation (party/storage) with independent scroll states. Strategy:
 - Use `runMenuLoop` with state tracking which panel is active: `{ panel: 'party' | 'storage'; message: ScreenMessage | null }`
@@ -358,25 +358,25 @@ These two screens are the most complex migrations. `storage.ts` (366 lines) has 
 - Remove local `lineCount`, `first`, `redraw()` variables
 - Keep the two-panel rendering in a custom `header` or `render` callback
 
-- [ ] **Step 2: Build and commit storage.ts**
+- [x] **Step 2: Build and commit storage.ts**
 ```bash
 npm.cmd run build -w packages/cli
 git add packages/cli/src/commands/storage.ts
 git commit -m "refactor: migrate storage screen to shared screen runtime"
 ```
 
-- [ ] **Step 3: Assess encounter.ts migration scope**
+- [x] **Step 3: Assess encounter.ts migration scope**
 
 `encounter.ts` is a battle animation system with submode state machine ("menu"/"fight"/"bag"/"party") and frame-by-frame rendering. This may NOT fully migrate to `runMenuLoop` — the animation loop is fundamentally different from a menu. Strategy:
 - Identify which sub-screens (item selection, pokemon selection) can use `selectFrame()`
 - Keep the core animation loop as custom code but use `clearScreen()` from screen.ts instead of manual lineCount tracking
 - Remove ad-hoc redraw patterns where possible
 
-- [ ] **Step 4: Migrate encounter.ts selectable sub-screens**
+- [x] **Step 4: Migrate encounter.ts selectable sub-screens**
 
 Replace inline item/pokemon selection loops with `selectFrame()`. Keep the battle animation loop custom but simplify its redraw tracking.
 
-- [ ] **Step 5: Build and commit encounter.ts**
+- [x] **Step 5: Build and commit encounter.ts**
 ```bash
 npm.cmd run build -w packages/cli
 git add packages/cli/src/commands/encounter.ts
@@ -392,11 +392,11 @@ All 4 raw functions in `prompts.ts` have zero callers. Remove them.
 **Files:**
 - Modify: `packages/cli/src/ui/prompts.ts:50-249` (delete ~200 lines of dead code)
 
-- [ ] **Step 1: Verify zero callers with grep**
+- [x] **Step 1: Verify zero callers with grep**
 
 Search the entire codebase for `rawSelect`, `rawInput`, `rawPassword`, `rawConfirm` imports or calls. Confirm zero active usage.
 
-- [ ] **Step 2: Delete the 4 raw functions**
+- [x] **Step 2: Delete the 4 raw functions**
 
 Remove from `prompts.ts`:
 - `rawSelect` (lines 50–142)
@@ -406,12 +406,12 @@ Remove from `prompts.ts`:
 
 Also remove any imports that are only used by these functions (e.g., `enterRaw`, `exitRaw`, `waitKey` from raw-mode.ts if no other callers remain in this file).
 
-- [ ] **Step 3: Build CLI**
+- [x] **Step 3: Build CLI**
 ```bash
 npm.cmd run build -w packages/cli
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 ```bash
 git add packages/cli/src/ui/prompts.ts
 git commit -m "refactor: remove dead legacy raw prompt functions"
@@ -431,11 +431,11 @@ Five files define identical `*Error extends Error` with `status` property. Extra
 - Modify: `packages/server/src/game/pending-evolution.ts` (`PendingEvolutionError`)
 - Modify: `packages/server/src/game/trade.ts` (`TradeError`)
 
-- [ ] **Step 1: Check if a shared GameError already exists**
+- [x] **Step 1: Check if a shared GameError already exists**
 
 Search the codebase for existing error base classes.
 
-- [ ] **Step 2: Create `game-errors.ts` with shared `GameRuleError`**
+- [x] **Step 2: Create `game-errors.ts` with shared `GameRuleError`**
 
 Create `packages/server/src/game/game-errors.ts`:
 ```typescript
@@ -448,7 +448,7 @@ export class GameRuleError extends Error {
 }
 ```
 
-- [ ] **Step 3: Replace all five error classes with the shared one**
+- [x] **Step 3: Replace all five error classes with the shared one**
 
 In each of the 5 files, replace the local error class with `import { GameRuleError } from './game-errors.js'` and update all throw sites:
 - `throw new HeldItemError(...)` → `throw new GameRuleError(...)`
@@ -463,12 +463,12 @@ Also update ALL route handlers that catch these specific error types. Known catc
 - `packages/server/src/routes/battle-routes.ts` (if any)
 - Search for ALL `instanceof *Error` patterns to find any others.
 
-- [ ] **Step 4: Build and test**
+- [x] **Step 4: Build and test**
 ```bash
 npm.cmd run build -w packages/server && npm.cmd run test -w packages/server
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 ```bash
 git add packages/server/src/game/
 git commit -m "refactor: consolidate game rule error classes into shared GameRuleError"
@@ -482,19 +482,19 @@ git commit -m "refactor: consolidate game rule error classes into shared GameRul
 - Modify: `docs/pokemon-pokeapi-sync-status.md:236`
 - Modify: `docs/user-journey.md:101-102`
 
-- [ ] **Step 1: Fix sync-status line 236**
+- [x] **Step 1: Fix sync-status line 236**
 
 Replace the statement "owned Pokemon now reserve `variantId`, but no gameplay loop writes non-null variant ids yet" with an accurate statement reflecting that `form-change.ts` and encounter generation actively write `variantId`.
 
-- [ ] **Step 2: Fix user-journey trade evolution description**
+- [x] **Step 2: Fix user-journey trade evolution description**
 
 Update lines 101–102 to accurately describe trade evolution mechanics: some require specific trade partner species (`extra.trade_species`), not just held items.
 
-- [ ] **Step 3: Add note about Pokemon trade locks**
+- [x] **Step 3: Add note about Pokemon trade locks**
 
 Add mention that Pokemon can be locked/unlocked from trades via `POST /api/game/trades/lock` and `/unlock`.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 ```bash
 git add docs/pokemon-pokeapi-sync-status.md docs/user-journey.md
 git commit -m "docs: fix stale variant and trade evolution statements"
@@ -504,17 +504,17 @@ git commit -m "docs: fix stale variant and trade evolution statements"
 
 ## Task 9: Final verification and build
 
-- [ ] **Step 1: Full build**
+- [x] **Step 1: Full build**
 ```bash
 npm.cmd run build -w packages/server && npm.cmd run build -w packages/cli
 ```
 
-- [ ] **Step 2: Full test**
+- [x] **Step 2: Full test**
 ```bash
 npm.cmd run test -w packages/server
 ```
 
-- [ ] **Step 3: Review git diff for accidental regressions**
+- [x] **Step 3: Review git diff for accidental regressions**
 ```bash
 git diff --stat master
 ```

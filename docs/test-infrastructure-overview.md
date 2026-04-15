@@ -53,7 +53,14 @@ packages/server/
       pokemon-factory.test.ts    ← 포켓몬 생성 구조 검증 (7개)
       egg-gacha.test.ts          ← 알 티어/풀/부화 (4개)
       capture.test.ts            ← 포획 확률 (8개)
-      ... (그 외 10개 파일)
+      pokemon-state.test.ts      ← 공유 헬퍼 (findPokemonByUid, getPartyPokemon)
+      pokemon-stats.test.ts      ← 스탯 계산/타입 해석
+      inventory-catalog.test.ts  ← 인벤토리 카탈로그 검증
+      pokemon-gender.test.ts     ← 성별 판정 로직
+      inventory-utils.test.ts    ← 인벤토리 유틸리티
+      event-factory.test.ts      ← 이벤트 생성 로직
+      game-errors.test.ts        ← 공유 GameRuleError 클래스
+      ... (그 외 기존 파일)
     storage/                     ← 저장소 레이어 테스트 (3개 파일)
 
 packages/cli/
@@ -61,7 +68,7 @@ packages/cli/
     formatters.test.ts           ← 공유 포맷터 순수 함수 (26개)
     trade.test.ts                ← 교환 UI 로직 순수 함수 (18개)
 
-총: 48개 파일, 490개 테스트
+총: 53개 파일, 599개 테스트
 ```
 
 ## 핵심 설계 결정
