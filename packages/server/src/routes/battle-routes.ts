@@ -3,177 +3,27 @@ import type { Response } from "express";
 import { authMiddleware, type AuthRequest } from "../middleware/auth-middleware.js";
 import { getUser, saveUser } from "../storage/user-store.js";
 import { getConfig } from "../storage/config-store.js";
-import { applyStatChanges, defaultStatStages } from "../game/battle.js";
+import { defaultStatStages } from "../game/battle.js";
 import { attemptCapture, getCatchRate } from "../game/capture.js";
 import { wildPokemonToOwned } from "../game/pokemon-factory.js";
 import { getMoveById } from "../game/data-loader.js";
-import type { BattleState, MoveData, OwnedPokemon, UserData, StatStages, PrimaryStatus, VolatileStatus } from "../../../../shared/types.js";
-import { recordDamageTaken } from "../game/battle-progress.js";
+import type { BattleState, MoveData, OwnedPokemon, UserData } from "../../../../shared/types.js";
 import { decrementItem, healPokemon } from "../game/inventory-utils.js";
 import { recordMoveUsage } from "../game/move-usage.js";
-import {
-  checkPreAttack, rollAilment,
-  isVolatileAilment, addVolatile, rollSleepTurns, rollConfusionTurns, rollTrapTurns,
-} from "../game/status-conditions.js";
-import { getWeatherTypeModifier } from "../game/weather.js";
-import {
-  checkPostAttackForm, checkTurnForm,
-  checkFirstHitForm, checkPostSurfForm,
-  checkMoveForm, getBattleEndForm,
-} from "../game/battle-forms.js";
+import { checkTurnForm } from "../game/battle-forms.js";
 import {
   checkPrimalReversion, canMegaEvolve, canGigantamax,
   getTransformedStats, applyGmaxHp, revertGmaxHp, getGmaxMove,
 } from "../game/battle-transformations.js";
-import { getEffectiveTypes } from "../game/pokemon-state.js";
 import {
-  applyBattleFormChange, maybeSetWeather, applyWeatherEndOfTurn,
-  checkHpForms, revertBattleForms, wildAttack,
+  applyBattleFormChange, applyWeatherEndOfTurn,
+  revertBattleForms,
   executePlayerAttack, resolvePreAttack, determineBattleTurnOrder, applyEndOfTurnBattle,
-  maybeApplyAilment, maybeApplyStatChanges, applyMetaEffects, hasAlivePartyMembers,
+  handleFainted, doWildAttackAndCheck,
 } from "../game/battle-state.js";
 
 export const battleRoutes = Router();
 battleRoutes.use(authMiddleware);
-
-/** 기절 처리 — response를 보냈으면 true 반환 */
-async function handleFainted(
-  user: UserData, pokemon: OwnedPokemon, battle: BattleState,
-  log: string[], res: Response,
-): Promise<boolean> {
-  if (pokemon.hp > 0) return false;
-  log.push(`${pokemon.species}이(가) 쓰러졌다!`);
-  if (hasAlivePartyMembers(user, pokemon.uid)) {
-    await saveUser(user);
-    res.json({ log, battleState: battle, result: "fainted" });
-    return true;
-  }
-  revertBattleForms(battle, pokemon);
-  user.battleState = null;
-  await saveUser(user);
-  res.json({ log, battleState: null, result: "lose" });
-  return true;
-}
-
-/** 야생 공격 후 기절 체크 — response를 보냈으면 true 반환 */
-async function doWildAttackAndCheck(
-  user: UserData, myPokemon: OwnedPokemon, battle: BattleState,
-  log: string[], res: Response,
-  preSelectedWildMove?: { id: string; pp: number; maxPp: number },
-): Promise<boolean> {
-  // Pre-attack status check for wild pokemon
-  const wildPreCheck = checkPreAttack(
-    battle.wild.statusCondition,
-    battle.wildVolatile ?? [],
-    battle.wild.stats,
-  );
-  if (wildPreCheck.statusCleared) {
-    battle.wild.statusCondition = null;
-    log.push(`야생 ${battle.wild.species}: ${wildPreCheck.message}`);
-  }
-  if (!wildPreCheck.canAct) {
-    log.push(`야생 ${battle.wild.species}: ${wildPreCheck.message}`);
-    if (wildPreCheck.selfDamage) {
-      battle.wild.hp = Math.max(0, battle.wild.hp - wildPreCheck.selfDamage);
-      log.push(`야생 ${battle.wild.species}이(가) ${wildPreCheck.selfDamage} 데미지를 받았다!`);
-    }
-    return await handleFainted(user, myPokemon, battle, log, res);
-  }
-
-  // Burn modifier: halve attack for physical moves
-  const wildStats = { ...battle.wild.stats };
-  if (battle.wild.statusCondition === "burn") {
-    wildStats.attack = Math.max(1, Math.floor(wildStats.attack / 2));
-  }
-
-  // Weather modifier for wild attack
-  const wildMoveData = preSelectedWildMove ? getMoveById(preSelectedWildMove.id) : null;
-  const wildWeatherMod = (battle.weather && wildMoveData) ? getWeatherTypeModifier(battle.weather, wildMoveData.type) : 1;
-
-  const wildResult = wildAttack(
-    battle.wild.species, battle.wild.level, wildStats,
-    battle.wild.moves, myPokemon.stats, myPokemon.species,
-    battle.wildStatStages, battle.playerStatStages,
-    preSelectedWildMove,
-    battle.wild.variantId, myPokemon.variantId,
-    wildWeatherMod,
-    battle.wildBattleForm, battle.playerBattleForm,
-  );
-  const previousHp = myPokemon.hp;
-  myPokemon.hp = Math.max(0, myPokemon.hp - wildResult.damage);
-  recordDamageTaken(myPokemon, previousHp - myPokemon.hp);
-  log.push(`야생 ${battle.wild.species}의 공격! ${wildResult.damage} 데미지!`);
-  if (wildResult.message) log.push(wildResult.message);
-
-  // Apply meta effects for wild pokemon (only if the attack didn't miss)
-  if (wildResult.moveData && !wildResult.missed) {
-    const metaResult = applyMetaEffects(wildResult.moveData, wildResult.damage, battle.wild.hp, battle.wild.maxHp);
-    if (metaResult.hpChange !== 0) {
-      battle.wild.hp = Math.max(0, Math.min(battle.wild.maxHp, battle.wild.hp + metaResult.hpChange));
-    }
-    for (const msg of metaResult.messages) log.push(msg);
-
-    // Apply stat changes for wild pokemon
-    maybeApplyStatChanges(battle, wildResult.moveData, false, log);
-
-    // Apply ailment to player from wild attack
-    const ailmentResult = maybeApplyAilment(
-      wildResult.moveData,
-      myPokemon.statusCondition,
-      battle.playerVolatile ?? [],
-      log,
-    );
-    if (ailmentResult.newStatus) {
-      myPokemon.statusCondition = ailmentResult.newStatus;
-      if (ailmentResult.sleepTurns !== undefined) myPokemon.sleepTurns = ailmentResult.sleepTurns;
-    }
-    battle.playerVolatile = ailmentResult.newVolatiles;
-
-    // Wild post-attack form check (aegislash)
-    applyBattleFormChange(
-      battle,
-      checkPostAttackForm(battle.wild.species, wildResult.moveData.category, battle.wildBattleForm ?? battle.wild.variantId ?? null),
-      "wild", log,
-    );
-
-    // Wild move-based form check (meloetta)
-    if (wildResult.moveId) {
-      applyBattleFormChange(
-        battle,
-        checkMoveForm(battle.wild.species, wildResult.moveId, battle.wildBattleForm ?? battle.wild.variantId ?? null),
-        "wild", log,
-      );
-    }
-
-    // Wild post-surf form (cramorant)
-    if (wildResult.moveId && (wildResult.moveId === "surf" || wildResult.moveId === "dive")) {
-      applyBattleFormChange(
-        battle,
-        checkPostSurfForm(battle.wild.species, battle.wild.hp, battle.wild.maxHp),
-        "wild", log,
-      );
-    }
-
-    // Wild weather setting
-    if (wildResult.moveId) {
-      maybeSetWeather(battle, wildResult.moveId, myPokemon.species, log);
-    }
-
-    // Check eiscue first-hit for player (was the player hit physically?)
-    if (wildResult.moveData.category === "physical" && wildResult.damage > 0) {
-      applyBattleFormChange(
-        battle,
-        checkFirstHitForm(myPokemon.species, battle.playerBattleForm ?? myPokemon.variantId ?? null, true),
-        "player", log,
-      );
-    }
-  }
-
-  // HP threshold form checks after wild attack
-  checkHpForms(battle, myPokemon, log);
-
-  return await handleFainted(user, myPokemon, battle, log, res);
-}
 
 battleRoutes.post("/start", async (req, res) => {
   try {
