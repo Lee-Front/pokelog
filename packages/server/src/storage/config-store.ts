@@ -56,7 +56,7 @@ export const DEFAULT_CONFIG: ServerConfig = {
     displayName: "PokeLog Server",
     apiVersion: "1",
     featureFlags: {
-      pvp: false,
+      pvp: true,
       trade: false,
       achievements: false,
       regions: false,
