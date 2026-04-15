@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { createRoom, selectLead, getPlayerView } from "../../src/pvp/pvp-room.js";
+import { createRoom, selectLead, getPlayerView, submitAction } from "../../src/pvp/pvp-room.js";
 import type { PvpPokemon } from "../../../../shared/pvp-types.js";
 
 function makePokemon(species: string, level = 50): PvpPokemon {
@@ -49,5 +49,48 @@ describe("pvp-room", () => {
     expect(view.me.party).toHaveLength(2);
     expect(view.opponent.activePokemon).not.toBeNull();
     expect(view.opponent.partyHpRatios).toHaveLength(2);
+  });
+});
+
+describe("pvp turn resolution", () => {
+  function readyRoom() {
+    const room = createRoom("userA", "A",
+      [makePokemon("pikachu"), makePokemon("charizard")],
+      "userB", "B",
+      [makePokemon("bulbasaur"), makePokemon("squirtle")]);
+    selectLead(room, "userA", 0);
+    selectLead(room, "userB", 0);
+    return room;
+  }
+
+  it("submitAction marks player as submitted", () => {
+    const room = readyRoom();
+    submitAction(room, "userA", { type: "fight", moveId: "tackle" });
+    expect(room.playerA.actionSubmitted).toBe(true);
+  });
+
+  it("both actions submitted triggers resolution", () => {
+    const room = readyRoom();
+    submitAction(room, "userA", { type: "fight", moveId: "tackle" });
+    const resolved = submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    expect(resolved).toBe(true);
+    expect(room.turn).toBe(2);
+    expect(room.playerA.actionSubmitted).toBe(false);
+    expect(room.log.length).toBeGreaterThan(0);
+  });
+
+  it("forfeit ends the match immediately", () => {
+    const room = readyRoom();
+    submitAction(room, "userA", { type: "forfeit" });
+    expect(room.phase).toBe("finished");
+    expect(room.result?.winnerId).toBe("userB");
+    expect(room.result?.reason).toBe("forfeit");
+  });
+
+  it("switch changes active pokemon", () => {
+    const room = readyRoom();
+    submitAction(room, "userA", { type: "switch", pokemonIndex: 1 });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    expect(room.playerA.activeIndex).toBe(1);
   });
 });
