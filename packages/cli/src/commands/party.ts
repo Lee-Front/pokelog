@@ -1,7 +1,7 @@
 import { BLD, CYN, DIM, R, YEL } from "../ui/colors.js";
 import { apiGet, apiPut } from "../api-client.js";
 import { fetchArt } from "../ui/display.js";
-import { artToLines, padRight } from "../ui/text.js";
+import { artToLines, mergeSideBySide, padRight } from "../ui/text.js";
 import { enterRaw, waitKey } from "../ui/raw-mode.js";
 import { redraw } from "../ui/screen.js";
 import { getPendingEvolutions, resolvePendingEvolutionForPokemon } from "./evolutions.js";
@@ -14,9 +14,6 @@ type PartyMon = {
   hp: number;
   maxHp: number;
 };
-
-const LEFT_W = 30;
-const GAP = "    ";
 
 function buildLines(
   party: PartyMon[],
@@ -43,14 +40,6 @@ function buildLines(
   }
 
   const right = artToLines(art);
-  const rows = Math.max(left.length, right.length);
-  const merged: string[] = [];
-
-  for (let i = 0; i < rows; i += 1) {
-    const l = padRight(left[i] ?? "", LEFT_W);
-    const r = right[i] ?? "";
-    merged.push(`  ${l}${GAP}${r}`);
-  }
 
   return [
     "",
@@ -58,7 +47,7 @@ function buildLines(
     "  " + "-".repeat(54),
     `  ${DIM}Up/Down: Move  Enter: Open / Resolve evolution  Esc: Back${R}`,
     "",
-    ...merged,
+    ...mergeSideBySide(left, right, 30),
     "",
     ...(message ? [`  ${message}`, ""] : []),
   ];

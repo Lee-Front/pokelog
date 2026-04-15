@@ -1,8 +1,8 @@
-import { DIM, RED, GRN, YEL, BLU, CYN, BLD, R } from "../ui/colors.js";
+import { DIM, RED, GRN, YEL, CYN, BLD, R } from "../ui/colors.js";
 import { apiGet, apiPost } from "../api-client.js";
-import { fetchBallArt, stripAnsi } from "../ui/display.js";
+import { fetchBallArt } from "../ui/display.js";
 import { enterRaw, waitKey } from "../ui/raw-mode.js";
-import { visualWidth, padRight, artToLines, mergeSideBySide } from "../ui/text.js";
+import { padRight, artToLines, mergeSideBySide } from "../ui/text.js";
 import { redraw } from "../ui/screen.js";
 
 type ShopItem = {
@@ -44,10 +44,6 @@ function rawNumberInput(label: string): Promise<number | null> {
     process.stdin.on("data", handler);
   });
 }
-
-// ── 레이아웃 유틸 ───────────────────────────────────────────────
-const LEFT_W = 38;
-const GAP    = "    ";
 
 // ── 포션 아트 ───────────────────────────────────────────────────
 function makePotionArt(healAmount: number): string {
