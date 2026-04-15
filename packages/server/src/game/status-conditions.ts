@@ -61,6 +61,7 @@ export function checkPreAttack(
   status: PrimaryStatus | null | undefined,
   volatiles: VolatileStatus[],
   stats: PokemonStats,
+  level: number,
 ): { canAct: boolean; message: string; selfDamage?: number; statusCleared?: PrimaryStatus } {
   // Sleep check
   if (status === "sleep") {
@@ -92,9 +93,8 @@ export function checkPreAttack(
     if (Math.random() < 0.33) {
       // Self-damage using 40 power physical formula
       // damage = ((2*level/5+2) * 40 * atk / def) / 50 + 2
-      // We use a simplified version since we don't have level here, assume level ~10 baseline
       const selfDamage = Math.max(1, Math.floor(
-        ((2 * 10 / 5 + 2) * 40 * stats.attack / stats.defense) / 50 + 2,
+        ((2 * level / 5 + 2) * 40 * stats.attack / stats.defense) / 50 + 2,
       ));
       return { canAct: false, message: "혼란에 빠져 자신을 공격했다!", selfDamage };
     }

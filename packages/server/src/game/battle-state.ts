@@ -452,7 +452,7 @@ export function resolvePreAttack(
     return { canAct: true };
   }
 
-  const preCheck = checkPreAttack(player.statusCondition, volatiles, player.stats);
+  const preCheck = checkPreAttack(player.statusCondition, volatiles, player.stats, player.level);
 
   if (preCheck.statusCleared) {
     player.statusCondition = null;
@@ -646,6 +646,7 @@ export async function doWildAttackAndCheck(
     battle.wild.statusCondition,
     battle.wildVolatile ?? [],
     battle.wild.stats,
+    battle.wild.level,
   );
   if (wildPreCheck.statusCleared) {
     battle.wild.statusCondition = null;

@@ -93,19 +93,19 @@ describe("checkPreAttack", () => {
   });
 
   it("returns canAct=true when no status", () => {
-    const result = checkPreAttack(null, [], defaultStats);
+    const result = checkPreAttack(null, [], defaultStats, 50);
     expect(result.canAct).toBe(true);
   });
 
   it("sleep prevents action", () => {
-    const result = checkPreAttack("sleep", [], defaultStats);
+    const result = checkPreAttack("sleep", [], defaultStats, 50);
     expect(result.canAct).toBe(false);
     expect(result.message).toContain("자고있다");
   });
 
   it("freeze has 20% thaw chance - thaws", () => {
     randomSpy.mockReturnValueOnce(0.1); // < 0.2 → thaw
-    const result = checkPreAttack("freeze", [], defaultStats);
+    const result = checkPreAttack("freeze", [], defaultStats, 50);
     expect(result.canAct).toBe(true);
     expect(result.statusCleared).toBe("freeze");
     expect(result.message).toContain("풀렸다");
@@ -113,28 +113,28 @@ describe("checkPreAttack", () => {
 
   it("freeze has 20% thaw chance - stays frozen", () => {
     randomSpy.mockReturnValueOnce(0.5); // >= 0.2 → stay frozen
-    const result = checkPreAttack("freeze", [], defaultStats);
+    const result = checkPreAttack("freeze", [], defaultStats, 50);
     expect(result.canAct).toBe(false);
     expect(result.message).toContain("얼어붙어");
   });
 
   it("paralysis has 25% skip chance - skips", () => {
     randomSpy.mockReturnValueOnce(0.1); // < 0.25 → paralyzed
-    const result = checkPreAttack("paralysis", [], defaultStats);
+    const result = checkPreAttack("paralysis", [], defaultStats, 50);
     expect(result.canAct).toBe(false);
     expect(result.message).toContain("마비");
   });
 
   it("paralysis has 25% skip chance - can act", () => {
     randomSpy.mockReturnValueOnce(0.5); // >= 0.25 → can act
-    const result = checkPreAttack("paralysis", [], defaultStats);
+    const result = checkPreAttack("paralysis", [], defaultStats, 50);
     expect(result.canAct).toBe(true);
   });
 
   it("confusion causes self-damage when roll hits", () => {
     randomSpy.mockReturnValueOnce(0.1); // < 0.33 → self-hit
     const volatiles: VolatileStatus[] = [{ id: "confusion", turnsRemaining: 3 }];
-    const result = checkPreAttack(null, volatiles, defaultStats);
+    const result = checkPreAttack(null, volatiles, defaultStats, 50);
     expect(result.canAct).toBe(false);
     expect(result.selfDamage).toBeGreaterThan(0);
     expect(result.message).toContain("혼란");
@@ -143,8 +143,22 @@ describe("checkPreAttack", () => {
   it("confusion allows action when roll misses", () => {
     randomSpy.mockReturnValueOnce(0.5); // >= 0.33 → can act
     const volatiles: VolatileStatus[] = [{ id: "confusion", turnsRemaining: 3 }];
-    const result = checkPreAttack(null, volatiles, defaultStats);
+    const result = checkPreAttack(null, volatiles, defaultStats, 50);
     expect(result.canAct).toBe(true);
+  });
+
+  it("confusion self-damage scales with level", () => {
+    const volatiles: VolatileStatus[] = [{ id: "confusion", turnsRemaining: 3 }];
+
+    randomSpy.mockReturnValueOnce(0.1); // < 0.33 → self-hit
+    const lowLevel = checkPreAttack(null, volatiles, defaultStats, 10);
+
+    randomSpy.mockReturnValueOnce(0.1); // < 0.33 → self-hit
+    const highLevel = checkPreAttack(null, volatiles, defaultStats, 80);
+
+    expect(lowLevel.selfDamage).toBeDefined();
+    expect(highLevel.selfDamage).toBeDefined();
+    expect(highLevel.selfDamage!).toBeGreaterThan(lowLevel.selfDamage!);
   });
 });
 
