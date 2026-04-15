@@ -74,8 +74,6 @@ describe("trade-store", () => {
     ));
 
     await tradeStoreModule.saveTrades(trades);
-    // Allow fire-and-forget archiveTrades to settle
-    await new Promise((resolve) => setTimeout(resolve, 200));
 
     const active = await tradeStoreModule.getTrades();
     expect(active.filter((t) => t.status !== "pending")).toHaveLength(tradeStoreModule.MAX_RESOLVED_TRADES);
@@ -100,7 +98,6 @@ describe("trade-store", () => {
     ));
 
     await tradeStoreModule.saveTrades(trades);
-    await new Promise((resolve) => setTimeout(resolve, 200));
 
     const archived = await tradeStoreModule.getArchivedTrades();
     expect(archived).toHaveLength(3);

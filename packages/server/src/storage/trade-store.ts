@@ -20,10 +20,11 @@ export async function getTrades(): Promise<TradeRecord[]> {
 }
 
 export async function saveTrades(trades: TradeRecord[]): Promise<void> {
-  await writeJson(tradeStorePath(), pruneTrades(trades));
+  const pruned = await pruneTrades(trades);
+  await writeJson(tradeStorePath(), pruned);
 }
 
-function pruneTrades(trades: TradeRecord[]): TradeRecord[] {
+async function pruneTrades(trades: TradeRecord[]): Promise<TradeRecord[]> {
   const pending = trades.filter((trade) => trade.status === "pending");
   const resolved = trades
     .filter((trade) => trade.status !== "pending")
@@ -33,7 +34,7 @@ function pruneTrades(trades: TradeRecord[]): TradeRecord[] {
 
   if (resolved.length > MAX_RESOLVED_TRADES) {
     const toArchive = resolved.slice(MAX_RESOLVED_TRADES);
-    archiveTrades(toArchive); // async fire-and-forget
+    await archiveTrades(toArchive);
     return [...pending, ...resolved.slice(0, MAX_RESOLVED_TRADES)];
   }
 
