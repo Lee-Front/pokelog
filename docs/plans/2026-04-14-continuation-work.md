@@ -1,5 +1,7 @@
 # PokeLog 잔여 작업 이어받기 구현 플랜
 
+**Status:** Phase 0-2 (Tasks 1-10) completed. Phase 3-5 (Tasks 11-20) not started.
+
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** 이전 작업자(2026-04-13)가 중단한 PokeAPI 동기화 마이그레이션을 마무리하고, 안정화 → 타입 보완 → Variant 활성화 → Trade UX → 배틀 v2까지 순차 진행. 각 Phase 완료 시 문서 갱신.
@@ -23,7 +25,7 @@
 - Test: `packages/server/tests/game/growth.test.ts`
 - Test: `packages/server/tests/game/pokemon-factory.test.ts`
 
-- [ ] **Step 1: shared/types.ts에 nature 필드 추가**
+- [x] **Step 1: shared/types.ts에 nature 필드 추가**
 
 `OwnedPokemon` 인터페이스에 추가 (line 124 뒤):
 
@@ -31,7 +33,7 @@
   nature?: string;
 ```
 
-- [ ] **Step 2: pokemon-factory.ts에 nature 랜덤 배정**
+- [x] **Step 2: pokemon-factory.ts에 nature 랜덤 배정**
 
 import에 `getNatures` 추가 (line 2):
 
@@ -54,7 +56,7 @@ return 객체에 `nature` 필드 추가 (line 94 뒤):
     nature,
 ```
 
-- [ ] **Step 3: growth.ts에 nature 보정 적용**
+- [x] **Step 3: growth.ts에 nature 보정 적용**
 
 `calculateStatsForLevel` 시그니처 변경 (line 56-59):
 
@@ -90,7 +92,7 @@ export function getNatureById(id: string): NatureData | undefined {
 }
 ```
 
-- [ ] **Step 4: user-store.ts에 nature 기본값 추가**
+- [x] **Step 4: user-store.ts에 nature 기본값 추가**
 
 `normalizeOwnedPokemon` 함수 return 객체에 추가 (line 122 뒤):
 
@@ -100,7 +102,7 @@ export function getNatureById(id: string): NatureData | undefined {
 
 `"hardy"`는 neutral nature (스탯 보정 없음)이므로 기존 포켓몬의 스탯이 변하지 않음.
 
-- [ ] **Step 5: 기존 호출부에 nature 전달**
+- [x] **Step 5: 기존 호출부에 nature 전달**
 
 `growth.ts`의 `checkLevelUp` 함수에서 `calculateStatsForLevel` 호출 시 nature 전달:
 
@@ -143,7 +145,7 @@ function buildStats(species: SpeciesData, level: number, nature?: string): { max
 const { maxHp, stats } = buildStats(speciesData, level, nature);
 ```
 
-- [ ] **Step 6: 테스트 업데이트**
+- [x] **Step 6: 테스트 업데이트**
 
 `pokemon-factory.test.ts`에 nature 배정 테스트 추가:
 
@@ -167,13 +169,13 @@ it("applies nature stat modifier on level up", () => {
 });
 ```
 
-- [ ] **Step 7: 테스트 실행**
+- [x] **Step 7: 테스트 실행**
 
 ```bash
 npm test -w packages/server
 ```
 
-- [ ] **Step 8: 커밋**
+- [x] **Step 8: 커밋**
 
 ```
 feat: add nature to OwnedPokemon with stat modifier support
@@ -188,7 +190,7 @@ feat: add nature to OwnedPokemon with stat modifier support
 - Modify: `packages/server/src/game/pokemon-factory.ts:67-96`
 - Modify: `packages/server/src/storage/user-store.ts:106-124`
 
-- [ ] **Step 1: shared/types.ts에 isShiny 추가**
+- [x] **Step 1: shared/types.ts에 isShiny 추가**
 
 `OwnedPokemon`에 추가:
 
@@ -196,7 +198,7 @@ feat: add nature to OwnedPokemon with stat modifier support
   isShiny?: boolean;
 ```
 
-- [ ] **Step 2: pokemon-factory.ts에 isShiny 배정**
+- [x] **Step 2: pokemon-factory.ts에 isShiny 배정**
 
 `createPokemon` return 객체에 추가:
 
@@ -204,7 +206,7 @@ feat: add nature to OwnedPokemon with stat modifier support
     isShiny: Math.random() < (1 / 4096),
 ```
 
-- [ ] **Step 3: user-store.ts에 기본값 추가**
+- [x] **Step 3: user-store.ts에 기본값 추가**
 
 `normalizeOwnedPokemon` return 객체에:
 
@@ -212,7 +214,7 @@ feat: add nature to OwnedPokemon with stat modifier support
     isShiny: pokemon.isShiny ?? false,
 ```
 
-- [ ] **Step 4: 테스트, 커밋**
+- [x] **Step 4: 테스트, 커밋**
 
 ```
 feat: add isShiny field to OwnedPokemon with 1/4096 chance
@@ -227,7 +229,7 @@ feat: add isShiny field to OwnedPokemon with 1/4096 chance
 - Modify: `packages/server/tests/game/item-usage.test.ts:7-31`
 - Modify: `packages/server/src/integrations/integration-reward.test.ts:6-30`
 
-- [ ] **Step 1: 3개 fixture에 누락 필드 추가**
+- [x] **Step 1: 3개 fixture에 누락 필드 추가**
 
 각 `createUserData()` / `makeUser()` fixture에 추가:
 
@@ -236,7 +238,7 @@ feat: add isShiny field to OwnedPokemon with 1/4096 chance
     currentRegion: "default",
 ```
 
-- [ ] **Step 2: 테스트 실행 확인, 커밋**
+- [x] **Step 2: 테스트 실행 확인, 커밋**
 
 ```
 fix: add missing pendingEvolutions and currentRegion to test fixtures
@@ -249,7 +251,7 @@ fix: add missing pendingEvolutions and currentRegion to test fixtures
 **Files:**
 - Modify: `packages/server/src/game/pokemon-gender.ts:4-11`
 
-- [ ] **Step 1: 조건 명확화**
+- [x] **Step 1: 조건 명확화**
 
 Line 5의 `genderRate < 0`을 `genderRate < 0`으로 유지하되, line 9의 `genderRate <= 0`을 `genderRate === 0`으로 변경:
 
@@ -271,7 +273,7 @@ export function resolvePokemonGender(genderRate: number | undefined, randomValue
 }
 ```
 
-- [ ] **Step 2: 커밋**
+- [x] **Step 2: 커밋**
 
 ```
 fix: clarify gender rate boundary in resolvePokemonGender
@@ -286,7 +288,7 @@ fix: clarify gender rate boundary in resolvePokemonGender
 **Files:**
 - Modify: `packages/server/src/game/data-loader.ts:322-328`
 
-- [ ] **Step 1: readJsonFile 패턴으로 변경**
+- [x] **Step 1: readJsonFile 패턴으로 변경**
 
 ```typescript
 export function getRegion(name: string): RegionData {
@@ -301,7 +303,7 @@ export function getRegion(name: string): RegionData {
 }
 ```
 
-- [ ] **Step 2: game-routes.ts /status에 fallback 추가**
+- [x] **Step 2: game-routes.ts /status에 fallback 추가**
 
 ```typescript
 let regionName = "알 수 없음";
@@ -312,7 +314,7 @@ try {
 }
 ```
 
-- [ ] **Step 3: 커밋**
+- [x] **Step 3: 커밋**
 
 ```
 fix: use safe readJsonFile in getRegion and add /status fallback
@@ -327,7 +329,7 @@ fix: use safe readJsonFile in getRegion and add /status fallback
 - Run: `scripts/generate-pokemon-art-split.mjs`
 - Run: `scripts/generate-pokemon-data-audit.mjs`
 
-- [ ] **Step 1: 스크립트 실행**
+- [x] **Step 1: 스크립트 실행**
 
 ```bash
 node scripts/generate-pokemon-art-split.mjs
@@ -335,7 +337,7 @@ node scripts/generate-species-scaffold.mjs
 node scripts/generate-pokemon-data-audit.mjs
 ```
 
-- [ ] **Step 2: 결과 확인 후 커밋**
+- [x] **Step 2: 결과 확인 후 커밋**
 
 ```
 data: regenerate stale audit files (scaffold, art-split, data-audit)
@@ -348,13 +350,13 @@ data: regenerate stale audit files (scaffold, art-split, data-audit)
 **Files:**
 - Modify: `scripts/generate-evolution-runtime-gaps.mjs`
 
-- [ ] **Step 1: unsupportedTriggerFamilies 로직 구현**
+- [x] **Step 1: unsupportedTriggerFamilies 로직 구현**
 
 현재 `unsupportedTriggerFamilies = {}`가 항상 비어있음. trigger 감사 로직 추가:
 
 지원하는 트리거 목록 정의 후, evolution.json을 순회하며 미지원 트리거를 실제로 수집.
 
-- [ ] **Step 2: 재생성, 커밋**
+- [x] **Step 2: 재생성, 커밋**
 
 ```bash
 node scripts/generate-evolution-runtime-gaps.mjs
@@ -372,7 +374,7 @@ fix: implement trigger family audit in evolution-runtime-gaps generator
 - Modify: `packages/cli/src/index.ts:47`
 - Modify: `packages/cli/src/index.ts` (heal 추가)
 
-- [ ] **Step 1: leave 인자를 optional로 변경**
+- [x] **Step 1: leave 인자를 optional로 변경**
 
 Line 47:
 
@@ -382,7 +384,7 @@ Line 47:
 program.command("leave [name]").description("leave server").action(leaveCommand);
 ```
 
-- [ ] **Step 2: heal 커맨드 CLI 등록**
+- [x] **Step 2: heal 커맨드 CLI 등록**
 
 ```typescript
 program.command("heal").description("heal party").action(healCommand);
@@ -390,7 +392,7 @@ program.command("heal").description("heal party").action(healCommand);
 
 import에 `healCommand` 추가.
 
-- [ ] **Step 3: 커밋**
+- [x] **Step 3: 커밋**
 
 ```
 fix: register heal in CLI, make leave argument optional
@@ -403,7 +405,7 @@ fix: register heal in CLI, make leave argument optional
 **Files:**
 - Modify: `docs/pokemon-pokeapi-sync-status.md`
 
-- [ ] **Step 1: 현재 상태 반영**
+- [x] **Step 1: 현재 상태 반영**
 
 Sync status 문서에 다음 업데이트:
 - nature 필드 추가 완료
@@ -412,7 +414,7 @@ Sync status 문서에 다음 업데이트:
 - 감사 파일 재생성 완료
 - CLI 불일치 수정 완료
 
-- [ ] **Step 2: 커밋**
+- [x] **Step 2: 커밋**
 
 ```
 docs: update sync status with Phase 0-1 completion
@@ -428,7 +430,7 @@ docs: update sync status with Phase 0-1 completion
 - Modify: `shared/types.ts:135-142`
 - Modify: `packages/server/src/game/pokemon-factory.ts:98-115`
 
-- [ ] **Step 1: WildPokemon 인터페이스 확장**
+- [x] **Step 1: WildPokemon 인터페이스 확장**
 
 ```typescript
 export interface WildPokemon {
@@ -444,7 +446,7 @@ export interface WildPokemon {
 }
 ```
 
-- [ ] **Step 2: createWildPokemon에 필드 배정**
+- [x] **Step 2: createWildPokemon에 필드 배정**
 
 ```typescript
 export function createWildPokemon(species: string, level: number): WildPokemon {
@@ -475,7 +477,7 @@ export function createWildPokemon(species: string, level: number): WildPokemon {
 }
 ```
 
-- [ ] **Step 3: 테스트, 커밋**
+- [x] **Step 3: 테스트, 커밋**
 
 ```
 feat: extend WildPokemon with nature, gender, ability
