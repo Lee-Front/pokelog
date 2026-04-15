@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { clearAllCaches, getEvolutions, getSpeciesByName } from "../../src/game/data-loader.js";
 import { clearEggGachaCache, getEggTierSummaries, hatchEgg } from "../../src/game/egg-gacha.js";
 
@@ -16,6 +16,12 @@ beforeEach(() => {
   clearAllCaches();
   clearEggGachaCache();
   vi.restoreAllMocks();
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-01-01T12:00:00Z"));
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe("egg-gacha", () => {
