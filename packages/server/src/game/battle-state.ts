@@ -9,7 +9,6 @@ import {
   rollAilment, isVolatileAilment, addVolatile, rollSleepTurns, rollConfusionTurns, rollTrapTurns,
 } from "./status-conditions.js";
 import type { BattleState, MoveData, OwnedPokemon, PrimaryStatus, StatStages, UserData, VolatileStatus } from "../../../../shared/types.js";
-import type { Response } from "express";
 import { recordDamageTaken } from "./battle-progress.js";
 import { saveUser } from "../storage/user-store.js";
 
@@ -619,31 +618,37 @@ export function wildAttack(
   };
 }
 
-/** 기절 처리 — response를 보냈으면 true 반환 */
+export interface FaintedResult {
+  fainted: true;
+  gameOver: boolean;
+  log: string[];
+  battleState: BattleState | null;
+  result: "fainted" | "lose";
+}
+
+/** 기절 처리 — 기절하지 않았으면 null 반환 */
 export async function handleFainted(
   user: UserData, pokemon: OwnedPokemon, battle: BattleState,
-  log: string[], res: Response,
-): Promise<boolean> {
-  if (pokemon.hp > 0) return false;
+  log: string[],
+): Promise<FaintedResult | null> {
+  if (pokemon.hp > 0) return null;
   log.push(`${pokemon.species}이(가) 쓰러졌다!`);
   if (hasAlivePartyMembers(user, pokemon.uid)) {
     await saveUser(user);
-    res.json({ log, battleState: battle, result: "fainted" });
-    return true;
+    return { fainted: true, gameOver: false, log, battleState: battle, result: "fainted" };
   }
   revertBattleForms(battle, pokemon);
   user.battleState = null;
   await saveUser(user);
-  res.json({ log, battleState: null, result: "lose" });
-  return true;
+  return { fainted: true, gameOver: true, log, battleState: null, result: "lose" };
 }
 
-/** 야생 공격 후 기절 체크 — response를 보냈으면 true 반환 */
+/** 야생 공격 후 기절 체크 — 기절 결과가 있으면 FaintedResult 반환, 없으면 null */
 export async function doWildAttackAndCheck(
   user: UserData, myPokemon: OwnedPokemon, battle: BattleState,
-  log: string[], res: Response,
+  log: string[],
   preSelectedWildMove?: { id: string; pp: number; maxPp: number },
-): Promise<boolean> {
+): Promise<FaintedResult | null> {
   // Pre-attack status check for wild pokemon
   const wildPreCheck = checkPreAttack(
     battle.wild.statusCondition,
@@ -661,7 +666,7 @@ export async function doWildAttackAndCheck(
       battle.wild.hp = Math.max(0, battle.wild.hp - wildPreCheck.selfDamage);
       log.push(`야생 ${battle.wild.species}이(가) ${wildPreCheck.selfDamage} 데미지를 받았다!`);
     }
-    return await handleFainted(user, myPokemon, battle, log, res);
+    return await handleFainted(user, myPokemon, battle, log);
   }
 
   // Burn modifier: halve attack for physical moves
@@ -756,5 +761,5 @@ export async function doWildAttackAndCheck(
   // HP threshold form checks after wild attack
   checkHpForms(battle, myPokemon, log);
 
-  return await handleFainted(user, myPokemon, battle, log, res);
+  return await handleFainted(user, myPokemon, battle, log);
 }
