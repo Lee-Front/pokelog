@@ -66,3 +66,23 @@ socialRoutes.get("/profile/:nickname", async (req, res) => {
   }
 });
 
+socialRoutes.get("/ranking/pvp", async (req, res) => {
+  try {
+    const users = await getAllUsers();
+    const ranked = users
+      .filter((u) => u.pvpStats && (u.pvpStats.wins + u.pvpStats.losses) > 0)
+      .map((u) => ({
+        nickname: u.account.nickname,
+        rating: u.pvpStats!.rating,
+        wins: u.pvpStats!.wins,
+        losses: u.pvpStats!.losses,
+        streak: u.pvpStats!.streak,
+      }))
+      .sort((a, b) => b.rating - a.rating);
+    res.json({ ranking: ranked });
+  } catch (err) {
+    console.error("PvP ranking error:", err);
+    res.status(500).json({ error: "서버 오류가 발생했습니다" });
+  }
+});
+
