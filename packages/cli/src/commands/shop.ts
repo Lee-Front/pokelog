@@ -35,7 +35,7 @@ function rawNumberInput(label: string): Promise<number | null> {
     process.stdout.write("\n");
     paint();
     const handler = (chunk: string) => {
-      if (chunk === "\x03") { process.exit(0); }
+      if (chunk === "\x03") { process.stdout.write("\x1b[?25h"); process.exit(0); }
       else if (chunk === "\x1b") { process.stdin.removeListener("data", handler); process.stdout.write("\n"); resolve(null); }
       else if (chunk === "\r")   { process.stdin.removeListener("data", handler); process.stdout.write("\n"); const n = parseInt(buf, 10); resolve(Number.isFinite(n) && n > 0 ? n : null); }
       else if ((chunk === "\x7f" || chunk === "\x08") && buf.length > 0) { buf = buf.slice(0, -1); paint(); }

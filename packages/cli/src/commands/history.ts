@@ -45,7 +45,7 @@ export async function historyCommand(limit = 20) {
     printHistoryPage(sources, recent, page, pageSize);
     const key = await waitKey();
 
-    if (key === "\x03") process.exit(0);
+    if (key === "\x03") { process.stdout.write("\x1b[?25h"); process.exit(0); }
     if (key === "\x1b" || key === "q" || key === "\r") return;
     if ((key === "\x1b[D" || key === "h") && page > 0) page -= 1;
     if ((key === "\x1b[C" || key === "l") && page < totalPages - 1) page += 1;
