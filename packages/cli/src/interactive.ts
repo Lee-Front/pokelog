@@ -402,7 +402,15 @@ export async function interactiveMode() {
       // 명령 실행
       process.stdout.write("\x1b[?25h");
 
-      const result = await executeCommand(selected.cmd);
+      let result: "continue" | "quit";
+      try {
+        result = await executeCommand(selected.cmd);
+      } catch (err) {
+        enterRaw();
+        message = `오류: ${err instanceof Error ? err.message : String(err)}`;
+        first = true;
+        continue;
+      }
       if (result === "quit") {
         leaveAltScreen();
         return;
