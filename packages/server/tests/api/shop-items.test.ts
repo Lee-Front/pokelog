@@ -153,4 +153,49 @@ describe("shop + item usage", () => {
     const inv = await api.get("/api/game/inventory");
     expect(inv.body.inventory.leftovers).toBe(1);
   });
+
+  // -------------------------------------------------------------------------
+  // Shop error cases
+  // -------------------------------------------------------------------------
+
+  it("rejects purchase of non-existent item → 404", async () => {
+    const { token, userId } = await t.registerAndLogin();
+    const api = t.authed(token);
+
+    await t.admin().post("/api/admin/test/give-points", { userId, amount: 10000 });
+
+    const res = await api.post("/api/shop/buy", { item: "fake-nonexistent-item", quantity: 1 });
+    expect(res.status).toBe(404);
+  });
+
+  it("rejects purchase with quantity of 0 → 400", async () => {
+    const { token, userId } = await t.registerAndLogin();
+    const api = t.authed(token);
+
+    await t.admin().post("/api/admin/test/give-points", { userId, amount: 10000 });
+
+    const res = await api.post("/api/shop/buy", { item: "pokeball", quantity: 0 });
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects purchase with negative quantity → 400", async () => {
+    const { token, userId } = await t.registerAndLogin();
+    const api = t.authed(token);
+
+    await t.admin().post("/api/admin/test/give-points", { userId, amount: 10000 });
+
+    const res = await api.post("/api/shop/buy", { item: "pokeball", quantity: -5 });
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects purchase exceeding affordable amount → 400", async () => {
+    const { token, userId } = await t.registerAndLogin();
+    const api = t.authed(token);
+
+    // Give minimal points — not enough for a large purchase
+    await t.admin().post("/api/admin/test/give-points", { userId, amount: 10 });
+
+    const res = await api.post("/api/shop/buy", { item: "pokeball", quantity: 9999 });
+    expect(res.status).toBe(400);
+  });
 });

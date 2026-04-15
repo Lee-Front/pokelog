@@ -378,4 +378,101 @@ describe("battle-transformations API", () => {
     expect(fight.status).toBe(400);
     expect(fight.body.error).toContain("키스톤");
   });
+
+  // -------------------------------------------------------------------------
+  // Battle error cases
+  // -------------------------------------------------------------------------
+
+  it("rejects fight action without moveId → 400", async () => {
+    const { token, userId } = await t.registerAndLogin("berr1", "charmander");
+    const api = t.authed(token);
+
+    // Create encounter and start battle
+    const enc = await t.admin().post("/api/admin/test/encounter", {
+      userId,
+      species: "rattata",
+      level: 5,
+    });
+    expect(enc.status).toBe(200);
+
+    const party = await api.get("/api/game/party");
+    const pokemonUid = party.body.party[0].uid;
+
+    const start = await api.post("/api/battle/start", {
+      eventId: enc.body.event.id,
+      pokemonUid,
+    });
+    expect(start.status).toBe(200);
+
+    // Fight without moveId
+    const fight = await api.post("/api/battle/action", {
+      action: "fight",
+      data: {},
+    });
+    expect(fight.status).toBe(400);
+  });
+
+  it("rejects invalid action string → 400", async () => {
+    const { token, userId } = await t.registerAndLogin("berr2", "charmander");
+    const api = t.authed(token);
+
+    const enc = await t.admin().post("/api/admin/test/encounter", {
+      userId,
+      species: "rattata",
+      level: 5,
+    });
+    expect(enc.status).toBe(200);
+
+    const party = await api.get("/api/game/party");
+    const pokemonUid = party.body.party[0].uid;
+
+    await api.post("/api/battle/start", {
+      eventId: enc.body.event.id,
+      pokemonUid,
+    });
+
+    const res = await api.post("/api/battle/action", {
+      action: "dance",
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects fight when no active battle → 400", async () => {
+    const { token } = await t.registerAndLogin("berr3", "charmander");
+    const api = t.authed(token);
+
+    // No battle started — attempt action
+    const res = await api.post("/api/battle/action", {
+      action: "fight",
+      data: { moveId: "tackle" },
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects switch to non-party pokemon UID → 400 or 404", async () => {
+    const { token, userId } = await t.registerAndLogin("berr4", "charmander");
+    const api = t.authed(token);
+
+    const enc = await t.admin().post("/api/admin/test/encounter", {
+      userId,
+      species: "rattata",
+      level: 5,
+    });
+    expect(enc.status).toBe(200);
+
+    const party = await api.get("/api/game/party");
+    const pokemonUid = party.body.party[0].uid;
+
+    await api.post("/api/battle/start", {
+      eventId: enc.body.event.id,
+      pokemonUid,
+    });
+
+    const res = await api.post("/api/battle/action", {
+      action: "switch",
+      data: { pokemonUid: "non-existent-uid" },
+    });
+    // Server returns 404 for pokemon not found
+    expect([400, 404]).toContain(res.status);
+  });
 });
