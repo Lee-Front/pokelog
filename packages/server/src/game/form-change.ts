@@ -25,11 +25,6 @@ export function getFormChangeRules(): Record<string, FormChangeRule> {
   return rulesCache;
 }
 
-/** Clear cached rules (for testing) */
-export function clearFormChangeRulesCache(): void {
-  rulesCache = null;
-}
-
 /** Get the base species for a pokemon (strips variantId influence) */
 function getBaseSpecies(pokemon: OwnedPokemon): string {
   return pokemon.species;
