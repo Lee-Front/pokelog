@@ -26,14 +26,8 @@ export interface TradeView {
   };
 }
 
-export interface TradePokemonCandidate {
-  uid: string;
-  species: string;
-  speciesName: string;
-  nickname: string | null;
-  level: number;
-  location: "party" | "storage";
-}
+export type { TradePokemonCandidate } from "../../../../shared/types.js";
+import type { TradePokemonCandidate } from "../../../../shared/types.js";
 
 export function formatTradeLine(trade: TradeView): string {
   const left = `${trade.requester.nickname} [${trade.requester.userId}]`;

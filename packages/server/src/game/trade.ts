@@ -1,4 +1,4 @@
-import type { OwnedPokemon, TradeRecord, UserData } from "../../../../shared/types.js";
+import type { OwnedPokemon, TradePokemonCandidate, TradeRecord, UserData } from "../../../../shared/types.js";
 import { getUser, saveUser } from "../storage/user-store.js";
 import { createTradeRecord, getTrades, saveTrades } from "../storage/trade-store.js";
 import { GameRuleError } from "./game-errors.js";
@@ -10,15 +10,6 @@ type PokemonSlot =
   | { container: "storage"; index: number };
 
 export { GameRuleError as TradeError };
-
-export interface TradePokemonCandidate {
-  uid: string;
-  species: string;
-  speciesName: string;
-  nickname: string | null;
-  level: number;
-  location: "party" | "storage";
-}
 
 function clonePokemon(pokemon: OwnedPokemon): OwnedPokemon {
   return {

@@ -197,6 +197,15 @@ export interface TradeRecord {
   resolvedAt?: string;
 }
 
+export interface TradePokemonCandidate {
+  uid: string;
+  species: string;
+  speciesName: string;
+  nickname: string | null;
+  level: number;
+  location: "party" | "storage";
+}
+
 export interface StatStages {
   attack: number;
   defense: number;
