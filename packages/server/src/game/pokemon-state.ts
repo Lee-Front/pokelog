@@ -1,4 +1,4 @@
-import type { SpeciesData, VariantData } from "../../../../shared/types.js";
+import type { SpeciesData, VariantData, UserData, OwnedPokemon } from "../../../../shared/types.js";
 import { getSpeciesByName, getVariantById } from "./data-loader.js";
 
 export interface PokemonIdentity {
@@ -61,4 +61,15 @@ export function getEffectiveTypes(
 
 export function getDisplaySpeciesName(species: string): string {
   return getSpeciesByName(species)?.name ?? species;
+}
+
+export function findPokemonByUid(user: UserData, uid: string): OwnedPokemon | undefined {
+  return user.pokemon.find((p) => p.uid === uid)
+    ?? user.storage.find((p) => p.uid === uid);
+}
+
+export function getPartyPokemon(user: UserData): OwnedPokemon[] {
+  return user.party
+    .map((uid) => user.pokemon.find((p) => p.uid === uid))
+    .filter((p): p is OwnedPokemon => p != null);
 }
