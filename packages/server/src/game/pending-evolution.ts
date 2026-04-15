@@ -9,13 +9,9 @@ import type {
 import { getSpeciesByName } from "./data-loader.js";
 import { GameRuleError } from "./game-errors.js";
 import { evolvePokemon } from "./growth.js";
+import { findPokemonByUid } from "./pokemon-state.js";
 
 export { GameRuleError as PendingEvolutionError };
-
-function getPokemonByUid(user: UserData, pokemonUid: string): OwnedPokemon | undefined {
-  return user.pokemon.find((pokemon) => pokemon.uid === pokemonUid)
-    ?? user.storage.find((pokemon) => pokemon.uid === pokemonUid);
-}
 
 function buildOption(branch: EvolutionBranch): PendingEvolutionOption {
   const target = getSpeciesByName(branch.targetSpecies);
@@ -69,7 +65,7 @@ export function resolvePendingEvolutionChoice(
     throw new GameRuleError("Evolution option not found.", 404);
   }
 
-  const pokemon = getPokemonByUid(user, pendingEvolution.pokemonUid);
+  const pokemon = findPokemonByUid(user, pendingEvolution.pokemonUid);
   if (!pokemon) {
     throw new GameRuleError("Pokemon not found.", 404);
   }

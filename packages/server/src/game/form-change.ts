@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { getVariantsByBaseSpecies } from "./data-loader.js";
 import { GameRuleError } from "./game-errors.js";
 import { decrementItem } from "./inventory-utils.js";
+import { findPokemonByUid } from "./pokemon-state.js";
 
 export interface FormChangeRule {
   type: "catalog" | "toggle" | "held-item" | "nectar";
@@ -127,8 +128,7 @@ export function applyFormChange(
   pokemonUid: string,
   targetFormId: string | null,
 ): { pokemon: OwnedPokemon; previousVariantId: string | null } {
-  const pokemon = user.pokemon.find((p) => p.uid === pokemonUid)
-    ?? user.storage.find((p) => p.uid === pokemonUid);
+  const pokemon = findPokemonByUid(user, pokemonUid);
 
   if (!pokemon) {
     throw new GameRuleError("Pokemon not found.", 404);

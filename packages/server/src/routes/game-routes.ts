@@ -14,7 +14,7 @@ import { buildLevelEvolutionContext, getEvolutionBranchDiagnostics } from "../ga
 import { applyFormChange, getAvailableForms, getFormChangeRules, hasFormChangeRules } from "../game/form-change.js";
 import { GameRuleError } from "../game/game-errors.js";
 import { buildStats } from "../game/pokemon-stats.js";
-import { getDisplaySpeciesName } from "../game/pokemon-state.js";
+import { findPokemonByUid, getDisplaySpeciesName, getPartyPokemon } from "../game/pokemon-state.js";
 import {
   acceptTradeRequest,
   cancelTradeRequest,
@@ -181,9 +181,7 @@ gameRoutes.get("/party", async (req: AuthRequest, res: Response) => {
       return;
     }
 
-    const partyPokemon = user.party
-      .map((uid) => user.pokemon.find((p) => p.uid === uid))
-      .filter(Boolean);
+    const partyPokemon = getPartyPokemon(user);
 
     res.json({ party: partyPokemon });
   } catch (err) {
@@ -235,17 +233,14 @@ gameRoutes.get("/pokemon/:uid", async (req: AuthRequest, res: Response) => {
       return;
     }
 
-    const pokemon = user.pokemon.find((p) => p.uid === req.params.uid)
-      ?? user.storage.find((p) => p.uid === req.params.uid);
+    const pokemon = findPokemonByUid(user, req.params.uid);
 
     if (!pokemon) {
       res.status(404).json({ error: "포켓몬을 찾을 수 없습니다" });
       return;
     }
 
-    const activeParty = user.party
-      .map((uid) => user.pokemon.find((member) => member.uid === uid))
-      .filter((member): member is NonNullable<typeof member> => Boolean(member));
+    const activeParty = getPartyPokemon(user);
     const evolutionPreview = getEvolutionBranchDiagnostics(pokemon.species, {
       level: pokemon.level,
       ...buildLevelEvolutionContext(pokemon, activeParty, {
@@ -485,9 +480,7 @@ gameRoutes.get("/evolutions/pending", async (req: AuthRequest, res: Response) =>
 
     const pending = (user.pendingEvolutions ?? []).map((entry) => ({
       ...entry,
-      pokemon: user.pokemon.find((pokemon) => pokemon.uid === entry.pokemonUid)
-        ?? user.storage.find((pokemon) => pokemon.uid === entry.pokemonUid)
-        ?? null,
+      pokemon: findPokemonByUid(user, entry.pokemonUid) ?? null,
     }));
 
     res.json({ pending });
@@ -620,12 +613,10 @@ gameRoutes.post("/heal", async (req: AuthRequest, res: Response) => {
       return;
     }
 
-    const partyPokemon = user.party
-      .map((uid) => user.pokemon.find((p) => p.uid === uid))
-      .filter(Boolean);
+    const partyPokemon = getPartyPokemon(user);
 
     for (const p of partyPokemon) {
-      healPokemon(p!);
+      healPokemon(p);
     }
 
     await saveUser(user);
@@ -900,8 +891,7 @@ gameRoutes.post("/form-change", async (req: AuthRequest, res: Response) => {
       return;
     }
 
-    const pokemon = user.pokemon.find((p) => p.uid === pokemonUid)
-      ?? user.storage.find((p) => p.uid === pokemonUid);
+    const pokemon = findPokemonByUid(user, pokemonUid);
 
     if (!pokemon) {
       res.status(404).json({ error: "Pokemon not found." });

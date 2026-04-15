@@ -18,6 +18,7 @@ import {
   getMatchingEvolutionBranches,
 } from "../game/growth.js";
 import { calculateStatsForLevel } from "../game/pokemon-stats.js";
+import { getPartyPokemon } from "../game/pokemon-state.js";
 import type { ServerConfig } from "../../../../shared/types.js";
 import { INTEGRATION_EVENT_CATALOG } from "../integrations/event-catalog.js";
 import { clearPendingEvolutionForPokemon, queuePendingEvolution } from "../game/pending-evolution.js";
@@ -187,9 +188,7 @@ adminRoutes.post("/test/commit", async (req, res) => {
     // 파티 경험치 분배
     if (user.party.length > 0) {
       const expPerPoke = Math.floor(reward.exp / user.party.length);
-      const partyPokemon = user.party
-        .map((uid) => user.pokemon.find((p) => p.uid === uid))
-        .filter((pokemon): pokemon is NonNullable<typeof pokemon> => Boolean(pokemon));
+      const partyPokemon = getPartyPokemon(user);
 
       for (const poke of partyPokemon) {
         poke.exp += expPerPoke;

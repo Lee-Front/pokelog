@@ -17,6 +17,7 @@ import type { CommitInfo } from "./git-client.js";
 import { getRegion } from "../game/data-loader.js";
 import { createEncounterEvent } from "../game/event-factory.js";
 import { clearPendingEvolutionForPokemon, queuePendingEvolution } from "../game/pending-evolution.js";
+import { getPartyPokemon } from "../game/pokemon-state.js";
 
 export async function processCommit(
   commit: CommitInfo,
@@ -62,9 +63,7 @@ export async function processCommit(
     // Distribute EXP to party pokemon
     if (user.party.length > 0) {
       const expPerPokemon = Math.floor(reward.exp / user.party.length);
-      const partyPokemon = user.party
-        .map((uid) => user.pokemon.find((p) => p.uid === uid))
-        .filter((pokemon): pokemon is NonNullable<typeof pokemon> => Boolean(pokemon));
+      const partyPokemon = getPartyPokemon(user);
 
       for (const pokemon of partyPokemon) {
         if (pokemon) {
