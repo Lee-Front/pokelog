@@ -6,7 +6,11 @@ export async function readJson<T = unknown>(filePath: string): Promise<T | null>
   try {
     const content = await fs.readFile(filePath, "utf-8");
     return JSON.parse(content) as T;
-  } catch {
+  } catch (err: unknown) {
+    if ((err as NodeJS.ErrnoException).code === "ENOENT") {
+      return null;
+    }
+    console.error(`Failed to read ${filePath}:`, err);
     return null;
   }
 }
