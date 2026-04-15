@@ -21,6 +21,11 @@ export async function saveUser(userData: UserData): Promise<void> {
   await writeJson(userPath(userData.account.id), normalizeUserData(userData));
 }
 
+// TODO: getAllUsers loads every user file into memory. This does not scale
+// beyond a few hundred users. Callers such as findUserByEmail,
+// searchUsersByIdentity, getUsersForRepoCommit, and isRepoEmailTaken should
+// be migrated to index-based lookups or lazy iteration. For single-user
+// lookups by ID, prefer getUser(id) which reads a single file.
 export async function getAllUsers(): Promise<UserData[]> {
   const usersDir = path.join(getDataDir(), "users");
   try {
