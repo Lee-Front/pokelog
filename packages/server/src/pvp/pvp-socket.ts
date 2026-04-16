@@ -4,7 +4,7 @@ import { getUser } from "../storage/user-store.js";
 import { enqueue, dequeueBySocketId, tryMatch } from "./matchmaking.js";
 import {
   createRoom, selectLead, submitAction, getPlayerView,
-  getRoom, deleteRoom, getPlayerSide,
+  getRoom, deleteRoom, getPlayerSide, DEFAULT_CONFIG,
 } from "./pvp-room.js";
 import { chooseAiAction } from "./pvp-ai.js";
 import { recordMatch } from "./pvp-store.js";
@@ -14,11 +14,72 @@ import type { OwnedPokemon } from "../../../../shared/types.js";
 // socketId → { userId, roomId }
 const socketState = new Map<string, { userId: string; roomId?: string }>();
 
+// roomId → active turn timeout handle
+const turnTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+function startTurnTimer(io: Server, room: PvpRoomState): void {
+  clearTurnTimer(room.roomId);
+  const timer = setTimeout(async () => {
+    turnTimers.delete(room.roomId);
+    const currentRoom = getRoom(room.roomId);
+    if (!currentRoom || currentRoom.phase === "finished") return;
+
+    // Auto-submit for players who haven't acted
+    for (const player of [currentRoom.playerA, currentRoom.playerB]) {
+      if (!player.actionSubmitted) {
+        const poke = player.party[player.activeIndex];
+        let action: PvpAction;
+        if (currentRoom.phase === "forced_switch") {
+          const aliveIdx = player.party.findIndex((p, i) => p.hp > 0 && i !== player.activeIndex);
+          action = aliveIdx >= 0 ? { type: "switch", pokemonIndex: aliveIdx } : { type: "forfeit" };
+        } else {
+          const usable = poke.moves.find((m) => m.pp > 0);
+          action = usable ? { type: "fight", moveId: usable.id } : { type: "fight", moveId: poke.moves[0]?.id ?? "tackle" };
+        }
+        submitAction(currentRoom, player.userId, action);
+      }
+    }
+
+    // Re-read room after submitting actions (phase may now be "finished")
+    const afterRoom = getRoom(room.roomId) ?? currentRoom;
+
+    // Broadcast result
+    if (afterRoom.phase === "finished" && afterRoom.result) {
+      await recordMatch(afterRoom.result.winnerId, afterRoom.result.loserId, afterRoom.result.reason);
+      emitTurnResult(io, afterRoom);
+      deleteRoom(afterRoom.roomId);
+    } else {
+      emitTurnResult(io, afterRoom);
+      if (afterRoom.phase === "action" || afterRoom.phase === "forced_switch") {
+        startTurnTimer(io, afterRoom);
+      }
+    }
+  }, DEFAULT_CONFIG.turnTimeoutMs);
+  turnTimers.set(room.roomId, timer);
+}
+
+export function clearTurnTimer(roomId: string): void {
+  const existing = turnTimers.get(roomId);
+  if (existing) {
+    clearTimeout(existing);
+    turnTimers.delete(roomId);
+  }
+}
+
 function userPartyToPvp(user: { pokemon: OwnedPokemon[]; party: string[] }): PvpPokemon[] {
   const partyPokemon = user.party
     .map((uid) => user.pokemon.find((p) => p.uid === uid))
     .filter((p): p is OwnedPokemon => p != null && p.hp > 0);
-  return partyPokemon
+
+  // Species Clause: one per species
+  const seen = new Set<string>();
+  const unique = partyPokemon.filter((p) => {
+    if (seen.has(p.species)) return false;
+    seen.add(p.species);
+    return true;
+  });
+
+  return unique
     .map((p) => ({
       uid: p.uid, species: p.species, variantId: p.variantId,
       level: Math.min(p.level, 50),
@@ -162,6 +223,7 @@ export function setupPvpSocket(io: Server): void {
 
       if (room.phase === "action") {
         emitRoomState(io, room);
+        startTurnTimer(io, room);
       }
     });
 
@@ -181,11 +243,15 @@ export function setupPvpSocket(io: Server): void {
       }
 
       if (room.phase === "finished" && room.result) {
+        clearTurnTimer(room.roomId);
         await recordMatch(room.result.winnerId, room.result.loserId, room.result.reason);
         emitTurnResult(io, room);
         deleteRoom(room.roomId);
       } else {
         emitTurnResult(io, room);
+        if (room.phase === "action" || room.phase === "forced_switch") {
+          startTurnTimer(io, room);
+        }
         // AI auto-switches on forced_switch
         if (room.isAiBattle && room.phase === "forced_switch") {
           const aiAlive = room.playerB.party.findIndex((p, i) => p.hp > 0 && i !== room.playerB.activeIndex);
@@ -211,6 +277,7 @@ export function setupPvpSocket(io: Server): void {
               await recordMatch(opp.userId, state.userId, "disconnect");
             }
             io.to(room.roomId).emit("pvp:opponent_disconnected");
+            clearTurnTimer(state.roomId);
             deleteRoom(room.roomId);
           }
         }
