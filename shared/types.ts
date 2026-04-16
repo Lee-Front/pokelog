@@ -214,6 +214,8 @@ export interface StatStages {
   spAttack: number;
   spDefense: number;
   speed: number;
+  accuracy: number;
+  evasion: number;
 }
 
 export type BattleWeather = "sun" | "rain" | "hail" | "sandstorm";

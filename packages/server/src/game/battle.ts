@@ -2,7 +2,13 @@ import { getTypeChart } from "./data-loader.js";
 import type { PokemonStats, MoveData, StatStages } from "../../../../shared/types.js";
 
 export function defaultStatStages(): StatStages {
-  return { attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 };
+  return { attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0, accuracy: 0, evasion: 0 };
+}
+
+export function calculateAccuracy(moveAccuracy: number, attackerAccStage: number, defenderEvaStage: number): number {
+  const accMult = attackerAccStage >= 0 ? (3 + attackerAccStage) / 3 : 3 / (3 + Math.abs(attackerAccStage));
+  const evaMult = defenderEvaStage >= 0 ? 3 / (3 + defenderEvaStage) : (3 + Math.abs(defenderEvaStage)) / 3;
+  return moveAccuracy * accMult * evaMult;
 }
 
 export function applyStatStageMultiplier(baseStat: number, stage: number): number {

@@ -735,3 +735,77 @@ describe("pvp toxic", () => {
     expect(room.playerB.party[0].toxicCounter).toBeUndefined();
   });
 });
+
+// ── Task 4 (new numbering): Accuracy/Evasion Stat Stages ──
+describe("pvp accuracy/evasion stat stages", () => {
+  it("accuracy stage +6 makes moves nearly always hit", () => {
+    // With +6 accuracy stage, effective accuracy = 100 * (3+6)/3 * 1 = 300
+    // So Math.random()*100 < 300 should always be true
+    const pA: PvpPokemon = {
+      uid: "a-uid", species: "pikachu", level: 50,
+      hp: 200, maxHp: 200,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 60 },
+      moves: [{ id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+    };
+    const pB: PvpPokemon = {
+      uid: "b-uid", species: "bulbasaur", level: 50,
+      hp: 200, maxHp: 200,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 40 },
+      moves: [{ id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+    };
+    const room = createRoom("userA", "A", [pA, makePokemon("charizard")], "userB", "B", [pB, makePokemon("squirtle")]);
+    selectLead(room, "userA", 0);
+    selectLead(room, "userB", 0);
+
+    // Set attacker's accuracy stage to +6
+    room.playerA.statStages.accuracy = 6;
+
+    // Use high random value (0.99) that would normally miss with low accuracy
+    vi.spyOn(Math, "random").mockReturnValue(0.99);
+    submitAction(room, "userA", { type: "fight", moveId: "tackle" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    vi.restoreAllMocks();
+
+    // With +6 accuracy, effective accuracy = 100 * 3 = 300%, so even 0.99*100=99 < 300
+    // Tackle should hit (no "빗나갔다" in log for A's attack)
+    const aAttackLogs = room.log.filter((l) => l.includes("A의") && l.includes("pikachu") && l.includes("몸통박치기"));
+    expect(aAttackLogs.some((l) => l.includes("데미지"))).toBe(true);
+    expect(aAttackLogs.some((l) => l.includes("빗나갔다"))).toBe(false);
+  });
+
+  it("evasion stage +6 makes moves miss more often (mocked)", () => {
+    const pA: PvpPokemon = {
+      uid: "a-uid", species: "pikachu", level: 50,
+      hp: 200, maxHp: 200,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 60 },
+      moves: [{ id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+    };
+    const pB: PvpPokemon = {
+      uid: "b-uid", species: "bulbasaur", level: 50,
+      hp: 200, maxHp: 200,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 40 },
+      moves: [{ id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+    };
+    const room = createRoom("userA", "A", [pA, makePokemon("charizard")], "userB", "B", [pB, makePokemon("squirtle")]);
+    selectLead(room, "userA", 0);
+    selectLead(room, "userB", 0);
+
+    // Set defender's evasion stage to +6
+    room.playerB.statStages.evasion = 6;
+
+    // With +6 evasion, effective accuracy = 100 * 1 * 3/(3+6) = 33.3%
+    // random() returns 0.5 → 0.5*100=50 >= 33.3 → miss
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    submitAction(room, "userA", { type: "fight", moveId: "tackle" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    vi.restoreAllMocks();
+
+    // A's attack should miss
+    const aAttackLogs = room.log.filter((l) => l.includes("A의") && l.includes("pikachu") && l.includes("몸통박치기"));
+    expect(aAttackLogs.some((l) => l.includes("빗나갔다"))).toBe(true);
+  });
+});

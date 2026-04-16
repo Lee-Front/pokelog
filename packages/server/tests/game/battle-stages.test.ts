@@ -64,7 +64,7 @@ describe("applyStatChanges", () => {
   });
 
   it("clamps at boundaries", () => {
-    const stages: StatStages = { attack: 5, defense: -5, spAttack: 0, spDefense: 0, speed: 0 };
+    const stages: StatStages = { attack: 5, defense: -5, spAttack: 0, spDefense: 0, speed: 0, accuracy: 0, evasion: 0 };
 
     const result = applyStatChanges(stages, [
       { stat: "attack", change: 3 },    // 5+3=8 -> clamped to 6
@@ -77,9 +77,19 @@ describe("applyStatChanges", () => {
   it("ignores unknown stat names", () => {
     const stages = defaultStatStages();
     const result = applyStatChanges(stages, [
-      { stat: "evasion", change: 1 },
+      { stat: "foobar", change: 1 },
     ]);
     expect(result).toEqual(defaultStatStages());
+  });
+
+  it("applies accuracy and evasion changes", () => {
+    const stages = defaultStatStages();
+    const result = applyStatChanges(stages, [
+      { stat: "accuracy", change: 1 },
+      { stat: "evasion", change: -1 },
+    ]);
+    expect(result.accuracy).toBe(1);
+    expect(result.evasion).toBe(-1);
   });
 
   it("does not mutate original stages", () => {
@@ -126,7 +136,7 @@ describe("calculateDamage with stat stages", () => {
     randomSpy.mockReturnValueOnce(0.5).mockReturnValueOnce(0.5).mockReturnValueOnce(0.0);
     const boosted = calculateDamage(
       10, attackerStats, defenderStats, move, ["normal"], ["normal"],
-      { attack: 2, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+      { attack: 2, defense: 0, spAttack: 0, spDefense: 0, speed: 0, accuracy: 0, evasion: 0 },
     );
     expect(boosted.damage).toBeGreaterThan(baseline.damage);
 
@@ -135,7 +145,7 @@ describe("calculateDamage with stat stages", () => {
     const walled = calculateDamage(
       10, attackerStats, defenderStats, move, ["normal"], ["normal"],
       undefined,
-      { attack: 0, defense: 2, spAttack: 0, spDefense: 0, speed: 0 },
+      { attack: 0, defense: 2, spAttack: 0, spDefense: 0, speed: 0, accuracy: 0, evasion: 0 },
     );
     expect(walled.damage).toBeLessThan(baseline.damage);
   });
@@ -187,7 +197,7 @@ describe("calculateDamage with stat stages", () => {
     randomSpy.mockReturnValueOnce(0.5).mockReturnValueOnce(0.5).mockReturnValueOnce(0.0);
     const boosted = calculateDamage(
       10, attackerStats, defenderStats, move, ["fire"], ["normal"],
-      { attack: 0, defense: 0, spAttack: 2, spDefense: 0, speed: 0 },
+      { attack: 0, defense: 0, spAttack: 2, spDefense: 0, speed: 0, accuracy: 0, evasion: 0 },
     );
     expect(boosted.damage).toBeGreaterThan(baseline.damage);
   });

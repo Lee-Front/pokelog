@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { calculateDamage, determineTurnOrder, defaultStatStages, applyStatChanges } from "../game/battle.js";
+import { calculateDamage, determineTurnOrder, defaultStatStages, applyStatChanges, calculateAccuracy } from "../game/battle.js";
 import { getEffectiveTypes } from "../game/pokemon-state.js";
 import { getMoveById } from "../game/data-loader.js";
 import {
@@ -467,15 +467,26 @@ function executeFight(
   const move = atkPoke.moves.find((m) => m.id === moveId);
   if (move && move.pp > 0) move.pp -= 1;
 
+  // ── Accuracy check with stat stages (before damage calc) ──
+  if (moveData.accuracy > 0 && moveData.accuracy <= 100) {
+    const effectiveAcc = calculateAccuracy(moveData.accuracy, attacker.statStages.accuracy, defender.statStages.evasion);
+    if (Math.random() * 100 >= effectiveAcc) {
+      room.log.push(`${attacker.nickname}의 ${atkPoke.species}: ${moveData.name}! 빗나갔다!`);
+      return;
+    }
+  }
+  // Override accuracy for calculateDamage to prevent double-check
+  const moveForCalc = { ...moveData, accuracy: 999 };
+
   // ── Burn halves physical attack ──
   let effectiveAtkStats = atkPoke.stats;
-  if (atkPoke.statusCondition === "burn" && moveData.category === "physical") {
+  if (atkPoke.statusCondition === "burn" && moveForCalc.category === "physical") {
     effectiveAtkStats = { ...atkPoke.stats, attack: Math.floor(atkPoke.stats.attack * 0.5) };
   }
 
-  const weatherMod = room.weather ? getWeatherTypeModifier(room.weather, moveData.type) : 1;
+  const weatherMod = room.weather ? getWeatherTypeModifier(room.weather, moveForCalc.type) : 1;
   const result = calculateDamage(
-    atkPoke.level, effectiveAtkStats, defPoke.stats, moveData,
+    atkPoke.level, effectiveAtkStats, defPoke.stats, moveForCalc,
     getEffectiveTypes(atkPoke.species, atkPoke.variantId, attacker.battleForm),
     getEffectiveTypes(defPoke.species, defPoke.variantId, defender.battleForm),
     attacker.statStages, defender.statStages,
@@ -484,7 +495,7 @@ function executeFight(
 
   defPoke.hp = Math.max(0, defPoke.hp - result.damage);
   room.log.push(
-    `${attacker.nickname}의 ${atkPoke.species}: ${moveData.name}! ` +
+    `${attacker.nickname}의 ${atkPoke.species}: ${moveForCalc.name}! ` +
     (result.missed ? "빗나갔다!" : `${result.damage} 데미지!`),
   );
   if (result.message) room.log.push(result.message);
