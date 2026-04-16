@@ -215,8 +215,12 @@ function resolveTurn(room: PvpRoomState, actionA: PvpAction, actionB: PvpAction)
     const moveA = getMoveById(actionA.moveId);
     const moveB = getMoveById(actionB.moveId);
 
+    const speedA = pokemonA.statusCondition === "paralysis"
+      ? Math.floor(pokemonA.stats.speed * 0.5) : pokemonA.stats.speed;
+    const speedB = pokemonB.statusCondition === "paralysis"
+      ? Math.floor(pokemonB.stats.speed * 0.5) : pokemonB.stats.speed;
     const order = determineTurnOrder(
-      pokemonA.stats.speed, pokemonB.stats.speed,
+      speedA, speedB,
       moveA?.priority ?? 0, moveB?.priority ?? 0,
     );
 
@@ -435,9 +439,15 @@ function executeFight(
   const move = atkPoke.moves.find((m) => m.id === moveId);
   if (move && move.pp > 0) move.pp -= 1;
 
+  // ── Burn halves physical attack ──
+  let effectiveAtkStats = atkPoke.stats;
+  if (atkPoke.statusCondition === "burn" && moveData.category === "physical") {
+    effectiveAtkStats = { ...atkPoke.stats, attack: Math.floor(atkPoke.stats.attack * 0.5) };
+  }
+
   const weatherMod = room.weather ? getWeatherTypeModifier(room.weather, moveData.type) : 1;
   const result = calculateDamage(
-    atkPoke.level, atkPoke.stats, defPoke.stats, moveData,
+    atkPoke.level, effectiveAtkStats, defPoke.stats, moveData,
     getEffectiveTypes(atkPoke.species, atkPoke.variantId, attacker.battleForm),
     getEffectiveTypes(defPoke.species, defPoke.variantId, defender.battleForm),
     attacker.statStages, defender.statStages,

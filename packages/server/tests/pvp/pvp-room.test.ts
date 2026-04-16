@@ -555,3 +555,97 @@ describe("pvp stat-changing moves", () => {
     expect(room.log.some((l) => l.includes("특수방어") && l.includes("내려갔다"))).toBe(true);
   });
 });
+
+// ── Task 7: Burn Attack Reduction & Paralysis Speed Reduction ──
+describe("pvp burn and paralysis stat effects", () => {
+  it("burned pokemon deals less physical damage", () => {
+    // Create two rooms with identical pokemon, one with burned attacker, one without
+    vi.spyOn(Math, "random").mockReturnValue(0.5); // consistent random
+
+    // Room 1: Burned attacker
+    const burnedAtk: PvpPokemon = {
+      uid: "a-uid", species: "pikachu", level: 50,
+      hp: 300, maxHp: 300,
+      stats: { attack: 100, defense: 50, spAttack: 50, spDefense: 50, speed: 50 },
+      moves: [{ id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: "burn",
+    };
+    const defender1: PvpPokemon = {
+      uid: "b-uid", species: "bulbasaur", level: 50,
+      hp: 300, maxHp: 300,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 40 },
+      moves: [{ id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+    };
+    const room1 = createRoom("userA", "A", [burnedAtk, makePokemon("charizard")], "userB", "B", [defender1, makePokemon("squirtle")]);
+    selectLead(room1, "userA", 0);
+    selectLead(room1, "userB", 0);
+    submitAction(room1, "userA", { type: "fight", moveId: "tackle" });
+    submitAction(room1, "userB", { type: "fight", moveId: "tackle" });
+    const burnedDmg = 300 - room1.playerB.party[0].hp; // damage from burned attacker
+
+    // Room 2: Normal attacker
+    const normalAtk: PvpPokemon = {
+      uid: "a-uid", species: "pikachu", level: 50,
+      hp: 300, maxHp: 300,
+      stats: { attack: 100, defense: 50, spAttack: 50, spDefense: 50, speed: 50 },
+      moves: [{ id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+    };
+    const defender2: PvpPokemon = {
+      uid: "b-uid", species: "bulbasaur", level: 50,
+      hp: 300, maxHp: 300,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 40 },
+      moves: [{ id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+    };
+    const room2 = createRoom("userA", "A", [normalAtk, makePokemon("charizard")], "userB", "B", [defender2, makePokemon("squirtle")]);
+    selectLead(room2, "userA", 0);
+    selectLead(room2, "userB", 0);
+    submitAction(room2, "userA", { type: "fight", moveId: "tackle" });
+    submitAction(room2, "userB", { type: "fight", moveId: "tackle" });
+    const normalDmg = 300 - room2.playerB.party[0].hp; // damage from normal attacker
+
+    vi.restoreAllMocks();
+    // Burned physical attacker should deal strictly less damage than the same unbuffed attacker
+    expect(burnedDmg).toBeLessThan(normalDmg);
+  });
+
+  it("paralyzed fast pokemon goes after slower non-paralyzed pokemon", () => {
+    // A is fast (speed 100) but paralyzed → effective 50
+    // B is slower (speed 60) but healthy → goes first
+    const pA: PvpPokemon = {
+      uid: "a-uid", species: "pikachu", level: 50,
+      hp: 300, maxHp: 300,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 100 },
+      moves: [{ id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: "paralysis",
+    };
+    const pB: PvpPokemon = {
+      uid: "b-uid", species: "bulbasaur", level: 50,
+      hp: 300, maxHp: 300,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 60 },
+      moves: [{ id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+    };
+
+    const room = createRoom("userA", "A", [pA, makePokemon("charizard")], "userB", "B", [pB, makePokemon("squirtle")]);
+    selectLead(room, "userA", 0);
+    selectLead(room, "userB", 0);
+
+    // Mock random: 0.5 means paralysis doesn't prevent action (>= 0.25 check passes),
+    // and determineTurnOrder speed tiebreak won't matter since 60 > 50
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    submitAction(room, "userA", { type: "fight", moveId: "tackle" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    vi.restoreAllMocks();
+
+    // B should have gone first (B's tackle log appears before A's tackle log)
+    const tackleLogIndices = room.log
+      .map((l, i) => ({ l, i }))
+      .filter(({ l }) => l.includes("몸통박치기"));
+    expect(tackleLogIndices.length).toBe(2);
+    // First tackle log should be from B (who goes first due to paralysis speed reduction on A)
+    expect(tackleLogIndices[0].l).toContain("B의");
+  });
+});
