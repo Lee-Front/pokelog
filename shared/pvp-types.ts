@@ -49,6 +49,7 @@ export interface PvpRoomState {
     reason: "ko" | "forfeit" | "timeout" | "disconnect";
   };
   isAiBattle: boolean;
+  forcedSwitchNeeded?: { a: boolean; b: boolean };
 }
 
 // ── 플레이어 액션 ──
@@ -124,4 +125,5 @@ export interface PvpClientRoomView {
   log: string[];
   result?: PvpRoomState["result"];
   isAiBattle: boolean;
+  forcedSwitchNeeded?: { a: boolean; b: boolean };
 }

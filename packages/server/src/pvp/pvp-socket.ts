@@ -41,7 +41,8 @@ function startTurnTimer(io: Server, room: PvpRoomState): void {
     }
 
     // Re-read room after submitting actions (phase may now be "finished")
-    const afterRoom = getRoom(room.roomId) ?? currentRoom;
+    const freshRoom = getRoom(room.roomId);
+    const afterRoom: PvpRoomState = freshRoom ?? currentRoom;
 
     // Broadcast result
     if (afterRoom.phase === "finished" && afterRoom.result) {

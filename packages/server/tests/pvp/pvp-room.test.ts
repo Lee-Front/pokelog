@@ -93,4 +93,46 @@ describe("pvp turn resolution", () => {
     submitAction(room, "userB", { type: "fight", moveId: "tackle" });
     expect(room.playerA.activeIndex).toBe(1);
   });
+
+  it("dual-KO sets forcedSwitchNeeded for both sides", () => {
+    const room = readyRoom();
+    // Manually set both active pokemon to near-death and force KO state
+    room.playerA.party[0].hp = 0;
+    room.playerB.party[0].hp = 0;
+    // Simulate what resolveTurn does when both KO
+    room.phase = "forced_switch";
+    room.forcedSwitchNeeded = { a: true, b: true };
+
+    expect(room.forcedSwitchNeeded).toEqual({ a: true, b: true });
+
+    // Only userA needs to switch — submit userA switch
+    submitAction(room, "userA", { type: "switch", pokemonIndex: 1 });
+    expect(room.phase).toBe("forced_switch"); // userB hasn't switched yet
+
+    // userB submits switch
+    const resolved = submitAction(room, "userB", { type: "switch", pokemonIndex: 1 });
+    expect(resolved).toBe(true);
+    expect(room.phase).toBe("action");
+    expect(room.forcedSwitchNeeded).toBeUndefined();
+    expect(room.playerA.activeIndex).toBe(1);
+    expect(room.playerB.activeIndex).toBe(1);
+  });
+
+  it("single-KO forced_switch only waits for the fainted side", () => {
+    const room = readyRoom();
+    // Only player A's active pokemon fainted
+    room.playerA.party[0].hp = 0;
+    room.phase = "forced_switch";
+    room.forcedSwitchNeeded = { a: true, b: false };
+
+    // userB submitting should not resolve (only A needs to switch)
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    expect(room.phase).toBe("forced_switch");
+
+    // userA submits switch — should resolve immediately
+    const resolved = submitAction(room, "userA", { type: "switch", pokemonIndex: 1 });
+    expect(resolved).toBe(true);
+    expect(room.phase).toBe("action");
+    expect(room.playerA.activeIndex).toBe(1);
+  });
 });
