@@ -56,6 +56,14 @@ const HAZARD_MOVES: Record<string, (hazards: NonNullable<PvpPlayerState["hazards
 
 const SWITCH_AFTER_MOVES = new Set(["u-turn", "volt-switch", "flip-turn", "parting-shot"]);
 
+const TWO_TURN_MOVES = new Set([
+  "fly", "dig", "dive", "bounce", "phantom-force", "shadow-force",
+  "sky-attack", "solar-beam", "meteor-beam", "skull-bash", "razor-wind",
+]);
+const SEMI_INVULNERABLE = new Set(["fly", "dig", "dive", "bounce", "phantom-force", "shadow-force"]);
+
+const PHAZING_MOVES = new Set(["whirlwind", "roar", "dragon-tail", "circle-throw"]);
+
 export const DEFAULT_CONFIG: PvpRoomConfig = {
   levelCap: 50,
   turnTimeoutMs: 30_000,
@@ -250,6 +258,18 @@ export function submitAction(room: PvpRoomState, userId: string, action: PvpActi
 
 function resolveTurn(room: PvpRoomState, actionA: PvpAction, actionB: PvpAction): void {
   room.log = [];
+
+  // ── Reset lastDamageTaken at start of each turn ──
+  room.playerA.lastDamageTaken = undefined;
+  room.playerB.lastDamageTaken = undefined;
+
+  // ── Auto-submit charging move (two-turn moves) ──
+  if (room.playerA.chargingMove && actionA.type === "fight") {
+    actionA = { type: "fight", moveId: room.playerA.chargingMove.moveId };
+  }
+  if (room.playerB.chargingMove && actionB.type === "fight") {
+    actionB = { type: "fight", moveId: room.playerB.chargingMove.moveId };
+  }
 
   // ── Turn-based form changes (Morpeko) ──
   for (const player of [room.playerA, room.playerB]) {
@@ -447,6 +467,16 @@ function resolveTurn(room: PvpRoomState, actionA: PvpAction, actionB: PvpAction)
     // ── Item: end-of-turn effects (leftovers, flame-orb, etc.) ──
     if (poke.hp > 0) {
       triggerItemEndOfTurn({ room, player, opponent: opp, pokemon: poke });
+    }
+  }
+
+  // ── Disable / Encore volatile expiry cleanup ──
+  for (const player of [room.playerA, room.playerB]) {
+    if (player.disabledMoveId && !hasVolatile(player.volatiles, "disable")) {
+      player.disabledMoveId = undefined;
+    }
+    if (player.encoreMoveId && !hasVolatile(player.volatiles, "encore")) {
+      player.encoreMoveId = undefined;
     }
   }
 
@@ -680,6 +710,14 @@ function applySwitch(room: PvpRoomState, player: PvpPlayerState, index: number):
   // Reset choice lock on switch
   player.lockedMoveId = undefined;
 
+  // Reset new mechanic state on switch
+  player.substitute = undefined;
+  player.chargingMove = undefined;
+  player.disabledMoveId = undefined;
+  player.encoreMoveId = undefined;
+  player.lastMoveUsed = undefined;
+  player.lastDamageTaken = undefined;
+
   player.activeIndex = index;
 
   // ── Baton Pass: keep stat stages and volatiles ──
@@ -768,6 +806,28 @@ function executeFight(
     return;
   }
 
+  // ── Disable: can't use disabled move ──
+  if (attacker.disabledMoveId && moveId === attacker.disabledMoveId && hasVolatile(attacker.volatiles, "disable")) {
+    room.log.push(`${attacker.nickname}의 ${atkPoke.species}: ${moveId}은(는) 사용할 수 없다!`);
+    return;
+  }
+  // ── Encore: forced to use encored move ──
+  if (attacker.encoreMoveId && hasVolatile(attacker.volatiles, "encore")) {
+    moveId = attacker.encoreMoveId;
+    const encoreMoveData = getMoveById(moveId);
+    if (encoreMoveData) moveData = encoreMoveData;
+  }
+  // ── Taunt: can't use status moves ──
+  if (hasVolatile(attacker.volatiles, "taunt") && moveData.category === "status") {
+    room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 도발 때문에 ${moveData.name}을(를) 사용할 수 없다!`);
+    return;
+  }
+  // ── Torment: can't use same move as last turn ──
+  if (hasVolatile(attacker.volatiles, "torment") && attacker.lastMoveUsed === moveId) {
+    room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 트집 때문에 같은 기술을 쓸 수 없다!`);
+    return;
+  }
+
   // ── Defender protected check ──
   if (defenderProtected) {
     room.log.push(`${defender.nickname}의 ${defPoke.species}: 공격을 막았다!`);
@@ -806,6 +866,64 @@ function executeFight(
   }
   if (!preCheck.canAct) return;
 
+  // ── Two-Turn Moves: charge phase ──
+  if (TWO_TURN_MOVES.has(moveId) && !attacker.chargingMove) {
+    // Solar Beam skips charge in sun
+    if (!(moveId === "solar-beam" && room.weather === "sun")) {
+      attacker.chargingMove = { moveId, turn: 1 };
+      if (SEMI_INVULNERABLE.has(moveId)) {
+        attacker.volatiles = addVolatile(attacker.volatiles, "semi-invulnerable", 1);
+      }
+      room.log.push(`${attacker.nickname}의 ${atkPoke.species}: ${moveData.name} 준비 중!`);
+      attacker.lastMoveUsed = moveId;
+      return; // Don't execute yet
+    }
+  }
+  // Two-Turn Moves: execute phase (turn 2)
+  if (attacker.chargingMove && attacker.chargingMove.moveId === moveId) {
+    attacker.chargingMove = undefined;
+    attacker.volatiles = attacker.volatiles.filter(v => v.id !== "semi-invulnerable");
+    // Continue with normal execution
+  }
+
+  // ── Substitute move ──
+  if (moveId === "substitute" && atkPoke.hp > atkPoke.maxHp / 4) {
+    const cost = Math.floor(atkPoke.maxHp / 4);
+    atkPoke.hp -= cost;
+    attacker.substitute = cost;
+    room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 대타출동!`);
+    attacker.lastMoveUsed = moveId;
+    return; // skip normal damage
+  }
+
+  // ── Counter / Mirror Coat ──
+  if (moveId === "counter" && attacker.lastDamageTaken?.category === "physical") {
+    const counterDmg = attacker.lastDamageTaken.amount * 2;
+    defPoke.hp = Math.max(0, defPoke.hp - counterDmg);
+    room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 카운터! ${counterDmg} 데미지!`);
+    attacker.lastDamageTaken = undefined;
+    if (defPoke.hp <= 0) room.log.push(`${defender.nickname}의 ${defPoke.species}이(가) 쓰러졌다!`);
+    attacker.lastMoveUsed = moveId;
+    return;
+  }
+  if (moveId === "mirror-coat" && attacker.lastDamageTaken?.category === "special") {
+    const mirrorDmg = attacker.lastDamageTaken.amount * 2;
+    defPoke.hp = Math.max(0, defPoke.hp - mirrorDmg);
+    room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 미러코트! ${mirrorDmg} 데미지!`);
+    attacker.lastDamageTaken = undefined;
+    if (defPoke.hp <= 0) room.log.push(`${defender.nickname}의 ${defPoke.species}이(가) 쓰러졌다!`);
+    attacker.lastMoveUsed = moveId;
+    return;
+  }
+
+  // ── Destiny Bond ──
+  if (moveId === "destiny-bond") {
+    attacker.volatiles = addVolatile(attacker.volatiles, "destiny-bond", 2);
+    room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 운명의끈!`);
+    attacker.lastMoveUsed = moveId;
+    return;
+  }
+
   // ── Execute move (with Struggle fallback) ──
   const move = atkPoke.moves.find((m) => m.id === moveId);
   const allPpDepleted = atkPoke.moves.every((m) => m.pp <= 0);
@@ -824,11 +942,19 @@ function executeFight(
     power: 50, accuracy: 100, pp: 1, description: "",
   } : moveData;
 
+  // ── Semi-invulnerable: most moves miss against semi-invulnerable defender ──
+  if (hasVolatile(defender.volatiles, "semi-invulnerable")) {
+    room.log.push(`${attacker.nickname}의 ${atkPoke.species}: ${effectiveMoveData.name}! 빗나갔다!`);
+    attacker.lastMoveUsed = moveId;
+    return;
+  }
+
   // ── Accuracy check with stat stages (before damage calc) ──
   if (effectiveMoveData.accuracy > 0 && effectiveMoveData.accuracy <= 100) {
     const effectiveAcc = calculateAccuracy(effectiveMoveData.accuracy, attacker.statStages.accuracy, defender.statStages.evasion);
     if (Math.random() * 100 >= effectiveAcc) {
       room.log.push(`${attacker.nickname}의 ${atkPoke.species}: ${effectiveMoveData.name}! 빗나갔다!`);
+      attacker.lastMoveUsed = moveId;
       return;
     }
   }
@@ -844,11 +970,36 @@ function executeFight(
   if (fixedDmg != null && !isStruggle) {
     isFixedDamage = true;
     const damage = fixedDmg === "level" ? atkPoke.level : fixedDmg;
-    defPoke.hp = Math.max(0, defPoke.hp - damage);
-    totalDamage = damage;
-    hitsMade = 1;
-    room.log.push(`${attacker.nickname}의 ${atkPoke.species}: ${effectiveMoveData.name}! ${damage} 데미지!`);
-    if (defPoke.hp <= 0) room.log.push(`${defender.nickname}의 ${defPoke.species}이(가) 쓰러졌다!`);
+    // ── Substitute absorption for fixed damage ──
+    if (defender.substitute && defender.substitute > 0) {
+      defender.substitute -= damage;
+      if (defender.substitute <= 0) {
+        defender.substitute = undefined;
+        room.log.push(`${defender.nickname}의 대타 인형이 부서졌다!`);
+      } else {
+        room.log.push(`대타 인형이 대신 맞았다!`);
+      }
+      totalDamage = damage;
+      hitsMade = 1;
+      room.log.push(`${attacker.nickname}의 ${atkPoke.species}: ${effectiveMoveData.name}! ${damage} 데미지!`);
+    } else {
+      defPoke.hp = Math.max(0, defPoke.hp - damage);
+      totalDamage = damage;
+      hitsMade = 1;
+      // ── Record lastDamageTaken for Counter / Mirror Coat ──
+      if (damage > 0) {
+        defender.lastDamageTaken = { amount: damage, category: effectiveMoveData.category as "physical" | "special" };
+      }
+      room.log.push(`${attacker.nickname}의 ${atkPoke.species}: ${effectiveMoveData.name}! ${damage} 데미지!`);
+      if (defPoke.hp <= 0) {
+        // ── Destiny Bond: if defender faints with destiny-bond, attacker also faints ──
+        if (hasVolatile(defender.volatiles, "destiny-bond")) {
+          atkPoke.hp = 0;
+          room.log.push(`${atkPoke.species}: 운명의끈에 의해 쓰러졌다!`);
+        }
+        room.log.push(`${defender.nickname}의 ${defPoke.species}이(가) 쓰러졌다!`);
+      }
+    }
   }
 
   if (!isFixedDamage) {
@@ -913,6 +1064,20 @@ function executeFight(
             finalDamage = Math.floor(finalDamage * 0.5);
           }
         }
+        // ── Substitute absorption ──
+        if (defender.substitute && defender.substitute > 0) {
+          defender.substitute -= finalDamage;
+          if (defender.substitute <= 0) {
+            defender.substitute = undefined;
+            room.log.push(`${defender.nickname}의 대타 인형이 부서졌다!`);
+          } else {
+            room.log.push(`대타 인형이 대신 맞았다!`);
+          }
+          totalDamage += finalDamage;
+          hitsMade++;
+          if (result.critical) room.log.push("급소에 맞았다!");
+          continue; // skip actual HP damage and status application
+        }
         // ── Item: prevent KO check (focus-sash etc.) ──
         if (finalDamage >= defPoke.hp && defPoke.hp > 0) {
           const prevented = checkItemPreventKO({ room, defender, defPoke, damage: finalDamage });
@@ -922,6 +1087,10 @@ function executeFight(
           }
         }
         defPoke.hp = Math.max(0, defPoke.hp - finalDamage);
+        // ── Record lastDamageTaken for Counter / Mirror Coat ──
+        if (finalDamage > 0) {
+          defender.lastDamageTaken = { amount: finalDamage, category: effectiveMoveData.category as "physical" | "special" };
+        }
         totalDamage += finalDamage;
         hitsMade++;
         if (result.critical) room.log.push("급소에 맞았다!");
@@ -1279,6 +1448,49 @@ function executeFight(
   }
 
   if (!isFixedDamage && defPoke.hp <= 0) {
+    // ── Destiny Bond: if defender faints with destiny-bond, attacker also faints ──
+    if (hasVolatile(defender.volatiles, "destiny-bond")) {
+      atkPoke.hp = 0;
+      room.log.push(`${atkPoke.species}: 운명의끈에 의해 쓰러졌다!`);
+    }
     room.log.push(`${defender.nickname}의 ${defPoke.species}이(가) 쓰러졌다!`);
   }
+
+  // ── Phazing (Whirlwind, Roar, Dragon Tail, Circle Throw) ──
+  if (!isStruggle && PHAZING_MOVES.has(moveId) && hitsMade >= 0 && defPoke.hp > 0) {
+    // whirlwind/roar are status moves so hitsMade may be 0, but they still phaze
+    const aliveOthers = defender.party
+      .map((p, i) => ({ p, i }))
+      .filter(({ p, i }) => i !== defender.activeIndex && p.hp > 0);
+    if (aliveOthers.length > 0) {
+      const target = aliveOthers[Math.floor(Math.random() * aliveOthers.length)];
+      applySwitch(room, defender, target.i);
+      room.log.push(`${defender.nickname}의 ${defPoke.species}이(가) 끌려나갔다!`);
+    }
+  }
+
+  // ── Disable / Encore / Taunt / Torment application ──
+  if (!isStruggle && defPoke.hp > 0) {
+    if (moveId === "disable" && defender.lastMoveUsed) {
+      defender.volatiles = addVolatile(defender.volatiles, "disable", 4);
+      defender.disabledMoveId = defender.lastMoveUsed;
+      room.log.push(`${defender.nickname}의 ${defPoke.species}: ${defender.lastMoveUsed}이(가) 사슬묶기 됐다!`);
+    }
+    if (moveId === "encore" && defender.lastMoveUsed) {
+      defender.volatiles = addVolatile(defender.volatiles, "encore", 3);
+      defender.encoreMoveId = defender.lastMoveUsed;
+      room.log.push(`${defender.nickname}의 ${defPoke.species}: 앵콜!`);
+    }
+    if (moveId === "taunt") {
+      defender.volatiles = addVolatile(defender.volatiles, "taunt", 3);
+      room.log.push(`${defender.nickname}의 ${defPoke.species}: 도발 당했다!`);
+    }
+    if (moveId === "torment") {
+      defender.volatiles = addVolatile(defender.volatiles, "torment", -1);
+      room.log.push(`${defender.nickname}의 ${defPoke.species}: 트집!`);
+    }
+  }
+
+  // ── Record last move used ──
+  attacker.lastMoveUsed = moveId;
 }

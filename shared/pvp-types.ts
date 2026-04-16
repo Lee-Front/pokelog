@@ -51,6 +51,12 @@ export interface PvpPlayerState {
   hasDynamaxBand?: boolean;
   protectCount?: number;
   lockedMoveId?: string;
+  substitute?: number;                // remaining HP of substitute doll
+  chargingMove?: { moveId: string; turn: number };  // two-turn move state
+  lastDamageTaken?: { amount: number; category: "physical" | "special" };
+  disabledMoveId?: string;
+  encoreMoveId?: string;
+  lastMoveUsed?: string;
   screens?: {
     reflect?: number;      // turns remaining
     lightScreen?: number;  // turns remaining
