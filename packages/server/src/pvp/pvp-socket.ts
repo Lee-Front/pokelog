@@ -8,7 +8,10 @@ import {
 } from "./pvp-room.js";
 import { chooseAiAction } from "./pvp-ai.js";
 import { recordMatch } from "./pvp-store.js";
-import type { PvpPokemon, PvpAction, PvpRoomState } from "../../../../shared/pvp-types.js";
+import { getMegaVariantForItem, checkPrimalReversion, applyGmaxHp } from "../game/battle-transformations.js";
+import { buildStatsForPokemon } from "../game/pokemon-stats.js";
+import { getVariants } from "../game/data-loader.js";
+import type { PvpPokemon, PvpTransformForm, PvpAction, PvpRoomState } from "../../../../shared/pvp-types.js";
 import type { OwnedPokemon } from "../../../../shared/types.js";
 
 // socketId → { userId, roomId }
@@ -67,7 +70,9 @@ export function clearTurnTimer(roomId: string): void {
   }
 }
 
-function userPartyToPvp(user: { pokemon: OwnedPokemon[]; party: string[] }): PvpPokemon[] {
+function userPartyToPvp(
+  user: { pokemon: OwnedPokemon[]; party: string[]; inventory?: Record<string, number> },
+): { party: PvpPokemon[]; hasKeyStone: boolean; hasDynamaxBand: boolean } {
   const partyPokemon = user.party
     .map((uid) => user.pokemon.find((p) => p.uid === uid))
     .filter((p): p is OwnedPokemon => p != null && p.hp > 0);
@@ -80,14 +85,77 @@ function userPartyToPvp(user: { pokemon: OwnedPokemon[]; party: string[] }): Pvp
     return true;
   });
 
-  return unique
-    .map((p) => ({
+  const inv = user.inventory ?? {};
+  const hasKeyStone = (inv["key-stone"] ?? 0) > 0;
+  const hasDynamaxBand = (inv["dynamax-band"] ?? 0) > 0;
+
+  const party = unique.map((p) => {
+    const level = Math.min(p.level, 50);
+    const base: PvpPokemon = {
       uid: p.uid, species: p.species, variantId: p.variantId,
-      level: Math.min(p.level, 50),
+      level,
       hp: p.maxHp, maxHp: p.maxHp, // PvP starts at full HP
       stats: { ...p.stats }, moves: p.moves.map((m) => ({ ...m, pp: m.maxPp })),
       statusCondition: null, nature: p.nature, abilityId: p.abilityId, isShiny: p.isShiny,
-    }));
+      heldItem: p.heldItem ?? null,
+      hasGigantamaxFactor: p.hasGigantamaxFactor ?? false,
+      megaForm: null,
+      gmaxForm: null,
+      primalForm: null,
+    };
+
+    // Use a pokemon-like object at the capped level for stat calculations
+    const pokemonForStats = { species: p.species, level, nature: p.nature, variantId: p.variantId };
+
+    // ── Mega form pre-computation ──
+    if (p.species === "rayquaza") {
+      // Rayquaza special case: needs dragon-ascent move, no mega stone required
+      const hasDragonAscent = p.moves.some((m) => m.id === "dragon-ascent");
+      if (hasDragonAscent) {
+        try {
+          const megaStats = buildStatsForPokemon(pokemonForStats, "rayquaza-mega");
+          base.megaForm = { variantId: "rayquaza-mega", maxHp: megaStats.maxHp, stats: megaStats.stats };
+        } catch { /* variant data unavailable */ }
+      }
+    } else if (p.heldItem) {
+      const megaVariantId = getMegaVariantForItem(p.species, p.heldItem);
+      if (megaVariantId) {
+        try {
+          const megaStats = buildStatsForPokemon(pokemonForStats, megaVariantId);
+          base.megaForm = { variantId: megaVariantId, maxHp: megaStats.maxHp, stats: megaStats.stats };
+        } catch { /* variant data unavailable */ }
+      }
+    }
+
+    // ── Gmax form pre-computation ──
+    if (p.hasGigantamaxFactor) {
+      const variantPrefix = p.variantId ?? p.species;
+      const gmaxVariantId = `${variantPrefix}-gmax`;
+      const variant = getVariants().find(
+        (v) => v.id === gmaxVariantId && v.category === "gigantamax",
+      );
+      if (variant) {
+        try {
+          const gmaxStats = buildStatsForPokemon(pokemonForStats, gmaxVariantId);
+          const boosted = applyGmaxHp(gmaxStats.maxHp, gmaxStats.maxHp);
+          base.gmaxForm = { variantId: gmaxVariantId, maxHp: boosted.maxHp, stats: gmaxStats.stats };
+        } catch { /* variant data unavailable */ }
+      }
+    }
+
+    // ── Primal form pre-computation ──
+    const primalVariantId = checkPrimalReversion(p as any);
+    if (primalVariantId) {
+      try {
+        const primalStats = buildStatsForPokemon(pokemonForStats, primalVariantId);
+        base.primalForm = { variantId: primalVariantId, maxHp: primalStats.maxHp, stats: primalStats.stats };
+      } catch { /* variant data unavailable */ }
+    }
+
+    return base;
+  });
+
+  return { party, hasKeyStone, hasDynamaxBand };
 }
 
 export function setupPvpSocket(io: Server): void {
@@ -117,9 +185,14 @@ export function setupPvpSocket(io: Server): void {
         const userB = await getUser(b.userId);
         if (!userA || !userB) return;
 
+        const pvpA = userPartyToPvp(userA);
+        const pvpB = userPartyToPvp(userB);
         const room = createRoom(
-          a.userId, a.nickname, userPartyToPvp(userA),
-          b.userId, b.nickname, userPartyToPvp(userB),
+          a.userId, a.nickname, pvpA.party,
+          b.userId, b.nickname, pvpB.party,
+          false,
+          { hasKeyStone: pvpA.hasKeyStone, hasDynamaxBand: pvpA.hasDynamaxBand },
+          { hasKeyStone: pvpB.hasKeyStone, hasDynamaxBand: pvpB.hasDynamaxBand },
         );
 
         const sockA = io.sockets.sockets.get(a.socketId);
@@ -150,9 +223,12 @@ export function setupPvpSocket(io: Server): void {
       const user = await getUser(state.userId);
       if (!user) return;
 
+      const pvpData = userPartyToPvp(user);
       const room = createRoom(
-        state.userId, user.account.nickname, userPartyToPvp(user),
+        state.userId, user.account.nickname, pvpData.party,
         "__waiting__", "대기 중...", [],
+        false,
+        { hasKeyStone: pvpData.hasKeyStone, hasDynamaxBand: pvpData.hasDynamaxBand },
       );
       state.roomId = room.roomId;
       socket.join(room.roomId);
@@ -172,9 +248,12 @@ export function setupPvpSocket(io: Server): void {
         return;
       }
 
+      const pvpB = userPartyToPvp(user);
       room.playerB.userId = state.userId;
       room.playerB.nickname = user.account.nickname;
-      room.playerB.party = userPartyToPvp(user);
+      room.playerB.party = pvpB.party;
+      room.playerB.hasKeyStone = pvpB.hasKeyStone;
+      room.playerB.hasDynamaxBand = pvpB.hasDynamaxBand;
       state.roomId = room.roomId;
       socket.join(room.roomId);
 
@@ -192,17 +271,24 @@ export function setupPvpSocket(io: Server): void {
       const user = await getUser(state.userId);
       if (!user) return;
 
-      const myParty = userPartyToPvp(user);
+      const pvpData = userPartyToPvp(user);
       // AI party = deep copy of user party (mirror match)
-      const aiParty = myParty.map((p) => ({
+      const deepCopyForm = (f: PvpTransformForm | null | undefined): PvpTransformForm | null =>
+        f ? { variantId: f.variantId, maxHp: f.maxHp, stats: { ...f.stats } } : null;
+      const aiParty = pvpData.party.map((p) => ({
         ...p, uid: "ai-" + p.uid,
         stats: { ...p.stats },
         moves: p.moves.map((m) => ({ ...m })),
+        megaForm: deepCopyForm(p.megaForm),
+        gmaxForm: deepCopyForm(p.gmaxForm),
+        primalForm: deepCopyForm(p.primalForm),
       }));
 
       const room = createRoom(
-        state.userId, user.account.nickname, myParty,
+        state.userId, user.account.nickname, pvpData.party,
         "__ai__", "AI 트레이너", aiParty, true,
+        { hasKeyStone: pvpData.hasKeyStone, hasDynamaxBand: pvpData.hasDynamaxBand },
+        { hasKeyStone: pvpData.hasKeyStone, hasDynamaxBand: pvpData.hasDynamaxBand },
       );
       state.roomId = room.roomId;
       socket.join(room.roomId);

@@ -31,7 +31,10 @@ export function deleteRoom(roomId: string): void {
   rooms.delete(roomId);
 }
 
-function makePlayer(userId: string, nickname: string, party: PvpPokemon[]): PvpPlayerState {
+function makePlayer(
+  userId: string, nickname: string, party: PvpPokemon[],
+  hasKeyStone = false, hasDynamaxBand = false,
+): PvpPlayerState {
   return {
     userId, nickname, party,
     activeIndex: 0,
@@ -39,6 +42,9 @@ function makePlayer(userId: string, nickname: string, party: PvpPokemon[]): PvpP
     volatiles: [],
     ready: false,
     actionSubmitted: false,
+    hasKeyStone,
+    hasDynamaxBand,
+    transformationUsed: false,
   };
 }
 
@@ -46,13 +52,15 @@ export function createRoom(
   userIdA: string, nickA: string, partyA: PvpPokemon[],
   userIdB: string, nickB: string, partyB: PvpPokemon[],
   isAi = false,
+  keysA = { hasKeyStone: false, hasDynamaxBand: false },
+  keysB = { hasKeyStone: false, hasDynamaxBand: false },
 ): PvpRoomState {
   const room: PvpRoomState = {
     roomId: crypto.randomUUID(),
     turn: 0,
     phase: "team_preview",
-    playerA: makePlayer(userIdA, nickA, partyA),
-    playerB: makePlayer(userIdB, nickB, partyB),
+    playerA: makePlayer(userIdA, nickA, partyA, keysA.hasKeyStone, keysA.hasDynamaxBand),
+    playerB: makePlayer(userIdB, nickB, partyB, keysB.hasKeyStone, keysB.hasDynamaxBand),
     turnDeadline: null,
     log: [],
     isAiBattle: isAi,
