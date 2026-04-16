@@ -39,5 +39,15 @@ export function chooseAiAction(ai: PvpPlayerState, opponent: PvpPlayerState): Pv
     }
   }
 
+  const canMega = !ai.transformationUsed && ai.hasKeyStone && myPoke.megaForm != null;
+  const canGmax = !ai.transformationUsed && ai.hasDynamaxBand && myPoke.gmaxForm != null;
+
+  if (canMega) {
+    return { type: "fight", moveId: scored[0].moveId, mega: true };
+  }
+  if (canGmax) {
+    return { type: "fight", moveId: scored[0].moveId, gigantamax: true };
+  }
+
   return { type: "fight", moveId: scored[0].moveId };
 }

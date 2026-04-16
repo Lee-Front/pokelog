@@ -45,4 +45,46 @@ describe("pvp-ai", () => {
       }
     }
   });
+
+  it("uses mega evolution when available and not yet used", () => {
+    const poke = makePoke("charizard");
+    poke.megaForm = { variantId: "charizard-mega-x", maxHp: 120, stats: poke.stats };
+    const ai = makeState([poke]);
+    ai.hasKeyStone = true;
+    ai.transformationUsed = false;
+    const opp = makeState([makePoke("bulbasaur")]);
+    const action = chooseAiAction(ai, opp);
+    expect(action.type).toBe("fight");
+    if (action.type === "fight") {
+      expect(action.mega).toBe(true);
+    }
+  });
+
+  it("does NOT mega evolve if transformation already used", () => {
+    const poke = makePoke("charizard");
+    poke.megaForm = { variantId: "charizard-mega-x", maxHp: 120, stats: poke.stats };
+    const ai = makeState([poke]);
+    ai.hasKeyStone = true;
+    ai.transformationUsed = true;
+    const opp = makeState([makePoke("bulbasaur")]);
+    const action = chooseAiAction(ai, opp);
+    expect(action.type).toBe("fight");
+    if (action.type === "fight") {
+      expect(action.mega).toBeUndefined();
+    }
+  });
+
+  it("uses gigantamax when available and not yet used", () => {
+    const poke = makePoke("pikachu");
+    poke.gmaxForm = { variantId: "pikachu-gmax", maxHp: 130, stats: poke.stats };
+    const ai = makeState([poke]);
+    ai.hasDynamaxBand = true;
+    ai.transformationUsed = false;
+    const opp = makeState([makePoke("bulbasaur")]);
+    const action = chooseAiAction(ai, opp);
+    expect(action.type).toBe("fight");
+    if (action.type === "fight") {
+      expect(action.gigantamax).toBe(true);
+    }
+  });
 });
