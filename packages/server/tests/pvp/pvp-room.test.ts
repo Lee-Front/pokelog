@@ -1607,3 +1607,436 @@ describe("pvp baton pass", () => {
     expect(room.phase).toBe("action");
   });
 });
+
+// ══════════════════════════════════════════════════════════════
+// ── Flinch Mechanic ──
+// ══════════════════════════════════════════════════════════════
+describe("pvp flinch", () => {
+  function readyRoom() {
+    // A is faster (speed 80) so A's iron-head can flinch B
+    const pokeA: PvpPokemon = {
+      uid: "a-uid", species: "steelix", level: 50, hp: 200, maxHp: 200,
+      stats: { attack: 80, defense: 50, spAttack: 50, spDefense: 50, speed: 80 },
+      moves: [{ id: "iron-head", pp: 15, maxPp: 15 }, { id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+    };
+    const pokeB: PvpPokemon = {
+      uid: "b-uid", species: "slowpoke", level: 50, hp: 200, maxHp: 200,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 20 },
+      moves: [{ id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+    };
+    const room = createRoom("userA", "A", [pokeA, makePokemon("charizard")], "userB", "B", [pokeB, makePokemon("squirtle")]);
+    selectLead(room, "userA", 0);
+    selectLead(room, "userB", 0);
+    return room;
+  }
+
+  it("faster pokemon with iron-head can flinch slower opponent", () => {
+    const room = readyRoom();
+    // Mock random: first calls for accuracy/crit/damage, then flinch chance
+    // We need flinch to trigger. iron-head has flinchChance=30, so random*100 < 30 means random < 0.3
+    // random() < 0.5 for turn order (A is faster so goes first regardless)
+    // random() for damage roll, then random() < 0.3 for flinch
+    vi.spyOn(Math, "random").mockReturnValue(0.1); // 0.1 < 0.3 → flinch triggers; 0.1*100 < 100 → hits
+    submitAction(room, "userA", { type: "fight", moveId: "iron-head" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+
+    // B should have been flinched (log should contain flinch message)
+    expect(room.log.some(l => l.includes("풀이 죽어 움직일 수 없다"))).toBe(true);
+    vi.restoreAllMocks();
+  });
+
+  it("flinch does NOT trigger when random is above flinchChance threshold", () => {
+    const room = readyRoom();
+    // random = 0.5 → 0.5*100=50 which is NOT < 30 → no flinch
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    submitAction(room, "userA", { type: "fight", moveId: "iron-head" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+
+    expect(room.log.some(l => l.includes("풀이 죽어 움직일 수 없다"))).toBe(false);
+    vi.restoreAllMocks();
+  });
+
+  it("inner-focus blocks flinch", () => {
+    const room = readyRoom();
+    room.playerB.party[0].abilityId = "inner-focus";
+    vi.spyOn(Math, "random").mockReturnValue(0.1); // would flinch, but inner focus blocks
+    submitAction(room, "userA", { type: "fight", moveId: "iron-head" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+
+    // B should NOT have been flinched thanks to inner focus
+    expect(room.log.some(l => l.includes("풀이 죽어 움직일 수 없다"))).toBe(false);
+    vi.restoreAllMocks();
+  });
+});
+
+// ══════════════════════════════════════════════════════════════
+// ── Choice Item Lock ──
+// ══════════════════════════════════════════════════════════════
+describe("pvp choice lock", () => {
+  function readyRoom() {
+    const pokeA: PvpPokemon = {
+      uid: "a-uid", species: "machamp", level: 50, hp: 200, maxHp: 200,
+      stats: { attack: 80, defense: 50, spAttack: 50, spDefense: 50, speed: 50 },
+      moves: [
+        { id: "tackle", pp: 35, maxPp: 35 },
+        { id: "iron-head", pp: 15, maxPp: 15 },
+      ],
+      statusCondition: null,
+      heldItem: "choice-band",
+    };
+    const pokeB: PvpPokemon = {
+      uid: "b-uid", species: "slowpoke", level: 50, hp: 200, maxHp: 200,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 50 },
+      moves: [{ id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+    };
+    const room = createRoom("userA", "A", [pokeA, makePokemon("charizard")], "userB", "B", [pokeB, makePokemon("squirtle")]);
+    selectLead(room, "userA", 0);
+    selectLead(room, "userB", 0);
+    return room;
+  }
+
+  it("choice-band locks pokemon to first move used", () => {
+    const room = readyRoom();
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+
+    // Turn 1: use tackle with choice band
+    submitAction(room, "userA", { type: "fight", moveId: "tackle" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+
+    expect(room.playerA.lockedMoveId).toBe("tackle");
+
+    // Turn 2: try to use iron-head, but should be forced to tackle
+    submitAction(room, "userA", { type: "fight", moveId: "iron-head" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+
+    // The log should show tackle was used (locked), not iron-head
+    // Check that tackle PP decreased further (it was used again)
+    // iron-head PP should NOT have decreased beyond initial
+    expect(room.playerA.lockedMoveId).toBe("tackle");
+    vi.restoreAllMocks();
+  });
+
+  it("switching resets choice lock", () => {
+    const room = readyRoom();
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+
+    // Turn 1: use tackle → locked
+    submitAction(room, "userA", { type: "fight", moveId: "tackle" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    expect(room.playerA.lockedMoveId).toBe("tackle");
+
+    // Turn 2: switch out
+    submitAction(room, "userA", { type: "switch", pokemonIndex: 1 });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    expect(room.playerA.lockedMoveId).toBeUndefined();
+
+    vi.restoreAllMocks();
+  });
+});
+
+// ══════════════════════════════════════════════════════════════
+// ── Reflect / Light Screen ──
+// ══════════════════════════════════════════════════════════════
+describe("pvp screens", () => {
+  function readyRoom() {
+    const pokeA: PvpPokemon = {
+      uid: "a-uid", species: "alakazam", level: 50, hp: 200, maxHp: 200,
+      stats: { attack: 50, defense: 50, spAttack: 80, spDefense: 50, speed: 80 },
+      moves: [
+        { id: "reflect", pp: 20, maxPp: 20 },
+        { id: "light-screen", pp: 20, maxPp: 20 },
+        { id: "tackle", pp: 35, maxPp: 35 },
+      ],
+      statusCondition: null,
+    };
+    const pokeB: PvpPokemon = {
+      uid: "b-uid", species: "machamp", level: 50, hp: 200, maxHp: 200,
+      stats: { attack: 80, defense: 50, spAttack: 50, spDefense: 50, speed: 20 },
+      moves: [{ id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+    };
+    const room = createRoom("userA", "A", [pokeA, makePokemon("charizard")], "userB", "B", [pokeB, makePokemon("squirtle")]);
+    selectLead(room, "userA", 0);
+    selectLead(room, "userB", 0);
+    return room;
+  }
+
+  it("reflect halves physical damage", () => {
+    const room = readyRoom();
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+
+    // Turn 1: A uses reflect, B uses tackle (A is faster)
+    submitAction(room, "userA", { type: "fight", moveId: "reflect" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+
+    expect(room.playerA.screens?.reflect).toBeDefined();
+    const hpAfterReflect = room.playerA.party[0].hp;
+
+    // Turn 2: B uses tackle again (with reflect active)
+    // Save HP before
+    const hpBefore = hpAfterReflect;
+    submitAction(room, "userA", { type: "fight", moveId: "tackle" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    const hpAfterScreened = room.playerA.party[0].hp;
+    const screenedDamage = hpBefore - hpAfterScreened;
+
+    // Now remove reflect and take another hit for comparison
+    room.playerA.screens = undefined;
+    const hpBefore2 = room.playerA.party[0].hp;
+    submitAction(room, "userA", { type: "fight", moveId: "tackle" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    const unscreenedDamage = hpBefore2 - room.playerA.party[0].hp;
+
+    // Screened damage should be roughly half of unscreened
+    // Allow some tolerance due to random damage roll being mocked to same value
+    expect(screenedDamage).toBeLessThan(unscreenedDamage);
+    expect(screenedDamage).toBeCloseTo(Math.floor(unscreenedDamage * 0.5), -1);
+
+    vi.restoreAllMocks();
+  });
+
+  it("screens expire after 5 turns", () => {
+    const room = readyRoom();
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+
+    // Turn 1: set reflect
+    submitAction(room, "userA", { type: "fight", moveId: "reflect" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    expect(room.playerA.screens?.reflect).toBe(4); // 5 - 1 tick at end of turn
+
+    // 4 more turns
+    for (let i = 0; i < 4; i++) {
+      submitAction(room, "userA", { type: "fight", moveId: "tackle" });
+      submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    }
+
+    // Reflect should have expired
+    expect(room.playerA.screens?.reflect).toBeUndefined();
+    expect(room.log.some(l => l.includes("리플렉터가 사라졌다"))).toBe(true);
+
+    vi.restoreAllMocks();
+  });
+
+  it("brick-break removes screens", () => {
+    const room = readyRoom();
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+
+    // A sets reflect
+    submitAction(room, "userA", { type: "fight", moveId: "reflect" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    expect(room.playerA.screens?.reflect).toBeDefined();
+
+    // Give B brick-break
+    room.playerB.party[0].moves = [{ id: "brick-break", pp: 15, maxPp: 15 }];
+
+    // B uses brick-break → should destroy A's reflect
+    submitAction(room, "userA", { type: "fight", moveId: "tackle" });
+    submitAction(room, "userB", { type: "fight", moveId: "brick-break" });
+    expect(room.playerA.screens).toBeUndefined();
+    expect(room.log.some(l => l.includes("벽이 부서졌다"))).toBe(true);
+
+    vi.restoreAllMocks();
+  });
+});
+
+// ══════════════════════════════════════════════════════════════
+// ── Trick Room ──
+// ══════════════════════════════════════════════════════════════
+describe("pvp trick room", () => {
+  function readyRoom() {
+    // A is slower (speed 20), B is faster (speed 80)
+    const pokeA: PvpPokemon = {
+      uid: "a-uid", species: "bronzong", level: 50, hp: 200, maxHp: 200,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 20 },
+      moves: [{ id: "trick-room", pp: 5, maxPp: 5 }, { id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+    };
+    const pokeB: PvpPokemon = {
+      uid: "b-uid", species: "jolteon", level: 50, hp: 200, maxHp: 200,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 80 },
+      moves: [{ id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+    };
+    const room = createRoom("userA", "A", [pokeA, makePokemon("charizard")], "userB", "B", [pokeB, makePokemon("squirtle")]);
+    selectLead(room, "userA", 0);
+    selectLead(room, "userB", 0);
+    return room;
+  }
+
+  it("trick-room reverses speed order (slower goes first)", () => {
+    const room = readyRoom();
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+
+    // Turn 1: trick-room has priority -7, so it goes LAST. B goes first normally.
+    // After turn 1, trick room is active.
+    submitAction(room, "userA", { type: "fight", moveId: "trick-room" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    expect(room.trickRoom).toBe(4); // 5 - 1 tick
+
+    // Turn 2: both use tackle. A (speed 20) should go first under trick room.
+    // Record HP before to see who dealt damage first
+    const hpBBefore = room.playerB.party[0].hp;
+    submitAction(room, "userA", { type: "fight", moveId: "tackle" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+
+    // If A went first (trick room), B took damage from A's tackle.
+    // Check that trick room is working by verifying the log order.
+    // A's attack should appear before B's attack in the log.
+    const aAttackIdx = room.log.findIndex(l => l.includes("A") && l.includes("몸통박치기"));
+    const bAttackIdx = room.log.findIndex(l => l.includes("B") && l.includes("몸통박치기"));
+    expect(aAttackIdx).toBeLessThan(bAttackIdx);
+
+    vi.restoreAllMocks();
+  });
+
+  it("trick room expires after 5 turns", () => {
+    const room = readyRoom();
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+
+    // Turn 1: activate trick room
+    submitAction(room, "userA", { type: "fight", moveId: "trick-room" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    expect(room.trickRoom).toBe(4);
+
+    // 4 more turns
+    for (let i = 0; i < 4; i++) {
+      submitAction(room, "userA", { type: "fight", moveId: "tackle" });
+      submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    }
+
+    expect(room.trickRoom).toBeUndefined();
+    vi.restoreAllMocks();
+  });
+});
+
+// ══════════════════════════════════════════════════════════════
+// ── Tailwind ──
+// ══════════════════════════════════════════════════════════════
+describe("pvp tailwind", () => {
+  function readyRoom() {
+    // A is slower (speed 30), B is faster (speed 50)
+    const pokeA: PvpPokemon = {
+      uid: "a-uid", species: "togekiss", level: 50, hp: 200, maxHp: 200,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 30 },
+      moves: [{ id: "tailwind", pp: 15, maxPp: 15 }, { id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+    };
+    const pokeB: PvpPokemon = {
+      uid: "b-uid", species: "machamp", level: 50, hp: 200, maxHp: 200,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 50 },
+      moves: [{ id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+    };
+    const room = createRoom("userA", "A", [pokeA, makePokemon("charizard")], "userB", "B", [pokeB, makePokemon("squirtle")]);
+    selectLead(room, "userA", 0);
+    selectLead(room, "userB", 0);
+    return room;
+  }
+
+  it("tailwind doubles speed for 4 turns", () => {
+    const room = readyRoom();
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+
+    // Turn 1: A uses tailwind (B goes first since B is faster)
+    submitAction(room, "userA", { type: "fight", moveId: "tailwind" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    expect(room.playerA.tailwind).toBe(3); // 4 - 1 tick at end
+
+    // Turn 2: A (speed 30*2=60) vs B (speed 50). A should go first now.
+    submitAction(room, "userA", { type: "fight", moveId: "tackle" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+
+    // A's attack should appear before B's (A is now faster with tailwind)
+    const aAttackIdx = room.log.findIndex(l => l.includes("A") && l.includes("몸통박치기"));
+    const bAttackIdx = room.log.findIndex(l => l.includes("B") && l.includes("몸통박치기"));
+    expect(aAttackIdx).toBeLessThan(bAttackIdx);
+
+    vi.restoreAllMocks();
+  });
+
+  it("tailwind expires after 4 turns", () => {
+    const room = readyRoom();
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+
+    // Turn 1: set tailwind
+    submitAction(room, "userA", { type: "fight", moveId: "tailwind" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    expect(room.playerA.tailwind).toBe(3);
+
+    // 3 more turns
+    for (let i = 0; i < 3; i++) {
+      submitAction(room, "userA", { type: "fight", moveId: "tackle" });
+      submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    }
+
+    expect(room.playerA.tailwind).toBeUndefined();
+    expect(room.log.some(l => l.includes("순풍이 그쳤다"))).toBe(true);
+
+    vi.restoreAllMocks();
+  });
+});
+
+// ══════════════════════════════════════════════════════════════
+// ── Yawn ──
+// ══════════════════════════════════════════════════════════════
+describe("pvp yawn", () => {
+  function readyRoom() {
+    const pokeA: PvpPokemon = {
+      uid: "a-uid", species: "snorlax", level: 50, hp: 200, maxHp: 200,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 50 },
+      moves: [{ id: "yawn", pp: 10, maxPp: 10 }, { id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+    };
+    const pokeB: PvpPokemon = {
+      uid: "b-uid", species: "machamp", level: 50, hp: 200, maxHp: 200,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 50 },
+      moves: [{ id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+    };
+    const room = createRoom("userA", "A", [pokeA, makePokemon("charizard")], "userB", "B", [pokeB, makePokemon("squirtle")]);
+    selectLead(room, "userA", 0);
+    selectLead(room, "userB", 0);
+    return room;
+  }
+
+  it("yawn puts opponent to sleep after 1 turn", () => {
+    const room = readyRoom();
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+
+    // Turn 1: A uses yawn on B
+    submitAction(room, "userA", { type: "fight", moveId: "yawn" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    expect(room.log.some(l => l.includes("졸음"))).toBe(true);
+
+    // B should have yawn volatile
+    const hasYawn = room.playerB.volatiles.some(v => v.id === "yawn");
+    expect(hasYawn).toBe(true);
+
+    // Turn 2: yawn countdown ticks → B falls asleep at end of turn
+    submitAction(room, "userA", { type: "fight", moveId: "tackle" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+
+    expect(room.playerB.party[0].statusCondition).toBe("sleep");
+    expect(room.log.some(l => l.includes("잠들어 버렸다"))).toBe(true);
+
+    vi.restoreAllMocks();
+  });
+
+  it("yawn does not apply to already statused pokemon", () => {
+    const room = readyRoom();
+    room.playerB.party[0].statusCondition = "paralysis";
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+
+    submitAction(room, "userA", { type: "fight", moveId: "yawn" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+
+    // Should NOT get yawn volatile since already statused
+    const hasYawnVol = room.playerB.volatiles.some(v => v.id === "yawn");
+    expect(hasYawnVol).toBe(false);
+
+    vi.restoreAllMocks();
+  });
+});
