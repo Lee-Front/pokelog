@@ -10,6 +10,10 @@ import {
   getWeatherFromMove, getWeatherDamage, getWeatherTypeModifier,
   tickWeather, getDefaultWeatherTurns,
 } from "../game/weather.js";
+import {
+  checkPostAttackForm, checkHpThresholdForm, checkTurnForm,
+  checkWeatherForm, checkMoveForm,
+} from "../game/battle-forms.js";
 import type {
   PvpRoomState, PvpPlayerState, PvpPokemon,
   PvpClientRoomView, PvpRoomConfig, PvpAction,
@@ -224,6 +228,17 @@ export function submitAction(room: PvpRoomState, userId: string, action: PvpActi
 function resolveTurn(room: PvpRoomState, actionA: PvpAction, actionB: PvpAction): void {
   room.log = [];
 
+  // ── Turn-based form changes (Morpeko) ──
+  for (const player of [room.playerA, room.playerB]) {
+    const poke = player.party[player.activeIndex];
+    if (poke.hp <= 0) continue;
+    const turnForm = checkTurnForm(poke.species, room.turn, player.battleForm ?? poke.variantId ?? null);
+    if (turnForm) {
+      player.battleForm = turnForm.newForm;
+      room.log.push(`${player.nickname}의 ${poke.species}: ${turnForm.message}`);
+    }
+  }
+
   if (actionA.type === "switch") applySwitch(room, room.playerA, actionA.pokemonIndex);
   if (actionB.type === "switch") applySwitch(room, room.playerB, actionB.pokemonIndex);
 
@@ -364,6 +379,17 @@ function resolveTurn(room: PvpRoomState, actionA: PvpAction, actionB: PvpAction)
     room.weatherTurns = tick.turns;
     if (tick.expired) {
       room.log.push("날씨가 사라졌다!");
+    }
+  }
+
+  // ── Weather-based form changes (Castform, Cherrim) ──
+  for (const player of [room.playerA, room.playerB]) {
+    const poke = player.party[player.activeIndex];
+    if (poke.hp <= 0) continue;
+    const weatherForm = checkWeatherForm(poke.species, room.weather, player.battleForm ?? poke.variantId ?? null);
+    if (weatherForm) {
+      player.battleForm = weatherForm.newForm;
+      room.log.push(`${player.nickname}의 ${poke.species}: ${weatherForm.message}`);
     }
   }
 
@@ -703,6 +729,35 @@ function executeFight(
         sun: "강한 햇살", rain: "비", hail: "우박", sandstorm: "모래바람",
       };
       room.log.push(`${weatherNames[weather] ?? weather} 상태가 되었다!`);
+    }
+  }
+
+  // ── Post-attack form change (Aegislash stance change) ──
+  if (!isStruggle && hitsMade > 0) {
+    const atkFormResult = checkPostAttackForm(atkPoke.species, effectiveMoveData.category, attacker.battleForm ?? atkPoke.variantId ?? null);
+    if (atkFormResult) {
+      attacker.battleForm = atkFormResult.newForm;
+      room.log.push(`${attacker.nickname}의 ${atkPoke.species}: ${atkFormResult.message}`);
+    }
+  }
+
+  // ── Move-based form change (Meloetta relic-song) ──
+  if (!isStruggle) {
+    const moveFormResult = checkMoveForm(atkPoke.species, moveId, attacker.battleForm ?? atkPoke.variantId ?? null);
+    if (moveFormResult) {
+      attacker.battleForm = moveFormResult.newForm;
+      room.log.push(`${attacker.nickname}의 ${atkPoke.species}: ${moveFormResult.message}`);
+    }
+  }
+
+  // ── HP threshold form changes (Wishiwashi, Darmanitan, Minior, Zygarde) ──
+  for (const [pl, po] of [[attacker, atkPoke], [defender, defPoke]] as [PvpPlayerState, PvpPokemon][]) {
+    if (po.hp > 0) {
+      const hpForm = checkHpThresholdForm(po.species, po.hp, po.maxHp, po.level, pl.battleForm ?? po.variantId ?? null);
+      if (hpForm) {
+        pl.battleForm = hpForm.newForm;
+        room.log.push(`${pl.nickname}의 ${po.species}: ${hpForm.message}`);
+      }
     }
   }
 

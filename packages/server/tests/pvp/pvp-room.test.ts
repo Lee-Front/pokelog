@@ -1149,3 +1149,107 @@ describe("pvp protect/detect", () => {
     expect(room.playerB.party[0].hp).toBe(200);
   });
 });
+
+// ── Task 9: Battle Form Changes ──
+describe("pvp battle form changes", () => {
+  it("Aegislash changes to blade form after physical attack", () => {
+    const aegislash: PvpPokemon = {
+      uid: "aegislash-uid", species: "aegislash", level: 50,
+      hp: 200, maxHp: 200,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 60 },
+      moves: [{ id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+    };
+    const pB: PvpPokemon = {
+      uid: "b-uid", species: "bulbasaur", level: 50,
+      hp: 200, maxHp: 200,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 40 },
+      moves: [{ id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+    };
+    const room = createRoom(
+      "userA", "A", [aegislash, makePokemon("charizard")],
+      "userB", "B", [pB, makePokemon("squirtle")],
+    );
+    selectLead(room, "userA", 0);
+    selectLead(room, "userB", 0);
+
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    submitAction(room, "userA", { type: "fight", moveId: "tackle" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    vi.restoreAllMocks();
+
+    // Aegislash should change to blade form after physical attack
+    expect(room.playerA.battleForm).toBe("aegislash-blade");
+    expect(room.log.some((l) => l.includes("aegislash") && l.includes("블레이드 폼"))).toBe(true);
+  });
+
+  it("Morpeko changes form each turn", () => {
+    const morpeko: PvpPokemon = {
+      uid: "morpeko-uid", species: "morpeko", level: 50,
+      hp: 200, maxHp: 200,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 60 },
+      moves: [{ id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+    };
+    const pB: PvpPokemon = {
+      uid: "b-uid", species: "bulbasaur", level: 50,
+      hp: 200, maxHp: 200,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 40 },
+      moves: [{ id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+    };
+    const room = createRoom(
+      "userA", "A", [morpeko, makePokemon("charizard")],
+      "userB", "B", [pB, makePokemon("squirtle")],
+    );
+    selectLead(room, "userA", 0);
+    selectLead(room, "userB", 0);
+
+    // Turn 1 (odd) → should become hangry
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    submitAction(room, "userA", { type: "fight", moveId: "tackle" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    vi.restoreAllMocks();
+    expect(room.playerA.battleForm).toBe("morpeko-hangry");
+
+    // Turn 2 (even) → should revert to base
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    submitAction(room, "userA", { type: "fight", moveId: "tackle" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    vi.restoreAllMocks();
+    expect(room.playerA.battleForm).toBeNull();
+  });
+
+  it("HP threshold form change triggers (Darmanitan zen mode)", () => {
+    const darmanitan: PvpPokemon = {
+      uid: "darmanitan-uid", species: "darmanitan", level: 50,
+      hp: 60, maxHp: 200, // Start at 30% HP (below 50%)
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 60 },
+      moves: [{ id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+    };
+    const pB: PvpPokemon = {
+      uid: "b-uid", species: "bulbasaur", level: 50,
+      hp: 200, maxHp: 200,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 40 },
+      moves: [{ id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+    };
+    const room = createRoom(
+      "userA", "A", [darmanitan, makePokemon("charizard")],
+      "userB", "B", [pB, makePokemon("squirtle")],
+    );
+    selectLead(room, "userA", 0);
+    selectLead(room, "userB", 0);
+
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    submitAction(room, "userA", { type: "fight", moveId: "tackle" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    vi.restoreAllMocks();
+
+    // Darmanitan at 30% HP should change to zen mode after combat
+    expect(room.playerA.battleForm).toBe("darmanitan-zen");
+    expect(room.log.some((l) => l.includes("darmanitan") && l.includes("젠모드"))).toBe(true);
+  });
+});
