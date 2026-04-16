@@ -8,6 +8,9 @@ import type {
   PvpRoomState, PvpPlayerState, PvpPokemon,
 } from "../../../../shared/pvp-types.js";
 import type { MoveData, BattleWeather } from "../../../../shared/types.js";
+import { applyStatChanges } from "../game/battle.js";
+import { getEffectiveTypes } from "../game/pokemon-state.js";
+import { getTypeChart } from "../game/data-loader.js";
 
 // ── Hook Context Types ──
 
@@ -232,3 +235,331 @@ export function hasAbilityFlag(abilityId: string, flag: keyof NonNullable<Abilit
   if (!effects?.flags) return false;
   return effects.flags[flag] ?? false;
 }
+
+// ══════════════════════════════════════════════════════════════
+// ── Ability Registrations ────────────────────────────────────
+// ══════════════════════════════════════════════════════════════
+
+// ── Task 3: Switch-In Abilities ──
+
+register("intimidate", {
+  onSwitchIn: (ctx) => {
+    ctx.opponent.statStages = applyStatChanges(ctx.opponent.statStages, [{ stat: "attack", change: -1 }]);
+    ctx.room.log.push(`${ctx.pokemon.species}의 위협! 상대의 공격이 내려갔다!`);
+  },
+});
+
+register("drizzle", {
+  onSwitchIn: (ctx) => { ctx.room.weather = "rain"; ctx.room.weatherTurns = 5; ctx.room.log.push("비가 내리기 시작했다!"); },
+});
+register("drought", {
+  onSwitchIn: (ctx) => { ctx.room.weather = "sun"; ctx.room.weatherTurns = 5; ctx.room.log.push("햇살이 강해졌다!"); },
+});
+register("sand-stream", {
+  onSwitchIn: (ctx) => { ctx.room.weather = "sandstorm"; ctx.room.weatherTurns = 5; ctx.room.log.push("모래바람이 불기 시작했다!"); },
+});
+register("snow-warning", {
+  onSwitchIn: (ctx) => { ctx.room.weather = "hail"; ctx.room.weatherTurns = 5; ctx.room.log.push("우박이 내리기 시작했다!"); },
+});
+
+// ── Task 4: Offensive Abilities ──
+
+register("adaptability", {
+  onAttack: (ctx) => {
+    const types = getEffectiveTypes(ctx.atkPoke.species, ctx.atkPoke.variantId, ctx.attacker.battleForm);
+    return types.includes(ctx.move.type) ? (2 / 1.5) : 1;
+  },
+});
+
+register("technician", {
+  onAttack: (ctx) => (ctx.move.power > 0 && ctx.move.power <= 60) ? 1.5 : 1,
+});
+
+register("huge-power", {
+  onAttack: (ctx) => ctx.move.category === "physical" ? 2 : 1,
+});
+register("pure-power", {
+  onAttack: (ctx) => ctx.move.category === "physical" ? 2 : 1,
+});
+
+register("guts", {
+  onAttack: (ctx) => ctx.atkPoke.statusCondition ? 1.5 : 1,
+});
+
+register("overgrow", {
+  onAttack: (ctx) => (ctx.atkPoke.hp <= ctx.atkPoke.maxHp / 3 && ctx.move.type === "grass") ? 1.5 : 1,
+});
+register("blaze", {
+  onAttack: (ctx) => (ctx.atkPoke.hp <= ctx.atkPoke.maxHp / 3 && ctx.move.type === "fire") ? 1.5 : 1,
+});
+register("torrent", {
+  onAttack: (ctx) => (ctx.atkPoke.hp <= ctx.atkPoke.maxHp / 3 && ctx.move.type === "water") ? 1.5 : 1,
+});
+register("swarm", {
+  onAttack: (ctx) => (ctx.atkPoke.hp <= ctx.atkPoke.maxHp / 3 && ctx.move.type === "bug") ? 1.5 : 1,
+});
+
+register("iron-fist", {
+  onAttack: (ctx) => {
+    const punchMoves = new Set(["mega-punch", "fire-punch", "ice-punch", "thunder-punch", "mach-punch", "focus-punch", "comet-punch", "dizzy-punch", "drain-punch", "dynamic-punch", "hammer-arm", "bullet-punch", "shadow-punch", "sky-uppercut", "power-up-punch", "plasma-fists", "meteor-mash", "poison-jab"]);
+    return punchMoves.has(ctx.move.id) ? 1.2 : 1;
+  },
+});
+
+register("strong-jaw", {
+  onAttack: (ctx) => {
+    const biteMoves = new Set(["bite", "crunch", "fire-fang", "ice-fang", "thunder-fang", "poison-fang", "hyper-fang", "psychic-fangs", "jaw-lock", "fishious-rend"]);
+    return biteMoves.has(ctx.move.id) ? 1.5 : 1;
+  },
+});
+
+register("reckless", {
+  onAttack: (ctx) => (ctx.move.meta?.drain != null && ctx.move.meta.drain < 0) ? 1.2 : 1,
+});
+
+register("sheer-force", {
+  onAttack: (ctx) => {
+    const hasSideEffect = (ctx.move.meta?.ailmentChance ?? 0) > 0 || (ctx.move.meta?.flinchChance ?? 0) > 0 || (ctx.move.meta?.statChance ?? 0) > 0;
+    return hasSideEffect ? 1.3 : 1;
+  },
+});
+
+// ── Task 5: Defensive/Immunity Abilities ──
+
+register("levitate", {
+  onDefense: (ctx) => ctx.move.type === "ground" ? 0 : 1,
+});
+
+register("flash-fire", {
+  onDefense: (ctx) => ctx.move.type === "fire" ? 0 : 1,
+});
+
+register("volt-absorb", {
+  onDefense: (ctx) => {
+    if (ctx.move.type === "electric") {
+      const heal = Math.max(1, Math.floor(ctx.defPoke.maxHp / 4));
+      ctx.defPoke.hp = Math.min(ctx.defPoke.maxHp, ctx.defPoke.hp + heal);
+      ctx.room.log.push(`${ctx.defPoke.species}의 축전! HP를 회복했다!`);
+      return 0;
+    }
+    return 1;
+  },
+});
+
+register("water-absorb", {
+  onDefense: (ctx) => {
+    if (ctx.move.type === "water") {
+      const heal = Math.max(1, Math.floor(ctx.defPoke.maxHp / 4));
+      ctx.defPoke.hp = Math.min(ctx.defPoke.maxHp, ctx.defPoke.hp + heal);
+      ctx.room.log.push(`${ctx.defPoke.species}의 저수! HP를 회복했다!`);
+      return 0;
+    }
+    return 1;
+  },
+});
+
+register("lightning-rod", {
+  onDefense: (ctx) => {
+    if (ctx.move.type === "electric") {
+      ctx.defender.statStages = applyStatChanges(ctx.defender.statStages, [{ stat: "spAttack", change: 1 }]);
+      ctx.room.log.push(`${ctx.defPoke.species}의 피뢰침! 특수공격이 올랐다!`);
+      return 0;
+    }
+    return 1;
+  },
+});
+
+register("storm-drain", {
+  onDefense: (ctx) => {
+    if (ctx.move.type === "water") {
+      ctx.defender.statStages = applyStatChanges(ctx.defender.statStages, [{ stat: "spAttack", change: 1 }]);
+      ctx.room.log.push(`${ctx.defPoke.species}의 폭풍배수구! 특수공격이 올랐다!`);
+      return 0;
+    }
+    return 1;
+  },
+});
+
+register("sap-sipper", {
+  onDefense: (ctx) => {
+    if (ctx.move.type === "grass") {
+      ctx.defender.statStages = applyStatChanges(ctx.defender.statStages, [{ stat: "attack", change: 1 }]);
+      ctx.room.log.push(`${ctx.defPoke.species}의 초식! 공격이 올랐다!`);
+      return 0;
+    }
+    return 1;
+  },
+});
+
+register("motor-drive", {
+  onDefense: (ctx) => {
+    if (ctx.move.type === "electric") {
+      ctx.defender.statStages = applyStatChanges(ctx.defender.statStages, [{ stat: "speed", change: 1 }]);
+      ctx.room.log.push(`${ctx.defPoke.species}의 전기엔진! 스피드가 올랐다!`);
+      return 0;
+    }
+    return 1;
+  },
+});
+
+register("dry-skin", {
+  onDefense: (ctx) => {
+    if (ctx.move.type === "water") {
+      const heal = Math.max(1, Math.floor(ctx.defPoke.maxHp / 4));
+      ctx.defPoke.hp = Math.min(ctx.defPoke.maxHp, ctx.defPoke.hp + heal);
+      ctx.room.log.push(`${ctx.defPoke.species}의 건조피부! HP를 회복했다!`);
+      return 0;
+    }
+    if (ctx.move.type === "fire") return 1.25;
+    return 1;
+  },
+});
+
+register("thick-fat", {
+  onDefense: (ctx) => (ctx.move.type === "fire" || ctx.move.type === "ice") ? 0.5 : 1,
+});
+
+register("multiscale", {
+  onDefense: (ctx) => ctx.defPoke.hp >= ctx.defPoke.maxHp ? 0.5 : 1,
+});
+
+register("sturdy", {
+  onDefense: (ctx) => {
+    if (ctx.defPoke.hp >= ctx.defPoke.maxHp && ctx.damage >= ctx.defPoke.hp) {
+      ctx.room.log.push(`${ctx.defPoke.species}의 옹골참! 버텨냈다!`);
+      return -1;
+    }
+    return 1;
+  },
+});
+
+register("filter", {
+  onDefense: (ctx) => {
+    const typeChart = getTypeChart();
+    const defTypes = getEffectiveTypes(ctx.defPoke.species, ctx.defPoke.variantId, ctx.defender.battleForm);
+    let mult = 1;
+    for (const t of defTypes) { mult *= (typeChart[ctx.move.type]?.[t] ?? 1); }
+    return mult > 1 ? 0.75 : 1;
+  },
+});
+register("solid-rock", {
+  onDefense: (ctx) => {
+    const typeChart = getTypeChart();
+    const defTypes = getEffectiveTypes(ctx.defPoke.species, ctx.defPoke.variantId, ctx.defender.battleForm);
+    let mult = 1;
+    for (const t of defTypes) { mult *= (typeChart[ctx.move.type]?.[t] ?? 1); }
+    return mult > 1 ? 0.75 : 1;
+  },
+});
+
+register("fur-coat", {
+  onDefense: (ctx) => ctx.move.category === "physical" ? 0.5 : 1,
+});
+
+register("ice-scales", {
+  onDefense: (ctx) => ctx.move.category === "special" ? 0.5 : 1,
+});
+
+// ── Task 6: Status Immunity Abilities ──
+
+register("immunity", { canReceiveStatus: (ctx) => ctx.status !== "poison" });
+register("limber", { canReceiveStatus: (ctx) => ctx.status !== "paralysis" });
+register("water-veil", { canReceiveStatus: (ctx) => ctx.status !== "burn" });
+register("insomnia", { canReceiveStatus: (ctx) => ctx.status !== "sleep" });
+register("vital-spirit", { canReceiveStatus: (ctx) => ctx.status !== "sleep" });
+register("magma-armor", { canReceiveStatus: (ctx) => ctx.status !== "freeze" });
+register("own-tempo", { canReceiveStatus: (ctx) => ctx.status !== "confusion" });
+register("inner-focus", { canReceiveStatus: (ctx) => ctx.status !== "flinch" });
+register("oblivious", { canReceiveStatus: (ctx) => ctx.status !== "infatuation" });
+register("clear-body", { canReceiveStatus: (ctx) => ctx.status !== "stat-drop" });
+register("white-smoke", { canReceiveStatus: (ctx) => ctx.status !== "stat-drop" });
+
+// ── Task 7: Speed/EndOfTurn/SwitchOut Abilities ──
+
+// Speed modifiers
+register("swift-swim", { onSpeed: (speed, _poke, weather) => weather === "rain" ? speed * 2 : speed });
+register("chlorophyll", { onSpeed: (speed, _poke, weather) => weather === "sun" ? speed * 2 : speed });
+register("sand-rush", { onSpeed: (speed, _poke, weather) => weather === "sandstorm" ? speed * 2 : speed });
+register("slush-rush", { onSpeed: (speed, _poke, weather) => weather === "hail" ? speed * 2 : speed });
+
+// Priority
+register("prankster", { onPriority: (ctx) => ctx.move.category === "status" ? 1 : 0 });
+register("gale-wings", { onPriority: (ctx) => (ctx.move.type === "flying" && ctx.atkPoke.hp >= ctx.atkPoke.maxHp) ? 1 : 0 });
+register("triage", { onPriority: (ctx) => (ctx.move.meta?.healing ?? 0) > 0 || (ctx.move.meta?.drain ?? 0) > 0 ? 3 : 0 });
+
+// End of turn
+register("speed-boost", {
+  onEndOfTurn: (ctx) => {
+    ctx.player.statStages = applyStatChanges(ctx.player.statStages, [{ stat: "speed", change: 1 }]);
+    ctx.room.log.push(`${ctx.pokemon.species}의 가속! 스피드가 올랐다!`);
+  },
+});
+
+register("poison-heal", {
+  onEndOfTurn: (ctx) => {
+    if (ctx.pokemon.statusCondition === "poison") {
+      const heal = Math.max(1, Math.floor(ctx.pokemon.maxHp / 8));
+      ctx.pokemon.hp = Math.min(ctx.pokemon.maxHp, ctx.pokemon.hp + heal);
+      ctx.room.log.push(`${ctx.pokemon.species}의 포이즌힐! HP를 회복했다!`);
+    }
+  },
+});
+
+register("rain-dish", {
+  onEndOfTurn: (ctx) => {
+    if (ctx.room.weather === "rain") {
+      const heal = Math.max(1, Math.floor(ctx.pokemon.maxHp / 16));
+      ctx.pokemon.hp = Math.min(ctx.pokemon.maxHp, ctx.pokemon.hp + heal);
+      ctx.room.log.push(`${ctx.pokemon.species}의 레인디쉬! HP를 회복했다!`);
+    }
+  },
+});
+
+register("ice-body", {
+  onEndOfTurn: (ctx) => {
+    if (ctx.room.weather === "hail") {
+      const heal = Math.max(1, Math.floor(ctx.pokemon.maxHp / 16));
+      ctx.pokemon.hp = Math.min(ctx.pokemon.maxHp, ctx.pokemon.hp + heal);
+      ctx.room.log.push(`${ctx.pokemon.species}의 아이스바디! HP를 회복했다!`);
+    }
+  },
+});
+
+// Switch-out
+register("natural-cure", {
+  onSwitchOut: (ctx) => {
+    if (ctx.pokemon.statusCondition) {
+      ctx.pokemon.statusCondition = null;
+      ctx.pokemon.sleepTurns = undefined;
+      ctx.pokemon.toxicCounter = undefined;
+    }
+  },
+});
+
+register("regenerator", {
+  onSwitchOut: (ctx) => {
+    const heal = Math.floor(ctx.pokemon.maxHp / 3);
+    ctx.pokemon.hp = Math.min(ctx.pokemon.maxHp, ctx.pokemon.hp + heal);
+  },
+});
+
+// Magic Guard: skip all indirect damage (handled directly in pvp-room.ts)
+register("magic-guard", {});
+
+// ── Task 8: Mold Breaker, Unaware, Contrary, Pressure ──
+
+register("mold-breaker", { flags: { ignoresOpponentAbility: true } });
+register("turboblaze", { flags: { ignoresOpponentAbility: true } });
+register("teravolt", { flags: { ignoresOpponentAbility: true } });
+
+// Unaware: handled directly in pvp-room.ts calculateDamage call
+register("unaware", {});
+
+// Contrary: handled directly in pvp-room.ts stat change application
+register("contrary", {});
+
+register("pressure", {
+  onSwitchIn: (ctx) => {
+    ctx.room.log.push(`${ctx.pokemon.species}의 프레셔!`);
+  },
+});

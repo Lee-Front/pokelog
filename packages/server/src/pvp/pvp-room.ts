@@ -331,40 +331,49 @@ function resolveTurn(room: PvpRoomState, actionA: PvpAction, actionB: PvpAction)
     const opp = player === room.playerA ? room.playerB : room.playerA;
     const oppPoke = opp.party[opp.activeIndex];
 
-    // ── Toxic: escalating poison damage ──
+    // ── Ability: Magic Guard skips all indirect damage ──
+    const hasMagicGuard = poke.abilityId === "magic-guard";
+
+    // ── Toxic: escalating poison damage (poison-heal skips damage, magic-guard skips damage) ──
     if (poke.statusCondition === "poison" && poke.toxicCounter != null && poke.toxicCounter > 0) {
-      const toxicDmg = Math.max(1, Math.floor(poke.maxHp * poke.toxicCounter / 16));
-      poke.hp = Math.max(0, poke.hp - toxicDmg);
-      room.log.push(`${player.nickname}의 ${poke.species}: 독 데미지 ${toxicDmg}!`);
+      if (!hasMagicGuard && poke.abilityId !== "poison-heal") {
+        const toxicDmg = Math.max(1, Math.floor(poke.maxHp * poke.toxicCounter / 16));
+        poke.hp = Math.max(0, poke.hp - toxicDmg);
+        room.log.push(`${player.nickname}의 ${poke.species}: 독 데미지 ${toxicDmg}!`);
+      }
       poke.toxicCounter += 1;
 
       // Still apply non-poison end-of-turn (trap, leech seed, etc.)
-      const eot = applyEndOfTurn(null, player.volatiles, poke.maxHp, oppPoke.maxHp);
-      if (eot.damage > 0) poke.hp = Math.max(0, poke.hp - eot.damage);
-      if (eot.healing > 0) poke.hp = Math.min(poke.maxHp, poke.hp + eot.healing);
-      if (eot.opponentHealing > 0 && oppPoke.hp > 0) {
-        oppPoke.hp = Math.min(oppPoke.maxHp, oppPoke.hp + eot.opponentHealing);
-      }
-      for (const msg of eot.messages) {
-        room.log.push(`${player.nickname}의 ${poke.species}: ${msg}`);
+      if (!hasMagicGuard) {
+        const eot = applyEndOfTurn(null, player.volatiles, poke.maxHp, oppPoke.maxHp);
+        if (eot.damage > 0) poke.hp = Math.max(0, poke.hp - eot.damage);
+        if (eot.healing > 0) poke.hp = Math.min(poke.maxHp, poke.hp + eot.healing);
+        if (eot.opponentHealing > 0 && oppPoke.hp > 0) {
+          oppPoke.hp = Math.min(oppPoke.maxHp, oppPoke.hp + eot.opponentHealing);
+        }
+        for (const msg of eot.messages) {
+          room.log.push(`${player.nickname}의 ${poke.species}: ${msg}`);
+        }
       }
       if (poke.hp <= 0) {
         room.log.push(`${player.nickname}의 ${poke.species}이(가) 쓰러졌다!`);
       }
     } else {
       // Normal end-of-turn (existing code)
-      const eot = applyEndOfTurn(poke.statusCondition, player.volatiles, poke.maxHp, oppPoke.maxHp);
-      if (eot.damage > 0) {
-        poke.hp = Math.max(0, poke.hp - eot.damage);
-      }
-      if (eot.healing > 0) {
-        poke.hp = Math.min(poke.maxHp, poke.hp + eot.healing);
-      }
-      if (eot.opponentHealing > 0 && oppPoke.hp > 0) {
-        oppPoke.hp = Math.min(oppPoke.maxHp, oppPoke.hp + eot.opponentHealing);
-      }
-      for (const msg of eot.messages) {
-        room.log.push(`${player.nickname}의 ${poke.species}: ${msg}`);
+      if (!hasMagicGuard) {
+        const eot = applyEndOfTurn(poke.statusCondition, player.volatiles, poke.maxHp, oppPoke.maxHp);
+        if (eot.damage > 0) {
+          poke.hp = Math.max(0, poke.hp - eot.damage);
+        }
+        if (eot.healing > 0) {
+          poke.hp = Math.min(poke.maxHp, poke.hp + eot.healing);
+        }
+        if (eot.opponentHealing > 0 && oppPoke.hp > 0) {
+          oppPoke.hp = Math.min(oppPoke.maxHp, oppPoke.hp + eot.opponentHealing);
+        }
+        for (const msg of eot.messages) {
+          room.log.push(`${player.nickname}의 ${poke.species}: ${msg}`);
+        }
       }
       if (poke.hp <= 0) {
         room.log.push(`${player.nickname}의 ${poke.species}이(가) 쓰러졌다!`);
@@ -385,6 +394,8 @@ function resolveTurn(room: PvpRoomState, actionA: PvpAction, actionB: PvpAction)
     for (const player of [room.playerA, room.playerB]) {
       const poke = player.party[player.activeIndex];
       if (poke.hp <= 0) continue;
+      // ── Ability: Magic Guard skips weather damage ──
+      if (poke.abilityId === "magic-guard") continue;
       const types = getEffectiveTypes(poke.species, poke.variantId, player.battleForm);
       const weatherDmg = getWeatherDamage(room.weather, types, poke.maxHp);
       if (weatherDmg > 0) {
@@ -587,7 +598,9 @@ function executeFight(
   if (!move || move.pp <= 0 || allPpDepleted) {
     isStruggle = true;
   } else {
-    move.pp -= 1;
+    // ── Ability: Pressure doubles PP cost ──
+    const ppCost = defPoke.abilityId === "pressure" ? 2 : 1;
+    move.pp = Math.max(0, move.pp - ppCost);
   }
 
   const effectiveMoveData = isStruggle ? {
@@ -623,9 +636,9 @@ function executeFight(
   }
 
   if (!isFixedDamage) {
-    // ── Burn halves physical attack ──
+    // ── Burn halves physical attack (guts negates) ──
     let effectiveAtkStats = atkPoke.stats;
-    if (atkPoke.statusCondition === "burn" && moveForCalc.category === "physical") {
+    if (atkPoke.statusCondition === "burn" && moveForCalc.category === "physical" && atkPoke.abilityId !== "guts") {
       effectiveAtkStats = { ...atkPoke.stats, attack: Math.floor(atkPoke.stats.attack * 0.5) };
     }
 
@@ -643,13 +656,17 @@ function executeFight(
     const atkMul = getAttackMultiplier(dmgCtx);
     const defMul = getDefenseMultiplier(dmgCtx);
 
+    // ── Ability: Unaware ignores opponent stat stages ──
+    const atkStages = defPoke.abilityId === "unaware" ? defaultStatStages() : attacker.statStages;
+    const defStages = atkPoke.abilityId === "unaware" ? defaultStatStages() : defender.statStages;
+
     let lastResult = { damage: 0, missed: false, effectiveness: 1, message: "", critical: false };
     for (let hit = 0; hit < hitCount; hit++) {
       if (defPoke.hp <= 0) break;
       const result = calculateDamage(
         atkPoke.level, effectiveAtkStats, defPoke.stats, moveForCalc,
         attackerTypes, defenderTypes,
-        attacker.statStages, defender.statStages,
+        atkStages, defStages,
         weatherMod,
       );
       lastResult = result;
@@ -757,8 +774,12 @@ function executeFight(
     const targetsSelf = moveData.target === "user" || (moveData.category === "status" && chance === 0);
 
     if (targetsSelf) {
-      attacker.statStages = applyStatChanges(attacker.statStages, moveData.statChanges);
-      for (const sc of moveData.statChanges) {
+      // ── Ability: Contrary reverses stat changes ──
+      const selfChanges = atkPoke.abilityId === "contrary"
+        ? moveData.statChanges.map((sc) => ({ stat: sc.stat, change: -sc.change }))
+        : moveData.statChanges;
+      attacker.statStages = applyStatChanges(attacker.statStages, selfChanges);
+      for (const sc of selfChanges) {
         const dir = sc.change > 0 ? "올랐다" : "내려갔다";
         const names: Record<string, string> = { attack: "공격", defense: "방어", spAttack: "특수공격", spDefense: "특수방어", speed: "스피드", accuracy: "명중률", evasion: "회피율" };
         room.log.push(`${attacker.nickname}의 ${atkPoke.species}: ${names[sc.stat] ?? sc.stat}이(가) ${dir}!`);
@@ -766,11 +787,25 @@ function executeFight(
     } else if (hitsMade > 0 && defPoke.hp > 0) {
       const roll = chance === 0 || chance >= 100 || Math.random() * 100 < chance;
       if (roll) {
-        defender.statStages = applyStatChanges(defender.statStages, moveData.statChanges);
-        for (const sc of moveData.statChanges) {
-          const dir = sc.change > 0 ? "올랐다" : "내려갔다";
-          const names: Record<string, string> = { attack: "공격", defense: "방어", spAttack: "특수공격", spDefense: "특수방어", speed: "스피드", accuracy: "명중률", evasion: "회피율" };
-          room.log.push(`${defender.nickname}의 ${defPoke.species}: ${names[sc.stat] ?? sc.stat}이(가) ${dir}!`);
+        // ── Ability: Contrary reverses stat changes ──
+        const oppChanges = defPoke.abilityId === "contrary"
+          ? moveData.statChanges.map((sc) => ({ stat: sc.stat, change: -sc.change }))
+          : moveData.statChanges;
+        // ── Ability: Clear Body / White Smoke blocks opponent stat drops ──
+        const filteredChanges = oppChanges.filter((sc) => {
+          if (sc.change < 0 && !canReceiveStatus(defPoke, "stat-drop")) return false;
+          return true;
+        });
+        if (filteredChanges.length > 0) {
+          defender.statStages = applyStatChanges(defender.statStages, filteredChanges);
+          for (const sc of filteredChanges) {
+            const dir = sc.change > 0 ? "올랐다" : "내려갔다";
+            const names: Record<string, string> = { attack: "공격", defense: "방어", spAttack: "특수공격", spDefense: "특수방어", speed: "스피드", accuracy: "명중률", evasion: "회피율" };
+            room.log.push(`${defender.nickname}의 ${defPoke.species}: ${names[sc.stat] ?? sc.stat}이(가) ${dir}!`);
+          }
+        }
+        if (oppChanges.length > filteredChanges.length) {
+          room.log.push(`${defender.nickname}의 ${defPoke.species}: 특성으로 능력치 하락을 막았다!`);
         }
       }
     }
