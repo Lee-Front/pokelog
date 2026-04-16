@@ -49,6 +49,7 @@ export interface PvpPlayerState {
   preTransformMaxHp?: number;
   hasKeyStone?: boolean;
   hasDynamaxBand?: boolean;
+  protectCount?: number;
 }
 
 // ── 방 상태 ──

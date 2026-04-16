@@ -1039,3 +1039,113 @@ describe("pvp self-destruct moves", () => {
     expect(room.log.some((l) => l.includes("A의") && l.includes("pikachu") && l.includes("쓰러졌다"))).toBe(true);
   });
 });
+
+// ── Task 8: Protect/Detect ──
+describe("pvp protect/detect", () => {
+  function readyProtectRoom() {
+    const pA: PvpPokemon = {
+      uid: "a-uid", species: "pikachu", level: 50,
+      hp: 200, maxHp: 200,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 60 },
+      moves: [
+        { id: "protect", pp: 10, maxPp: 10 },
+        { id: "tackle", pp: 35, maxPp: 35 },
+      ],
+      statusCondition: null,
+    };
+    const pB: PvpPokemon = {
+      uid: "b-uid", species: "bulbasaur", level: 50,
+      hp: 200, maxHp: 200,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 40 },
+      moves: [
+        { id: "tackle", pp: 35, maxPp: 35 },
+        { id: "detect", pp: 5, maxPp: 5 },
+      ],
+      statusCondition: null,
+    };
+    const room = createRoom(
+      "userA", "A", [pA, makePokemon("charizard")],
+      "userB", "B", [pB, makePokemon("squirtle")],
+    );
+    selectLead(room, "userA", 0);
+    selectLead(room, "userB", 0);
+    return room;
+  }
+
+  it("protect blocks all incoming damage", () => {
+    const room = readyProtectRoom();
+    // Math.random < 1.0 (first protect always succeeds: rate = 1/3^0 = 1)
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    submitAction(room, "userA", { type: "fight", moveId: "protect" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    vi.restoreAllMocks();
+
+    // A used protect, B's tackle should be blocked
+    expect(room.log.some((l) => l.includes("방어 태세"))).toBe(true);
+    expect(room.log.some((l) => l.includes("공격을 막았다"))).toBe(true);
+    // A should not have taken any damage
+    expect(room.playerA.party[0].hp).toBe(200);
+  });
+
+  it("consecutive protect can fail (mock Math.random)", () => {
+    const room = readyProtectRoom();
+
+    // Turn 1: first protect succeeds (rate = 1/3^0 = 1.0, any random succeeds)
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    submitAction(room, "userA", { type: "fight", moveId: "protect" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    vi.restoreAllMocks();
+    expect(room.playerA.party[0].hp).toBe(200); // protected
+
+    // Turn 2: second consecutive protect (rate = 1/3^1 = 0.333...)
+    // random() = 0.5 >= 0.333 → fails
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    submitAction(room, "userA", { type: "fight", moveId: "protect" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    vi.restoreAllMocks();
+
+    expect(room.log.some((l) => l.includes("방어에 실패했다"))).toBe(true);
+    // A should have taken damage since protect failed
+    expect(room.playerA.party[0].hp).toBeLessThan(200);
+  });
+
+  it("non-protect turn resets protect counter", () => {
+    const room = readyProtectRoom();
+
+    // Turn 1: protect succeeds
+    vi.spyOn(Math, "random").mockReturnValue(0.1);
+    submitAction(room, "userA", { type: "fight", moveId: "protect" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    vi.restoreAllMocks();
+    expect(room.playerA.protectCount).toBe(1);
+
+    // Turn 2: use tackle (not protect) → resets counter
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    submitAction(room, "userA", { type: "fight", moveId: "tackle" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    vi.restoreAllMocks();
+    expect(room.playerA.protectCount).toBe(0);
+
+    // Turn 3: protect again (rate = 1/3^0 = 1.0 → always succeeds)
+    vi.spyOn(Math, "random").mockReturnValue(0.99);
+    submitAction(room, "userA", { type: "fight", moveId: "protect" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    vi.restoreAllMocks();
+
+    expect(room.log.some((l) => l.includes("방어 태세"))).toBe(true);
+    expect(room.playerA.party[0].hp).toBeGreaterThan(0);
+  });
+
+  it("detect also works as a protect move", () => {
+    const room = readyProtectRoom();
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    submitAction(room, "userA", { type: "fight", moveId: "tackle" });
+    submitAction(room, "userB", { type: "fight", moveId: "detect" });
+    vi.restoreAllMocks();
+
+    // B used detect, A's tackle should be blocked
+    expect(room.log.some((l) => l.includes("방어 태세"))).toBe(true);
+    expect(room.log.some((l) => l.includes("공격을 막았다"))).toBe(true);
+    expect(room.playerB.party[0].hp).toBe(200);
+  });
+});

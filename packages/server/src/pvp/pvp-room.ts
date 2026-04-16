@@ -28,6 +28,11 @@ const SELF_KO_MOVES = new Set([
   "healing-wish", "lunar-dance", "misty-explosion",
 ]);
 
+const PROTECT_MOVES = new Set([
+  "protect", "detect", "kings-shield", "baneful-bunker",
+  "spiky-shield", "obstruct", "silk-trap",
+]);
+
 export const DEFAULT_CONFIG: PvpRoomConfig = {
   levelCap: 50,
   turnTimeoutMs: 30_000,
@@ -222,6 +227,41 @@ function resolveTurn(room: PvpRoomState, actionA: PvpAction, actionB: PvpAction)
   if (actionA.type === "switch") applySwitch(room, room.playerA, actionA.pokemonIndex);
   if (actionB.type === "switch") applySwitch(room, room.playerB, actionB.pokemonIndex);
 
+  // ── Protect handling ──
+  let protectedA = false;
+  let protectedB = false;
+
+  if (actionA.type === "fight" && PROTECT_MOVES.has(actionA.moveId)) {
+    const rate = 1 / Math.pow(3, room.playerA.protectCount ?? 0);
+    if (Math.random() < rate) {
+      protectedA = true;
+      room.playerA.protectCount = (room.playerA.protectCount ?? 0) + 1;
+      room.log.push(`${room.playerA.nickname}의 ${room.playerA.party[room.playerA.activeIndex].species}: 방어 태세!`);
+    } else {
+      room.log.push(`${room.playerA.nickname}의 ${room.playerA.party[room.playerA.activeIndex].species}: 방어에 실패했다!`);
+      room.playerA.protectCount = 0;
+    }
+  }
+  if (actionB.type === "fight" && PROTECT_MOVES.has(actionB.moveId)) {
+    const rate = 1 / Math.pow(3, room.playerB.protectCount ?? 0);
+    if (Math.random() < rate) {
+      protectedB = true;
+      room.playerB.protectCount = (room.playerB.protectCount ?? 0) + 1;
+      room.log.push(`${room.playerB.nickname}의 ${room.playerB.party[room.playerB.activeIndex].species}: 방어 태세!`);
+    } else {
+      room.log.push(`${room.playerB.nickname}의 ${room.playerB.party[room.playerB.activeIndex].species}: 방어에 실패했다!`);
+      room.playerB.protectCount = 0;
+    }
+  }
+
+  // Reset protect count if NOT using protect this turn
+  if (actionA.type !== "fight" || !PROTECT_MOVES.has(actionA.moveId)) {
+    room.playerA.protectCount = 0;
+  }
+  if (actionB.type !== "fight" || !PROTECT_MOVES.has(actionB.moveId)) {
+    room.playerB.protectCount = 0;
+  }
+
   if (actionA.type === "fight" && actionB.type === "fight") {
     const pokemonA = room.playerA.party[room.playerA.activeIndex];
     const pokemonB = room.playerB.party[room.playerB.activeIndex];
@@ -238,19 +278,19 @@ function resolveTurn(room: PvpRoomState, actionA: PvpAction, actionB: PvpAction)
     );
 
     const [first, second] = order === "player"
-      ? [{ player: room.playerA, action: actionA, opp: room.playerB },
-         { player: room.playerB, action: actionB, opp: room.playerA }]
-      : [{ player: room.playerB, action: actionB, opp: room.playerA },
-         { player: room.playerA, action: actionA, opp: room.playerB }];
+      ? [{ player: room.playerA, action: actionA, opp: room.playerB, defProtected: protectedB },
+         { player: room.playerB, action: actionB, opp: room.playerA, defProtected: protectedA }]
+      : [{ player: room.playerB, action: actionB, opp: room.playerA, defProtected: protectedA },
+         { player: room.playerA, action: actionA, opp: room.playerB, defProtected: protectedB }];
 
-    executeFight(room, first.player, first.action.moveId, first.opp, first.action.mega, first.action.gigantamax);
+    executeFight(room, first.player, first.action.moveId, first.opp, first.action.mega, first.action.gigantamax, first.defProtected);
     if (first.opp.party[first.opp.activeIndex].hp > 0) {
-      executeFight(room, second.player, second.action.moveId, second.opp, second.action.mega, second.action.gigantamax);
+      executeFight(room, second.player, second.action.moveId, second.opp, second.action.mega, second.action.gigantamax, second.defProtected);
     }
   } else if (actionA.type === "fight") {
-    executeFight(room, room.playerA, actionA.moveId, room.playerB, actionA.mega, actionA.gigantamax);
+    executeFight(room, room.playerA, actionA.moveId, room.playerB, actionA.mega, actionA.gigantamax, protectedB);
   } else if (actionB.type === "fight") {
-    executeFight(room, room.playerB, actionB.moveId, room.playerA, actionB.mega, actionB.gigantamax);
+    executeFight(room, room.playerB, actionB.moveId, room.playerA, actionB.mega, actionB.gigantamax, protectedA);
   }
 
   // ── End-of-turn effects (status damage, volatile tick) ──
@@ -410,6 +450,7 @@ function executeFight(
   defender: PvpPlayerState,
   mega?: boolean,
   gigantamax?: boolean,
+  defenderProtected?: boolean,
 ): void {
   const atkPoke = attacker.party[attacker.activeIndex];
   const defPoke = defender.party[defender.activeIndex];
@@ -449,6 +490,12 @@ function executeFight(
       poke.hp = Math.ceil(hpRatio * poke.maxHp);
       room.log.push(`${attacker.nickname}의 ${poke.species}: 기가맥스!`);
     }
+  }
+
+  // ── Defender protected check ──
+  if (defenderProtected) {
+    room.log.push(`${defender.nickname}의 ${defPoke.species}: 공격을 막았다!`);
+    return;
   }
 
   // ── Pre-attack status check ──
