@@ -348,3 +348,149 @@ describe("pvp mega evolution", () => {
     expect(room.playerA.battleForm).toBe("charizard-mega");
   });
 });
+
+// ── Task 5: Gigantamax ──
+describe("pvp gigantamax", () => {
+  function makeGmaxPokemon(species = "charizard"): PvpPokemon {
+    return {
+      uid: `${species}-uid`,
+      species,
+      level: 50,
+      hp: 100,
+      maxHp: 100,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 50 },
+      moves: [{ id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+      gmaxForm: {
+        variantId: `${species}-gmax`,
+        maxHp: 200,
+        stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 50 },
+      },
+    };
+  }
+
+  function readyGmaxRoom(opts?: { hasDynamaxBand?: boolean }) {
+    const gmax = makeGmaxPokemon();
+    const room = createRoom(
+      "userA", "A", [gmax, makePokemon("pikachu")],
+      "userB", "B", [makePokemon("bulbasaur"), makePokemon("squirtle")],
+      false,
+      { hasKeyStone: false, hasDynamaxBand: opts?.hasDynamaxBand ?? true },
+    );
+    selectLead(room, "userA", 0);
+    selectLead(room, "userB", 0);
+    return room;
+  }
+
+  it("gigantamax triggers with HP boost", () => {
+    const room = readyGmaxRoom();
+    submitAction(room, "userA", { type: "fight", moveId: "tackle", gigantamax: true });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+
+    expect(room.playerA.battleForm).toBe("charizard-gmax");
+    expect(room.playerA.transformationType).toBe("gigantamax");
+    expect(room.playerA.transformationUsed).toBe(true);
+    expect(room.playerA.gmaxTurnsRemaining).toBe(2); // 3 - 1 (countdown happens at end of turn)
+    const poke = room.playerA.party[0];
+    expect(poke.maxHp).toBe(200);
+    // HP should scale: ceil(100/100 * 200) = 200 minus damage taken from tackle
+    expect(room.log.some((l) => l.includes("기가맥스"))).toBe(true);
+  });
+
+  it("auto-reverts after 3 turns", () => {
+    const room = readyGmaxRoom();
+    // Turn 1: activate gmax (gmaxTurnsRemaining becomes 3, then countdown → 2)
+    submitAction(room, "userA", { type: "fight", moveId: "tackle", gigantamax: true });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    expect(room.playerA.gmaxTurnsRemaining).toBe(2);
+
+    // Turn 2: (countdown → 1)
+    submitAction(room, "userA", { type: "fight", moveId: "tackle" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    expect(room.playerA.gmaxTurnsRemaining).toBe(1);
+
+    // Turn 3: (countdown → 0, reverts)
+    submitAction(room, "userA", { type: "fight", moveId: "tackle" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    expect(room.playerA.battleForm).toBeUndefined();
+    expect(room.playerA.transformationType).toBeNull();
+    expect(room.playerA.gmaxTurnsRemaining).toBeUndefined();
+    // maxHp should revert to original
+    const poke = room.playerA.party[0];
+    expect(poke.maxHp).toBe(100);
+    expect(room.log.some((l) => l.includes("기가맥스가 풀렸다"))).toBe(true);
+  });
+
+  it("cannot gigantamax without dynamax band", () => {
+    const room = readyGmaxRoom({ hasDynamaxBand: false });
+    submitAction(room, "userA", { type: "fight", moveId: "tackle", gigantamax: true });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+
+    expect(room.playerA.battleForm).toBeUndefined();
+    expect(room.playerA.transformationUsed).toBe(false);
+  });
+
+  it("mega and gigantamax are mutually exclusive (mega first blocks gmax)", () => {
+    // Pokemon with both mega and gmax forms
+    const pokemon: PvpPokemon = {
+      uid: "charizard-uid",
+      species: "charizard",
+      level: 50,
+      hp: 100,
+      maxHp: 100,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 50 },
+      moves: [{ id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+      megaForm: {
+        variantId: "charizard-mega",
+        maxHp: 120,
+        stats: { attack: 80, defense: 70, spAttack: 80, spDefense: 70, speed: 60 },
+      },
+      gmaxForm: {
+        variantId: "charizard-gmax",
+        maxHp: 200,
+        stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 50 },
+      },
+    };
+    const room = createRoom(
+      "userA", "A", [pokemon, makePokemon("pikachu")],
+      "userB", "B", [makePokemon("bulbasaur"), makePokemon("squirtle")],
+      false,
+      { hasKeyStone: true, hasDynamaxBand: true },
+    );
+    selectLead(room, "userA", 0);
+    selectLead(room, "userB", 0);
+
+    // Mega evolve first
+    submitAction(room, "userA", { type: "fight", moveId: "tackle", mega: true });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    expect(room.playerA.transformationUsed).toBe(true);
+    expect(room.playerA.transformationType).toBe("mega");
+
+    // Try gigantamax — should be blocked because transformationUsed
+    submitAction(room, "userA", { type: "fight", moveId: "tackle", gigantamax: true });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    expect(room.playerA.transformationType).toBe("mega"); // unchanged
+  });
+
+  it("HP reverts proportionally when gmax ends", () => {
+    const room = readyGmaxRoom();
+    // Gmax: HP goes from 100 → 200
+    submitAction(room, "userA", { type: "fight", moveId: "tackle", gigantamax: true });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    const poke = room.playerA.party[0];
+    const gmaxHp = poke.hp; // some HP after taking damage
+
+    // Burn through remaining turns
+    submitAction(room, "userA", { type: "fight", moveId: "tackle" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    submitAction(room, "userA", { type: "fight", moveId: "tackle" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+
+    // After revert, maxHp should be 100
+    expect(poke.maxHp).toBe(100);
+    // HP should be proportional but at least 1
+    expect(poke.hp).toBeGreaterThanOrEqual(1);
+    expect(poke.hp).toBeLessThanOrEqual(100);
+  });
+});

@@ -285,6 +285,28 @@ function resolveTurn(room: PvpRoomState, actionA: PvpAction, actionB: PvpAction)
     }
   }
 
+  // ── Gigantamax countdown ──
+  for (const player of [room.playerA, room.playerB]) {
+    if (player.transformationType === "gigantamax" && player.gmaxTurnsRemaining != null) {
+      player.gmaxTurnsRemaining -= 1;
+      if (player.gmaxTurnsRemaining <= 0) {
+        const poke = player.party[player.activeIndex];
+        if (player.preTransformMaxHp != null && poke.hp > 0) {
+          const hpRatio = poke.hp / poke.maxHp;
+          poke.maxHp = player.preTransformMaxHp;
+          poke.hp = Math.max(1, Math.floor(hpRatio * poke.maxHp));
+        } else if (player.preTransformMaxHp != null && poke.hp <= 0) {
+          poke.maxHp = player.preTransformMaxHp; // don't resurrect
+        }
+        player.battleForm = undefined;
+        player.transformationType = null;
+        player.gmaxTurnsRemaining = undefined;
+        player.preTransformMaxHp = undefined;
+        if (poke.hp > 0) room.log.push(`${player.nickname}의 ${poke.species}: 기가맥스가 풀렸다!`);
+      }
+    }
+  }
+
   const koA = room.playerA.party[room.playerA.activeIndex].hp <= 0;
   const koB = room.playerB.party[room.playerB.activeIndex].hp <= 0;
   const aliveA = room.playerA.party.some((p) => p.hp > 0);
@@ -378,7 +400,7 @@ function executeFight(
       const hpRatio = poke.hp / poke.maxHp;
       poke.maxHp = poke.gmaxForm.maxHp;
       poke.hp = Math.ceil(hpRatio * poke.maxHp);
-      room.log.push(`${attacker.nickname}의 ${poke.species}: 거다이맥스!`);
+      room.log.push(`${attacker.nickname}의 ${poke.species}: 기가맥스!`);
     }
   }
 
