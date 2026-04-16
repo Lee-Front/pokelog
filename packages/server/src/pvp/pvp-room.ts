@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { calculateDamage, determineTurnOrder, defaultStatStages } from "../game/battle.js";
+import { calculateDamage, determineTurnOrder, defaultStatStages, applyStatChanges } from "../game/battle.js";
 import { getEffectiveTypes } from "../game/pokemon-state.js";
 import { getMoveById } from "../game/data-loader.js";
 import {
@@ -490,6 +490,31 @@ function executeFight(
       atkPoke.hp = Math.min(atkPoke.maxHp, Math.max(0, atkPoke.hp + drainAmount));
       if (drainAmount > 0) room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 체력을 흡수했다!`);
       else if (drainAmount < 0) room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 반동 데미지를 받았다!`);
+    }
+  }
+
+  // ── Stat changes from move ──
+  if (moveData.statChanges && moveData.statChanges.length > 0) {
+    const chance = moveData.meta?.statChance ?? 0;
+    const targetsSelf = moveData.target === "user" || (moveData.category === "status" && chance === 0);
+
+    if (targetsSelf) {
+      attacker.statStages = applyStatChanges(attacker.statStages, moveData.statChanges);
+      for (const sc of moveData.statChanges) {
+        const dir = sc.change > 0 ? "올랐다" : "내려갔다";
+        const names: Record<string, string> = { attack: "공격", defense: "방어", spAttack: "특수공격", spDefense: "특수방어", speed: "스피드", accuracy: "명중률", evasion: "회피율" };
+        room.log.push(`${attacker.nickname}의 ${atkPoke.species}: ${names[sc.stat] ?? sc.stat}이(가) ${dir}!`);
+      }
+    } else if (!result.missed && defPoke.hp > 0) {
+      const roll = chance === 0 || chance >= 100 || Math.random() * 100 < chance;
+      if (roll) {
+        defender.statStages = applyStatChanges(defender.statStages, moveData.statChanges);
+        for (const sc of moveData.statChanges) {
+          const dir = sc.change > 0 ? "올랐다" : "내려갔다";
+          const names: Record<string, string> = { attack: "공격", defense: "방어", spAttack: "특수공격", spDefense: "특수방어", speed: "스피드", accuracy: "명중률", evasion: "회피율" };
+          room.log.push(`${defender.nickname}의 ${defPoke.species}: ${names[sc.stat] ?? sc.stat}이(가) ${dir}!`);
+        }
+      }
     }
   }
 

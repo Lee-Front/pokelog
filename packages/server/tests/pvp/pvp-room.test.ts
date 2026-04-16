@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { createRoom, selectLead, getPlayerView, submitAction } from "../../src/pvp/pvp-room.js";
 import type { PvpPokemon } from "../../../../shared/pvp-types.js";
 
@@ -492,5 +492,66 @@ describe("pvp gigantamax", () => {
     // HP should be proportional but at least 1
     expect(poke.hp).toBeGreaterThanOrEqual(1);
     expect(poke.hp).toBeLessThanOrEqual(100);
+  });
+});
+
+// ── Task 6: Stat-Changing Moves ──
+describe("pvp stat-changing moves", () => {
+  function readyStatRoom() {
+    const pA: PvpPokemon = {
+      uid: "pikachu-uid", species: "pikachu", level: 50,
+      hp: 200, maxHp: 200,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 50 },
+      moves: [
+        { id: "swords-dance", pp: 20, maxPp: 20 },
+        { id: "tackle", pp: 35, maxPp: 35 },
+      ],
+      statusCondition: null,
+    };
+    const pB: PvpPokemon = {
+      uid: "bulbasaur-uid", species: "bulbasaur", level: 50,
+      hp: 200, maxHp: 200,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 50 },
+      moves: [
+        { id: "tackle", pp: 35, maxPp: 35 },
+        { id: "acid-spray", pp: 20, maxPp: 20 },
+      ],
+      statusCondition: null,
+    };
+    const room = createRoom("userA", "A", [pA, makePokemon("charizard")], "userB", "B", [pB, makePokemon("squirtle")]);
+    selectLead(room, "userA", 0);
+    selectLead(room, "userB", 0);
+    return room;
+  }
+
+  it("swords-dance raises attacker attack stat stage", () => {
+    const room = readyStatRoom();
+    // Both use moves; swords-dance is self-targeting status
+    submitAction(room, "userA", { type: "fight", moveId: "swords-dance" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    expect(room.playerA.statStages.attack).toBe(2);
+    expect(room.log.some((l) => l.includes("공격") && l.includes("올랐다"))).toBe(true);
+  });
+
+  it("stat stages clamp at +6", () => {
+    const room = readyStatRoom();
+    // Use swords-dance 4 times (+2 each = +8, clamped to +6)
+    for (let i = 0; i < 4; i++) {
+      submitAction(room, "userA", { type: "fight", moveId: "swords-dance" });
+      submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    }
+    expect(room.playerA.statStages.attack).toBe(6);
+  });
+
+  it("secondary stat changes apply to defender on hit (acid-spray)", () => {
+    const room = readyStatRoom();
+    // acid-spray: 100% chance to lower target spDefense by -2
+    vi.spyOn(Math, "random").mockReturnValue(0.0); // ensure hit
+    submitAction(room, "userA", { type: "fight", moveId: "tackle" });
+    submitAction(room, "userB", { type: "fight", moveId: "acid-spray" });
+    vi.restoreAllMocks();
+    // acid-spray targets the opponent (playerA) — B attacks A
+    expect(room.playerA.statStages.spDefense).toBe(-2);
+    expect(room.log.some((l) => l.includes("특수방어") && l.includes("내려갔다"))).toBe(true);
   });
 });
