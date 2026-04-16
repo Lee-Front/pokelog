@@ -497,31 +497,53 @@ function executeFight(
   }
 
   const weatherMod = room.weather ? getWeatherTypeModifier(room.weather, moveForCalc.type) : 1;
-  const result = calculateDamage(
-    atkPoke.level, effectiveAtkStats, defPoke.stats, moveForCalc,
-    getEffectiveTypes(atkPoke.species, atkPoke.variantId, attacker.battleForm),
-    getEffectiveTypes(defPoke.species, defPoke.variantId, defender.battleForm),
-    attacker.statStages, defender.statStages,
-    weatherMod,
-  );
+  const attackerTypes = getEffectiveTypes(atkPoke.species, atkPoke.variantId, attacker.battleForm);
+  const defenderTypes = getEffectiveTypes(defPoke.species, defPoke.variantId, defender.battleForm);
 
-  defPoke.hp = Math.max(0, defPoke.hp - result.damage);
-  room.log.push(
-    `${attacker.nickname}의 ${atkPoke.species}: ${moveForCalc.name}! ` +
-    (result.missed ? "빗나갔다!" : `${result.damage} 데미지!`),
-  );
-  if (result.message) room.log.push(result.message);
-  if (result.critical) room.log.push("급소에 맞았다!");
+  // ── Multi-hit loop ──
+  const minHits = effectiveMoveData.meta?.minHits ?? 1;
+  const maxHits = effectiveMoveData.meta?.maxHits ?? 1;
+  const hitCount = minHits === maxHits ? minHits : minHits + Math.floor(Math.random() * (maxHits - minHits + 1));
+
+  let totalDamage = 0;
+  let hitsMade = 0;
+  let lastResult = { damage: 0, missed: false, effectiveness: 1, message: "", critical: false };
+  for (let hit = 0; hit < hitCount; hit++) {
+    if (defPoke.hp <= 0) break;
+    const result = calculateDamage(
+      atkPoke.level, effectiveAtkStats, defPoke.stats, moveForCalc,
+      attackerTypes, defenderTypes,
+      attacker.statStages, defender.statStages,
+      weatherMod,
+    );
+    lastResult = result;
+    if (!result.missed) {
+      defPoke.hp = Math.max(0, defPoke.hp - result.damage);
+      totalDamage += result.damage;
+      hitsMade++;
+      if (result.critical) room.log.push("급소에 맞았다!");
+    }
+  }
+
+  if (hitCount > 1) {
+    room.log.push(`${attacker.nickname}의 ${atkPoke.species}: ${moveForCalc.name}! ${hitsMade}번 맞았다! 총 ${totalDamage} 데미지!`);
+  } else {
+    room.log.push(
+      `${attacker.nickname}의 ${atkPoke.species}: ${moveForCalc.name}! ` +
+      (lastResult.missed ? "빗나갔다!" : `${totalDamage} 데미지!`),
+    );
+  }
+  if (lastResult.message) room.log.push(lastResult.message);
 
   // ── Struggle recoil ──
-  if (isStruggle && !result.missed) {
+  if (isStruggle && hitsMade > 0) {
     const recoil = Math.max(1, Math.floor(atkPoke.maxHp / 4));
     atkPoke.hp = Math.max(0, atkPoke.hp - recoil);
     room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 반동으로 ${recoil} 데미지!`);
   }
 
   // ── Ailment application (only on hit, not for struggle) ──
-  if (!isStruggle && !result.missed && defPoke.hp > 0) {
+  if (!isStruggle && hitsMade > 0 && defPoke.hp > 0) {
     const ailment = moveData.meta?.ailment;
     const chance = moveData.meta?.ailmentChance ?? 0;
     if (ailment && ailment !== "none") {
@@ -557,7 +579,7 @@ function executeFight(
     // ── Drain / healing ──
     const meta = moveData.meta;
     if (meta?.drain && meta.drain !== 0) {
-      const drainAmount = Math.floor(result.damage * meta.drain / 100);
+      const drainAmount = Math.floor(totalDamage * meta.drain / 100);
       atkPoke.hp = Math.min(atkPoke.maxHp, Math.max(0, atkPoke.hp + drainAmount));
       if (drainAmount > 0) room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 체력을 흡수했다!`);
       else if (drainAmount < 0) room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 반동 데미지를 받았다!`);
@@ -576,7 +598,7 @@ function executeFight(
         const names: Record<string, string> = { attack: "공격", defense: "방어", spAttack: "특수공격", spDefense: "특수방어", speed: "스피드", accuracy: "명중률", evasion: "회피율" };
         room.log.push(`${attacker.nickname}의 ${atkPoke.species}: ${names[sc.stat] ?? sc.stat}이(가) ${dir}!`);
       }
-    } else if (!result.missed && defPoke.hp > 0) {
+    } else if (hitsMade > 0 && defPoke.hp > 0) {
       const roll = chance === 0 || chance >= 100 || Math.random() * 100 < chance;
       if (roll) {
         defender.statStages = applyStatChanges(defender.statStages, moveData.statChanges);

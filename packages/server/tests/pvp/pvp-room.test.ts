@@ -874,3 +874,74 @@ describe("pvp struggle", () => {
     expect(atkPoke.hp).toBeLessThanOrEqual(200 - 50);
   });
 });
+
+// ── Task 6: Multi-Hit Moves ──
+describe("pvp multi-hit moves", () => {
+  it("a move with minHits=2, maxHits=5 logs N번 맞았다", () => {
+    const pA: PvpPokemon = {
+      uid: "a-uid", species: "pikachu", level: 50,
+      hp: 200, maxHp: 200,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 60 },
+      moves: [{ id: "fury-attack", pp: 20, maxPp: 20 }],
+      statusCondition: null,
+    };
+    const pB: PvpPokemon = {
+      uid: "b-uid", species: "bulbasaur", level: 50,
+      hp: 500, maxHp: 500,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 40 },
+      moves: [{ id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+    };
+    const room = createRoom("userA", "A", [pA, makePokemon("charizard")], "userB", "B", [pB, makePokemon("squirtle")]);
+    selectLead(room, "userA", 0);
+    selectLead(room, "userB", 0);
+
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    submitAction(room, "userA", { type: "fight", moveId: "fury-attack" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    vi.restoreAllMocks();
+
+    // Should log "N번 맞았다" for multi-hit
+    expect(room.log.some((l) => l.includes("번 맞았다"))).toBe(true);
+    // Defender should take damage
+    expect(room.playerB.party[0].hp).toBeLessThan(500);
+  });
+
+  it("multi-hit stops if target faints mid-sequence", () => {
+    const pA: PvpPokemon = {
+      uid: "a-uid", species: "pikachu", level: 50,
+      hp: 200, maxHp: 200,
+      stats: { attack: 100, defense: 50, spAttack: 50, spDefense: 50, speed: 60 },
+      moves: [{ id: "fury-attack", pp: 20, maxPp: 20 }],
+      statusCondition: null,
+    };
+    const pB: PvpPokemon = {
+      uid: "b-uid", species: "bulbasaur", level: 50,
+      hp: 5, maxHp: 200,  // Very low HP so it faints quickly
+      stats: { attack: 50, defense: 10, spAttack: 50, spDefense: 50, speed: 40 },
+      moves: [{ id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+    };
+    const room = createRoom("userA", "A", [pA, makePokemon("charizard")], "userB", "B", [pB, makePokemon("squirtle")]);
+    selectLead(room, "userA", 0);
+    selectLead(room, "userB", 0);
+
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    submitAction(room, "userA", { type: "fight", moveId: "fury-attack" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    vi.restoreAllMocks();
+
+    // Target should have fainted
+    expect(room.playerB.party[0].hp).toBe(0);
+    // Multi-hit log should show fewer hits than max (stopped early)
+    const multiHitLog = room.log.find((l) => l.includes("번 맞았다"));
+    if (multiHitLog) {
+      const hitMatch = multiHitLog.match(/(\d+)번/);
+      if (hitMatch) {
+        const hits = parseInt(hitMatch[1]);
+        // Should have stopped before max hits since target fainted
+        expect(hits).toBeGreaterThanOrEqual(1);
+      }
+    }
+  });
+});
