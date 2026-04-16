@@ -229,3 +229,122 @@ describe("pvp primal reversion", () => {
     expect(room.playerA.transformationType).toBeUndefined();
   });
 });
+
+// ── Task 4: Mega Evolution ──
+describe("pvp mega evolution", () => {
+  function makeMegaPokemon(species = "charizard"): PvpPokemon {
+    return {
+      uid: `${species}-uid`,
+      species,
+      level: 50,
+      hp: 100,
+      maxHp: 100,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 50 },
+      moves: [{ id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+      megaForm: {
+        variantId: `${species}-mega`,
+        maxHp: 120,
+        stats: { attack: 80, defense: 70, spAttack: 80, spDefense: 70, speed: 60 },
+      },
+    };
+  }
+
+  function readyMegaRoom(opts?: { hasKeyStone?: boolean; species?: string }) {
+    const mega = makeMegaPokemon(opts?.species);
+    const room = createRoom(
+      "userA", "A", [mega, makePokemon("pikachu")],
+      "userB", "B", [makePokemon("bulbasaur"), makePokemon("squirtle")],
+      false,
+      { hasKeyStone: opts?.hasKeyStone ?? true, hasDynamaxBand: false },
+    );
+    selectLead(room, "userA", 0);
+    selectLead(room, "userB", 0);
+    return room;
+  }
+
+  it("fight with mega:true triggers mega evolution (stats change, transformationUsed=true)", () => {
+    const room = readyMegaRoom();
+    submitAction(room, "userA", { type: "fight", moveId: "tackle", mega: true });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+
+    expect(room.playerA.battleForm).toBe("charizard-mega");
+    expect(room.playerA.transformationType).toBe("mega");
+    expect(room.playerA.transformationUsed).toBe(true);
+    // Stats should be from mega form
+    const poke = room.playerA.party[0];
+    expect(poke.stats.attack).toBe(80);
+    expect(poke.maxHp).toBe(120);
+    expect(room.log.some((l) => l.includes("메가진화"))).toBe(true);
+  });
+
+  it("cannot mega evolve twice per battle", () => {
+    const room = readyMegaRoom();
+    // First mega: works
+    submitAction(room, "userA", { type: "fight", moveId: "tackle", mega: true });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    expect(room.playerA.transformationUsed).toBe(true);
+
+    const statsAfterFirstMega = { ...room.playerA.party[0].stats };
+
+    // Switch out and back
+    submitAction(room, "userA", { type: "switch", pokemonIndex: 1 });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    submitAction(room, "userA", { type: "switch", pokemonIndex: 0 });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+
+    // Second mega attempt: should not change anything further
+    const megaLogCount = room.log.filter((l) => l.includes("메가진화")).length;
+    submitAction(room, "userA", { type: "fight", moveId: "tackle", mega: true });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+
+    // No new mega evolution log
+    const newMegaLogCount = room.log.filter((l) => l.includes("메가진화")).length;
+    expect(newMegaLogCount).toBe(0); // logs reset each turn, but mega should not trigger again
+  });
+
+  it("cannot mega evolve without key stone (non-rayquaza)", () => {
+    const room = readyMegaRoom({ hasKeyStone: false });
+    submitAction(room, "userA", { type: "fight", moveId: "tackle", mega: true });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+
+    expect(room.playerA.battleForm).toBeUndefined();
+    expect(room.playerA.transformationUsed).toBe(false);
+  });
+
+  it("rayquaza can mega evolve without key stone", () => {
+    const rayquaza = makeMegaPokemon("rayquaza");
+    const room = createRoom(
+      "userA", "A", [rayquaza, makePokemon("pikachu")],
+      "userB", "B", [makePokemon("bulbasaur"), makePokemon("squirtle")],
+      false,
+      { hasKeyStone: false, hasDynamaxBand: false },
+    );
+    selectLead(room, "userA", 0);
+    selectLead(room, "userB", 0);
+
+    submitAction(room, "userA", { type: "fight", moveId: "tackle", mega: true });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+
+    expect(room.playerA.battleForm).toBe("rayquaza-mega");
+    expect(room.playerA.transformationUsed).toBe(true);
+  });
+
+  it("mega form persists when switching back in", () => {
+    const room = readyMegaRoom();
+    // Mega evolve
+    submitAction(room, "userA", { type: "fight", moveId: "tackle", mega: true });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    expect(room.playerA.battleForm).toBe("charizard-mega");
+
+    // Switch out
+    submitAction(room, "userA", { type: "switch", pokemonIndex: 1 });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    expect(room.playerA.battleForm).toBeUndefined();
+
+    // Switch back in
+    submitAction(room, "userA", { type: "switch", pokemonIndex: 0 });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    expect(room.playerA.battleForm).toBe("charizard-mega");
+  });
+});

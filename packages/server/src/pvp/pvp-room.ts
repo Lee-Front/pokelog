@@ -224,14 +224,14 @@ function resolveTurn(room: PvpRoomState, actionA: PvpAction, actionB: PvpAction)
       : [{ player: room.playerB, action: actionB, opp: room.playerA },
          { player: room.playerA, action: actionA, opp: room.playerB }];
 
-    executeFight(room, first.player, first.action.moveId, first.opp);
+    executeFight(room, first.player, first.action.moveId, first.opp, first.action.mega, first.action.gigantamax);
     if (first.opp.party[first.opp.activeIndex].hp > 0) {
-      executeFight(room, second.player, second.action.moveId, second.opp);
+      executeFight(room, second.player, second.action.moveId, second.opp, second.action.mega, second.action.gigantamax);
     }
   } else if (actionA.type === "fight") {
-    executeFight(room, room.playerA, actionA.moveId, room.playerB);
+    executeFight(room, room.playerA, actionA.moveId, room.playerB, actionA.mega, actionA.gigantamax);
   } else if (actionB.type === "fight") {
-    executeFight(room, room.playerB, actionB.moveId, room.playerA);
+    executeFight(room, room.playerB, actionB.moveId, room.playerA, actionB.mega, actionB.gigantamax);
   }
 
   // ── End-of-turn effects (status damage, volatile tick) ──
@@ -324,6 +324,13 @@ function applySwitch(room: PvpRoomState, player: PvpPlayerState, index: number):
   player.statStages = defaultStatStages();
   player.volatiles = [];
   player.battleForm = undefined;
+
+  // Mega form persists when switching back in
+  const poke = player.party[index];
+  if (poke.megaForm && player.transformationUsed && player.transformationType === "mega") {
+    player.battleForm = poke.megaForm.variantId;
+  }
+
   room.log.push(`${player.nickname}: ${player.party[index].species}(으)로 교체!`);
 }
 
@@ -332,11 +339,48 @@ function executeFight(
   attacker: PvpPlayerState,
   moveId: string,
   defender: PvpPlayerState,
+  mega?: boolean,
+  gigantamax?: boolean,
 ): void {
   const atkPoke = attacker.party[attacker.activeIndex];
   const defPoke = defender.party[defender.activeIndex];
   const moveData = getMoveById(moveId);
   if (!moveData) return;
+
+  // ── Mega Evolution ──
+  if (mega && !attacker.transformationUsed) {
+    const poke = attacker.party[attacker.activeIndex];
+    if (poke.megaForm) {
+      const needsKeyStone = poke.species !== "rayquaza";
+      if (!needsKeyStone || attacker.hasKeyStone) {
+        attacker.battleForm = poke.megaForm.variantId;
+        attacker.transformationType = "mega";
+        attacker.transformationUsed = true;
+        poke.stats = { ...poke.megaForm.stats };
+        const hpRatio = poke.hp / poke.maxHp;
+        poke.maxHp = poke.megaForm.maxHp;
+        poke.hp = Math.round(hpRatio * poke.maxHp);
+        room.log.push(`${attacker.nickname}의 ${poke.species}: 메가진화!`);
+      }
+    }
+  }
+
+  // ── Gigantamax ──
+  if (gigantamax && !attacker.transformationUsed && attacker.hasDynamaxBand) {
+    const poke = attacker.party[attacker.activeIndex];
+    if (poke.gmaxForm) {
+      attacker.battleForm = poke.gmaxForm.variantId;
+      attacker.transformationType = "gigantamax";
+      attacker.transformationUsed = true;
+      attacker.gmaxTurnsRemaining = 3;
+      attacker.preTransformMaxHp = poke.maxHp;
+      poke.stats = { ...poke.gmaxForm.stats };
+      const hpRatio = poke.hp / poke.maxHp;
+      poke.maxHp = poke.gmaxForm.maxHp;
+      poke.hp = Math.ceil(hpRatio * poke.maxHp);
+      room.log.push(`${attacker.nickname}의 ${poke.species}: 거다이맥스!`);
+    }
+  }
 
   // ── Pre-attack status check ──
   // Decrement sleep turns first
