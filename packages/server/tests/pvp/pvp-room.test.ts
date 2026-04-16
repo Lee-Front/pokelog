@@ -945,3 +945,97 @@ describe("pvp multi-hit moves", () => {
     }
   });
 });
+
+// ── Task 7: Fixed Damage Moves & Self-Destruct ──
+describe("pvp fixed damage moves", () => {
+  it("dragon-rage always deals 40 damage regardless of stats", () => {
+    const pA: PvpPokemon = {
+      uid: "a-uid", species: "pikachu", level: 50,
+      hp: 200, maxHp: 200,
+      stats: { attack: 10, defense: 50, spAttack: 10, spDefense: 50, speed: 60 },
+      moves: [{ id: "dragon-rage", pp: 10, maxPp: 10 }],
+      statusCondition: null,
+    };
+    const pB: PvpPokemon = {
+      uid: "b-uid", species: "bulbasaur", level: 50,
+      hp: 200, maxHp: 200,
+      stats: { attack: 50, defense: 200, spAttack: 50, spDefense: 200, speed: 40 },
+      moves: [{ id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+    };
+    const room = createRoom("userA", "A", [pA, makePokemon("charizard")], "userB", "B", [pB, makePokemon("squirtle")]);
+    selectLead(room, "userA", 0);
+    selectLead(room, "userB", 0);
+
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    submitAction(room, "userA", { type: "fight", moveId: "dragon-rage" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    vi.restoreAllMocks();
+
+    // Dragon Rage always deals exactly 40 damage
+    expect(room.playerB.party[0].hp).toBeLessThanOrEqual(200); // took tackle damage too possibly
+    expect(room.log.some((l) => l.includes("40 데미지"))).toBe(true);
+  });
+
+  it("seismic-toss deals damage equal to user level", () => {
+    const pA: PvpPokemon = {
+      uid: "a-uid", species: "pikachu", level: 42,
+      hp: 200, maxHp: 200,
+      stats: { attack: 10, defense: 50, spAttack: 10, spDefense: 50, speed: 60 },
+      moves: [{ id: "seismic-toss", pp: 20, maxPp: 20 }],
+      statusCondition: null,
+    };
+    const pB: PvpPokemon = {
+      uid: "b-uid", species: "bulbasaur", level: 50,
+      hp: 200, maxHp: 200,
+      stats: { attack: 50, defense: 200, spAttack: 50, spDefense: 200, speed: 40 },
+      moves: [{ id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+    };
+    const room = createRoom("userA", "A", [pA, makePokemon("charizard")], "userB", "B", [pB, makePokemon("squirtle")]);
+    selectLead(room, "userA", 0);
+    selectLead(room, "userB", 0);
+
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    submitAction(room, "userA", { type: "fight", moveId: "seismic-toss" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    vi.restoreAllMocks();
+
+    // Seismic Toss deals damage = level = 42
+    expect(room.log.some((l) => l.includes("42 데미지"))).toBe(true);
+  });
+});
+
+describe("pvp self-destruct moves", () => {
+  it("self-destruct makes attacker faint after dealing damage", () => {
+    const pA: PvpPokemon = {
+      uid: "a-uid", species: "pikachu", level: 50,
+      hp: 200, maxHp: 200,
+      stats: { attack: 100, defense: 50, spAttack: 50, spDefense: 50, speed: 60 },
+      moves: [{ id: "self-destruct", pp: 5, maxPp: 5 }],
+      statusCondition: null,
+    };
+    const pB: PvpPokemon = {
+      uid: "b-uid", species: "bulbasaur", level: 50,
+      hp: 500, maxHp: 500,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 40 },
+      moves: [{ id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+    };
+    const room = createRoom("userA", "A", [pA, makePokemon("charizard")], "userB", "B", [pB, makePokemon("squirtle")]);
+    selectLead(room, "userA", 0);
+    selectLead(room, "userB", 0);
+
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    submitAction(room, "userA", { type: "fight", moveId: "self-destruct" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    vi.restoreAllMocks();
+
+    // Attacker should faint
+    expect(room.playerA.party[0].hp).toBe(0);
+    // Defender should have taken damage
+    expect(room.playerB.party[0].hp).toBeLessThan(500);
+    // Faint message for attacker
+    expect(room.log.some((l) => l.includes("A의") && l.includes("pikachu") && l.includes("쓰러졌다"))).toBe(true);
+  });
+});

@@ -15,6 +15,19 @@ import type {
   PvpClientRoomView, PvpRoomConfig, PvpAction,
 } from "../../../../shared/pvp-types.js";
 
+const FIXED_DAMAGE_MOVES: Record<string, number | "level"> = {
+  "dragon-rage": 40,
+  "sonic-boom": 20,
+  "seismic-toss": "level",
+  "night-shade": "level",
+  "psywave": "level",
+};
+
+const SELF_KO_MOVES = new Set([
+  "self-destruct", "explosion", "memento", "final-gambit",
+  "healing-wish", "lunar-dance", "misty-explosion",
+]);
+
 export const DEFAULT_CONFIG: PvpRoomConfig = {
   levelCap: 50,
   turnTimeoutMs: 30_000,
@@ -490,56 +503,78 @@ function executeFight(
   // Override accuracy for calculateDamage to prevent double-check
   const moveForCalc = { ...effectiveMoveData, accuracy: 999 };
 
-  // ── Burn halves physical attack ──
-  let effectiveAtkStats = atkPoke.stats;
-  if (atkPoke.statusCondition === "burn" && moveForCalc.category === "physical") {
-    effectiveAtkStats = { ...atkPoke.stats, attack: Math.floor(atkPoke.stats.attack * 0.5) };
-  }
-
-  const weatherMod = room.weather ? getWeatherTypeModifier(room.weather, moveForCalc.type) : 1;
-  const attackerTypes = getEffectiveTypes(atkPoke.species, atkPoke.variantId, attacker.battleForm);
-  const defenderTypes = getEffectiveTypes(defPoke.species, defPoke.variantId, defender.battleForm);
-
-  // ── Multi-hit loop ──
-  const minHits = effectiveMoveData.meta?.minHits ?? 1;
-  const maxHits = effectiveMoveData.meta?.maxHits ?? 1;
-  const hitCount = minHits === maxHits ? minHits : minHits + Math.floor(Math.random() * (maxHits - minHits + 1));
-
+  // ── Fixed damage moves ──
+  const fixedDmg = FIXED_DAMAGE_MOVES[isStruggle ? "" : moveId];
+  let isFixedDamage = false;
   let totalDamage = 0;
   let hitsMade = 0;
-  let lastResult = { damage: 0, missed: false, effectiveness: 1, message: "", critical: false };
-  for (let hit = 0; hit < hitCount; hit++) {
-    if (defPoke.hp <= 0) break;
-    const result = calculateDamage(
-      atkPoke.level, effectiveAtkStats, defPoke.stats, moveForCalc,
-      attackerTypes, defenderTypes,
-      attacker.statStages, defender.statStages,
-      weatherMod,
-    );
-    lastResult = result;
-    if (!result.missed) {
-      defPoke.hp = Math.max(0, defPoke.hp - result.damage);
-      totalDamage += result.damage;
-      hitsMade++;
-      if (result.critical) room.log.push("급소에 맞았다!");
+
+  if (fixedDmg != null && !isStruggle) {
+    isFixedDamage = true;
+    const damage = fixedDmg === "level" ? atkPoke.level : fixedDmg;
+    defPoke.hp = Math.max(0, defPoke.hp - damage);
+    totalDamage = damage;
+    hitsMade = 1;
+    room.log.push(`${attacker.nickname}의 ${atkPoke.species}: ${effectiveMoveData.name}! ${damage} 데미지!`);
+    if (defPoke.hp <= 0) room.log.push(`${defender.nickname}의 ${defPoke.species}이(가) 쓰러졌다!`);
+  }
+
+  if (!isFixedDamage) {
+    // ── Burn halves physical attack ──
+    let effectiveAtkStats = atkPoke.stats;
+    if (atkPoke.statusCondition === "burn" && moveForCalc.category === "physical") {
+      effectiveAtkStats = { ...atkPoke.stats, attack: Math.floor(atkPoke.stats.attack * 0.5) };
+    }
+
+    const weatherMod = room.weather ? getWeatherTypeModifier(room.weather, moveForCalc.type) : 1;
+    const attackerTypes = getEffectiveTypes(atkPoke.species, atkPoke.variantId, attacker.battleForm);
+    const defenderTypes = getEffectiveTypes(defPoke.species, defPoke.variantId, defender.battleForm);
+
+    // ── Multi-hit loop ──
+    const minHits = effectiveMoveData.meta?.minHits ?? 1;
+    const maxHits = effectiveMoveData.meta?.maxHits ?? 1;
+    const hitCount = minHits === maxHits ? minHits : minHits + Math.floor(Math.random() * (maxHits - minHits + 1));
+
+    let lastResult = { damage: 0, missed: false, effectiveness: 1, message: "", critical: false };
+    for (let hit = 0; hit < hitCount; hit++) {
+      if (defPoke.hp <= 0) break;
+      const result = calculateDamage(
+        atkPoke.level, effectiveAtkStats, defPoke.stats, moveForCalc,
+        attackerTypes, defenderTypes,
+        attacker.statStages, defender.statStages,
+        weatherMod,
+      );
+      lastResult = result;
+      if (!result.missed) {
+        defPoke.hp = Math.max(0, defPoke.hp - result.damage);
+        totalDamage += result.damage;
+        hitsMade++;
+        if (result.critical) room.log.push("급소에 맞았다!");
+      }
+    }
+
+    if (hitCount > 1) {
+      room.log.push(`${attacker.nickname}의 ${atkPoke.species}: ${moveForCalc.name}! ${hitsMade}번 맞았다! 총 ${totalDamage} 데미지!`);
+    } else {
+      room.log.push(
+        `${attacker.nickname}의 ${atkPoke.species}: ${moveForCalc.name}! ` +
+        (lastResult.missed ? "빗나갔다!" : `${totalDamage} 데미지!`),
+      );
+    }
+    if (lastResult.message) room.log.push(lastResult.message);
+
+    // ── Struggle recoil ──
+    if (isStruggle && hitsMade > 0) {
+      const recoil = Math.max(1, Math.floor(atkPoke.maxHp / 4));
+      atkPoke.hp = Math.max(0, atkPoke.hp - recoil);
+      room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 반동으로 ${recoil} 데미지!`);
     }
   }
 
-  if (hitCount > 1) {
-    room.log.push(`${attacker.nickname}의 ${atkPoke.species}: ${moveForCalc.name}! ${hitsMade}번 맞았다! 총 ${totalDamage} 데미지!`);
-  } else {
-    room.log.push(
-      `${attacker.nickname}의 ${atkPoke.species}: ${moveForCalc.name}! ` +
-      (lastResult.missed ? "빗나갔다!" : `${totalDamage} 데미지!`),
-    );
-  }
-  if (lastResult.message) room.log.push(lastResult.message);
-
-  // ── Struggle recoil ──
-  if (isStruggle && hitsMade > 0) {
-    const recoil = Math.max(1, Math.floor(atkPoke.maxHp / 4));
-    atkPoke.hp = Math.max(0, atkPoke.hp - recoil);
-    room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 반동으로 ${recoil} 데미지!`);
+  // ── Self-KO moves ──
+  if (SELF_KO_MOVES.has(moveId) && !isStruggle) {
+    atkPoke.hp = 0;
+    room.log.push(`${attacker.nickname}의 ${atkPoke.species}이(가) 쓰러졌다!`);
   }
 
   // ── Ailment application (only on hit, not for struggle) ──
@@ -624,7 +659,7 @@ function executeFight(
     }
   }
 
-  if (defPoke.hp <= 0) {
+  if (!isFixedDamage && defPoke.hp <= 0) {
     room.log.push(`${defender.nickname}의 ${defPoke.species}이(가) 쓰러졌다!`);
   }
 }
