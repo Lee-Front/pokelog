@@ -6,6 +6,10 @@ import {
   checkPreAttack, applyEndOfTurn, tickVolatiles,
   rollAilment, isVolatileAilment, addVolatile, rollSleepTurns, rollConfusionTurns, rollTrapTurns,
 } from "../game/status-conditions.js";
+import {
+  getWeatherFromMove, getWeatherDamage, getWeatherTypeModifier,
+  tickWeather, getDefaultWeatherTurns,
+} from "../game/weather.js";
 import type {
   PvpRoomState, PvpPlayerState, PvpPokemon,
   PvpClientRoomView, PvpRoomConfig, PvpAction,
@@ -235,6 +239,29 @@ function resolveTurn(room: PvpRoomState, actionA: PvpAction, actionB: PvpAction)
     player.volatiles = tickVolatiles(player.volatiles);
   }
 
+  // ── Weather end-of-turn ──
+  if (room.weather) {
+    for (const player of [room.playerA, room.playerB]) {
+      const poke = player.party[player.activeIndex];
+      if (poke.hp <= 0) continue;
+      const types = getEffectiveTypes(poke.species, poke.variantId, player.battleForm);
+      const weatherDmg = getWeatherDamage(room.weather, types, poke.maxHp);
+      if (weatherDmg > 0) {
+        poke.hp = Math.max(0, poke.hp - weatherDmg);
+        room.log.push(`${player.nickname}의 ${poke.species}: 날씨로 ${weatherDmg} 데미지!`);
+        if (poke.hp <= 0) {
+          room.log.push(`${player.nickname}의 ${poke.species}이(가) 쓰러졌다!`);
+        }
+      }
+    }
+    const tick = tickWeather(room.weather, room.weatherTurns);
+    room.weather = tick.weather;
+    room.weatherTurns = tick.turns;
+    if (tick.expired) {
+      room.log.push("날씨가 사라졌다!");
+    }
+  }
+
   const koA = room.playerA.party[room.playerA.activeIndex].hp <= 0;
   const koB = room.playerB.party[room.playerB.activeIndex].hp <= 0;
   const aliveA = room.playerA.party.some((p) => p.hp > 0);
@@ -317,11 +344,13 @@ function executeFight(
   const move = atkPoke.moves.find((m) => m.id === moveId);
   if (move && move.pp > 0) move.pp -= 1;
 
+  const weatherMod = room.weather ? getWeatherTypeModifier(room.weather, moveData.type) : 1;
   const result = calculateDamage(
     atkPoke.level, atkPoke.stats, defPoke.stats, moveData,
     getEffectiveTypes(atkPoke.species, atkPoke.variantId, attacker.battleForm),
     getEffectiveTypes(defPoke.species, defPoke.variantId, defender.battleForm),
     attacker.statStages, defender.statStages,
+    weatherMod,
   );
 
   defPoke.hp = Math.max(0, defPoke.hp - result.damage);
@@ -371,6 +400,17 @@ function executeFight(
       if (drainAmount > 0) room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 체력을 흡수했다!`);
       else if (drainAmount < 0) room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 반동 데미지를 받았다!`);
     }
+  }
+
+  // ── Weather setting from move ──
+  const weather = getWeatherFromMove(moveId);
+  if (weather) {
+    room.weather = weather;
+    room.weatherTurns = getDefaultWeatherTurns();
+    const weatherNames: Record<string, string> = {
+      sun: "강한 햇살", rain: "비", hail: "우박", sandstorm: "모래바람",
+    };
+    room.log.push(`${weatherNames[weather] ?? weather} 상태가 되었다!`);
   }
 
   if (defPoke.hp <= 0) {
