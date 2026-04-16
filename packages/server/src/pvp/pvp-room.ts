@@ -94,6 +94,21 @@ export function selectLead(room: PvpRoomState, userId: string, index: number): v
     room.phase = "action";
     room.turn = 1;
     room.turnDeadline = Date.now() + DEFAULT_CONFIG.turnTimeoutMs;
+
+    // ── Primal Reversion (auto at lead select) ──
+    for (const p of [room.playerA, room.playerB]) {
+      const poke = p.party[p.activeIndex];
+      if (poke.primalForm) {
+        p.battleForm = poke.primalForm.variantId;
+        p.transformationType = "primal";
+        // Primal does NOT consume transformationUsed (can still mega evolve another pokemon)
+        poke.stats = { ...poke.primalForm.stats };
+        const hpRatio = poke.hp / poke.maxHp;
+        poke.maxHp = poke.primalForm.maxHp;
+        poke.hp = Math.round(hpRatio * poke.maxHp);
+        room.log.push(`${p.nickname}의 ${poke.species}: 원시회귀!`);
+      }
+    }
   }
 }
 

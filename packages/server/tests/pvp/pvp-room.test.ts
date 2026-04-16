@@ -136,3 +136,96 @@ describe("pvp turn resolution", () => {
     expect(room.playerA.activeIndex).toBe(1);
   });
 });
+
+// ── Task 3: Primal Reversion ──
+describe("pvp primal reversion", () => {
+  function makePrimalGroudon(): PvpPokemon {
+    return {
+      uid: "groudon-uid",
+      species: "groudon",
+      level: 50,
+      hp: 100,
+      maxHp: 100,
+      stats: { attack: 80, defense: 70, spAttack: 60, spDefense: 60, speed: 50 },
+      moves: [{ id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+      primalForm: {
+        variantId: "groudon-primal",
+        maxHp: 150,
+        stats: { attack: 120, defense: 90, spAttack: 80, spDefense: 80, speed: 50 },
+      },
+    };
+  }
+
+  it("auto-applies primal reversion when lead is selected and both players are ready", () => {
+    const groudon = makePrimalGroudon();
+    const room = createRoom(
+      "userA", "A", [groudon, makePokemon("charizard")],
+      "userB", "B", [makePokemon("bulbasaur"), makePokemon("squirtle")],
+    );
+    selectLead(room, "userA", 0);
+    selectLead(room, "userB", 0);
+
+    expect(room.phase).toBe("action");
+    const poke = room.playerA.party[0];
+    expect(room.playerA.battleForm).toBe("groudon-primal");
+    expect(room.playerA.transformationType).toBe("primal");
+    expect(poke.stats.attack).toBe(120);
+    expect(poke.stats.defense).toBe(90);
+    expect(poke.maxHp).toBe(150);
+    // HP should scale proportionally (was 100/100 = 1.0 → 150)
+    expect(poke.hp).toBe(150);
+  });
+
+  it("scales HP proportionally when pokemon is damaged", () => {
+    const groudon = makePrimalGroudon();
+    groudon.hp = 50; // 50% HP
+    const room = createRoom(
+      "userA", "A", [groudon, makePokemon("charizard")],
+      "userB", "B", [makePokemon("bulbasaur"), makePokemon("squirtle")],
+    );
+    selectLead(room, "userA", 0);
+    selectLead(room, "userB", 0);
+
+    const poke = room.playerA.party[0];
+    // 50/100 = 0.5 → Math.round(0.5 * 150) = 75
+    expect(poke.hp).toBe(75);
+    expect(poke.maxHp).toBe(150);
+  });
+
+  it("does NOT consume transformationUsed (can still mega evolve)", () => {
+    const groudon = makePrimalGroudon();
+    const room = createRoom(
+      "userA", "A", [groudon, makePokemon("charizard")],
+      "userB", "B", [makePokemon("bulbasaur"), makePokemon("squirtle")],
+    );
+    selectLead(room, "userA", 0);
+    selectLead(room, "userB", 0);
+
+    expect(room.playerA.transformationUsed).toBeFalsy();
+  });
+
+  it("logs primal reversion message", () => {
+    const groudon = makePrimalGroudon();
+    const room = createRoom(
+      "userA", "A", [groudon, makePokemon("charizard")],
+      "userB", "B", [makePokemon("bulbasaur"), makePokemon("squirtle")],
+    );
+    selectLead(room, "userA", 0);
+    selectLead(room, "userB", 0);
+
+    expect(room.log.some((l) => l.includes("원시회귀"))).toBe(true);
+  });
+
+  it("does NOT apply primal reversion for pokemon without primalForm", () => {
+    const room = createRoom(
+      "userA", "A", [makePokemon("pikachu"), makePokemon("charizard")],
+      "userB", "B", [makePokemon("bulbasaur"), makePokemon("squirtle")],
+    );
+    selectLead(room, "userA", 0);
+    selectLead(room, "userB", 0);
+
+    expect(room.playerA.battleForm).toBeUndefined();
+    expect(room.playerA.transformationType).toBeUndefined();
+  });
+});
