@@ -18,6 +18,12 @@ import {
   triggerOnSwitchIn, triggerOnSwitchOut, getAttackMultiplier, getDefenseMultiplier,
   getMoveModifiers, canReceiveStatus, triggerEndOfTurn, getEffectiveSpeed,
 } from "./pvp-abilities.js";
+import {
+  getItemAttackMultiplier, getItemDefenseMultiplier,
+  triggerAfterAttack, triggerAfterBeingHit,
+  triggerItemEndOfTurn, getItemSpeedMultiplier,
+  checkItemPreventKO,
+} from "./pvp-items.js";
 import type {
   PvpRoomState, PvpPlayerState, PvpPokemon,
   PvpClientRoomView, PvpRoomConfig, PvpAction,
@@ -294,6 +300,9 @@ function resolveTurn(room: PvpRoomState, actionA: PvpAction, actionB: PvpAction)
     // ── Ability: speed modifiers (before paralysis) ──
     let speedA = getEffectiveSpeed(pokemonA.stats.speed, pokemonA, room.weather);
     let speedB = getEffectiveSpeed(pokemonB.stats.speed, pokemonB, room.weather);
+    // ── Item: speed modifiers ──
+    speedA = getItemSpeedMultiplier(speedA, pokemonA);
+    speedB = getItemSpeedMultiplier(speedB, pokemonB);
     if (pokemonA.statusCondition === "paralysis") speedA = Math.floor(speedA * 0.5);
     if (pokemonB.statusCondition === "paralysis") speedB = Math.floor(speedB * 0.5);
 
@@ -386,6 +395,11 @@ function resolveTurn(room: PvpRoomState, actionA: PvpAction, actionB: PvpAction)
     // ── Ability: end-of-turn effects ──
     if (poke.hp > 0) {
       triggerEndOfTurn({ room, player, opponent: opp, pokemon: poke });
+    }
+
+    // ── Item: end-of-turn effects (leftovers, flame-orb, etc.) ──
+    if (poke.hp > 0) {
+      triggerItemEndOfTurn({ room, player, opponent: opp, pokemon: poke });
     }
   }
 
@@ -655,6 +669,9 @@ function executeFight(
     const dmgCtx = { room, attacker, defender, atkPoke, defPoke, move: moveForCalc, damage: 0 };
     const atkMul = getAttackMultiplier(dmgCtx);
     const defMul = getDefenseMultiplier(dmgCtx);
+    // ── Item: attack/defense multipliers ──
+    const itemAtkMul = getItemAttackMultiplier(dmgCtx);
+    const itemDefMul = getItemDefenseMultiplier(dmgCtx);
 
     // ── Ability: Unaware ignores opponent stat stages ──
     const atkStages = defPoke.abilityId === "unaware" ? defaultStatStages() : attacker.statStages;
@@ -682,6 +699,17 @@ function executeFight(
         } else {
           finalDamage = Math.floor(finalDamage * defMul);
         }
+        // ── Item: apply attack/defense multipliers ──
+        finalDamage = Math.floor(finalDamage * itemAtkMul);
+        finalDamage = Math.floor(finalDamage * itemDefMul);
+        // ── Item: prevent KO check (focus-sash etc.) ──
+        if (finalDamage >= defPoke.hp && defPoke.hp > 0) {
+          const prevented = checkItemPreventKO({ room, defender, defPoke, damage: finalDamage });
+          if (prevented) {
+            finalDamage = defPoke.hp - 1;
+            defPoke.heldItem = null; // consume item
+          }
+        }
         defPoke.hp = Math.max(0, defPoke.hp - finalDamage);
         totalDamage += finalDamage;
         hitsMade++;
@@ -704,6 +732,13 @@ function executeFight(
       const recoil = Math.max(1, Math.floor(atkPoke.maxHp / 4));
       atkPoke.hp = Math.max(0, atkPoke.hp - recoil);
       room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 반동으로 ${recoil} 데미지!`);
+    }
+
+    // ── Item: after-attack effects (life-orb recoil, shell-bell) ──
+    if (hitsMade > 0 && totalDamage > 0) {
+      const afterCtx = { room, attacker, defender, atkPoke, defPoke, move: effectiveMoveData, damage: totalDamage };
+      triggerAfterAttack(afterCtx);
+      triggerAfterBeingHit(afterCtx);
     }
   }
 
