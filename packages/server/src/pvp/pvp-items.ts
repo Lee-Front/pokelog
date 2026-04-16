@@ -382,3 +382,69 @@ register("lum-berry", {
 register("heavy-duty-boots", {
   // Placeholder for Plan D hazards — no effects yet
 });
+
+// ── Status Healing Berries ──
+
+register("cheri-berry", {
+  afterBeingHit: (ctx) => {
+    if (ctx.defPoke.statusCondition === "paralysis" && ctx.defPoke.heldItem === "cheri-berry") {
+      ctx.defPoke.statusCondition = null;
+      ctx.defPoke.heldItem = null;
+      ctx.room.log.push(`${ctx.defPoke.species}의 크라보열매! 마비가 치유됐다!`);
+    }
+  },
+});
+
+register("chesto-berry", {
+  afterBeingHit: (ctx) => {
+    if (ctx.defPoke.statusCondition === "sleep" && ctx.defPoke.heldItem === "chesto-berry") {
+      ctx.defPoke.statusCondition = null;
+      ctx.defPoke.sleepTurns = undefined;
+      ctx.defPoke.heldItem = null;
+      ctx.room.log.push(`${ctx.defPoke.species}의 유루열매! 잠듦이 치유됐다!`);
+    }
+  },
+});
+
+register("pecha-berry", {
+  afterBeingHit: (ctx) => {
+    if (ctx.defPoke.statusCondition === "poison" && ctx.defPoke.heldItem === "pecha-berry") {
+      ctx.defPoke.statusCondition = null;
+      ctx.defPoke.toxicCounter = undefined;
+      ctx.defPoke.heldItem = null;
+      ctx.room.log.push(`${ctx.defPoke.species}의 복숭아열매! 독이 치유됐다!`);
+    }
+  },
+});
+
+register("rawst-berry", {
+  afterBeingHit: (ctx) => {
+    if (ctx.defPoke.statusCondition === "burn" && ctx.defPoke.heldItem === "rawst-berry") {
+      ctx.defPoke.statusCondition = null;
+      ctx.defPoke.heldItem = null;
+      ctx.room.log.push(`${ctx.defPoke.species}의 리샘열매! 화상이 치유됐다!`);
+    }
+  },
+});
+
+register("aspear-berry", {
+  afterBeingHit: (ctx) => {
+    if (ctx.defPoke.statusCondition === "freeze" && ctx.defPoke.heldItem === "aspear-berry") {
+      ctx.defPoke.statusCondition = null;
+      ctx.defPoke.heldItem = null;
+      ctx.room.log.push(`${ctx.defPoke.species}의 나모열매! 얼음이 치유됐다!`);
+    }
+  },
+});
+
+// ── Air Balloon ──
+
+register("air-balloon", {
+  onDefense: (ctx) => ctx.move.type === "ground" ? 0 : 1,
+  afterBeingHit: (ctx) => {
+    if (ctx.damage > 0 && ctx.defPoke.heldItem === "air-balloon") {
+      ctx.defPoke.heldItem = null;
+      ctx.room.log.push(`${ctx.defPoke.species}의 풍선이 터졌다!`);
+    }
+  },
+});

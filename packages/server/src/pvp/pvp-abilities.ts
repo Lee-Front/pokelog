@@ -563,3 +563,10 @@ register("pressure", {
     ctx.room.log.push(`${ctx.pokemon.species}의 프레셔!`);
   },
 });
+
+// ── Contact Abilities (logic in pvp-room.ts, registered here for completeness) ──
+register("static", {});
+register("poison-point", {});
+register("flame-body", {});
+register("rough-skin", {});
+register("iron-barbs", {});

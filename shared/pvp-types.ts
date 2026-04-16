@@ -50,6 +50,13 @@ export interface PvpPlayerState {
   hasKeyStone?: boolean;
   hasDynamaxBand?: boolean;
   protectCount?: number;
+  lockedMoveId?: string;
+  screens?: {
+    reflect?: number;      // turns remaining
+    lightScreen?: number;  // turns remaining
+    auroraVeil?: number;   // turns remaining
+  };
+  tailwind?: number;       // turns remaining
   hazards?: {
     stealthRock?: boolean;
     spikes?: number;      // 0-3
@@ -69,6 +76,7 @@ export interface PvpRoomState {
   playerB: PvpPlayerState;
   weather?: BattleWeather;
   weatherTurns?: number;
+  trickRoom?: number;       // turns remaining
   turnDeadline: number | null;
   log: string[];
   result?: {

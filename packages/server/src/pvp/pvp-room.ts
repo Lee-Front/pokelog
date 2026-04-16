@@ -4,7 +4,7 @@ import { getEffectiveTypes } from "../game/pokemon-state.js";
 import { getMoveById, getTypeChart } from "../game/data-loader.js";
 import {
   checkPreAttack, applyEndOfTurn, tickVolatiles,
-  rollAilment, isVolatileAilment, addVolatile, rollSleepTurns, rollConfusionTurns, rollTrapTurns,
+  rollAilment, isVolatileAilment, addVolatile, hasVolatile, rollSleepTurns, rollConfusionTurns, rollTrapTurns,
 } from "../game/status-conditions.js";
 import {
   getWeatherFromMove, getWeatherDamage, getWeatherTypeModifier,
@@ -22,7 +22,7 @@ import {
   getItemAttackMultiplier, getItemDefenseMultiplier,
   triggerAfterAttack, triggerAfterBeingHit,
   triggerItemEndOfTurn, getItemSpeedMultiplier,
-  checkItemPreventKO,
+  checkItemPreventKO, isItemLockMove,
 } from "./pvp-items.js";
 import type {
   PvpRoomState, PvpPlayerState, PvpPokemon,
@@ -312,6 +312,9 @@ function resolveTurn(room: PvpRoomState, actionA: PvpAction, actionB: PvpAction)
     // ── Item: speed modifiers ──
     speedA = getItemSpeedMultiplier(speedA, pokemonA);
     speedB = getItemSpeedMultiplier(speedB, pokemonB);
+    // ── Tailwind: 2x speed ──
+    if (room.playerA.tailwind && room.playerA.tailwind > 0) speedA *= 2;
+    if (room.playerB.tailwind && room.playerB.tailwind > 0) speedB *= 2;
     if (pokemonA.statusCondition === "paralysis") speedA = Math.floor(speedA * 0.5);
     if (pokemonB.statusCondition === "paralysis") speedB = Math.floor(speedB * 0.5);
 
@@ -321,10 +324,15 @@ function resolveTurn(room: PvpRoomState, actionA: PvpAction, actionB: PvpAction)
     const priorityA = (moveA?.priority ?? 0) + modsA.priorityMod;
     const priorityB = (moveB?.priority ?? 0) + modsB.priorityMod;
 
-    const order = determineTurnOrder(
+    let order = determineTurnOrder(
       speedA, speedB,
       priorityA, priorityB,
     );
+
+    // ── Trick Room: reverse speed order (only when priorities are equal) ──
+    if (room.trickRoom && room.trickRoom > 0 && priorityA === priorityB) {
+      order = order === "player" ? "wild" : "player";
+    }
 
     const [first, second] = order === "player"
       ? [{ player: room.playerA, action: actionA, opp: room.playerB, defProtected: protectedB },
@@ -357,6 +365,19 @@ function resolveTurn(room: PvpRoomState, actionA: PvpAction, actionB: PvpAction)
       return;
     }
     room.pendingSwitchAfterMove = undefined;
+  }
+
+  // ── Yawn countdown: put to sleep (checked BEFORE tickVolatiles) ──
+  for (const player of [room.playerA, room.playerB]) {
+    const poke = player.party[player.activeIndex];
+    if (poke.hp <= 0) continue;
+    const yawnVol = player.volatiles.find(v => v.id === "yawn");
+    if (yawnVol && yawnVol.turnsRemaining <= 1 && !poke.statusCondition) {
+      poke.statusCondition = "sleep";
+      poke.sleepTurns = rollSleepTurns();
+      room.log.push(`${player.nickname}의 ${poke.species}: 잠들어 버렸다!`);
+      player.volatiles = player.volatiles.filter(v => v.id !== "yawn");
+    }
   }
 
   // ── End-of-turn effects (status damage, volatile tick) ──
@@ -487,6 +508,73 @@ function resolveTurn(room: PvpRoomState, actionA: PvpAction, actionB: PvpAction)
     }
   }
 
+  // ── Clear flinch volatiles at end of turn ──
+  room.playerA.volatiles = room.playerA.volatiles.filter(v => v.id !== "flinch");
+  room.playerB.volatiles = room.playerB.volatiles.filter(v => v.id !== "flinch");
+
+  // ── Perish Song countdown ──
+  for (const player of [room.playerA, room.playerB]) {
+    const poke = player.party[player.activeIndex];
+    if (poke.hp <= 0) continue;
+    const perishVol = player.volatiles.find(v => v.id === "perish-song");
+    if (perishVol) {
+      if (perishVol.turnsRemaining <= 1) {
+        poke.hp = 0;
+        room.log.push(`${player.nickname}의 ${poke.species}: 멸망의 카운트가 0이 되었다!`);
+        player.volatiles = player.volatiles.filter(v => v.id !== "perish-song");
+      } else {
+        room.log.push(`${player.nickname}의 ${poke.species}: 멸망의 카운트 ${perishVol.turnsRemaining - 1}!`);
+      }
+    }
+  }
+
+  // ── Screen tick (Reflect, Light Screen, Aurora Veil) ──
+  for (const player of [room.playerA, room.playerB]) {
+    if (player.screens) {
+      if (player.screens.reflect) {
+        player.screens.reflect--;
+        if (player.screens.reflect <= 0) {
+          delete player.screens.reflect;
+          room.log.push(`${player.nickname}: 리플렉터가 사라졌다!`);
+        }
+      }
+      if (player.screens.lightScreen) {
+        player.screens.lightScreen--;
+        if (player.screens.lightScreen <= 0) {
+          delete player.screens.lightScreen;
+          room.log.push(`${player.nickname}: 빛의장막이 사라졌다!`);
+        }
+      }
+      if (player.screens.auroraVeil) {
+        player.screens.auroraVeil--;
+        if (player.screens.auroraVeil <= 0) {
+          delete player.screens.auroraVeil;
+          room.log.push(`${player.nickname}: 오로라베일이 사라졌다!`);
+        }
+      }
+    }
+  }
+
+  // ── Trick Room tick ──
+  if (room.trickRoom && room.trickRoom > 0) {
+    room.trickRoom--;
+    if (room.trickRoom <= 0) {
+      room.trickRoom = undefined;
+      room.log.push("트릭룸이 해제됐다!");
+    }
+  }
+
+  // ── Tailwind tick ──
+  for (const player of [room.playerA, room.playerB]) {
+    if (player.tailwind && player.tailwind > 0) {
+      player.tailwind--;
+      if (player.tailwind <= 0) {
+        player.tailwind = undefined;
+        room.log.push(`${player.nickname}: 순풍이 그쳤다!`);
+      }
+    }
+  }
+
   const koA = room.playerA.party[room.playerA.activeIndex].hp <= 0;
   const koB = room.playerB.party[room.playerB.activeIndex].hp <= 0;
   const aliveA = room.playerA.party.some((p) => p.hp > 0);
@@ -589,6 +677,9 @@ function applySwitch(room: PvpRoomState, player: PvpPlayerState, index: number):
   // Reset toxic counter on the pokemon being switched out
   if (oldPoke.toxicCounter) oldPoke.toxicCounter = undefined;
 
+  // Reset choice lock on switch
+  player.lockedMoveId = undefined;
+
   player.activeIndex = index;
 
   // ── Baton Pass: keep stat stages and volatiles ──
@@ -632,7 +723,7 @@ function executeFight(
 ): void {
   const atkPoke = attacker.party[attacker.activeIndex];
   const defPoke = defender.party[defender.activeIndex];
-  const moveData = getMoveById(moveId);
+  let moveData = getMoveById(moveId);
   if (!moveData) return;
 
   // ── Mega Evolution ──
@@ -670,10 +761,24 @@ function executeFight(
     }
   }
 
+  // ── Flinch check (applied by faster attacker, consumed here) ──
+  if (hasVolatile(attacker.volatiles, "flinch")) {
+    room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 풀이 죽어 움직일 수 없다!`);
+    attacker.volatiles = attacker.volatiles.filter(v => v.id !== "flinch");
+    return;
+  }
+
   // ── Defender protected check ──
   if (defenderProtected) {
     room.log.push(`${defender.nickname}의 ${defPoke.species}: 공격을 막았다!`);
     return;
+  }
+
+  // ── Choice Lock: enforce locked move (applied before struggle check) ──
+  if (attacker.lockedMoveId) {
+    moveId = attacker.lockedMoveId;
+    const lockedMoveData = getMoveById(moveId);
+    if (lockedMoveData) moveData = lockedMoveData;
   }
 
   // ── Pre-attack status check ──
@@ -799,6 +904,15 @@ function executeFight(
         // ── Item: apply attack/defense multipliers ──
         finalDamage = Math.floor(finalDamage * itemAtkMul);
         finalDamage = Math.floor(finalDamage * itemDefMul);
+        // ── Screen damage reduction (critical hits ignore screens) ──
+        if (!result.critical && defender.screens) {
+          const hasReflect = moveForCalc.category === "physical" && (defender.screens.reflect ?? 0) > 0;
+          const hasLightScreen = moveForCalc.category === "special" && (defender.screens.lightScreen ?? 0) > 0;
+          const hasAuroraVeil = (defender.screens.auroraVeil ?? 0) > 0;
+          if (hasReflect || hasLightScreen || hasAuroraVeil) {
+            finalDamage = Math.floor(finalDamage * 0.5);
+          }
+        }
         // ── Item: prevent KO check (focus-sash etc.) ──
         if (finalDamage >= defPoke.hp && defPoke.hp > 0) {
           const prevented = checkItemPreventKO({ room, defender, defPoke, damage: finalDamage });
@@ -839,6 +953,55 @@ function executeFight(
     }
   }
 
+  // ── Flinch application (faster attacker flinches slower defender) ──
+  if (!isStruggle && hitsMade > 0 && defPoke.hp > 0 && moveData.meta?.flinchChance) {
+    if (Math.random() * 100 < moveData.meta.flinchChance) {
+      if (canReceiveStatus(defPoke, "flinch")) {
+        defender.volatiles = addVolatile(defender.volatiles, "flinch", 1);
+      }
+    }
+  }
+
+  // ── Contact ability effects (after physical hit on defender) ──
+  if (hitsMade > 0 && moveData.category === "physical" && defPoke.hp > 0 && atkPoke.hp > 0) {
+    if (defPoke.abilityId === "static" && !atkPoke.statusCondition && Math.random() < 0.3) {
+      if (canReceiveStatus(atkPoke, "paralysis")) {
+        atkPoke.statusCondition = "paralysis";
+        room.log.push(`${defPoke.species}의 정전기! ${atkPoke.species}이(가) 마비됐다!`);
+      }
+    }
+    if (defPoke.abilityId === "poison-point" && !atkPoke.statusCondition && Math.random() < 0.3) {
+      if (canReceiveStatus(atkPoke, "poison")) {
+        atkPoke.statusCondition = "poison";
+        room.log.push(`${defPoke.species}의 독가시! ${atkPoke.species}이(가) 독에 걸렸다!`);
+      }
+    }
+    if (defPoke.abilityId === "flame-body" && !atkPoke.statusCondition && Math.random() < 0.3) {
+      if (canReceiveStatus(atkPoke, "burn")) {
+        atkPoke.statusCondition = "burn";
+        room.log.push(`${defPoke.species}의 불꽃몸! ${atkPoke.species}이(가) 화상을 입었다!`);
+      }
+    }
+    if (defPoke.abilityId === "rough-skin" || defPoke.abilityId === "iron-barbs") {
+      const contactDmg = Math.max(1, Math.floor(atkPoke.maxHp / 8));
+      atkPoke.hp = Math.max(0, atkPoke.hp - contactDmg);
+      room.log.push(`${defPoke.species}의 ${defPoke.abilityId === "rough-skin" ? "까칠한피부" : "철가시"}! ${atkPoke.species}에게 ${contactDmg} 데미지!`);
+    }
+  }
+
+  // ── Brick Break / Psychic Fangs: remove screens ──
+  if (!isStruggle && (moveId === "brick-break" || moveId === "psychic-fangs") && hitsMade > 0) {
+    if (defender.screens && (defender.screens.reflect || defender.screens.lightScreen || defender.screens.auroraVeil)) {
+      defender.screens = undefined;
+      room.log.push("벽이 부서졌다!");
+    }
+  }
+
+  // ── Choice Lock: lock into move after using it ──
+  if (!isStruggle && isItemLockMove(atkPoke)) {
+    attacker.lockedMoveId = moveId;
+  }
+
   // ── Self-KO moves ──
   if (SELF_KO_MOVES.has(moveId) && !isStruggle) {
     atkPoke.hp = 0;
@@ -874,15 +1037,22 @@ function executeFight(
         }
       }
       if (isVolatileAilment(ailment)) {
-        if (chance <= 0 || chance >= 100 || Math.random() * 100 < chance) {
+        // Yawn: skip if defender already has a status condition
+        if (ailment === "yawn" && defPoke.statusCondition) {
+          // No effect
+        // Perish Song: handled separately (applies to both sides)
+        } else if (ailment === "perish-song") {
+          // Skip: handled in dedicated perish-song section below
+        } else if (chance <= 0 || chance >= 100 || Math.random() * 100 < chance) {
           let turns = -1;
           if (ailment === "confusion") turns = rollConfusionTurns();
           else if (ailment === "trap") turns = rollTrapTurns();
+          else if (ailment === "yawn") turns = 2;
           const newVols = addVolatile(defender.volatiles, ailment, turns);
           if (newVols !== defender.volatiles) {
             defender.volatiles = newVols;
             const volNames: Record<string, string> = {
-              confusion: "혼란", trap: "조이기", "leech-seed": "씨뿌리기",
+              confusion: "혼란", trap: "조이기", "leech-seed": "씨뿌리기", yawn: "졸음",
             };
             room.log.push(`${defender.nickname}의 ${defPoke.species}: ${volNames[ailment] ?? ailment} 상태가 되었다!`);
           }
@@ -1008,7 +1178,7 @@ function executeFight(
     }
   }
 
-  // ── Defog: remove both sides' hazards ──
+  // ── Defog: remove both sides' hazards + screens + evasion drop ──
   if (!isStruggle && moveId === "defog") {
     let cleared = false;
     if (attacker.hazards && Object.keys(attacker.hazards).some(k => (attacker.hazards as Record<string, unknown>)[k])) {
@@ -1019,9 +1189,63 @@ function executeFight(
       defender.hazards = {};
       cleared = true;
     }
+    // Defog also removes screens
+    if (defender.screens) {
+      defender.screens = undefined;
+      cleared = true;
+    }
     if (cleared) {
       room.log.push(`안개제거로 필드의 hazard가 제거되었다!`);
     }
+    // Defog drops opponent's evasion by 1
+    defender.statStages = applyStatChanges(defender.statStages, [{ stat: "evasion", change: -1 }]);
+  }
+
+  // ── Screen-setting moves (Reflect, Light Screen, Aurora Veil) ──
+  if (!isStruggle) {
+    const SCREEN_MOVES: Record<string, "reflect" | "lightScreen" | "auroraVeil"> = {
+      "reflect": "reflect",
+      "light-screen": "lightScreen",
+      "aurora-veil": "auroraVeil",
+    };
+    const screenType = SCREEN_MOVES[moveId];
+    if (screenType) {
+      if (screenType === "auroraVeil" && room.weather !== "hail") {
+        room.log.push(`${attacker.nickname}: 오로라베일 실패! (우박이 아닙니다)`);
+      } else {
+        if (!attacker.screens) attacker.screens = {};
+        attacker.screens[screenType] = 5;
+        const names: Record<string, string> = { reflect: "리플렉터", lightScreen: "빛의장막", auroraVeil: "오로라베일" };
+        room.log.push(`${attacker.nickname}: ${names[screenType]}!`);
+      }
+    }
+  }
+
+  // ── Trick Room ──
+  if (!isStruggle && moveId === "trick-room") {
+    if (room.trickRoom && room.trickRoom > 0) {
+      room.trickRoom = 0;
+      room.log.push("트릭룸이 해제됐다!");
+    } else {
+      room.trickRoom = 5;
+      room.log.push("트릭룸! 느린 포켓몬이 먼저 움직인다!");
+    }
+  }
+
+  // ── Tailwind ──
+  if (!isStruggle && moveId === "tailwind") {
+    attacker.tailwind = 4;
+    room.log.push(`${attacker.nickname}: 순풍! 스피드가 올랐다!`);
+  }
+
+  // ── Perish Song ──
+  if (!isStruggle && moveId === "perish-song") {
+    for (const player of [attacker, defender]) {
+      if (!hasVolatile(player.volatiles, "perish-song")) {
+        player.volatiles = addVolatile(player.volatiles, "perish-song", 4);
+      }
+    }
+    room.log.push("멸망의노래가 울려퍼졌다!");
   }
 
   // ── Switch-after-move (U-Turn, Volt Switch, Flip Turn, Parting Shot) ──
