@@ -21,7 +21,9 @@ function sleep(ms: number): Promise<void> {
 const EGG_ART_MAP: Record<string, string> = {
   common: "commonEgg",
   rare: "rareEgg",
-  legend: "legendEgg",
+  epic: "epicEgg",
+  legend: "LegendaryEgg",
+  manaphy: "manaphyEgg",
 };
 
 // ── 뽑기 연출 ───────────────────────────────────────────────────

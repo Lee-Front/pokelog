@@ -16,6 +16,14 @@ interface EggTierConfig {
   pool: () => EggPoolEntry[];
 }
 
+// 의사전설(pseudo-legendary) 종족값 합계 기준 (600 이상)
+const PSEUDO_LEGENDARY_BST = 600;
+
+function getBaseStatTotal(species: SpeciesData): number {
+  const s = species.baseStats;
+  return s.hp + s.attack + s.defense + s.spAttack + s.spDefense + s.speed;
+}
+
 const EGG_TIER_CONFIGS: EggTierConfig[] = [
   {
     tier: "common",
@@ -38,13 +46,33 @@ const EGG_TIER_CONFIGS: EggTierConfig[] = [
     })),
   },
   {
+    tier: "epic",
+    label: "Epic Egg",
+    cost: 1200,
+    levelRange: [10, 18],
+    pool: () => getEggEligibleSpecies("epic").map((species) => ({
+      species: species.species,
+      weight: getEggWeight(species, "epic"),
+    })),
+  },
+  {
     tier: "legend",
-    label: "Legend Egg",
+    label: "Legendary Egg",
     cost: 3200,
     levelRange: [15, 25],
     pool: () => getEggEligibleSpecies("legend").map((species) => ({
       species: species.species,
       weight: getEggWeight(species, "legend"),
+    })),
+  },
+  {
+    tier: "manaphy",
+    label: "Manaphy Egg",
+    cost: 5000,
+    levelRange: [1, 1],
+    pool: () => getEggEligibleSpecies("manaphy").map((species) => ({
+      species: species.species,
+      weight: getEggWeight(species, "manaphy"),
     })),
   },
 ];
@@ -79,6 +107,11 @@ function getEggEligibleSpecies(tier: EggTierId): SpeciesData[] {
       return false;
     }
 
+    // manaphy: Manaphy + Phione only
+    if (tier === "manaphy") {
+      return species.species === "manaphy" || species.species === "phione";
+    }
+
     if (tier === "legend") {
       return species.isLegendary || species.isMythical;
     }
@@ -87,12 +120,21 @@ function getEggEligibleSpecies(tier: EggTierId): SpeciesData[] {
       return false;
     }
 
+    // epic: pseudo-legendary (BST >= 600) or very rare non-legendary (captureRate < 45)
+    if (tier === "epic") {
+      const bst = getBaseStatTotal(species);
+      const rawCaptureRate = species.rawCaptureRate ?? 0;
+      return bst >= PSEUDO_LEGENDARY_BST || rawCaptureRate < 45;
+    }
+
     const rawCaptureRate = species.rawCaptureRate ?? 0;
     if (tier === "common") {
       return !species.isBaby && rawCaptureRate >= 120;
     }
 
-    return species.isBaby || rawCaptureRate < 120;
+    // rare: baby or mid-range difficulty (45 <= captureRate < 120)
+    const bst = getBaseStatTotal(species);
+    return (species.isBaby || rawCaptureRate < 120) && bst < PSEUDO_LEGENDARY_BST && rawCaptureRate >= 45;
   });
 }
 
@@ -111,6 +153,18 @@ function getEggWeight(species: SpeciesData, tier: EggTierId): number {
     return Math.max(16, (256 - rawCaptureRate) * 2 + Math.floor(baseExpYield / 4));
   }
 
+  if (tier === "epic") {
+    const bst = getBaseStatTotal(species);
+    // Higher BST = rarer within epic tier
+    return bst >= PSEUDO_LEGENDARY_BST ? 2 : Math.max(4, Math.floor((256 - rawCaptureRate) / 8));
+  }
+
+  if (tier === "manaphy") {
+    // Manaphy is rarer than Phione
+    return species.species === "manaphy" ? 1 : 3;
+  }
+
+  // legend
   return species.isMythical ? 1 : 3;
 }
 
