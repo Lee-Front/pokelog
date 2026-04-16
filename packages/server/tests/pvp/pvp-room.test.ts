@@ -809,3 +809,68 @@ describe("pvp accuracy/evasion stat stages", () => {
     expect(aAttackLogs.some((l) => l.includes("빗나갔다"))).toBe(true);
   });
 });
+
+// ── Task 5: Struggle ──
+describe("pvp struggle", () => {
+  it("pokemon with all PP=0 uses Struggle and deals damage", () => {
+    const pA: PvpPokemon = {
+      uid: "a-uid", species: "pikachu", level: 50,
+      hp: 200, maxHp: 200,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 60 },
+      moves: [{ id: "tackle", pp: 0, maxPp: 35 }],
+      statusCondition: null,
+    };
+    const pB: PvpPokemon = {
+      uid: "b-uid", species: "bulbasaur", level: 50,
+      hp: 200, maxHp: 200,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 40 },
+      moves: [{ id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+    };
+    const room = createRoom("userA", "A", [pA, makePokemon("charizard")], "userB", "B", [pB, makePokemon("squirtle")]);
+    selectLead(room, "userA", 0);
+    selectLead(room, "userB", 0);
+
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    submitAction(room, "userA", { type: "fight", moveId: "tackle" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    vi.restoreAllMocks();
+
+    // Struggle should be used (발버둥 in Korean)
+    expect(room.log.some((l) => l.includes("발버둥"))).toBe(true);
+    // Defender should take damage
+    expect(room.playerB.party[0].hp).toBeLessThan(200);
+  });
+
+  it("struggle causes 1/4 maxHp recoil to attacker", () => {
+    const pA: PvpPokemon = {
+      uid: "a-uid", species: "pikachu", level: 50,
+      hp: 200, maxHp: 200,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 60 },
+      moves: [{ id: "tackle", pp: 0, maxPp: 35 }],
+      statusCondition: null,
+    };
+    const pB: PvpPokemon = {
+      uid: "b-uid", species: "bulbasaur", level: 50,
+      hp: 200, maxHp: 200,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 40 },
+      moves: [{ id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+    };
+    const room = createRoom("userA", "A", [pA, makePokemon("charizard")], "userB", "B", [pB, makePokemon("squirtle")]);
+    selectLead(room, "userA", 0);
+    selectLead(room, "userB", 0);
+
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    submitAction(room, "userA", { type: "fight", moveId: "tackle" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    vi.restoreAllMocks();
+
+    // Recoil log should appear: 반동으로 50 데미지 (200/4 = 50)
+    expect(room.log.some((l) => l.includes("반동으로") && l.includes("50"))).toBe(true);
+    // A should have taken recoil + B's tackle damage
+    const atkPoke = room.playerA.party[0];
+    // At minimum, recoil of 50 happened
+    expect(atkPoke.hp).toBeLessThanOrEqual(200 - 50);
+  });
+});

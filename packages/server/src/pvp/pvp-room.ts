@@ -463,20 +463,32 @@ function executeFight(
   }
   if (!preCheck.canAct) return;
 
-  // ── Execute move ──
+  // ── Execute move (with Struggle fallback) ──
   const move = atkPoke.moves.find((m) => m.id === moveId);
-  if (move && move.pp > 0) move.pp -= 1;
+  const allPpDepleted = atkPoke.moves.every((m) => m.pp <= 0);
+  let isStruggle = false;
+
+  if (!move || move.pp <= 0 || allPpDepleted) {
+    isStruggle = true;
+  } else {
+    move.pp -= 1;
+  }
+
+  const effectiveMoveData = isStruggle ? {
+    id: "struggle", name: "발버둥", type: "typeless", category: "physical" as const,
+    power: 50, accuracy: 100, pp: 1, description: "",
+  } : moveData;
 
   // ── Accuracy check with stat stages (before damage calc) ──
-  if (moveData.accuracy > 0 && moveData.accuracy <= 100) {
-    const effectiveAcc = calculateAccuracy(moveData.accuracy, attacker.statStages.accuracy, defender.statStages.evasion);
+  if (effectiveMoveData.accuracy > 0 && effectiveMoveData.accuracy <= 100) {
+    const effectiveAcc = calculateAccuracy(effectiveMoveData.accuracy, attacker.statStages.accuracy, defender.statStages.evasion);
     if (Math.random() * 100 >= effectiveAcc) {
-      room.log.push(`${attacker.nickname}의 ${atkPoke.species}: ${moveData.name}! 빗나갔다!`);
+      room.log.push(`${attacker.nickname}의 ${atkPoke.species}: ${effectiveMoveData.name}! 빗나갔다!`);
       return;
     }
   }
   // Override accuracy for calculateDamage to prevent double-check
-  const moveForCalc = { ...moveData, accuracy: 999 };
+  const moveForCalc = { ...effectiveMoveData, accuracy: 999 };
 
   // ── Burn halves physical attack ──
   let effectiveAtkStats = atkPoke.stats;
@@ -501,8 +513,15 @@ function executeFight(
   if (result.message) room.log.push(result.message);
   if (result.critical) room.log.push("급소에 맞았다!");
 
-  // ── Ailment application (only on hit) ──
-  if (!result.missed && defPoke.hp > 0) {
+  // ── Struggle recoil ──
+  if (isStruggle && !result.missed) {
+    const recoil = Math.max(1, Math.floor(atkPoke.maxHp / 4));
+    atkPoke.hp = Math.max(0, atkPoke.hp - recoil);
+    room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 반동으로 ${recoil} 데미지!`);
+  }
+
+  // ── Ailment application (only on hit, not for struggle) ──
+  if (!isStruggle && !result.missed && defPoke.hp > 0) {
     const ailment = moveData.meta?.ailment;
     const chance = moveData.meta?.ailmentChance ?? 0;
     if (ailment && ailment !== "none") {
@@ -545,8 +564,8 @@ function executeFight(
     }
   }
 
-  // ── Stat changes from move ──
-  if (moveData.statChanges && moveData.statChanges.length > 0) {
+  // ── Stat changes from move (not for struggle) ──
+  if (!isStruggle && moveData.statChanges && moveData.statChanges.length > 0) {
     const chance = moveData.meta?.statChance ?? 0;
     const targetsSelf = moveData.target === "user" || (moveData.category === "status" && chance === 0);
 
@@ -570,15 +589,17 @@ function executeFight(
     }
   }
 
-  // ── Weather setting from move ──
-  const weather = getWeatherFromMove(moveId);
-  if (weather) {
-    room.weather = weather;
-    room.weatherTurns = getDefaultWeatherTurns();
-    const weatherNames: Record<string, string> = {
-      sun: "강한 햇살", rain: "비", hail: "우박", sandstorm: "모래바람",
-    };
-    room.log.push(`${weatherNames[weather] ?? weather} 상태가 되었다!`);
+  // ── Weather setting from move (not for struggle) ──
+  if (!isStruggle) {
+    const weather = getWeatherFromMove(moveId);
+    if (weather) {
+      room.weather = weather;
+      room.weatherTurns = getDefaultWeatherTurns();
+      const weatherNames: Record<string, string> = {
+        sun: "강한 햇살", rain: "비", hail: "우박", sandstorm: "모래바람",
+      };
+      room.log.push(`${weatherNames[weather] ?? weather} 상태가 되었다!`);
+    }
   }
 
   if (defPoke.hp <= 0) {
