@@ -1,5 +1,14 @@
 import type { PokemonMove, PokemonStats, PrimaryStatus, StatStages, VolatileStatus, BattleWeather } from "./types.js";
 
+export type PvpTransformationType = "mega" | "gigantamax" | "primal";
+
+/** Pre-computed transformation stats (computed at room creation from full OwnedPokemon) */
+export interface PvpTransformForm {
+  variantId: string;
+  maxHp: number;
+  stats: PokemonStats;
+}
+
 // ── PvP 포켓몬 (원본 복사, PvP 중 변경되어도 원본 미영향) ──
 export interface PvpPokemon {
   uid: string;
@@ -15,6 +24,11 @@ export interface PvpPokemon {
   nature?: string;
   abilityId?: string | null;
   isShiny?: boolean;
+  heldItem?: string | null;
+  hasGigantamaxFactor?: boolean;
+  megaForm?: PvpTransformForm | null;
+  gmaxForm?: PvpTransformForm | null;
+  primalForm?: PvpTransformForm | null;
 }
 
 // ── 플레이어 사이드 ──
@@ -28,6 +42,12 @@ export interface PvpPlayerState {
   battleForm?: string | null;
   ready: boolean;
   actionSubmitted: boolean;
+  transformationUsed?: boolean;
+  transformationType?: PvpTransformationType | null;
+  gmaxTurnsRemaining?: number;
+  preTransformMaxHp?: number;
+  hasKeyStone?: boolean;
+  hasDynamaxBand?: boolean;
 }
 
 // ── 방 상태 ──
@@ -54,7 +74,7 @@ export interface PvpRoomState {
 
 // ── 플레이어 액션 ──
 export type PvpAction =
-  | { type: "fight"; moveId: string }
+  | { type: "fight"; moveId: string; mega?: boolean; gigantamax?: boolean }
   | { type: "switch"; pokemonIndex: number }
   | { type: "forfeit" };
 
@@ -119,6 +139,8 @@ export interface PvpClientRoomView {
     partyHpRatios: number[];
     ready: boolean;
     actionSubmitted: boolean;
+    transformationType?: PvpTransformationType | null;
+    gmaxTurnsRemaining?: number;
   };
   weather?: BattleWeather;
   turnDeadline: number | null;
