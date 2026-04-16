@@ -128,6 +128,8 @@ export function getPlayerView(room: PvpRoomState, userId: string): PvpClientRoom
       partyHpRatios: opp.party.map((p) => p.maxHp > 0 ? p.hp / p.maxHp : 0),
       ready: opp.ready,
       actionSubmitted: opp.actionSubmitted,
+      transformationType: opp.transformationType,
+      gmaxTurnsRemaining: opp.gmaxTurnsRemaining,
     },
     weather: room.weather,
     turnDeadline: room.turnDeadline,

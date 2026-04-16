@@ -235,9 +235,19 @@ async function handleBattleTurn(socket: Socket, state: PvpClientRoomView): Promi
   const opp = state.opponent.activePokemon;
   if (!opp) return;
 
+  const canMega = !state.me.transformationUsed && state.me.hasKeyStone && my.megaForm != null;
+  const canGmax = !state.me.transformationUsed && state.me.hasDynamaxBand && my.gmaxForm != null;
+
+  const menuItems: { label: string; value: string }[] = [
+    { label: "싸운다", value: "fight" },
+  ];
+  if (canMega) menuItems.push({ label: "메가진화 + 싸운다", value: "mega" });
+  if (canGmax) menuItems.push({ label: "기가맥스 + 싸운다", value: "gmax" });
+  menuItems.push({ label: "교체", value: "switch" });
+  menuItems.push({ label: "기권", value: "forfeit" });
+
   // Main battle menu
   let cursor = 0;
-  const menuItems = ["싸운다", "교체", "기권"];
   let lineCount = 0;
   let first = true;
   enterRaw();
@@ -252,20 +262,20 @@ async function handleBattleTurn(socket: Socket, state: PvpClientRoomView): Promi
     if (key === "\x1b[A" && cursor > 0) cursor--;
     if (key === "\x1b[B" && cursor < menuItems.length - 1) cursor++;
     if (key === "\r" || key === "\n") {
-      if (cursor === 0) {
-        // Fight — select move
+      const selected = menuItems[cursor].value;
+      if (selected === "fight" || selected === "mega" || selected === "gmax") {
         const moveAction = await selectMove(state, my, opp);
-        if (moveAction) {
+        if (moveAction && moveAction.type === "fight") {
+          if (selected === "mega") (moveAction as any).mega = true;
+          if (selected === "gmax") (moveAction as any).gigantamax = true;
           socket.emit("pvp:action", { action: moveAction });
           clearScreen();
           console.log(`\n  ${DIM}상대 행동 대기 중...${R}\n`);
           return;
         }
-        // User cancelled, redraw main menu
         lineCount = 0; first = true; cursor = 0;
         continue;
-      } else if (cursor === 1) {
-        // Switch
+      } else if (selected === "switch") {
         const switchAction = await selectSwitch(state);
         if (switchAction) {
           socket.emit("pvp:action", { action: switchAction });
@@ -273,10 +283,8 @@ async function handleBattleTurn(socket: Socket, state: PvpClientRoomView): Promi
           console.log(`\n  ${DIM}상대 행동 대기 중...${R}\n`);
           return;
         }
-        lineCount = 0; first = true; cursor = 1;
-        continue;
-      } else if (cursor === 2) {
-        // Forfeit
+        lineCount = 0; first = true; continue;
+      } else if (selected === "forfeit") {
         socket.emit("pvp:action", { action: { type: "forfeit" } });
         return;
       }
@@ -288,23 +296,35 @@ function buildBattleLines(
   state: PvpClientRoomView,
   my: PvpPokemon,
   opp: PvpPokemon,
-  menuItems: string[],
+  menuItems: { label: string; value: string }[],
   cursor: number,
 ): string[] {
+  const myTrans = state.me.transformationType;
+  const myLabel = myTrans === "mega" ? `${GRN}${my.species}${R} ${YEL}[MEGA]${R}`
+    : myTrans === "gigantamax" ? `${GRN}${my.species}${R} ${YEL}[GMAX ${state.me.gmaxTurnsRemaining}T]${R}`
+    : myTrans === "primal" ? `${GRN}${my.species}${R} ${YEL}[PRIMAL]${R}`
+    : `${GRN}${my.species}${R}`;
+
+  const oppTrans = state.opponent.transformationType;
+  const oppLabel = oppTrans === "mega" ? `${CYN}${opp.species}${R} ${YEL}[MEGA]${R}`
+    : oppTrans === "gigantamax" ? `${CYN}${opp.species}${R} ${YEL}[GMAX ${state.opponent.gmaxTurnsRemaining}T]${R}`
+    : oppTrans === "primal" ? `${CYN}${opp.species}${R} ${YEL}[PRIMAL]${R}`
+    : `${CYN}${opp.species}${R}`;
+
   return [
     "",
     `  ${BLD}Turn ${state.turn}${R}`,
     "",
-    `  ${DIM}상대${R}  ${CYN}${opp.species}${R} Lv.${opp.level}`,
+    `  ${DIM}상대${R}  ${oppLabel} Lv.${opp.level}`,
     `        ${renderHpBar(opp.hp, opp.maxHp, 14)}`,
     "",
-    `  ${DIM}나${R}    ${GRN}${my.species}${R} Lv.${my.level}`,
+    `  ${DIM}나${R}    ${myLabel} Lv.${my.level}`,
     `        ${renderHpBar(my.hp, my.maxHp, 14)}`,
     "",
     `  ${DIM}─────────────────────────${R}`,
     ...menuItems.map((item, i) => {
       const ptr = i === cursor ? `${YEL}>${R}` : " ";
-      const lbl = i === cursor ? `${BLD}${item}${R}` : item;
+      const lbl = i === cursor ? `${BLD}${item.label}${R}` : item.label;
       return `  ${ptr} ${lbl}`;
     }),
     "",
