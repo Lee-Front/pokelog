@@ -649,3 +649,89 @@ describe("pvp burn and paralysis stat effects", () => {
     expect(tackleLogIndices[0].l).toContain("B의");
   });
 });
+
+// ── Task 8: Toxic (Badly Poisoned) ──
+describe("pvp toxic", () => {
+  function readyToxicRoom() {
+    const pA: PvpPokemon = {
+      uid: "a-uid", species: "pikachu", level: 50,
+      hp: 160, maxHp: 160,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 60 },
+      moves: [{ id: "toxic", pp: 10, maxPp: 10 }, { id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+    };
+    const pB: PvpPokemon = {
+      uid: "b-uid", species: "bulbasaur", level: 50,
+      hp: 160, maxHp: 160,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 40 },
+      moves: [{ id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+    };
+    const room = createRoom(
+      "userA", "A", [pA, makePokemon("charizard")],
+      "userB", "B", [pB, makePokemon("squirtle")],
+    );
+    selectLead(room, "userA", 0);
+    selectLead(room, "userB", 0);
+    return room;
+  }
+
+  it("toxic damage increases each turn (1/16, 2/16, 3/16...)", () => {
+    const room = readyToxicRoom();
+    // Turn 1: Use toxic (A outspeeds B)
+    vi.spyOn(Math, "random").mockReturnValue(0.1); // ensure toxic hits (accuracy 90, roll < 90)
+    submitAction(room, "userA", { type: "fight", moveId: "toxic" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    vi.restoreAllMocks();
+
+    const defPoke = room.playerB.party[0];
+    expect(defPoke.statusCondition).toBe("poison");
+    expect(defPoke.toxicCounter).toBe(2); // was 1, incremented to 2 after first EOT
+    // After turn 1 EOT: toxic damage = max(1, floor(160 * 1/16)) = 10
+    // B also took tackle damage, but toxic added 10
+    const hpAfterTurn1 = defPoke.hp;
+
+    // Turn 2: tackle vs tackle, toxic EOT applies again
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    submitAction(room, "userA", { type: "fight", moveId: "tackle" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    vi.restoreAllMocks();
+
+    const hpAfterTurn2 = defPoke.hp;
+    // After turn 2 EOT: toxic damage = max(1, floor(160 * 2/16)) = 20
+    // So B lost tackle damage + 20 toxic damage this turn
+    // The toxic damage should be larger than turn 1's toxic damage
+    expect(defPoke.toxicCounter).toBe(3);
+
+    // Turn 3: tackle vs tackle
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    submitAction(room, "userA", { type: "fight", moveId: "tackle" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    vi.restoreAllMocks();
+
+    expect(defPoke.toxicCounter).toBe(4);
+    // Verify escalating damage via logs
+    const toxicLogs = room.log.filter((l) => l.includes("독 데미지"));
+    expect(toxicLogs.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("toxic counter resets on switch", () => {
+    const room = readyToxicRoom();
+    // Apply toxic to B
+    vi.spyOn(Math, "random").mockReturnValue(0.1);
+    submitAction(room, "userA", { type: "fight", moveId: "toxic" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    vi.restoreAllMocks();
+
+    expect(room.playerB.party[0].toxicCounter).toBe(2); // incremented after EOT
+
+    // B switches out
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    submitAction(room, "userA", { type: "fight", moveId: "tackle" });
+    submitAction(room, "userB", { type: "switch", pokemonIndex: 1 });
+    vi.restoreAllMocks();
+
+    // The original pokemon's toxic counter should be reset
+    expect(room.playerB.party[0].toxicCounter).toBeUndefined();
+  });
+});

@@ -21,6 +21,7 @@ export interface PvpPokemon {
   moves: PokemonMove[];
   statusCondition?: PrimaryStatus | null;
   sleepTurns?: number;
+  toxicCounter?: number;
   nature?: string;
   abilityId?: string | null;
   isShiny?: boolean;

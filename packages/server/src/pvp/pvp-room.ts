@@ -247,21 +247,44 @@ function resolveTurn(room: PvpRoomState, actionA: PvpAction, actionB: PvpAction)
     const opp = player === room.playerA ? room.playerB : room.playerA;
     const oppPoke = opp.party[opp.activeIndex];
 
-    const eot = applyEndOfTurn(poke.statusCondition, player.volatiles, poke.maxHp, oppPoke.maxHp);
-    if (eot.damage > 0) {
-      poke.hp = Math.max(0, poke.hp - eot.damage);
-    }
-    if (eot.healing > 0) {
-      poke.hp = Math.min(poke.maxHp, poke.hp + eot.healing);
-    }
-    if (eot.opponentHealing > 0 && oppPoke.hp > 0) {
-      oppPoke.hp = Math.min(oppPoke.maxHp, oppPoke.hp + eot.opponentHealing);
-    }
-    for (const msg of eot.messages) {
-      room.log.push(`${player.nickname}의 ${poke.species}: ${msg}`);
-    }
-    if (poke.hp <= 0) {
-      room.log.push(`${player.nickname}의 ${poke.species}이(가) 쓰러졌다!`);
+    // ── Toxic: escalating poison damage ──
+    if (poke.statusCondition === "poison" && poke.toxicCounter != null && poke.toxicCounter > 0) {
+      const toxicDmg = Math.max(1, Math.floor(poke.maxHp * poke.toxicCounter / 16));
+      poke.hp = Math.max(0, poke.hp - toxicDmg);
+      room.log.push(`${player.nickname}의 ${poke.species}: 독 데미지 ${toxicDmg}!`);
+      poke.toxicCounter += 1;
+
+      // Still apply non-poison end-of-turn (trap, leech seed, etc.)
+      const eot = applyEndOfTurn(null, player.volatiles, poke.maxHp, oppPoke.maxHp);
+      if (eot.damage > 0) poke.hp = Math.max(0, poke.hp - eot.damage);
+      if (eot.healing > 0) poke.hp = Math.min(poke.maxHp, poke.hp + eot.healing);
+      if (eot.opponentHealing > 0 && oppPoke.hp > 0) {
+        oppPoke.hp = Math.min(oppPoke.maxHp, oppPoke.hp + eot.opponentHealing);
+      }
+      for (const msg of eot.messages) {
+        room.log.push(`${player.nickname}의 ${poke.species}: ${msg}`);
+      }
+      if (poke.hp <= 0) {
+        room.log.push(`${player.nickname}의 ${poke.species}이(가) 쓰러졌다!`);
+      }
+    } else {
+      // Normal end-of-turn (existing code)
+      const eot = applyEndOfTurn(poke.statusCondition, player.volatiles, poke.maxHp, oppPoke.maxHp);
+      if (eot.damage > 0) {
+        poke.hp = Math.max(0, poke.hp - eot.damage);
+      }
+      if (eot.healing > 0) {
+        poke.hp = Math.min(poke.maxHp, poke.hp + eot.healing);
+      }
+      if (eot.opponentHealing > 0 && oppPoke.hp > 0) {
+        oppPoke.hp = Math.min(oppPoke.maxHp, oppPoke.hp + eot.opponentHealing);
+      }
+      for (const msg of eot.messages) {
+        room.log.push(`${player.nickname}의 ${poke.species}: ${msg}`);
+      }
+      if (poke.hp <= 0) {
+        room.log.push(`${player.nickname}의 ${poke.species}이(가) 쓰러졌다!`);
+      }
     }
 
     // Tick volatiles
@@ -348,6 +371,11 @@ function resolveTurn(room: PvpRoomState, actionA: PvpAction, actionB: PvpAction)
 function applySwitch(room: PvpRoomState, player: PvpPlayerState, index: number): void {
   if (index < 0 || index >= player.party.length) return;
   if (player.party[index].hp <= 0) return;
+
+  // Reset toxic counter on the pokemon being switched out
+  const oldPoke = player.party[player.activeIndex];
+  if (oldPoke.toxicCounter) oldPoke.toxicCounter = undefined;
+
   player.activeIndex = index;
   player.statStages = defaultStatStages();
   player.volatiles = [];
@@ -471,6 +499,9 @@ function executeFight(
       if (primary) {
         defPoke.statusCondition = primary;
         if (primary === "sleep") defPoke.sleepTurns = rollSleepTurns();
+        if (primary === "poison" && moveData.id === "toxic") {
+          defPoke.toxicCounter = 1;
+        }
         const statusNames: Record<string, string> = {
           poison: "독", burn: "화상", paralysis: "마비", sleep: "잠듦", freeze: "얼음",
         };
