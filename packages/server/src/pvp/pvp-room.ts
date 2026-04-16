@@ -14,6 +14,10 @@ import {
   checkPostAttackForm, checkHpThresholdForm, checkTurnForm,
   checkWeatherForm, checkMoveForm,
 } from "../game/battle-forms.js";
+import {
+  triggerOnSwitchIn, triggerOnSwitchOut, getAttackMultiplier, getDefenseMultiplier,
+  getMoveModifiers, canReceiveStatus, triggerEndOfTurn, getEffectiveSpeed,
+} from "./pvp-abilities.js";
 import type {
   PvpRoomState, PvpPlayerState, PvpPokemon,
   PvpClientRoomView, PvpRoomConfig, PvpAction,
@@ -131,6 +135,10 @@ export function selectLead(room: PvpRoomState, userId: string, index: number): v
         room.log.push(`${p.nickname}의 ${poke.species}: 원시회귀!`);
       }
     }
+
+    // ── Ability: onSwitchIn for both leads ──
+    triggerOnSwitchIn({ room, player: room.playerA, opponent: room.playerB, pokemon: room.playerA.party[room.playerA.activeIndex] });
+    triggerOnSwitchIn({ room, player: room.playerB, opponent: room.playerA, pokemon: room.playerB.party[room.playerB.activeIndex] });
   }
 }
 
@@ -283,13 +291,21 @@ function resolveTurn(room: PvpRoomState, actionA: PvpAction, actionB: PvpAction)
     const moveA = getMoveById(actionA.moveId);
     const moveB = getMoveById(actionB.moveId);
 
-    const speedA = pokemonA.statusCondition === "paralysis"
-      ? Math.floor(pokemonA.stats.speed * 0.5) : pokemonA.stats.speed;
-    const speedB = pokemonB.statusCondition === "paralysis"
-      ? Math.floor(pokemonB.stats.speed * 0.5) : pokemonB.stats.speed;
+    // ── Ability: speed modifiers (before paralysis) ──
+    let speedA = getEffectiveSpeed(pokemonA.stats.speed, pokemonA, room.weather);
+    let speedB = getEffectiveSpeed(pokemonB.stats.speed, pokemonB, room.weather);
+    if (pokemonA.statusCondition === "paralysis") speedA = Math.floor(speedA * 0.5);
+    if (pokemonB.statusCondition === "paralysis") speedB = Math.floor(speedB * 0.5);
+
+    // ── Ability: priority modifiers ──
+    const modsA = getMoveModifiers({ room, attacker: room.playerA, atkPoke: pokemonA, move: moveA! });
+    const modsB = getMoveModifiers({ room, attacker: room.playerB, atkPoke: pokemonB, move: moveB! });
+    const priorityA = (moveA?.priority ?? 0) + modsA.priorityMod;
+    const priorityB = (moveB?.priority ?? 0) + modsB.priorityMod;
+
     const order = determineTurnOrder(
       speedA, speedB,
-      moveA?.priority ?? 0, moveB?.priority ?? 0,
+      priorityA, priorityB,
     );
 
     const [first, second] = order === "player"
@@ -357,6 +373,11 @@ function resolveTurn(room: PvpRoomState, actionA: PvpAction, actionB: PvpAction)
 
     // Tick volatiles
     player.volatiles = tickVolatiles(player.volatiles);
+
+    // ── Ability: end-of-turn effects ──
+    if (poke.hp > 0) {
+      triggerEndOfTurn({ room, player, opponent: opp, pokemon: poke });
+    }
   }
 
   // ── Weather end-of-turn ──
@@ -451,8 +472,13 @@ function applySwitch(room: PvpRoomState, player: PvpPlayerState, index: number):
   if (index < 0 || index >= player.party.length) return;
   if (player.party[index].hp <= 0) return;
 
-  // Reset toxic counter on the pokemon being switched out
+  // ── Ability: onSwitchOut for old pokemon ──
   const oldPoke = player.party[player.activeIndex];
+  if (oldPoke.hp > 0) {
+    triggerOnSwitchOut({ player, pokemon: oldPoke });
+  }
+
+  // Reset toxic counter on the pokemon being switched out
   if (oldPoke.toxicCounter) oldPoke.toxicCounter = undefined;
 
   player.activeIndex = index;
@@ -467,6 +493,10 @@ function applySwitch(room: PvpRoomState, player: PvpPlayerState, index: number):
   }
 
   room.log.push(`${player.nickname}: ${player.party[index].species}(으)로 교체!`);
+
+  // ── Ability: onSwitchIn for new pokemon ──
+  const opponent = player === room.playerA ? room.playerB : room.playerA;
+  triggerOnSwitchIn({ room, player, opponent, pokemon: poke });
 }
 
 function executeFight(
@@ -608,6 +638,11 @@ function executeFight(
     const maxHits = effectiveMoveData.meta?.maxHits ?? 1;
     const hitCount = minHits === maxHits ? minHits : minHits + Math.floor(Math.random() * (maxHits - minHits + 1));
 
+    // ── Ability: build damage mod context ──
+    const dmgCtx = { room, attacker, defender, atkPoke, defPoke, move: moveForCalc, damage: 0 };
+    const atkMul = getAttackMultiplier(dmgCtx);
+    const defMul = getDefenseMultiplier(dmgCtx);
+
     let lastResult = { damage: 0, missed: false, effectiveness: 1, message: "", critical: false };
     for (let hit = 0; hit < hitCount; hit++) {
       if (defPoke.hp <= 0) break;
@@ -619,8 +654,19 @@ function executeFight(
       );
       lastResult = result;
       if (!result.missed) {
-        defPoke.hp = Math.max(0, defPoke.hp - result.damage);
-        totalDamage += result.damage;
+        // ── Ability: apply attack/defense multipliers ──
+        let finalDamage = Math.floor(result.damage * atkMul);
+        if (defMul === -1) {
+          // Sturdy-like: if this would KO from full HP, survive at 1 HP
+          if (defPoke.hp === defPoke.maxHp && finalDamage >= defPoke.hp) {
+            finalDamage = defPoke.hp - 1;
+            room.log.push(`${defender.nickname}의 ${defPoke.species}: 특성으로 버텼다!`);
+          }
+        } else {
+          finalDamage = Math.floor(finalDamage * defMul);
+        }
+        defPoke.hp = Math.max(0, defPoke.hp - finalDamage);
+        totalDamage += finalDamage;
         hitsMade++;
         if (result.critical) room.log.push("급소에 맞았다!");
       }
@@ -655,17 +701,28 @@ function executeFight(
     const ailment = moveData.meta?.ailment;
     const chance = moveData.meta?.ailmentChance ?? 0;
     if (ailment && ailment !== "none") {
-      const primary = rollAilment(ailment, chance, defPoke.statusCondition);
-      if (primary) {
-        defPoke.statusCondition = primary;
-        if (primary === "sleep") defPoke.sleepTurns = rollSleepTurns();
-        if (primary === "poison" && moveData.id === "toxic") {
-          defPoke.toxicCounter = 1;
+      // ── Ability: status guard check for primary (non-volatile) ailments ──
+      const primaryBlocked = !isVolatileAilment(ailment) && !canReceiveStatus(defPoke, ailment);
+      if (primaryBlocked) {
+        room.log.push(`${defender.nickname}의 ${defPoke.species}: 특성으로 상태이상을 막았다!`);
+      } else {
+        const primary = rollAilment(ailment, chance, defPoke.statusCondition);
+        if (primary) {
+          // ── Ability: check canReceiveStatus for the rolled status too ──
+          if (!canReceiveStatus(defPoke, primary)) {
+            room.log.push(`${defender.nickname}의 ${defPoke.species}: 특성으로 상태이상을 막았다!`);
+          } else {
+            defPoke.statusCondition = primary;
+            if (primary === "sleep") defPoke.sleepTurns = rollSleepTurns();
+            if (primary === "poison" && moveData.id === "toxic") {
+              defPoke.toxicCounter = 1;
+            }
+            const statusNames: Record<string, string> = {
+              poison: "독", burn: "화상", paralysis: "마비", sleep: "잠듦", freeze: "얼음",
+            };
+            room.log.push(`${defender.nickname}의 ${defPoke.species}: ${statusNames[primary] ?? primary} 상태가 되었다!`);
+          }
         }
-        const statusNames: Record<string, string> = {
-          poison: "독", burn: "화상", paralysis: "마비", sleep: "잠듦", freeze: "얼음",
-        };
-        room.log.push(`${defender.nickname}의 ${defPoke.species}: ${statusNames[primary] ?? primary} 상태가 되었다!`);
       }
       if (isVolatileAilment(ailment)) {
         if (chance <= 0 || chance >= 100 || Math.random() * 100 < chance) {
