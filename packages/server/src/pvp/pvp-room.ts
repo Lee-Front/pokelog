@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import { calculateDamage, determineTurnOrder, defaultStatStages, applyStatChanges, calculateAccuracy } from "../game/battle.js";
 import { getEffectiveTypes } from "../game/pokemon-state.js";
-import { getMoveById } from "../game/data-loader.js";
+import { getMoveById, getTypeChart } from "../game/data-loader.js";
 import {
   checkPreAttack, applyEndOfTurn, tickVolatiles,
   rollAilment, isVolatileAilment, addVolatile, rollSleepTurns, rollConfusionTurns, rollTrapTurns,
@@ -46,6 +46,15 @@ const PROTECT_MOVES = new Set([
   "protect", "detect", "kings-shield", "baneful-bunker",
   "spiky-shield", "obstruct", "silk-trap",
 ]);
+
+const HAZARD_MOVES: Record<string, (hazards: NonNullable<PvpPlayerState["hazards"]>) => boolean> = {
+  "stealth-rock": (h) => { if (h.stealthRock) return false; h.stealthRock = true; return true; },
+  "spikes": (h) => { if ((h.spikes ?? 0) >= 3) return false; h.spikes = (h.spikes ?? 0) + 1; return true; },
+  "toxic-spikes": (h) => { if ((h.toxicSpikes ?? 0) >= 2) return false; h.toxicSpikes = (h.toxicSpikes ?? 0) + 1; return true; },
+  "sticky-web": (h) => { if (h.stickyWeb) return false; h.stickyWeb = true; return true; },
+};
+
+const SWITCH_AFTER_MOVES = new Set(["u-turn", "volt-switch", "flip-turn", "parting-shot"]);
 
 export const DEFAULT_CONFIG: PvpRoomConfig = {
   levelCap: 50,
@@ -333,6 +342,23 @@ function resolveTurn(room: PvpRoomState, actionA: PvpAction, actionB: PvpAction)
     executeFight(room, room.playerB, actionB.moveId, room.playerA, actionB.mega, actionB.gigantamax, protectedA);
   }
 
+  // ── Pending switch after move (U-Turn, Volt Switch, Flip Turn, Parting Shot, Baton Pass) ──
+  if (room.pendingSwitchAfterMove) {
+    const needA = room.pendingSwitchAfterMove.a ?? false;
+    const needB = room.pendingSwitchAfterMove.b ?? false;
+    if (needA || needB) {
+      const koA = room.playerA.party[room.playerA.activeIndex].hp <= 0;
+      const koB = room.playerB.party[room.playerB.activeIndex].hp <= 0;
+      room.phase = "forced_switch";
+      room.forcedSwitchNeeded = { a: needA || koA, b: needB || koB };
+      room.pendingSwitchAfterMove = undefined;
+      room.turn += 1;
+      room.turnDeadline = Date.now() + DEFAULT_CONFIG.turnTimeoutMs;
+      return;
+    }
+    room.pendingSwitchAfterMove = undefined;
+  }
+
   // ── End-of-turn effects (status damage, volatile tick) ──
   for (const player of [room.playerA, room.playerB]) {
     const poke = player.party[player.activeIndex];
@@ -493,6 +519,63 @@ function resolveTurn(room: PvpRoomState, actionA: PvpAction, actionB: PvpAction)
   room.turnDeadline = Date.now() + DEFAULT_CONFIG.turnTimeoutMs;
 }
 
+function applyHazardDamage(room: PvpRoomState, player: PvpPlayerState, pokemon: PvpPokemon): void {
+  const hazards = player.hazards;
+  if (!hazards || pokemon.heldItem === "heavy-duty-boots") return;
+
+  const types = getEffectiveTypes(pokemon.species, pokemon.variantId, player.battleForm);
+
+  // Stealth Rock: type-effectiveness-based damage (rock vs pokemon types), base 1/8 maxHp
+  if (hazards.stealthRock) {
+    const typeChart = getTypeChart();
+    let mult = 1;
+    for (const t of types) mult *= (typeChart["rock"]?.[t] ?? 1);
+    const dmg = Math.max(1, Math.floor(pokemon.maxHp * mult / 8));
+    pokemon.hp = Math.max(0, pokemon.hp - dmg);
+    room.log.push(`스텔스록 데미지! ${dmg}!`);
+  }
+
+  // Spikes: grounded only, 1/8, 1/6, 1/4 by layers
+  if (hazards.spikes && hazards.spikes > 0) {
+    const isGrounded = !types.includes("flying") && pokemon.abilityId !== "levitate";
+    if (isGrounded) {
+      const fractions = [0, 1 / 8, 1 / 6, 1 / 4];
+      const dmg = Math.max(1, Math.floor(pokemon.maxHp * (fractions[hazards.spikes] ?? 0)));
+      pokemon.hp = Math.max(0, pokemon.hp - dmg);
+      room.log.push(`압정 데미지! ${dmg}!`);
+    }
+  }
+
+  // Toxic Spikes: grounded only, poison types absorb
+  if (hazards.toxicSpikes && hazards.toxicSpikes > 0) {
+    const isGrounded = !types.includes("flying") && pokemon.abilityId !== "levitate";
+    if (isGrounded) {
+      if (types.includes("poison")) {
+        hazards.toxicSpikes = 0;
+        room.log.push(`${pokemon.species}이(가) 독압정을 흡수했다!`);
+      } else if (!pokemon.statusCondition) {
+        if (hazards.toxicSpikes >= 2) {
+          pokemon.statusCondition = "poison";
+          pokemon.toxicCounter = 1;
+          room.log.push(`${pokemon.species}: 맹독에 걸렸다!`);
+        } else {
+          pokemon.statusCondition = "poison";
+          room.log.push(`${pokemon.species}: 독에 걸렸다!`);
+        }
+      }
+    }
+  }
+
+  // Sticky Web: grounded only, speed -1
+  if (hazards.stickyWeb) {
+    const isGrounded = !types.includes("flying") && pokemon.abilityId !== "levitate";
+    if (isGrounded) {
+      player.statStages = applyStatChanges(player.statStages, [{ stat: "speed", change: -1 }]);
+      room.log.push(`끈적끈적네트! ${pokemon.species}의 스피드가 내려갔다!`);
+    }
+  }
+}
+
 function applySwitch(room: PvpRoomState, player: PvpPlayerState, index: number): void {
   if (index < 0 || index >= player.party.length) return;
   if (player.party[index].hp <= 0) return;
@@ -507,8 +590,17 @@ function applySwitch(room: PvpRoomState, player: PvpPlayerState, index: number):
   if (oldPoke.toxicCounter) oldPoke.toxicCounter = undefined;
 
   player.activeIndex = index;
-  player.statStages = defaultStatStages();
-  player.volatiles = [];
+
+  // ── Baton Pass: keep stat stages and volatiles ──
+  const side = room.playerA === player ? "a" : "b";
+  const isBaton = room.batonPass?.[side];
+  if (!isBaton) {
+    player.statStages = defaultStatStages();
+    player.volatiles = [];
+  } else {
+    // Baton Pass: KEEP stat stages and volatiles, clear the flag
+    if (room.batonPass) delete room.batonPass[side];
+  }
   player.battleForm = undefined;
 
   // Mega form persists when switching back in
@@ -522,6 +614,11 @@ function applySwitch(room: PvpRoomState, player: PvpPlayerState, index: number):
   // ── Ability: onSwitchIn for new pokemon ──
   const opponent = player === room.playerA ? room.playerB : room.playerA;
   triggerOnSwitchIn({ room, player, opponent, pokemon: poke });
+
+  // ── Entry hazard damage on switch-in ──
+  if (poke.hp > 0) {
+    applyHazardDamage(room, player, poke);
+  }
 }
 
 function executeFight(
@@ -884,6 +981,75 @@ function executeFight(
       if (hpForm) {
         pl.battleForm = hpForm.newForm;
         room.log.push(`${pl.nickname}의 ${po.species}: ${hpForm.message}`);
+      }
+    }
+  }
+
+  // ── Hazard-setting moves ──
+  if (!isStruggle) {
+    const hazardFn = HAZARD_MOVES[moveId];
+    if (hazardFn) {
+      if (!defender.hazards) defender.hazards = {};
+      const applied = hazardFn(defender.hazards);
+      if (applied) {
+        const hazardNames: Record<string, string> = {
+          "stealth-rock": "스텔스록", "spikes": "압정", "toxic-spikes": "독압정", "sticky-web": "끈적끈적네트",
+        };
+        room.log.push(`${defender.nickname} 필드에 ${hazardNames[moveId] ?? moveId}이(가) 깔렸다!`);
+      }
+    }
+  }
+
+  // ── Rapid Spin: remove own hazards + speed +1 (handled via statChanges) ──
+  if (!isStruggle && moveId === "rapid-spin" && hitsMade > 0) {
+    if (attacker.hazards) {
+      attacker.hazards = {};
+      room.log.push(`${attacker.nickname} 필드의 hazard가 제거되었다!`);
+    }
+  }
+
+  // ── Defog: remove both sides' hazards ──
+  if (!isStruggle && moveId === "defog") {
+    let cleared = false;
+    if (attacker.hazards && Object.keys(attacker.hazards).some(k => (attacker.hazards as Record<string, unknown>)[k])) {
+      attacker.hazards = {};
+      cleared = true;
+    }
+    if (defender.hazards && Object.keys(defender.hazards).some(k => (defender.hazards as Record<string, unknown>)[k])) {
+      defender.hazards = {};
+      cleared = true;
+    }
+    if (cleared) {
+      room.log.push(`안개제거로 필드의 hazard가 제거되었다!`);
+    }
+  }
+
+  // ── Switch-after-move (U-Turn, Volt Switch, Flip Turn, Parting Shot) ──
+  if (!isStruggle && SWITCH_AFTER_MOVES.has(moveId)) {
+    const missed = hitsMade === 0 && !isFixedDamage;
+    // parting-shot is status (power 0), so hitsMade will be 0 and isFixedDamage false
+    // but parting-shot has accuracy 100 and its stat changes already applied means it succeeded
+    const partingShotSucceeded = moveId === "parting-shot" && moveData.statChanges && moveData.statChanges.length > 0;
+    if ((!missed || partingShotSucceeded) && atkPoke.hp > 0) {
+      const hasOtherAlive = attacker.party.some((p, i) => i !== attacker.activeIndex && p.hp > 0);
+      if (hasOtherAlive) {
+        const atkSide = attacker === room.playerA ? "a" : "b";
+        if (!room.pendingSwitchAfterMove) room.pendingSwitchAfterMove = {};
+        room.pendingSwitchAfterMove[atkSide] = true;
+      }
+    }
+  }
+
+  // ── Baton Pass ──
+  if (!isStruggle && moveId === "baton-pass") {
+    if (atkPoke.hp > 0) {
+      const hasOtherAlive = attacker.party.some((p, i) => i !== attacker.activeIndex && p.hp > 0);
+      if (hasOtherAlive) {
+        const atkSide = attacker === room.playerA ? "a" : "b";
+        if (!room.pendingSwitchAfterMove) room.pendingSwitchAfterMove = {};
+        room.pendingSwitchAfterMove[atkSide] = true;
+        if (!room.batonPass) room.batonPass = {};
+        room.batonPass[atkSide] = true;
       }
     }
   }

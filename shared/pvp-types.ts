@@ -50,6 +50,12 @@ export interface PvpPlayerState {
   hasKeyStone?: boolean;
   hasDynamaxBand?: boolean;
   protectCount?: number;
+  hazards?: {
+    stealthRock?: boolean;
+    spikes?: number;      // 0-3
+    toxicSpikes?: number;  // 0-2
+    stickyWeb?: boolean;
+  };
 }
 
 // ── 방 상태 ──
@@ -72,6 +78,8 @@ export interface PvpRoomState {
   };
   isAiBattle: boolean;
   forcedSwitchNeeded?: { a: boolean; b: boolean };
+  pendingSwitchAfterMove?: { a?: boolean; b?: boolean };
+  batonPass?: { a?: boolean; b?: boolean };
 }
 
 // ── 플레이어 액션 ──

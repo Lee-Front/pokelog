@@ -1253,3 +1253,357 @@ describe("pvp battle form changes", () => {
     expect(room.log.some((l) => l.includes("darmanitan") && l.includes("젠모드"))).toBe(true);
   });
 });
+
+// ── Plan D Task 1: Entry Hazards ──
+describe("pvp entry hazards", () => {
+  function makeHazardPokemon(species: string, opts?: { types?: string[]; abilityId?: string; heldItem?: string }): PvpPokemon {
+    return {
+      uid: `${species}-uid`,
+      species,
+      level: 50,
+      hp: 200, maxHp: 200,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 50 },
+      moves: [
+        { id: "tackle", pp: 35, maxPp: 35 },
+        { id: "stealth-rock", pp: 20, maxPp: 20 },
+        { id: "spikes", pp: 20, maxPp: 20 },
+        { id: "rapid-spin", pp: 40, maxPp: 40 },
+      ],
+      statusCondition: null,
+      abilityId: opts?.abilityId ?? null,
+      heldItem: opts?.heldItem ?? null,
+    };
+  }
+
+  it("stealth rock deals type-based damage on switch-in", () => {
+    const pA: PvpPokemon = {
+      uid: "a-uid", species: "pikachu", level: 50,
+      hp: 200, maxHp: 200,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 60 },
+      moves: [{ id: "stealth-rock", pp: 20, maxPp: 20 }, { id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+    };
+    const pB: PvpPokemon = {
+      uid: "b-uid", species: "bulbasaur", level: 50,
+      hp: 200, maxHp: 200,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 40 },
+      moves: [{ id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+    };
+    const pB2: PvpPokemon = {
+      uid: "b2-uid", species: "charizard", level: 50,
+      hp: 200, maxHp: 200,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 40 },
+      moves: [{ id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+    };
+    const room = createRoom("userA", "A", [pA, makePokemon("squirtle")], "userB", "B", [pB, pB2]);
+    selectLead(room, "userA", 0);
+    selectLead(room, "userB", 0);
+
+    // Turn 1: set stealth rock
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    submitAction(room, "userA", { type: "fight", moveId: "stealth-rock" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    vi.restoreAllMocks();
+
+    expect(room.playerB.hazards?.stealthRock).toBe(true);
+    expect(room.log.some((l) => l.includes("스텔스록") && l.includes("깔렸다"))).toBe(true);
+
+    // Turn 2: B switches to charizard (fire/flying - rock is 4x effective)
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    submitAction(room, "userA", { type: "fight", moveId: "tackle" });
+    submitAction(room, "userB", { type: "switch", pokemonIndex: 1 });
+    vi.restoreAllMocks();
+
+    // Stealth rock should deal 50% HP to fire/flying (4x effective rock: 200 * 4/8 = 100)
+    expect(room.log.some((l) => l.includes("스텔스록 데미지"))).toBe(true);
+    // charizard should have taken stealth rock damage
+    expect(room.playerB.party[1].hp).toBeLessThan(200);
+  });
+
+  it("spikes deal damage to grounded pokemon only", () => {
+    const pA: PvpPokemon = {
+      uid: "a-uid", species: "pikachu", level: 50,
+      hp: 200, maxHp: 200,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 60 },
+      moves: [{ id: "spikes", pp: 20, maxPp: 20 }, { id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+    };
+    const pB: PvpPokemon = {
+      uid: "b-uid", species: "bulbasaur", level: 50,
+      hp: 200, maxHp: 200,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 40 },
+      moves: [{ id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+    };
+    // squirtle is normal/water - grounded, takes spikes
+    const pB2: PvpPokemon = {
+      uid: "b2-uid", species: "squirtle", level: 50,
+      hp: 200, maxHp: 200,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 40 },
+      moves: [{ id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+    };
+    const room = createRoom("userA", "A", [pA, makePokemon("charizard")], "userB", "B", [pB, pB2]);
+    selectLead(room, "userA", 0);
+    selectLead(room, "userB", 0);
+
+    // Turn 1: set spikes
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    submitAction(room, "userA", { type: "fight", moveId: "spikes" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    vi.restoreAllMocks();
+
+    expect(room.playerB.hazards?.spikes).toBe(1);
+
+    // Turn 2: B switches to squirtle (grounded)
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    submitAction(room, "userA", { type: "fight", moveId: "tackle" });
+    submitAction(room, "userB", { type: "switch", pokemonIndex: 1 });
+    vi.restoreAllMocks();
+
+    // squirtle should take 1/8 max HP from 1 layer of spikes = 25
+    expect(room.log.some((l) => l.includes("압정 데미지"))).toBe(true);
+    expect(room.playerB.party[1].hp).toBeLessThan(200);
+  });
+
+  it("toxic spikes poison on entry", () => {
+    const pA: PvpPokemon = {
+      uid: "a-uid", species: "pikachu", level: 50,
+      hp: 200, maxHp: 200,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 60 },
+      moves: [{ id: "toxic-spikes", pp: 20, maxPp: 20 }, { id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+    };
+    const pB: PvpPokemon = {
+      uid: "b-uid", species: "bulbasaur", level: 50,
+      hp: 200, maxHp: 200,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 40 },
+      moves: [{ id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+    };
+    const pB2: PvpPokemon = {
+      uid: "b2-uid", species: "squirtle", level: 50,
+      hp: 200, maxHp: 200,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 40 },
+      moves: [{ id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+    };
+    const room = createRoom("userA", "A", [pA, makePokemon("charizard")], "userB", "B", [pB, pB2]);
+    selectLead(room, "userA", 0);
+    selectLead(room, "userB", 0);
+
+    // Turn 1: set toxic spikes
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    submitAction(room, "userA", { type: "fight", moveId: "toxic-spikes" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    vi.restoreAllMocks();
+
+    expect(room.playerB.hazards?.toxicSpikes).toBe(1);
+
+    // Turn 2: B switches to squirtle (grounded, not poison type)
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    submitAction(room, "userA", { type: "fight", moveId: "tackle" });
+    submitAction(room, "userB", { type: "switch", pokemonIndex: 1 });
+    vi.restoreAllMocks();
+
+    // squirtle should be poisoned
+    expect(room.playerB.party[1].statusCondition).toBe("poison");
+    expect(room.log.some((l) => l.includes("독에 걸렸다"))).toBe(true);
+  });
+
+  it("rapid-spin clears own hazards", () => {
+    const pA: PvpPokemon = {
+      uid: "a-uid", species: "pikachu", level: 50,
+      hp: 200, maxHp: 200,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 60 },
+      moves: [{ id: "rapid-spin", pp: 40, maxPp: 40 }, { id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+    };
+    const pB: PvpPokemon = {
+      uid: "b-uid", species: "bulbasaur", level: 50,
+      hp: 200, maxHp: 200,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 40 },
+      moves: [{ id: "stealth-rock", pp: 20, maxPp: 20 }, { id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+    };
+    const room = createRoom("userA", "A", [pA, makePokemon("charizard")], "userB", "B", [pB, makePokemon("squirtle")]);
+    selectLead(room, "userA", 0);
+    selectLead(room, "userB", 0);
+
+    // Turn 1: B sets stealth rock on A's field
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    submitAction(room, "userA", { type: "fight", moveId: "tackle" });
+    submitAction(room, "userB", { type: "fight", moveId: "stealth-rock" });
+    vi.restoreAllMocks();
+
+    expect(room.playerA.hazards?.stealthRock).toBe(true);
+
+    // Turn 2: A uses rapid spin to clear own hazards
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    submitAction(room, "userA", { type: "fight", moveId: "rapid-spin" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    vi.restoreAllMocks();
+
+    expect(room.log.some((l) => l.includes("hazard가 제거되었다"))).toBe(true);
+    // Hazards should be empty
+    expect(room.playerA.hazards?.stealthRock).toBeFalsy();
+  });
+
+  it("heavy-duty-boots immune to hazards", () => {
+    const pA: PvpPokemon = {
+      uid: "a-uid", species: "pikachu", level: 50,
+      hp: 200, maxHp: 200,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 60 },
+      moves: [{ id: "stealth-rock", pp: 20, maxPp: 20 }, { id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+    };
+    const pB: PvpPokemon = {
+      uid: "b-uid", species: "bulbasaur", level: 50,
+      hp: 200, maxHp: 200,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 40 },
+      moves: [{ id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+    };
+    const pB2: PvpPokemon = {
+      uid: "b2-uid", species: "charizard", level: 50,
+      hp: 200, maxHp: 200,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 40 },
+      moves: [{ id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+      heldItem: "heavy-duty-boots",
+    };
+    const room = createRoom("userA", "A", [pA, makePokemon("squirtle")], "userB", "B", [pB, pB2]);
+    selectLead(room, "userA", 0);
+    selectLead(room, "userB", 0);
+
+    // Turn 1: set stealth rock
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    submitAction(room, "userA", { type: "fight", moveId: "stealth-rock" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    vi.restoreAllMocks();
+
+    expect(room.playerB.hazards?.stealthRock).toBe(true);
+
+    // Turn 2: Both use tackle (B switches to charizard with heavy-duty-boots)
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    submitAction(room, "userA", { type: "fight", moveId: "tackle" });
+    submitAction(room, "userB", { type: "switch", pokemonIndex: 1 });
+    vi.restoreAllMocks();
+
+    // charizard should NOT take stealth rock damage (has heavy-duty-boots)
+    // but may take tackle damage
+    expect(room.log.some((l) => l.includes("스텔스록 데미지"))).toBe(false);
+    // Charizard is fire/flying, 4x weak to rock. Without boots, stealth rock would deal 200*4/8=100
+    // With boots, no stealth rock damage at all. HP loss is only from tackle.
+    expect(room.playerB.party[1].hp).toBeGreaterThan(100); // would be <= 100 without boots
+  });
+});
+
+// ── Plan D Task 2: U-Turn / Volt Switch ──
+describe("pvp u-turn / volt-switch", () => {
+  it("u-turn deals damage then triggers forced switch", () => {
+    const pA: PvpPokemon = {
+      uid: "a-uid", species: "pikachu", level: 50,
+      hp: 200, maxHp: 200,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 60 },
+      moves: [{ id: "u-turn", pp: 20, maxPp: 20 }, { id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+    };
+    const pA2: PvpPokemon = {
+      uid: "a2-uid", species: "charizard", level: 50,
+      hp: 200, maxHp: 200,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 40 },
+      moves: [{ id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+    };
+    const pB: PvpPokemon = {
+      uid: "b-uid", species: "bulbasaur", level: 50,
+      hp: 200, maxHp: 200,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 40 },
+      moves: [{ id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+    };
+    const room = createRoom("userA", "A", [pA, pA2], "userB", "B", [pB, makePokemon("squirtle")]);
+    selectLead(room, "userA", 0);
+    selectLead(room, "userB", 0);
+
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    submitAction(room, "userA", { type: "fight", moveId: "u-turn" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    vi.restoreAllMocks();
+
+    // Defender should have taken damage from u-turn
+    expect(room.playerB.party[0].hp).toBeLessThan(200);
+
+    // Phase should be forced_switch for A (u-turn user)
+    expect(room.phase).toBe("forced_switch");
+    expect(room.forcedSwitchNeeded?.a).toBe(true);
+
+    // A switches to charizard
+    submitAction(room, "userA", { type: "switch", pokemonIndex: 1 });
+    expect(room.phase).toBe("action");
+    expect(room.playerA.activeIndex).toBe(1);
+  });
+});
+
+// ── Plan D Task 3: Baton Pass ──
+describe("pvp baton pass", () => {
+  it("baton pass keeps stat stages on switch", () => {
+    const pA: PvpPokemon = {
+      uid: "a-uid", species: "pikachu", level: 50,
+      hp: 200, maxHp: 200,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 60 },
+      moves: [
+        { id: "swords-dance", pp: 20, maxPp: 20 },
+        { id: "baton-pass", pp: 40, maxPp: 40 },
+        { id: "tackle", pp: 35, maxPp: 35 },
+      ],
+      statusCondition: null,
+    };
+    const pA2: PvpPokemon = {
+      uid: "a2-uid", species: "charizard", level: 50,
+      hp: 200, maxHp: 200,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 40 },
+      moves: [{ id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+    };
+    const pB: PvpPokemon = {
+      uid: "b-uid", species: "bulbasaur", level: 50,
+      hp: 200, maxHp: 200,
+      stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 40 },
+      moves: [{ id: "tackle", pp: 35, maxPp: 35 }],
+      statusCondition: null,
+    };
+    const room = createRoom("userA", "A", [pA, pA2], "userB", "B", [pB, makePokemon("squirtle")]);
+    selectLead(room, "userA", 0);
+    selectLead(room, "userB", 0);
+
+    // Turn 1: Use swords dance to raise attack +2
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    submitAction(room, "userA", { type: "fight", moveId: "swords-dance" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    vi.restoreAllMocks();
+
+    expect(room.playerA.statStages.attack).toBe(2);
+
+    // Turn 2: Use baton pass
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    submitAction(room, "userA", { type: "fight", moveId: "baton-pass" });
+    submitAction(room, "userB", { type: "fight", moveId: "tackle" });
+    vi.restoreAllMocks();
+
+    // Should be in forced_switch
+    expect(room.phase).toBe("forced_switch");
+    expect(room.forcedSwitchNeeded?.a).toBe(true);
+
+    // A switches to charizard via baton pass
+    submitAction(room, "userA", { type: "switch", pokemonIndex: 1 });
+
+    // Charizard should inherit the +2 attack from baton pass
+    expect(room.playerA.activeIndex).toBe(1);
+    expect(room.playerA.statStages.attack).toBe(2);
+    expect(room.phase).toBe("action");
+  });
+});
