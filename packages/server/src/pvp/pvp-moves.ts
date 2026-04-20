@@ -545,14 +545,282 @@ register("parting-shot", {
   },
 });
 
-// ── Complex custom-resolve moves ──
-// These retain their hardcoded logic in pvp-room.ts for now (Phase 3 will
-// migrate each individually). Registering them with empty effects merely
-// advertises their presence in the registry.
+// ══════════════════════════════════════════════════════════════
+// ── Phase 4: Power-formula moves ─────────────────────────────
+// ══════════════════════════════════════════════════════════════
+
+register("gyro-ball", {
+  modifyPower: (ctx) => Math.min(150, Math.floor(25 * ctx.defPoke.stats.speed / Math.max(1, ctx.atkPoke.stats.speed))),
+});
+
+register("electro-ball", {
+  modifyPower: (ctx) => {
+    const ratio = ctx.atkPoke.stats.speed / Math.max(1, ctx.defPoke.stats.speed);
+    if (ratio >= 4) return 150;
+    if (ratio >= 3) return 120;
+    if (ratio >= 2) return 80;
+    if (ratio >= 1) return 60;
+    return 40;
+  },
+});
+
+register("hex", {
+  modifyPower: (ctx) => ctx.defPoke.statusCondition ? ctx.move.power * 2 : ctx.move.power,
+});
+
+register("venoshock", {
+  modifyPower: (ctx) => ctx.defPoke.statusCondition === "poison" ? ctx.move.power * 2 : ctx.move.power,
+});
+
+register("facade", {
+  modifyPower: (ctx) => ctx.atkPoke.statusCondition ? ctx.move.power * 2 : ctx.move.power,
+});
+
+register("acrobatics", {
+  modifyPower: (ctx) => !ctx.atkPoke.heldItem ? ctx.move.power * 2 : ctx.move.power,
+});
+
+// Flail / Reversal — bracketed HP ratio
+function flailPower(ctx: MoveContext): number {
+  const p = ctx.atkPoke.hp / ctx.atkPoke.maxHp;
+  if (p <= 0.0417) return 200;
+  if (p <= 0.1042) return 150;
+  if (p <= 0.2083) return 100;
+  if (p <= 0.3542) return 80;
+  if (p <= 0.6875) return 40;
+  return 20;
+}
+register("flail", { modifyPower: flailPower });
+register("reversal", { modifyPower: flailPower });
+
+// Water Spout / Eruption — scale with user HP
+register("water-spout", {
+  modifyPower: (ctx) => Math.max(1, Math.floor(150 * ctx.atkPoke.hp / ctx.atkPoke.maxHp)),
+});
+register("eruption", {
+  modifyPower: (ctx) => Math.max(1, Math.floor(150 * ctx.atkPoke.hp / ctx.atkPoke.maxHp)),
+});
+
+function storedPowerBoosts(stages: { attack: number; defense: number; spAttack: number; spDefense: number; speed: number; accuracy: number; evasion: number }): number {
+  return Math.max(0, stages.attack)
+    + Math.max(0, stages.defense)
+    + Math.max(0, stages.spAttack)
+    + Math.max(0, stages.spDefense)
+    + Math.max(0, stages.speed)
+    + Math.max(0, stages.accuracy)
+    + Math.max(0, stages.evasion);
+}
+
+register("stored-power", {
+  modifyPower: (ctx) => 20 + storedPowerBoosts(ctx.attacker.statStages) * 20,
+});
+register("power-trip", {
+  modifyPower: (ctx) => 20 + storedPowerBoosts(ctx.attacker.statStages) * 20,
+});
+
+register("punishment", {
+  modifyPower: (ctx) => Math.min(200, 60 + storedPowerBoosts(ctx.defender.statStages) * 20),
+});
+
+register("payback", {
+  modifyPower: (ctx) => ctx.defender.actionSubmitted ? ctx.move.power * 2 : ctx.move.power,
+});
+
+// Wake-Up Slap & Smelling Salts — 2x against respective status, cures on hit
+register("wake-up-slap", {
+  modifyPower: (ctx) => ctx.defPoke.statusCondition === "sleep" ? ctx.move.power * 2 : ctx.move.power,
+  onHit: (ctx) => {
+    if (ctx.defPoke.statusCondition === "sleep" && ctx.defPoke.hp > 0) {
+      ctx.defPoke.statusCondition = null;
+      ctx.defPoke.sleepTurns = undefined;
+      ctx.room.log.push(`${ctx.defPoke.species}: 잠에서 깨어났다!`);
+    }
+  },
+});
+register("smelling-salts", {
+  modifyPower: (ctx) => ctx.defPoke.statusCondition === "paralysis" ? ctx.move.power * 2 : ctx.move.power,
+  onHit: (ctx) => {
+    if (ctx.defPoke.statusCondition === "paralysis" && ctx.defPoke.hp > 0) {
+      ctx.defPoke.statusCondition = null;
+      ctx.room.log.push(`${ctx.defPoke.species}: 마비가 풀렸다!`);
+    }
+  },
+});
+
+// ══════════════════════════════════════════════════════════════
+// ── Phase 4: Defensive / Team Effect moves ───────────────────
+// ══════════════════════════════════════════════════════════════
+
+register("safeguard", {
+  applyEffect: (ctx) => {
+    ctx.attacker.volatiles = addVolatile(ctx.attacker.volatiles, "safeguard", 5);
+    ctx.room.log.push(`${ctx.attacker.nickname}: 몸지킴!`);
+  },
+});
+
+register("mist", {
+  applyEffect: (ctx) => {
+    ctx.attacker.volatiles = addVolatile(ctx.attacker.volatiles, "mist", 5);
+    ctx.room.log.push(`${ctx.attacker.nickname}: 흰안개!`);
+  },
+});
+
+register("lucky-chant", {
+  applyEffect: (ctx) => {
+    ctx.attacker.volatiles = addVolatile(ctx.attacker.volatiles, "lucky-chant", 5);
+    ctx.room.log.push(`${ctx.attacker.nickname}: 행운노래!`);
+  },
+});
+
+register("endure", {
+  applyEffect: (ctx) => {
+    ctx.attacker.volatiles = addVolatile(ctx.attacker.volatiles, "endure", 1);
+    ctx.room.log.push(`${ctx.attacker.nickname}의 ${ctx.atkPoke.species}: 버티기!`);
+  },
+});
+
+// ══════════════════════════════════════════════════════════════
+// ── Phase 4: Migrated customResolve moves ────────────────────
+// ══════════════════════════════════════════════════════════════
+
+register("belly-drum", {
+  customResolve: (ctx) => {
+    if (ctx.atkPoke.hp > ctx.atkPoke.maxHp / 2) {
+      ctx.atkPoke.hp -= Math.floor(ctx.atkPoke.maxHp / 2);
+      ctx.attacker.statStages = { ...ctx.attacker.statStages, attack: 6 };
+      ctx.room.log.push(`${ctx.attacker.nickname}의 ${ctx.atkPoke.species}: 배북! 공격이 최대로 올랐다!`);
+    } else {
+      ctx.room.log.push(`${ctx.attacker.nickname}의 ${ctx.atkPoke.species}: 배북 실패!`);
+    }
+    return true;
+  },
+});
+
+register("pain-split", {
+  customResolve: (ctx) => {
+    if (ctx.defPoke.hp > 0) {
+      const avgHp = Math.floor((ctx.atkPoke.hp + ctx.defPoke.hp) / 2);
+      ctx.atkPoke.hp = Math.min(ctx.atkPoke.maxHp, avgHp);
+      ctx.defPoke.hp = Math.min(ctx.defPoke.maxHp, avgHp);
+      ctx.room.log.push(`${ctx.attacker.nickname}의 ${ctx.atkPoke.species}: 아픔나누기! HP가 균등해졌다!`);
+    } else {
+      ctx.room.log.push(`${ctx.attacker.nickname}의 ${ctx.atkPoke.species}: 아픔나누기 실패!`);
+    }
+    return true;
+  },
+});
+
+register("endeavor", {
+  customResolve: (ctx) => {
+    if (ctx.defPoke.hp > ctx.atkPoke.hp) {
+      const damage = ctx.defPoke.hp - ctx.atkPoke.hp;
+      ctx.defPoke.hp = ctx.atkPoke.hp;
+      ctx.room.log.push(`${ctx.attacker.nickname}의 ${ctx.atkPoke.species}: 힘껏펀치! ${damage} 데미지!`);
+      if (ctx.defPoke.hp <= 0) {
+        ctx.room.log.push(`${ctx.defender.nickname}의 ${ctx.defPoke.species}이(가) 쓰러졌다!`);
+      }
+    } else {
+      ctx.room.log.push(`${ctx.attacker.nickname}의 ${ctx.atkPoke.species}: 힘껏펀치 실패!`);
+    }
+    return true;
+  },
+});
+
+register("curse", {
+  customResolve: (ctx) => {
+    const atkTypes = getEffectiveTypes(ctx.atkPoke.species, ctx.atkPoke.variantId, ctx.attacker.battleForm);
+    if (atkTypes.includes("ghost")) {
+      if (ctx.defPoke.hp > 0 && !hasVolatile(ctx.defender.volatiles, "curse")) {
+        ctx.atkPoke.hp = Math.max(0, ctx.atkPoke.hp - Math.floor(ctx.atkPoke.maxHp / 2));
+        ctx.defender.volatiles = addVolatile(ctx.defender.volatiles, "curse", -1);
+        ctx.room.log.push(`${ctx.attacker.nickname}의 ${ctx.atkPoke.species}: 저주!`);
+        if (ctx.atkPoke.hp <= 0) {
+          ctx.room.log.push(`${ctx.attacker.nickname}의 ${ctx.atkPoke.species}이(가) 쓰러졌다!`);
+        }
+      } else {
+        ctx.room.log.push(`${ctx.attacker.nickname}의 ${ctx.atkPoke.species}: 저주 실패!`);
+      }
+    } else {
+      ctx.attacker.statStages = applyStatChanges(ctx.attacker.statStages, [
+        { stat: "speed", change: -1 },
+        { stat: "attack", change: 1 },
+        { stat: "defense", change: 1 },
+      ]);
+      ctx.room.log.push(`${ctx.attacker.nickname}의 ${ctx.atkPoke.species}: 저주! 스피드가 내려가고 공격/방어가 올랐다!`);
+    }
+    return true;
+  },
+});
+
+register("attract", {
+  customResolve: (ctx) => {
+    const atkG = ctx.atkPoke.gender;
+    const defG = ctx.defPoke.gender;
+    const oppositeGender = atkG && defG
+      && atkG !== "genderless" && defG !== "genderless"
+      && atkG !== defG;
+    if (ctx.defPoke.hp > 0 && oppositeGender && !hasVolatile(ctx.defender.volatiles, "infatuation")) {
+      if (ctx.defPoke.abilityId !== "oblivious") {
+        ctx.defender.volatiles = addVolatile(ctx.defender.volatiles, "infatuation", -1);
+        ctx.room.log.push(`${ctx.defender.nickname}의 ${ctx.defPoke.species}: 헤롱헤롱!`);
+      } else {
+        ctx.room.log.push(`${ctx.defender.nickname}의 ${ctx.defPoke.species}: 둔감으로 막았다!`);
+      }
+    } else {
+      ctx.room.log.push(`${ctx.attacker.nickname}의 ${ctx.atkPoke.species}: 헤롱헤롱 실패!`);
+    }
+    return true;
+  },
+});
+
+register("wish", {
+  customResolve: (ctx) => {
+    if (hasVolatile(ctx.attacker.volatiles, "heal-block")) {
+      ctx.room.log.push(`${ctx.attacker.nickname}의 ${ctx.atkPoke.species}: 회복봉인으로 회복할 수 없다!`);
+      return true;
+    }
+    if (!ctx.attacker.wish) {
+      ctx.attacker.wish = {
+        turns: 2,
+        healAmount: Math.floor(ctx.atkPoke.maxHp / 2),
+        targetIndex: ctx.attacker.activeIndex,
+      };
+      ctx.room.log.push(`${ctx.attacker.nickname}의 ${ctx.atkPoke.species}: 바라기!`);
+    }
+    return true;
+  },
+});
+
+register("fake-out", {
+  beforeMove: (ctx) => {
+    if (!ctx.attacker.justSwitchedIn) {
+      return {
+        cancel: true,
+        message: `${ctx.attacker.nickname}의 ${ctx.atkPoke.species}: 속이기 실패!`,
+      };
+    }
+  },
+});
+
+register("substitute", {
+  customResolve: (ctx) => {
+    if (ctx.atkPoke.hp > ctx.atkPoke.maxHp / 4 && !ctx.attacker.substitute) {
+      const cost = Math.floor(ctx.atkPoke.maxHp / 4);
+      ctx.atkPoke.hp -= cost;
+      ctx.attacker.substitute = cost;
+      ctx.room.log.push(`${ctx.attacker.nickname}의 ${ctx.atkPoke.species}: 대타출동!`);
+    } else {
+      ctx.room.log.push(`${ctx.attacker.nickname}의 ${ctx.atkPoke.species}: 대타출동 실패!`);
+    }
+    return true;
+  },
+});
+
+// ── Complex custom-resolve moves still hardcoded in pvp-room.ts ──
+// Kept as empty registry entries so lookups work and the registry advertises them.
 const COMPLEX_CUSTOM = [
   "transform", "copycat", "metronome", "snore", "sleep-talk",
-  "pain-split", "endeavor", "counter", "mirror-coat", "belly-drum",
-  "substitute", "fake-out", "curse", "attract", "wish", "mimic",
+  "counter", "mirror-coat", "mimic",
 ];
 for (const id of COMPLEX_CUSTOM) {
   if (!getMoveEffects(id)) register(id, {});
