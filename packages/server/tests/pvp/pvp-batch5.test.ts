@@ -265,10 +265,12 @@ describe("Attract", () => {
   it("adds infatuation volatile to defender", () => {
     const room = readyRoom(
       [{
+        gender: "male",
         moves: [{ id: "attract", pp: 15, maxPp: 15 }],
         stats: { attack: 100, defense: 100, spAttack: 100, spDefense: 100, speed: 200 },
       }],
       [{
+        gender: "female",
         moves: [{ id: "splash", pp: 40, maxPp: 40 }],
         stats: { attack: 1, defense: 100, spAttack: 1, spDefense: 100, speed: 30 },
       }],
@@ -284,10 +286,12 @@ describe("Attract", () => {
   it("is blocked by Oblivious ability", () => {
     const room = readyRoom(
       [{
+        gender: "male",
         moves: [{ id: "attract", pp: 15, maxPp: 15 }],
         stats: { attack: 100, defense: 100, spAttack: 100, spDefense: 100, speed: 200 },
       }],
       [{
+        gender: "female",
         abilityId: "oblivious",
         moves: [{ id: "splash", pp: 40, maxPp: 40 }],
         stats: { attack: 1, defense: 100, spAttack: 1, spDefense: 100, speed: 30 },
