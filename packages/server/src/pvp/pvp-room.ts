@@ -86,6 +86,11 @@ const TRAPPING_MOVES = new Set([
 const OHKO_MOVES = new Set(["fissure", "sheer-cold", "horn-drill", "guillotine"]);
 const EVASION_MOVES = new Set(["double-team", "minimize"]);
 
+const HALF_RECOVERY_MOVES = new Set([
+  "recover", "roost", "soft-boiled", "milk-drink", "slack-off", "rest", "shore-up",
+]);
+const WEATHER_RECOVERY_MOVES = new Set(["moonlight", "synthesis", "morning-sun"]);
+
 function isGrounded(poke: PvpPokemon, player: PvpPlayerState): boolean {
   const types = getEffectiveTypes(poke.species, poke.variantId, player.battleForm);
   return !types.includes("flying") && poke.abilityId !== "levitate" && poke.heldItem !== "air-balloon";
@@ -668,6 +673,21 @@ function resolveTurn(room: PvpRoomState, actionA: PvpAction, actionB: PvpAction)
     }
   }
 
+  // ── Wish countdown (heal 2 turns after set) ──
+  for (const player of [room.playerA, room.playerB]) {
+    if (player.wish) {
+      player.wish.turns--;
+      if (player.wish.turns <= 0) {
+        const targetPoke = player.party[player.wish.targetIndex];
+        if (targetPoke && targetPoke.hp > 0) {
+          targetPoke.hp = Math.min(targetPoke.maxHp, targetPoke.hp + player.wish.healAmount);
+          room.log.push(`${player.nickname}의 ${targetPoke.species}: 바라기로 HP를 회복했다!`);
+        }
+        player.wish = undefined;
+      }
+    }
+  }
+
   const koA = room.playerA.party[room.playerA.activeIndex].hp <= 0;
   const koB = room.playerB.party[room.playerB.activeIndex].hp <= 0;
   const aliveA = room.playerA.party.some((p) => p.hp > 0);
@@ -765,6 +785,16 @@ function applySwitch(room: PvpRoomState, player: PvpPlayerState, index: number):
   const oldPoke = player.party[player.activeIndex];
   if (oldPoke.hp > 0) {
     triggerOnSwitchOut({ player, pokemon: oldPoke });
+  }
+
+  // ── Transform: restore original species/stats/moves on switch out ──
+  if (player.preTransformState) {
+    oldPoke.species = player.preTransformState.species;
+    oldPoke.variantId = player.preTransformState.variantId ?? null;
+    oldPoke.stats = player.preTransformState.stats;
+    oldPoke.moves = player.preTransformState.moves;
+    oldPoke.abilityId = player.preTransformState.abilityId ?? null;
+    player.preTransformState = undefined;
   }
 
   // Reset toxic counter on the pokemon being switched out
@@ -939,9 +969,34 @@ function executeFight(
     if (lockedMoveData) moveData = lockedMoveData;
   }
 
+  // ── Sleep Talk / Snore: bypass sleep block ──
+  let bypassSleep = false;
+  if (atkPoke.statusCondition === "sleep") {
+    if (moveId === "snore") {
+      bypassSleep = true;
+      room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 코골기!`);
+    } else if (moveId === "sleep-talk") {
+      const others = atkPoke.moves.filter((m) => m.id !== "sleep-talk" && m.pp > 0);
+      if (others.length > 0) {
+        const picked = others[Math.floor(Math.random() * others.length)];
+        const pickedData = getMoveById(picked.id);
+        if (pickedData) {
+          moveId = picked.id;
+          moveData = pickedData;
+          bypassSleep = true;
+          room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 잠꼬대! ${pickedData.name}을(를) 사용!`);
+        }
+      } else {
+        room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 잠꼬대 실패!`);
+        attacker.lastMoveUsed = "sleep-talk";
+        return;
+      }
+    }
+  }
+
   // ── Pre-attack status check ──
-  // Decrement sleep turns first
-  if (atkPoke.statusCondition === "sleep" && atkPoke.sleepTurns != null) {
+  // Decrement sleep turns first (unless sleep-talk/snore bypass)
+  if (!bypassSleep && atkPoke.statusCondition === "sleep" && atkPoke.sleepTurns != null) {
     atkPoke.sleepTurns -= 1;
     if (atkPoke.sleepTurns <= 0) {
       atkPoke.statusCondition = null;
@@ -950,19 +1005,21 @@ function executeFight(
     }
   }
 
-  const preCheck = checkPreAttack(
-    atkPoke.statusCondition, attacker.volatiles, atkPoke.stats, atkPoke.level,
-  );
-  if (preCheck.statusCleared) {
-    atkPoke.statusCondition = null;
+  if (!bypassSleep) {
+    const preCheck = checkPreAttack(
+      atkPoke.statusCondition, attacker.volatiles, atkPoke.stats, atkPoke.level,
+    );
+    if (preCheck.statusCleared) {
+      atkPoke.statusCondition = null;
+    }
+    if (preCheck.message) {
+      room.log.push(`${attacker.nickname}의 ${atkPoke.species}: ${preCheck.message}`);
+    }
+    if (preCheck.selfDamage) {
+      atkPoke.hp = Math.max(0, atkPoke.hp - preCheck.selfDamage);
+    }
+    if (!preCheck.canAct) return;
   }
-  if (preCheck.message) {
-    room.log.push(`${attacker.nickname}의 ${atkPoke.species}: ${preCheck.message}`);
-  }
-  if (preCheck.selfDamage) {
-    atkPoke.hp = Math.max(0, atkPoke.hp - preCheck.selfDamage);
-  }
-  if (!preCheck.canAct) return;
 
   // ── Two-Turn Moves: charge phase ──
   if (TWO_TURN_MOVES.has(moveId) && !attacker.chargingMove) {
@@ -1029,6 +1086,96 @@ function executeFight(
     return;
   }
 
+  // ── Wish (바라기) ──
+  if (moveId === "wish") {
+    if (!attacker.wish) {
+      attacker.wish = {
+        turns: 2,
+        healAmount: Math.floor(atkPoke.maxHp / 2),
+        targetIndex: attacker.activeIndex,
+      };
+      room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 바라기!`);
+    }
+    attacker.lastMoveUsed = moveId;
+    return;
+  }
+
+  // ── Recovery moves (1/2 maxHp heal) ──
+  if (HALF_RECOVERY_MOVES.has(moveId)) {
+    if (moveId === "rest") {
+      atkPoke.hp = atkPoke.maxHp;
+      atkPoke.statusCondition = "sleep";
+      atkPoke.sleepTurns = 2;
+      room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 잠듦! HP가 완전히 회복됐다!`);
+    } else {
+      const heal = Math.floor(atkPoke.maxHp / 2);
+      atkPoke.hp = Math.min(atkPoke.maxHp, atkPoke.hp + heal);
+      room.log.push(`${attacker.nickname}의 ${atkPoke.species}: HP를 회복했다!`);
+    }
+    attacker.lastMoveUsed = moveId;
+    return;
+  }
+
+  // ── Weather-dependent recovery moves ──
+  if (WEATHER_RECOVERY_MOVES.has(moveId)) {
+    let healRatio = 0.5;
+    if (room.weather === "sun") healRatio = 2 / 3;
+    else if (room.weather === "rain" || room.weather === "hail" || room.weather === "sandstorm") {
+      healRatio = 0.25;
+    }
+    const heal = Math.floor(atkPoke.maxHp * healRatio);
+    atkPoke.hp = Math.min(atkPoke.maxHp, atkPoke.hp + heal);
+    room.log.push(`${attacker.nickname}의 ${atkPoke.species}: HP를 회복했다!`);
+    attacker.lastMoveUsed = moveId;
+    return;
+  }
+
+  // ── Belly Drum (배북) ──
+  if (moveId === "belly-drum") {
+    if (atkPoke.hp > atkPoke.maxHp / 2) {
+      atkPoke.hp -= Math.floor(atkPoke.maxHp / 2);
+      attacker.statStages = { ...attacker.statStages, attack: 6 };
+      room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 배북! 공격이 최대로 올랐다!`);
+    } else {
+      room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 배북 실패!`);
+    }
+    attacker.lastMoveUsed = moveId;
+    return;
+  }
+
+  // ── Focus Energy (초점맞추기) ──
+  if (moveId === "focus-energy") {
+    if (!hasVolatile(attacker.volatiles, "focus-energy")) {
+      attacker.volatiles = addVolatile(attacker.volatiles, "focus-energy", -1);
+      room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 기력충전! 급소에 맞기 쉬워졌다!`);
+    }
+    attacker.lastMoveUsed = moveId;
+    return;
+  }
+
+  // ── Transform (변신) ──
+  if (moveId === "transform") {
+    const target = defPoke;
+    if (!attacker.preTransformState) {
+      attacker.preTransformState = {
+        species: atkPoke.species,
+        variantId: atkPoke.variantId ?? null,
+        stats: { ...atkPoke.stats },
+        moves: atkPoke.moves.map((m) => ({ ...m })),
+        abilityId: atkPoke.abilityId ?? null,
+      };
+    }
+    atkPoke.species = target.species;
+    atkPoke.variantId = target.variantId ?? null;
+    atkPoke.stats = { ...target.stats };
+    atkPoke.moves = target.moves.map((m) => ({ ...m, pp: 5, maxPp: 5 }));
+    atkPoke.abilityId = target.abilityId ?? null;
+    attacker.statStages = { ...defender.statStages };
+    room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 변신!`);
+    attacker.lastMoveUsed = moveId;
+    return;
+  }
+
   // ── Execute move (with Struggle fallback) ──
   const move = atkPoke.moves.find((m) => m.id === moveId);
   const allPpDepleted = atkPoke.moves.every((m) => m.pp <= 0);
@@ -1073,6 +1220,7 @@ function executeFight(
     let bonusCrit = 0;
     if (atkPoke.abilityId === "super-luck") bonusCrit += 1;
     if (atkPoke.heldItem === "scope-lens" || atkPoke.heldItem === "razor-claw") bonusCrit += 1;
+    if (hasVolatile(attacker.volatiles, "focus-energy")) bonusCrit += 2;
     if (bonusCrit > 0) {
       const baseCrit = effectiveMoveData.meta?.critRate ?? 0;
       effectiveMoveData = {

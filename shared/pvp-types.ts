@@ -70,6 +70,14 @@ export interface PvpPlayerState {
     toxicSpikes?: number;  // 0-2
     stickyWeb?: boolean;
   };
+  wish?: { turns: number; healAmount: number; targetIndex: number };
+  preTransformState?: {
+    species: string;
+    variantId?: string | null;
+    stats: PokemonStats;
+    moves: PokemonMove[];
+    abilityId?: string | null;
+  };
 }
 
 // ── 방 상태 ──
