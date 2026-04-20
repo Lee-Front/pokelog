@@ -24,19 +24,11 @@ import {
   triggerItemEndOfTurn, getItemSpeedMultiplier,
   checkItemPreventKO, isItemLockMove,
 } from "./pvp-items.js";
-import { hasFlag, getFlag } from "./pvp-moves.js";
+import { hasFlag, getFlag, tryFixedDamage, type MoveContext } from "./pvp-moves.js";
 import type {
   PvpRoomState, PvpPlayerState, PvpPokemon,
   PvpClientRoomView, PvpRoomConfig, PvpAction,
 } from "../../../../shared/pvp-types.js";
-
-const FIXED_DAMAGE_MOVES: Record<string, number | "level"> = {
-  "dragon-rage": 40,
-  "sonic-boom": 20,
-  "seismic-toss": "level",
-  "night-shade": "level",
-  "psywave": "level",
-};
 
 const HAZARD_MOVES: Record<string, (hazards: NonNullable<PvpPlayerState["hazards"]>) => boolean> = {
   "stealth-rock": (h) => { if (h.stealthRock) return false; h.stealthRock = true; return true; },
@@ -1627,14 +1619,18 @@ function executeFight(
   const moveForCalc = { ...effectiveMoveData, accuracy: 999 };
 
   // ── Fixed damage moves ──
-  const fixedDmg = FIXED_DAMAGE_MOVES[isStruggle ? "" : moveId];
+  const fixedCtx: MoveContext = {
+    room, attacker, defender, atkPoke, defPoke,
+    move: effectiveMoveData, moveId,
+  };
+  const fixedDmg = isStruggle ? null : tryFixedDamage(fixedCtx);
   let isFixedDamage = false;
   let totalDamage = 0;
   let hitsMade = 0;
 
   if (fixedDmg != null && !isStruggle) {
     isFixedDamage = true;
-    const damage = fixedDmg === "level" ? atkPoke.level : fixedDmg;
+    const damage = fixedDmg;
     // ── Substitute absorption for fixed damage ──
     if (defender.substitute && defender.substitute > 0) {
       defender.substitute -= damage;
