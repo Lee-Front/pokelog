@@ -570,3 +570,35 @@ register("poison-point", {});
 register("flame-body", {});
 register("rough-skin", {});
 register("iron-barbs", {});
+
+// ── Trapping Abilities ──
+register("shadow-tag", {
+  onSwitchIn: (ctx) => {
+    const oppPoke = ctx.opponent.party[ctx.opponent.activeIndex];
+    // Shadow Tag does not trap other shadow-tag pokemon
+    if (oppPoke.abilityId !== "shadow-tag") {
+      ctx.opponent.trapped = true;
+    }
+  },
+});
+
+register("arena-trap", {
+  onSwitchIn: (ctx) => {
+    const oppPoke = ctx.opponent.party[ctx.opponent.activeIndex];
+    const types = getEffectiveTypes(oppPoke.species, oppPoke.variantId, ctx.opponent.battleForm);
+    // Flying types / levitate are unaffected
+    if (!types.includes("flying") && oppPoke.abilityId !== "levitate") {
+      ctx.opponent.trapped = true;
+    }
+  },
+});
+
+register("magnet-pull", {
+  onSwitchIn: (ctx) => {
+    const oppPoke = ctx.opponent.party[ctx.opponent.activeIndex];
+    const types = getEffectiveTypes(oppPoke.species, oppPoke.variantId, ctx.opponent.battleForm);
+    if (types.includes("steel")) {
+      ctx.opponent.trapped = true;
+    }
+  },
+});

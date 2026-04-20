@@ -1,6 +1,6 @@
 import type { PokemonMove, PokemonStats, PrimaryStatus, StatStages, VolatileStatus, BattleWeather } from "./types.js";
 
-export type PvpTransformationType = "mega" | "gigantamax" | "primal";
+export type PvpTransformationType = "mega" | "gigantamax" | "primal" | "dynamax";
 
 /** Pre-computed transformation stats (computed at room creation from full OwnedPokemon) */
 export interface PvpTransformForm {
@@ -62,6 +62,7 @@ export interface PvpPlayerState {
     lightScreen?: number;  // turns remaining
     auroraVeil?: number;   // turns remaining
   };
+  trapped?: boolean;        // prevented from switching (mean-look, shadow-tag, etc.)
   tailwind?: number;       // turns remaining
   hazards?: {
     stealthRock?: boolean;
@@ -82,6 +83,8 @@ export interface PvpRoomState {
   playerB: PvpPlayerState;
   weather?: BattleWeather;
   weatherTurns?: number;
+  terrain?: "electric" | "grassy" | "psychic" | "misty";
+  terrainTurns?: number;
   trickRoom?: number;       // turns remaining
   turnDeadline: number | null;
   log: string[];
@@ -98,7 +101,7 @@ export interface PvpRoomState {
 
 // ── 플레이어 액션 ──
 export type PvpAction =
-  | { type: "fight"; moveId: string; mega?: boolean; gigantamax?: boolean }
+  | { type: "fight"; moveId: string; mega?: boolean; gigantamax?: boolean; dynamax?: boolean }
   | { type: "switch"; pokemonIndex: number }
   | { type: "forfeit" };
 
@@ -167,6 +170,7 @@ export interface PvpClientRoomView {
     gmaxTurnsRemaining?: number;
   };
   weather?: BattleWeather;
+  terrain?: PvpRoomState["terrain"];
   turnDeadline: number | null;
   log: string[];
   result?: PvpRoomState["result"];

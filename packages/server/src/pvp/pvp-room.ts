@@ -64,6 +64,33 @@ const SEMI_INVULNERABLE = new Set(["fly", "dig", "dive", "bounce", "phantom-forc
 
 const PHAZING_MOVES = new Set(["whirlwind", "roar", "dragon-tail", "circle-throw"]);
 
+const TERRAIN_MOVES: Record<string, NonNullable<PvpRoomState["terrain"]>> = {
+  "electric-terrain": "electric",
+  "grassy-terrain": "grassy",
+  "psychic-terrain": "psychic",
+  "misty-terrain": "misty",
+};
+
+const TERRAIN_NAMES: Record<string, string> = {
+  electric: "일렉트릭필드",
+  grassy: "그래스필드",
+  psychic: "사이코필드",
+  misty: "미스트필드",
+};
+
+const TRAPPING_MOVES = new Set([
+  "mean-look", "block", "spider-web", "jaw-lock",
+  "spirit-shackle", "anchor-shot", "thousand-waves",
+]);
+
+const OHKO_MOVES = new Set(["fissure", "sheer-cold", "horn-drill", "guillotine"]);
+const EVASION_MOVES = new Set(["double-team", "minimize"]);
+
+function isGrounded(poke: PvpPokemon, player: PvpPlayerState): boolean {
+  const types = getEffectiveTypes(poke.species, poke.variantId, player.battleForm);
+  return !types.includes("flying") && poke.abilityId !== "levitate" && poke.heldItem !== "air-balloon";
+}
+
 export const DEFAULT_CONFIG: PvpRoomConfig = {
   levelCap: 50,
   turnTimeoutMs: 30_000,
@@ -185,6 +212,7 @@ export function getPlayerView(room: PvpRoomState, userId: string): PvpClientRoom
       gmaxTurnsRemaining: opp.gmaxTurnsRemaining,
     },
     weather: room.weather,
+    terrain: room.terrain,
     turnDeadline: room.turnDeadline,
     log: room.log,
     result: room.result,
@@ -205,6 +233,14 @@ export function submitAction(room: PvpRoomState, userId: string, action: PvpActi
     room.phase = "finished";
     room.result = { winnerId: opp.userId, loserId: userId, reason: "forfeit" };
     return true;
+  }
+
+  // ── Trapping: prevent switching while trapped ──
+  if (action.type === "switch" && room.phase === "action") {
+    const player = getPlayer(room, userId);
+    if (player.trapped) {
+      return false;
+    }
   }
 
   const player = getPlayer(room, userId);
@@ -360,14 +396,14 @@ function resolveTurn(room: PvpRoomState, actionA: PvpAction, actionB: PvpAction)
       : [{ player: room.playerB, action: actionB, opp: room.playerA, defProtected: protectedA },
          { player: room.playerA, action: actionA, opp: room.playerB, defProtected: protectedB }];
 
-    executeFight(room, first.player, first.action.moveId, first.opp, first.action.mega, first.action.gigantamax, first.defProtected);
+    executeFight(room, first.player, first.action.moveId, first.opp, first.action.mega, first.action.gigantamax, first.defProtected, first.action.dynamax);
     if (first.opp.party[first.opp.activeIndex].hp > 0) {
-      executeFight(room, second.player, second.action.moveId, second.opp, second.action.mega, second.action.gigantamax, second.defProtected);
+      executeFight(room, second.player, second.action.moveId, second.opp, second.action.mega, second.action.gigantamax, second.defProtected, second.action.dynamax);
     }
   } else if (actionA.type === "fight") {
-    executeFight(room, room.playerA, actionA.moveId, room.playerB, actionA.mega, actionA.gigantamax, protectedB);
+    executeFight(room, room.playerA, actionA.moveId, room.playerB, actionA.mega, actionA.gigantamax, protectedB, actionA.dynamax);
   } else if (actionB.type === "fight") {
-    executeFight(room, room.playerB, actionB.moveId, room.playerA, actionB.mega, actionB.gigantamax, protectedA);
+    executeFight(room, room.playerB, actionB.moveId, room.playerA, actionB.mega, actionB.gigantamax, protectedA, actionB.dynamax);
   }
 
   // ── Pending switch after move (U-Turn, Volt Switch, Flip Turn, Parting Shot, Baton Pass) ──
@@ -505,6 +541,28 @@ function resolveTurn(room: PvpRoomState, actionA: PvpAction, actionB: PvpAction)
     }
   }
 
+  // ── Grassy Terrain: heal grounded pokemon each turn ──
+  if (room.terrain === "grassy") {
+    for (const player of [room.playerA, room.playerB]) {
+      const poke = player.party[player.activeIndex];
+      if (poke.hp > 0 && isGrounded(poke, player)) {
+        const heal = Math.max(1, Math.floor(poke.maxHp / 16));
+        poke.hp = Math.min(poke.maxHp, poke.hp + heal);
+        room.log.push(`${player.nickname}의 ${poke.species}: 그래스필드로 HP 회복!`);
+      }
+    }
+  }
+
+  // ── Terrain tick ──
+  if (room.terrain && room.terrainTurns != null) {
+    room.terrainTurns -= 1;
+    if (room.terrainTurns <= 0) {
+      room.log.push(`${TERRAIN_NAMES[room.terrain]}이(가) 사라졌다!`);
+      room.terrain = undefined;
+      room.terrainTurns = undefined;
+    }
+  }
+
   // ── Weather-based form changes (Castform, Cherrim) ──
   for (const player of [room.playerA, room.playerB]) {
     const poke = player.party[player.activeIndex];
@@ -516,12 +574,13 @@ function resolveTurn(room: PvpRoomState, actionA: PvpAction, actionB: PvpAction)
     }
   }
 
-  // ── Gigantamax countdown ──
+  // ── Gigantamax / Dynamax countdown ──
   for (const player of [room.playerA, room.playerB]) {
-    if (player.transformationType === "gigantamax" && player.gmaxTurnsRemaining != null) {
+    if ((player.transformationType === "gigantamax" || player.transformationType === "dynamax") && player.gmaxTurnsRemaining != null) {
       player.gmaxTurnsRemaining -= 1;
       if (player.gmaxTurnsRemaining <= 0) {
         const poke = player.party[player.activeIndex];
+        const wasDynamax = player.transformationType === "dynamax";
         if (player.preTransformMaxHp != null && poke.hp > 0) {
           const hpRatio = poke.hp / poke.maxHp;
           poke.maxHp = player.preTransformMaxHp;
@@ -533,7 +592,9 @@ function resolveTurn(room: PvpRoomState, actionA: PvpAction, actionB: PvpAction)
         player.transformationType = null;
         player.gmaxTurnsRemaining = undefined;
         player.preTransformMaxHp = undefined;
-        if (poke.hp > 0) room.log.push(`${player.nickname}의 ${poke.species}: 기가맥스가 풀렸다!`);
+        if (poke.hp > 0) {
+          room.log.push(`${player.nickname}의 ${poke.species}: ${wasDynamax ? "다이맥스" : "기가맥스"}가 풀렸다!`);
+        }
       }
     }
   }
@@ -710,6 +771,9 @@ function applySwitch(room: PvpRoomState, player: PvpPlayerState, index: number):
   // Reset choice lock on switch
   player.lockedMoveId = undefined;
 
+  // Reset trapping on switch
+  player.trapped = false;
+
   // Reset new mechanic state on switch
   player.substitute = undefined;
   player.chargingMove = undefined;
@@ -758,11 +822,30 @@ function executeFight(
   mega?: boolean,
   gigantamax?: boolean,
   defenderProtected?: boolean,
+  dynamax?: boolean,
 ): void {
   const atkPoke = attacker.party[attacker.activeIndex];
   const defPoke = defender.party[defender.activeIndex];
   let moveData = getMoveById(moveId);
   if (!moveData) return;
+
+  // ── Battle Clauses ──
+  // OHKO Clause: block one-hit KO moves
+  if (OHKO_MOVES.has(moveId)) {
+    room.log.push(`${moveData.name}: 일격기 조항으로 사용할 수 없다!`);
+    return;
+  }
+  // Evasion Clause: block evasion-boosting moves
+  if (EVASION_MOVES.has(moveId)) {
+    room.log.push(`${moveData.name}: 회피 조항으로 사용할 수 없다!`);
+    return;
+  }
+
+  // ── Psychic Terrain: block priority moves targeting grounded defenders ──
+  if (room.terrain === "psychic" && (moveData.priority ?? 0) > 0 && isGrounded(defPoke, defender)) {
+    room.log.push(`사이코필드가 선제공격 기술을 막았다!`);
+    return;
+  }
 
   // ── Mega Evolution ──
   if (mega && !attacker.transformationUsed) {
@@ -797,6 +880,19 @@ function executeFight(
       poke.hp = Math.ceil(hpRatio * poke.maxHp);
       room.log.push(`${attacker.nickname}의 ${poke.species}: 기가맥스!`);
     }
+  }
+
+  // ── Dynamax (regular) ──
+  if (dynamax && !attacker.transformationUsed && attacker.hasDynamaxBand) {
+    const poke = attacker.party[attacker.activeIndex];
+    attacker.transformationType = "dynamax";
+    attacker.transformationUsed = true;
+    attacker.gmaxTurnsRemaining = 3;
+    attacker.preTransformMaxHp = poke.maxHp;
+    const hpRatio = poke.hp / poke.maxHp;
+    poke.maxHp = Math.ceil(poke.maxHp * 2);
+    poke.hp = Math.ceil(hpRatio * poke.maxHp);
+    room.log.push(`${attacker.nickname}의 ${poke.species}: 다이맥스!`);
   }
 
   // ── Flinch check (applied by faster attacker, consumed here) ──
@@ -1055,6 +1151,19 @@ function executeFight(
         // ── Item: apply attack/defense multipliers ──
         finalDamage = Math.floor(finalDamage * itemAtkMul);
         finalDamage = Math.floor(finalDamage * itemDefMul);
+        // ── Terrain damage modifiers ──
+        if (room.terrain) {
+          let terrainMod = 1;
+          if (isGrounded(atkPoke, attacker)) {
+            if (room.terrain === "electric" && moveForCalc.type === "electric") terrainMod = 1.3;
+            if (room.terrain === "grassy" && moveForCalc.type === "grass") terrainMod = 1.3;
+            if (room.terrain === "psychic" && moveForCalc.type === "psychic") terrainMod = 1.3;
+          }
+          if (room.terrain === "misty" && isGrounded(defPoke, defender) && moveForCalc.type === "dragon") {
+            terrainMod *= 0.5;
+          }
+          if (terrainMod !== 1) finalDamage = Math.floor(finalDamage * terrainMod);
+        }
         // ── Screen damage reduction (critical hits ignore screens) ──
         if (!result.critical && defender.screens) {
           const hasReflect = moveForCalc.category === "physical" && (defender.screens.reflect ?? 0) > 0;
@@ -1182,9 +1291,13 @@ function executeFight(
     const ailment = moveData.meta?.ailment;
     const chance = moveData.meta?.ailmentChance ?? 0;
     if (ailment && ailment !== "none") {
+      // ── Misty Terrain: block all primary status on grounded defenders ──
+      const mistyBlocked = room.terrain === "misty" && isGrounded(defPoke, defender) && !isVolatileAilment(ailment);
       // ── Ability: status guard check for primary (non-volatile) ailments ──
       const primaryBlocked = !isVolatileAilment(ailment) && !canReceiveStatus(defPoke, ailment);
-      if (primaryBlocked) {
+      if (mistyBlocked) {
+        room.log.push(`미스트필드가 상태이상을 막았다!`);
+      } else if (primaryBlocked) {
         room.log.push(`${defender.nickname}의 ${defPoke.species}: 특성으로 상태이상을 막았다!`);
       } else {
         const primary = rollAilment(ailment, chance, defPoke.statusCondition);
@@ -1192,6 +1305,12 @@ function executeFight(
           // ── Ability: check canReceiveStatus for the rolled status too ──
           if (!canReceiveStatus(defPoke, primary)) {
             room.log.push(`${defender.nickname}의 ${defPoke.species}: 특성으로 상태이상을 막았다!`);
+          } else if (room.terrain === "electric" && isGrounded(defPoke, defender) && primary === "sleep") {
+            // Electric Terrain: prevents sleep on grounded pokemon
+            room.log.push(`일렉트릭필드가 잠듦을 막았다!`);
+          } else if (primary === "sleep" && defender.party.some((p, i) => i !== defender.activeIndex && p.statusCondition === "sleep")) {
+            // Sleep Clause: only one opposing pokemon asleep at a time
+            room.log.push(`잠듦 조항! 이미 잠든 포켓몬이 있다!`);
           } else {
             defPoke.statusCondition = primary;
             if (primary === "sleep") defPoke.sleepTurns = rollSleepTurns();
@@ -1293,6 +1412,23 @@ function executeFight(
       };
       room.log.push(`${weatherNames[weather] ?? weather} 상태가 되었다!`);
     }
+  }
+
+  // ── Terrain setting from move (not for struggle) ──
+  if (!isStruggle) {
+    const terrainType = TERRAIN_MOVES[moveId];
+    if (terrainType) {
+      room.terrain = terrainType;
+      room.terrainTurns = 5;
+      room.log.push(`${TERRAIN_NAMES[terrainType]}이(가) 펼쳐졌다!`);
+    }
+  }
+
+  // ── Trapping moves: prevent opponent from switching ──
+  if (!isStruggle && TRAPPING_MOVES.has(moveId) && hitsMade >= 0 && defPoke.hp > 0) {
+    // Most trapping moves land; bind the defender so they can't switch out.
+    defender.trapped = true;
+    room.log.push(`${defender.nickname}의 ${defPoke.species}: 도망칠 수 없다!`);
   }
 
   // ── Post-attack form change (Aegislash stance change) ──
