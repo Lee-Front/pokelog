@@ -92,9 +92,28 @@ const HALF_RECOVERY_MOVES = new Set([
 const WEATHER_RECOVERY_MOVES = new Set(["moonlight", "synthesis", "morning-sun"]);
 
 function isGrounded(poke: PvpPokemon, player: PvpPlayerState): boolean {
+  // Iron Ball always grounds the pokemon (beats flying type / levitate).
+  if (poke.heldItem === "iron-ball") return true;
+  if (poke.heldItem === "air-balloon") return false;
   const types = getEffectiveTypes(poke.species, poke.variantId, player.battleForm);
-  return !types.includes("flying") && poke.abilityId !== "levitate" && poke.heldItem !== "air-balloon";
+  return !types.includes("flying") && poke.abilityId !== "levitate";
 }
+
+/**
+ * Check whether a pokemon's held item is currently active.
+ * Returns null if items are disabled via Magic Room or Embargo.
+ */
+function effectiveHeldItem(poke: PvpPokemon, player: PvpPlayerState, room: PvpRoomState): string | null {
+  if (room.magicRoom && room.magicRoom > 0) return null;
+  if (hasVolatile(player.volatiles, "embargo")) return null;
+  return poke.heldItem ?? null;
+}
+
+const METRONOME_POOL = [
+  "tackle", "ember", "water-gun", "thunder-shock",
+  "vine-whip", "ice-shard", "rock-throw", "gust",
+  "confusion", "swift",
+];
 
 export const DEFAULT_CONFIG: PvpRoomConfig = {
   levelCap: 50,
@@ -240,10 +259,13 @@ export function submitAction(room: PvpRoomState, userId: string, action: PvpActi
     return true;
   }
 
-  // ── Trapping: prevent switching while trapped ──
+  // ── Trapping: prevent switching while trapped or ingrained ──
   if (action.type === "switch" && room.phase === "action") {
     const player = getPlayer(room, userId);
     if (player.trapped) {
+      return false;
+    }
+    if (hasVolatile(player.volatiles, "ingrain")) {
       return false;
     }
   }
@@ -463,8 +485,9 @@ function resolveTurn(room: PvpRoomState, actionA: PvpAction, actionB: PvpAction)
       // Still apply non-poison end-of-turn (trap, leech seed, etc.)
       if (!hasMagicGuard) {
         const eot = applyEndOfTurn(null, player.volatiles, poke.maxHp, oppPoke.maxHp);
+        const healBlocked = hasVolatile(player.volatiles, "heal-block");
         if (eot.damage > 0) poke.hp = Math.max(0, poke.hp - eot.damage);
-        if (eot.healing > 0) poke.hp = Math.min(poke.maxHp, poke.hp + eot.healing);
+        if (eot.healing > 0 && !healBlocked) poke.hp = Math.min(poke.maxHp, poke.hp + eot.healing);
         if (eot.opponentHealing > 0 && oppPoke.hp > 0) {
           oppPoke.hp = Math.min(oppPoke.maxHp, oppPoke.hp + eot.opponentHealing);
         }
@@ -479,10 +502,11 @@ function resolveTurn(room: PvpRoomState, actionA: PvpAction, actionB: PvpAction)
       // Normal end-of-turn (existing code)
       if (!hasMagicGuard) {
         const eot = applyEndOfTurn(poke.statusCondition, player.volatiles, poke.maxHp, oppPoke.maxHp);
+        const healBlocked = hasVolatile(player.volatiles, "heal-block");
         if (eot.damage > 0) {
           poke.hp = Math.max(0, poke.hp - eot.damage);
         }
-        if (eot.healing > 0) {
+        if (eot.healing > 0 && !healBlocked) {
           poke.hp = Math.min(poke.maxHp, poke.hp + eot.healing);
         }
         if (eot.opponentHealing > 0 && oppPoke.hp > 0) {
@@ -662,6 +686,24 @@ function resolveTurn(room: PvpRoomState, actionA: PvpAction, actionB: PvpAction)
     }
   }
 
+  // ── Magic Room tick ──
+  if (room.magicRoom && room.magicRoom > 0) {
+    room.magicRoom--;
+    if (room.magicRoom <= 0) {
+      room.magicRoom = undefined;
+      room.log.push("매직룸이 해제됐다!");
+    }
+  }
+
+  // ── Wonder Room tick ──
+  if (room.wonderRoom && room.wonderRoom > 0) {
+    room.wonderRoom--;
+    if (room.wonderRoom <= 0) {
+      room.wonderRoom = undefined;
+      room.log.push("원더룸이 해제됐다!");
+    }
+  }
+
   // ── Tailwind tick ──
   for (const player of [room.playerA, room.playerB]) {
     if (player.tailwind && player.tailwind > 0) {
@@ -680,8 +722,12 @@ function resolveTurn(room: PvpRoomState, actionA: PvpAction, actionB: PvpAction)
       if (player.wish.turns <= 0) {
         const targetPoke = player.party[player.wish.targetIndex];
         if (targetPoke && targetPoke.hp > 0) {
-          targetPoke.hp = Math.min(targetPoke.maxHp, targetPoke.hp + player.wish.healAmount);
-          room.log.push(`${player.nickname}의 ${targetPoke.species}: 바라기로 HP를 회복했다!`);
+          if (hasVolatile(player.volatiles, "heal-block")) {
+            room.log.push(`${player.nickname}의 ${targetPoke.species}: 회복봉인으로 회복할 수 없다!`);
+          } else {
+            targetPoke.hp = Math.min(targetPoke.maxHp, targetPoke.hp + player.wish.healAmount);
+            room.log.push(`${player.nickname}의 ${targetPoke.species}: 바라기로 HP를 회복했다!`);
+          }
         }
         player.wish = undefined;
       }
@@ -738,8 +784,7 @@ function applyHazardDamage(room: PvpRoomState, player: PvpPlayerState, pokemon: 
 
   // Spikes: grounded only, 1/8, 1/6, 1/4 by layers
   if (hazards.spikes && hazards.spikes > 0) {
-    const isGrounded = !types.includes("flying") && pokemon.abilityId !== "levitate";
-    if (isGrounded) {
+    if (isGrounded(pokemon, player)) {
       const fractions = [0, 1 / 8, 1 / 6, 1 / 4];
       const dmg = Math.max(1, Math.floor(pokemon.maxHp * (fractions[hazards.spikes] ?? 0)));
       pokemon.hp = Math.max(0, pokemon.hp - dmg);
@@ -749,8 +794,7 @@ function applyHazardDamage(room: PvpRoomState, player: PvpPlayerState, pokemon: 
 
   // Toxic Spikes: grounded only, poison types absorb
   if (hazards.toxicSpikes && hazards.toxicSpikes > 0) {
-    const isGrounded = !types.includes("flying") && pokemon.abilityId !== "levitate";
-    if (isGrounded) {
+    if (isGrounded(pokemon, player)) {
       if (types.includes("poison")) {
         hazards.toxicSpikes = 0;
         room.log.push(`${pokemon.species}이(가) 독압정을 흡수했다!`);
@@ -769,8 +813,7 @@ function applyHazardDamage(room: PvpRoomState, player: PvpPlayerState, pokemon: 
 
   // Sticky Web: grounded only, speed -1
   if (hazards.stickyWeb) {
-    const isGrounded = !types.includes("flying") && pokemon.abilityId !== "levitate";
-    if (isGrounded) {
+    if (isGrounded(pokemon, player)) {
       player.statStages = applyStatChanges(player.statStages, [{ stat: "speed", change: -1 }]);
       room.log.push(`끈적끈적네트! ${pokemon.species}의 스피드가 내려갔다!`);
     }
@@ -934,6 +977,15 @@ function executeFight(
     return;
   }
 
+  // ── Infatuation: 50% chance to be unable to act ──
+  if (hasVolatile(attacker.volatiles, "infatuation")) {
+    if (Math.random() < 0.5) {
+      room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 헤롱헤롱으로 움직일 수 없다!`);
+      attacker.lastMoveUsed = moveId;
+      return;
+    }
+  }
+
   // ── Disable: can't use disabled move ──
   if (attacker.disabledMoveId && moveId === attacker.disabledMoveId && hasVolatile(attacker.volatiles, "disable")) {
     room.log.push(`${attacker.nickname}의 ${atkPoke.species}: ${moveId}은(는) 사용할 수 없다!`);
@@ -967,6 +1019,54 @@ function executeFight(
     moveId = attacker.lockedMoveId;
     const lockedMoveData = getMoveById(moveId);
     if (lockedMoveData) moveData = lockedMoveData;
+  }
+
+  // ── Copycat: copy last move used by anyone ──
+  if (moveId === "copycat") {
+    const last = room.lastMoveUsedInBattle;
+    if (last && last !== "copycat") {
+      const copied = getMoveById(last);
+      if (copied) {
+        moveId = last;
+        moveData = copied;
+        room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 흉내내기로 ${copied.name}을(를) 따라한다!`);
+      } else {
+        room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 흉내낼 기술이 없다!`);
+        attacker.lastMoveUsed = "copycat";
+        return;
+      }
+    } else {
+      room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 흉내낼 기술이 없다!`);
+      attacker.lastMoveUsed = "copycat";
+      return;
+    }
+  }
+
+  // ── Mimic: permanently replaces the mimic slot with the defender's last move ──
+  if (moveId === "mimic") {
+    if (defender.lastMoveUsed) {
+      const mimicSlot = atkPoke.moves.find((m) => m.id === "mimic");
+      if (mimicSlot) {
+        mimicSlot.id = defender.lastMoveUsed;
+        room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 흉내내기! ${defender.lastMoveUsed}을(를) 습득!`);
+      }
+    } else {
+      room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 흉내낼 기술이 없다!`);
+    }
+    attacker.lastMoveUsed = "mimic";
+    room.lastMoveUsedInBattle = "mimic";
+    return;
+  }
+
+  // ── Metronome: picks a random move from the pool ──
+  if (moveId === "metronome") {
+    const picked = METRONOME_POOL[Math.floor(Math.random() * METRONOME_POOL.length)];
+    const pickedData = getMoveById(picked);
+    if (pickedData) {
+      moveId = picked;
+      moveData = pickedData;
+      room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 손가락흔들기! ${pickedData.name}!`);
+    }
   }
 
   // ── Sleep Talk / Snore: bypass sleep block ──
@@ -1086,8 +1186,136 @@ function executeFight(
     return;
   }
 
+  // ── Magic Room: disable all items (toggle) ──
+  if (moveId === "magic-room") {
+    if (room.magicRoom && room.magicRoom > 0) {
+      room.magicRoom = undefined;
+      room.log.push("매직룸이 해제됐다!");
+    } else {
+      room.magicRoom = 5;
+      room.log.push("매직룸! 도구 효과가 사라졌다!");
+    }
+    attacker.lastMoveUsed = moveId;
+    room.lastMoveUsedInBattle = moveId;
+    return;
+  }
+
+  // ── Wonder Room: swap defense/spDefense (toggle) ──
+  if (moveId === "wonder-room") {
+    if (room.wonderRoom && room.wonderRoom > 0) {
+      room.wonderRoom = undefined;
+      room.log.push("원더룸이 해제됐다!");
+    } else {
+      room.wonderRoom = 5;
+      room.log.push("원더룸! 방어가 교환됐다!");
+    }
+    attacker.lastMoveUsed = moveId;
+    room.lastMoveUsedInBattle = moveId;
+    return;
+  }
+
+  // ── Ingrain: root the attacker (prevents switching) ──
+  if (moveId === "ingrain") {
+    if (!hasVolatile(attacker.volatiles, "ingrain")) {
+      attacker.volatiles = addVolatile(attacker.volatiles, "ingrain", -1);
+      room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 뿌리내리기!`);
+    }
+    attacker.lastMoveUsed = moveId;
+    room.lastMoveUsedInBattle = moveId;
+    return;
+  }
+
+  // ── Pain Split: average HP between attacker and defender ──
+  if (moveId === "pain-split") {
+    if (defPoke.hp > 0) {
+      const avgHp = Math.floor((atkPoke.hp + defPoke.hp) / 2);
+      atkPoke.hp = Math.min(atkPoke.maxHp, avgHp);
+      defPoke.hp = Math.min(defPoke.maxHp, avgHp);
+      room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 아픔나누기! HP가 균등해졌다!`);
+    } else {
+      room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 아픔나누기 실패!`);
+    }
+    attacker.lastMoveUsed = moveId;
+    room.lastMoveUsedInBattle = moveId;
+    return;
+  }
+
+  // ── Endeavor: reduce defender's HP to attacker's HP (fails if attacker already has more HP) ──
+  if (moveId === "endeavor") {
+    if (defPoke.hp > atkPoke.hp) {
+      const damage = defPoke.hp - atkPoke.hp;
+      defPoke.hp = atkPoke.hp;
+      room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 힘껏펀치! ${damage} 데미지!`);
+      if (defPoke.hp <= 0) {
+        room.log.push(`${defender.nickname}의 ${defPoke.species}이(가) 쓰러졌다!`);
+      }
+    } else {
+      room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 힘껏펀치 실패!`);
+    }
+    attacker.lastMoveUsed = moveId;
+    room.lastMoveUsedInBattle = moveId;
+    return;
+  }
+
+  // ── Attract: infatuate the defender ──
+  if (moveId === "attract") {
+    if (defPoke.hp > 0 && canReceiveStatus(defPoke, "infatuation")
+        && !hasVolatile(defender.volatiles, "infatuation")) {
+      defender.volatiles = addVolatile(defender.volatiles, "infatuation", -1);
+      room.log.push(`${defender.nickname}의 ${defPoke.species}: 헤롱헤롱!`);
+    } else {
+      room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 헤롱헤롱 실패!`);
+    }
+    attacker.lastMoveUsed = moveId;
+    room.lastMoveUsedInBattle = moveId;
+    return;
+  }
+
+  // ── Heal Block: prevent defender from healing ──
+  if (moveId === "heal-block") {
+    if (defPoke.hp > 0 && !hasVolatile(defender.volatiles, "heal-block")) {
+      defender.volatiles = addVolatile(defender.volatiles, "heal-block", 5);
+      room.log.push(`${defender.nickname}의 ${defPoke.species}: 회복봉인!`);
+    }
+    attacker.lastMoveUsed = moveId;
+    room.lastMoveUsedInBattle = moveId;
+    return;
+  }
+
+  // ── Embargo: disable defender's held item ──
+  if (moveId === "embargo") {
+    if (defPoke.hp > 0 && !hasVolatile(defender.volatiles, "embargo")) {
+      defender.volatiles = addVolatile(defender.volatiles, "embargo", 5);
+      room.log.push(`${defender.nickname}의 ${defPoke.species}: 아이템금지!`);
+    }
+    attacker.lastMoveUsed = moveId;
+    room.lastMoveUsedInBattle = moveId;
+    return;
+  }
+
+  // ── Leech Seed: seed the defender (grass types immune) ──
+  if (moveId === "leech-seed") {
+    if (defPoke.hp > 0 && !hasVolatile(defender.volatiles, "leech-seed")) {
+      const defTypes = getEffectiveTypes(defPoke.species, defPoke.variantId, defender.battleForm);
+      if (defTypes.includes("grass")) {
+        room.log.push(`${defender.nickname}의 ${defPoke.species}: 씨뿌리기가 통하지 않았다!`);
+      } else {
+        defender.volatiles = addVolatile(defender.volatiles, "leech-seed", -1);
+        room.log.push(`${defender.nickname}의 ${defPoke.species}: 씨뿌리기!`);
+      }
+    }
+    attacker.lastMoveUsed = moveId;
+    room.lastMoveUsedInBattle = moveId;
+    return;
+  }
+
   // ── Wish (바라기) ──
   if (moveId === "wish") {
+    if (hasVolatile(attacker.volatiles, "heal-block")) {
+      room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 회복봉인으로 회복할 수 없다!`);
+      attacker.lastMoveUsed = moveId;
+      return;
+    }
     if (!attacker.wish) {
       attacker.wish = {
         turns: 2,
@@ -1102,6 +1330,11 @@ function executeFight(
 
   // ── Recovery moves (1/2 maxHp heal) ──
   if (HALF_RECOVERY_MOVES.has(moveId)) {
+    if (hasVolatile(attacker.volatiles, "heal-block")) {
+      room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 회복봉인으로 회복할 수 없다!`);
+      attacker.lastMoveUsed = moveId;
+      return;
+    }
     if (moveId === "rest") {
       atkPoke.hp = atkPoke.maxHp;
       atkPoke.statusCondition = "sleep";
@@ -1118,6 +1351,11 @@ function executeFight(
 
   // ── Weather-dependent recovery moves ──
   if (WEATHER_RECOVERY_MOVES.has(moveId)) {
+    if (hasVolatile(attacker.volatiles, "heal-block")) {
+      room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 회복봉인으로 회복할 수 없다!`);
+      attacker.lastMoveUsed = moveId;
+      return;
+    }
     let healRatio = 0.5;
     if (room.weather === "sun") healRatio = 2 / 3;
     else if (room.weather === "rain" || room.weather === "hail" || room.weather === "sandstorm") {
@@ -1314,6 +1552,16 @@ function executeFight(
       effectiveAtkStats = { ...atkPoke.stats, attack: Math.floor(atkPoke.stats.attack * 0.5) };
     }
 
+    // ── Wonder Room: swap defender's defense and spDefense ──
+    let effectiveDefStats = defPoke.stats;
+    if (room.wonderRoom && room.wonderRoom > 0) {
+      effectiveDefStats = {
+        ...defPoke.stats,
+        defense: defPoke.stats.spDefense,
+        spDefense: defPoke.stats.defense,
+      };
+    }
+
     const weatherMod = room.weather ? getWeatherTypeModifier(room.weather, moveForCalc.type) : 1;
     const attackerTypes = getEffectiveTypes(atkPoke.species, atkPoke.variantId, attacker.battleForm);
     const defenderTypes = getEffectiveTypes(defPoke.species, defPoke.variantId, defender.battleForm);
@@ -1336,9 +1584,11 @@ function executeFight(
     const dmgCtx = { room, attacker, defender, atkPoke, defPoke, move: moveForCalc, damage: 0 };
     const atkMul = getAttackMultiplier(dmgCtx);
     const defMul = getDefenseMultiplier(dmgCtx);
-    // ── Item: attack/defense multipliers ──
-    const itemAtkMul = getItemAttackMultiplier(dmgCtx);
-    const itemDefMul = getItemDefenseMultiplier(dmgCtx);
+    // ── Item: attack/defense multipliers (disabled by Magic Room / Embargo) ──
+    const atkItemsActive = effectiveHeldItem(atkPoke, attacker, room) !== null;
+    const defItemsActive = effectiveHeldItem(defPoke, defender, room) !== null;
+    const itemAtkMul = atkItemsActive ? getItemAttackMultiplier(dmgCtx) : 1;
+    const itemDefMul = defItemsActive ? getItemDefenseMultiplier(dmgCtx) : 1;
 
     // ── Ability: Unaware ignores opponent stat stages ──
     const atkStages = defPoke.abilityId === "unaware" ? defaultStatStages() : attacker.statStages;
@@ -1348,7 +1598,7 @@ function executeFight(
     for (let hit = 0; hit < hitCount; hit++) {
       if (defPoke.hp <= 0) break;
       const result = calculateDamage(
-        atkPoke.level, effectiveAtkStats, defPoke.stats, moveForCalc,
+        atkPoke.level, effectiveAtkStats, effectiveDefStats, moveForCalc,
         attackerTypes, defenderTypes,
         atkStages, defStages,
         weatherMod,
@@ -1636,9 +1886,14 @@ function executeFight(
     const meta = moveData.meta;
     if (meta?.drain && meta.drain !== 0) {
       const drainAmount = Math.floor(totalDamage * meta.drain / 100);
-      atkPoke.hp = Math.min(atkPoke.maxHp, Math.max(0, atkPoke.hp + drainAmount));
-      if (drainAmount > 0) room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 체력을 흡수했다!`);
-      else if (drainAmount < 0) room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 반동 데미지를 받았다!`);
+      // Heal Block only blocks the positive (healing) part of drain; recoil still applies.
+      if (drainAmount > 0 && hasVolatile(attacker.volatiles, "heal-block")) {
+        room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 회복봉인으로 회복할 수 없다!`);
+      } else {
+        atkPoke.hp = Math.min(atkPoke.maxHp, Math.max(0, atkPoke.hp + drainAmount));
+        if (drainAmount > 0) room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 체력을 흡수했다!`);
+        else if (drainAmount < 0) room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 반동 데미지를 받았다!`);
+      }
     }
   }
 
@@ -1919,14 +2174,21 @@ function executeFight(
 
   // ── Phazing (Whirlwind, Roar, Dragon Tail, Circle Throw) ──
   if (!isStruggle && PHAZING_MOVES.has(moveId) && hitsMade >= 0 && defPoke.hp > 0) {
-    // whirlwind/roar are status moves so hitsMade may be 0, but they still phaze
-    const aliveOthers = defender.party
-      .map((p, i) => ({ p, i }))
-      .filter(({ p, i }) => i !== defender.activeIndex && p.hp > 0);
-    if (aliveOthers.length > 0) {
-      const target = aliveOthers[Math.floor(Math.random() * aliveOthers.length)];
-      applySwitch(room, defender, target.i);
-      room.log.push(`${defender.nickname}의 ${defPoke.species}이(가) 끌려나갔다!`);
+    // Ingrain: rooted defender cannot be phazed.
+    if (hasVolatile(defender.volatiles, "ingrain")) {
+      room.log.push(`${defender.nickname}의 ${defPoke.species}: 뿌리내리기로 버텼다!`);
+    } else if (defPoke.abilityId === "suction-cups") {
+      room.log.push(`${defender.nickname}의 ${defPoke.species}: 흡반으로 버텼다!`);
+    } else {
+      // whirlwind/roar are status moves so hitsMade may be 0, but they still phaze
+      const aliveOthers = defender.party
+        .map((p, i) => ({ p, i }))
+        .filter(({ p, i }) => i !== defender.activeIndex && p.hp > 0);
+      if (aliveOthers.length > 0) {
+        const target = aliveOthers[Math.floor(Math.random() * aliveOthers.length)];
+        applySwitch(room, defender, target.i);
+        room.log.push(`${defender.nickname}의 ${defPoke.species}이(가) 끌려나갔다!`);
+      }
     }
   }
 
@@ -1954,4 +2216,5 @@ function executeFight(
 
   // ── Record last move used ──
   attacker.lastMoveUsed = moveId;
+  room.lastMoveUsedInBattle = moveId;
 }

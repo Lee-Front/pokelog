@@ -94,6 +94,9 @@ export interface PvpRoomState {
   terrain?: "electric" | "grassy" | "psychic" | "misty";
   terrainTurns?: number;
   trickRoom?: number;       // turns remaining
+  magicRoom?: number;       // turns remaining - disables all items
+  wonderRoom?: number;      // turns remaining - swaps defense/spDefense
+  lastMoveUsedInBattle?: string;  // last move anyone used (for Copycat)
   turnDeadline: number | null;
   log: string[];
   result?: {
