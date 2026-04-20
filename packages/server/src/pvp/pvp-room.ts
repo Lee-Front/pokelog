@@ -7,7 +7,7 @@ import {
   rollAilment, isVolatileAilment, addVolatile, hasVolatile, rollSleepTurns, rollConfusionTurns, rollTrapTurns,
 } from "../game/status-conditions.js";
 import {
-  getWeatherFromMove, getWeatherDamage, getWeatherTypeModifier,
+  getWeatherDamage, getWeatherTypeModifier,
   tickWeather, getDefaultWeatherTurns,
 } from "../game/weather.js";
 import {
@@ -50,13 +50,6 @@ const TWO_TURN_MOVES = new Set([
   "sky-attack", "solar-beam", "meteor-beam", "skull-bash", "razor-wind",
 ]);
 const SEMI_INVULNERABLE = new Set(["fly", "dig", "dive", "bounce", "phantom-force", "shadow-force"]);
-
-const TERRAIN_MOVES: Record<string, NonNullable<PvpRoomState["terrain"]>> = {
-  "electric-terrain": "electric",
-  "grassy-terrain": "grassy",
-  "psychic-terrain": "psychic",
-  "misty-terrain": "misty",
-};
 
 const TERRAIN_NAMES: Record<string, string> = {
   electric: "일렉트릭필드",
@@ -2124,7 +2117,7 @@ function executeFight(
 
   // ── Weather setting from move (not for struggle) ──
   if (!isStruggle) {
-    const weather = getWeatherFromMove(moveId);
+    const weather = getFlag(moveId, "setsWeather");
     if (weather) {
       room.weather = weather;
       room.weatherTurns = getDefaultWeatherTurns();
@@ -2137,7 +2130,7 @@ function executeFight(
 
   // ── Terrain setting from move (not for struggle) ──
   if (!isStruggle) {
-    const terrainType = TERRAIN_MOVES[moveId];
+    const terrainType = getFlag(moveId, "setsTerrain");
     if (terrainType) {
       room.terrain = terrainType;
       room.terrainTurns = 5;
@@ -2183,66 +2176,70 @@ function executeFight(
 
   // ── Hazard-setting moves ──
   if (!isStruggle) {
-    const hazardFn = HAZARD_MOVES[moveId];
-    if (hazardFn) {
-      if (!defender.hazards) defender.hazards = {};
-      const applied = hazardFn(defender.hazards);
-      if (applied) {
-        const hazardNames: Record<string, string> = {
-          "stealth-rock": "스텔스록", "spikes": "압정", "toxic-spikes": "독압정", "sticky-web": "끈적끈적네트",
-        };
-        room.log.push(`${defender.nickname} 필드에 ${hazardNames[moveId] ?? moveId}이(가) 깔렸다!`);
+    const hazardType = getFlag(moveId, "setsHazard");
+    if (hazardType) {
+      const hazardFn = HAZARD_MOVES[hazardType];
+      if (hazardFn) {
+        if (!defender.hazards) defender.hazards = {};
+        const applied = hazardFn(defender.hazards);
+        if (applied) {
+          const hazardNames: Record<string, string> = {
+            "stealth-rock": "스텔스록", "spikes": "압정", "toxic-spikes": "독압정", "sticky-web": "끈적끈적네트",
+          };
+          room.log.push(`${defender.nickname} 필드에 ${hazardNames[hazardType] ?? hazardType}이(가) 깔렸다!`);
+        }
       }
     }
   }
 
-  // ── Rapid Spin: remove own hazards + speed +1 (handled via statChanges) ──
-  if (!isStruggle && moveId === "rapid-spin" && hitsMade > 0) {
-    if (attacker.hazards) {
-      attacker.hazards = {};
-      room.log.push(`${attacker.nickname} 필드의 hazard가 제거되었다!`);
+  // ── Hazard-clearing moves (Rapid Spin: own; Defog: both + screens) ──
+  if (!isStruggle) {
+    const clears = getFlag(moveId, "clearsHazards");
+    if (clears === "own" && hitsMade > 0) {
+      if (attacker.hazards) {
+        attacker.hazards = {};
+        room.log.push(`${attacker.nickname} 필드의 hazard가 제거되었다!`);
+      }
+    } else if (clears === "both") {
+      let cleared = false;
+      if (attacker.hazards && Object.keys(attacker.hazards).some(k => (attacker.hazards as Record<string, unknown>)[k])) {
+        attacker.hazards = {};
+        cleared = true;
+      }
+      if (defender.hazards && Object.keys(defender.hazards).some(k => (defender.hazards as Record<string, unknown>)[k])) {
+        defender.hazards = {};
+        cleared = true;
+      }
+      // Defog also removes screens
+      if (defender.screens) {
+        defender.screens = undefined;
+        cleared = true;
+      }
+      if (cleared) {
+        room.log.push(`안개제거로 필드의 hazard가 제거되었다!`);
+      }
+      // Defog drops opponent's evasion by 1
+      defender.statStages = applyStatChanges(defender.statStages, [{ stat: "evasion", change: -1 }]);
     }
-  }
-
-  // ── Defog: remove both sides' hazards + screens + evasion drop ──
-  if (!isStruggle && moveId === "defog") {
-    let cleared = false;
-    if (attacker.hazards && Object.keys(attacker.hazards).some(k => (attacker.hazards as Record<string, unknown>)[k])) {
-      attacker.hazards = {};
-      cleared = true;
-    }
-    if (defender.hazards && Object.keys(defender.hazards).some(k => (defender.hazards as Record<string, unknown>)[k])) {
-      defender.hazards = {};
-      cleared = true;
-    }
-    // Defog also removes screens
-    if (defender.screens) {
-      defender.screens = undefined;
-      cleared = true;
-    }
-    if (cleared) {
-      room.log.push(`안개제거로 필드의 hazard가 제거되었다!`);
-    }
-    // Defog drops opponent's evasion by 1
-    defender.statStages = applyStatChanges(defender.statStages, [{ stat: "evasion", change: -1 }]);
   }
 
   // ── Screen-setting moves (Reflect, Light Screen, Aurora Veil) ──
   if (!isStruggle) {
-    const SCREEN_MOVES: Record<string, "reflect" | "lightScreen" | "auroraVeil"> = {
-      "reflect": "reflect",
-      "light-screen": "lightScreen",
-      "aurora-veil": "auroraVeil",
-    };
-    const screenType = SCREEN_MOVES[moveId];
-    if (screenType) {
-      if (screenType === "auroraVeil" && room.weather !== "hail") {
+    const screenFlag = getFlag(moveId, "setsScreen");
+    // Registry uses kebab-case ("light-screen", "aurora-veil"); player.screens uses camelCase keys.
+    const screenKey: "reflect" | "lightScreen" | "auroraVeil" | undefined =
+      screenFlag === "reflect" ? "reflect"
+      : screenFlag === "light-screen" ? "lightScreen"
+      : screenFlag === "aurora-veil" ? "auroraVeil"
+      : undefined;
+    if (screenKey) {
+      if (screenKey === "auroraVeil" && room.weather !== "hail") {
         room.log.push(`${attacker.nickname}: 오로라베일 실패! (우박이 아닙니다)`);
       } else {
         if (!attacker.screens) attacker.screens = {};
-        attacker.screens[screenType] = 5;
+        attacker.screens[screenKey] = 5;
         const names: Record<string, string> = { reflect: "리플렉터", lightScreen: "빛의장막", auroraVeil: "오로라베일" };
-        room.log.push(`${attacker.nickname}: ${names[screenType]}!`);
+        room.log.push(`${attacker.nickname}: ${names[screenKey]}!`);
       }
     }
   }
