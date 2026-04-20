@@ -383,6 +383,119 @@ register("heavy-duty-boots", {
   // Placeholder for Plan D hazards — no effects yet
 });
 
+// ══════════════════════════════════════════════════════════════
+// ── Batch 3: Additional Items ───────────────────────────────
+// ══════════════════════════════════════════════════════════════
+
+// ── Utility / Defense Items ──
+register("safety-goggles", {});        // handled in pvp-room.ts weather tick
+register("protective-pads", {});        // handled in pvp-room.ts contact-ability block
+register("covert-cloak", {});           // handled in pvp-room.ts secondary effects
+register("clear-amulet", {});           // handled in pvp-room.ts stat-drop block
+register("white-herb", {});             // handled in pvp-room.ts post-stat-change
+register("power-herb", {});             // handled in pvp-room.ts two-turn move
+register("blunder-policy", {});         // handled in pvp-room.ts accuracy-miss
+register("loaded-dice", {});            // handled in pvp-room.ts multi-hit loop
+register("room-service", {});           // handled in pvp-room.ts trick-room activation
+
+// ── Weather & Terrain Extenders (consumed by drizzle/drought/... in pvp-abilities) ──
+register("heat-rock", {});
+register("damp-rock", {});
+register("icy-rock", {});
+register("smooth-rock", {});
+register("terrain-extender", {});
+
+// ── Accuracy & Crit Items ──
+register("wide-lens", {});      // handled in pvp-room.ts accuracy check
+register("zoom-lens", {});      // handled in pvp-room.ts accuracy check (when moving last)
+register("scope-lens", {});     // handled in pvp-room.ts crit rate
+register("razor-claw", {});     // handled in pvp-room.ts crit rate
+
+// ── Throat Spray (+1 spAtk after using a sound move) ──
+register("throat-spray", {
+  afterAttack: (ctx) => {
+    const soundMoves = new Set([
+      "hyper-voice", "boomburst", "snarl", "echoed-voice", "round",
+      "overdrive", "sing", "growl", "roar", "screech", "supersonic",
+      "uproar", "chatter", "disarming-voice", "relic-song",
+    ]);
+    if (soundMoves.has(ctx.move.id) && ctx.atkPoke.heldItem === "throat-spray") {
+      ctx.attacker.statStages = applyStatChanges(ctx.attacker.statStages, [{ stat: "spAttack", change: 1 }]);
+      ctx.atkPoke.heldItem = null;
+      ctx.room.log.push(`${ctx.atkPoke.species}의 목스프레이! 특수공격이 올랐다!`);
+    }
+  },
+});
+
+// ── Eject Button (force user to switch on being hit) ──
+register("eject-button", {
+  afterBeingHit: (ctx) => {
+    if (ctx.damage <= 0 || ctx.defPoke.hp <= 0) return;
+    if (ctx.defPoke.heldItem !== "eject-button") return;
+    const aliveOthers = ctx.defender.party
+      .map((p, i) => ({ p, i }))
+      .filter(({ p, i }) => i !== ctx.defender.activeIndex && p.hp > 0);
+    if (aliveOthers.length === 0) return;
+    const target = aliveOthers[Math.floor(Math.random() * aliveOthers.length)];
+    ctx.defPoke.heldItem = null;
+    ctx.defender.activeIndex = target.i;
+    ctx.defender.statStages = { attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0, accuracy: 0, evasion: 0 };
+    ctx.defender.volatiles = [];
+    ctx.room.log.push(`${ctx.defPoke.species}의 탈출버튼! 교체했다!`);
+  },
+});
+
+// ── Red Card (force attacker to switch out on being hit) ──
+register("red-card", {
+  afterBeingHit: (ctx) => {
+    if (ctx.damage <= 0 || ctx.atkPoke.hp <= 0 || ctx.defPoke.hp <= 0) return;
+    if (ctx.defPoke.heldItem !== "red-card") return;
+    const aliveOthers = ctx.attacker.party
+      .map((p, i) => ({ p, i }))
+      .filter(({ p, i }) => i !== ctx.attacker.activeIndex && p.hp > 0);
+    if (aliveOthers.length === 0) return;
+    const target = aliveOthers[Math.floor(Math.random() * aliveOthers.length)];
+    ctx.defPoke.heldItem = null;
+    ctx.attacker.activeIndex = target.i;
+    ctx.attacker.statStages = { attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0, accuracy: 0, evasion: 0 };
+    ctx.attacker.volatiles = [];
+    ctx.room.log.push(`${ctx.defPoke.species}의 레드카드! ${ctx.atkPoke.species}이(가) 강제 교체됐다!`);
+  },
+});
+
+// ── Mental Herb (cure volatile mental statuses) ──
+register("mental-herb", {
+  afterBeingHit: (ctx) => {
+    if (ctx.defPoke.heldItem !== "mental-herb") return;
+    const cured = new Set(["infatuation", "taunt", "encore", "disable", "torment", "heal-block"]);
+    const before = ctx.defender.volatiles.length;
+    ctx.defender.volatiles = ctx.defender.volatiles.filter(v => !cured.has(v.id));
+    if (ctx.defender.volatiles.length < before) {
+      ctx.defPoke.heldItem = null;
+      // Clean up derived lock state
+      ctx.defender.disabledMoveId = undefined;
+      ctx.defender.encoreMoveId = undefined;
+      ctx.room.log.push(`${ctx.defPoke.species}의 멘탈허브! 상태가 치유됐다!`);
+    }
+  },
+});
+
+// ── King's Rock (10% flinch chance on non-status moves) ──
+register("kings-rock", {
+  afterAttack: (ctx) => {
+    if (ctx.move.category === "status") return;
+    if (ctx.atkPoke.heldItem !== "kings-rock") return;
+    if (ctx.defPoke.hp <= 0) return;
+    if (Math.random() < 0.1) {
+      // Only add flinch if defender is not already flinched and can receive
+      const alreadyFlinch = ctx.defender.volatiles.some(v => v.id === "flinch");
+      if (!alreadyFlinch) {
+        ctx.defender.volatiles = [...ctx.defender.volatiles, { id: "flinch", turnsRemaining: 1 }];
+      }
+    }
+  },
+});
+
 // ── Status Healing Berries ──
 
 register("cheri-berry", {

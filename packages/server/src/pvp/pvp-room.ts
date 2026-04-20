@@ -523,6 +523,8 @@ function resolveTurn(room: PvpRoomState, actionA: PvpAction, actionB: PvpAction)
       if (poke.hp <= 0) continue;
       // ── Ability: Magic Guard skips weather damage ──
       if (poke.abilityId === "magic-guard") continue;
+      // ── Item: Safety Goggles skips weather damage ──
+      if (poke.heldItem === "safety-goggles") continue;
       const types = getEffectiveTypes(poke.species, poke.variantId, player.battleForm);
       const weatherDmg = getWeatherDamage(room.weather, types, poke.maxHp);
       if (weatherDmg > 0) {
@@ -965,7 +967,10 @@ function executeFight(
   // ── Two-Turn Moves: charge phase ──
   if (TWO_TURN_MOVES.has(moveId) && !attacker.chargingMove) {
     // Solar Beam skips charge in sun
-    if (!(moveId === "solar-beam" && room.weather === "sun")) {
+    const skipChargeSun = moveId === "solar-beam" && room.weather === "sun";
+    // Power Herb: consume to skip charge
+    const powerHerb = atkPoke.heldItem === "power-herb";
+    if (!skipChargeSun && !powerHerb) {
       attacker.chargingMove = { moveId, turn: 1 };
       if (SEMI_INVULNERABLE.has(moveId)) {
         attacker.volatiles = addVolatile(attacker.volatiles, "semi-invulnerable", 1);
@@ -973,6 +978,10 @@ function executeFight(
       room.log.push(`${attacker.nickname}의 ${atkPoke.species}: ${moveData.name} 준비 중!`);
       attacker.lastMoveUsed = moveId;
       return; // Don't execute yet
+    }
+    if (powerHerb) {
+      atkPoke.heldItem = null;
+      room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 파워허브로 바로 발동!`);
     }
   }
   // Two-Turn Moves: execute phase (turn 2)
@@ -1033,10 +1042,45 @@ function executeFight(
     move.pp = Math.max(0, move.pp - ppCost);
   }
 
-  const effectiveMoveData = isStruggle ? {
+  let effectiveMoveData = isStruggle ? {
     id: "struggle", name: "발버둥", type: "typeless", category: "physical" as const,
     power: 50, accuracy: 100, pp: 1, description: "",
   } : moveData;
+
+  // ── Ability: -ate type conversion (applied before accuracy + damage calc) ──
+  if (!isStruggle) {
+    let moveTypeOverride: string | undefined;
+    let applyAteBoost = false;
+    if (atkPoke.abilityId === "pixilate" && effectiveMoveData.type === "normal") {
+      moveTypeOverride = "fairy"; applyAteBoost = true;
+    } else if (atkPoke.abilityId === "refrigerate" && effectiveMoveData.type === "normal") {
+      moveTypeOverride = "ice"; applyAteBoost = true;
+    } else if (atkPoke.abilityId === "aerilate" && effectiveMoveData.type === "normal") {
+      moveTypeOverride = "flying"; applyAteBoost = true;
+    } else if (atkPoke.abilityId === "galvanize" && effectiveMoveData.type === "normal") {
+      moveTypeOverride = "electric"; applyAteBoost = true;
+    } else if (atkPoke.abilityId === "normalize") {
+      moveTypeOverride = "normal";
+    }
+    if (moveTypeOverride) {
+      const newPower = applyAteBoost ? Math.floor(effectiveMoveData.power * 1.2) : effectiveMoveData.power;
+      effectiveMoveData = { ...effectiveMoveData, type: moveTypeOverride, power: newPower };
+    }
+  }
+
+  // ── Ability / Item: effective crit rate modifiers ──
+  if (!isStruggle) {
+    let bonusCrit = 0;
+    if (atkPoke.abilityId === "super-luck") bonusCrit += 1;
+    if (atkPoke.heldItem === "scope-lens" || atkPoke.heldItem === "razor-claw") bonusCrit += 1;
+    if (bonusCrit > 0) {
+      const baseCrit = effectiveMoveData.meta?.critRate ?? 0;
+      effectiveMoveData = {
+        ...effectiveMoveData,
+        meta: { ...(effectiveMoveData.meta ?? {}), critRate: baseCrit + bonusCrit },
+      };
+    }
+  }
 
   // ── Semi-invulnerable: most moves miss against semi-invulnerable defender ──
   if (hasVolatile(defender.volatiles, "semi-invulnerable")) {
@@ -1046,10 +1090,27 @@ function executeFight(
   }
 
   // ── Accuracy check with stat stages (before damage calc) ──
-  if (effectiveMoveData.accuracy > 0 && effectiveMoveData.accuracy <= 100) {
-    const effectiveAcc = calculateAccuracy(effectiveMoveData.accuracy, attacker.statStages.accuracy, defender.statStages.evasion);
+  // No Guard: always hits
+  const noGuardActive = atkPoke.abilityId === "no-guard" || defPoke.abilityId === "no-guard";
+  if (!noGuardActive && effectiveMoveData.accuracy > 0 && effectiveMoveData.accuracy <= 100) {
+    let accMult = 1;
+    // Ability: compound-eyes (accuracy * 1.3)
+    if (atkPoke.abilityId === "compound-eyes") accMult *= 1.3;
+    // Item: wide-lens (+10%)
+    if (atkPoke.heldItem === "wide-lens") accMult *= 1.1;
+    const effectiveAcc = calculateAccuracy(
+      effectiveMoveData.accuracy * accMult,
+      attacker.statStages.accuracy,
+      defender.statStages.evasion,
+    );
     if (Math.random() * 100 >= effectiveAcc) {
       room.log.push(`${attacker.nickname}의 ${atkPoke.species}: ${effectiveMoveData.name}! 빗나갔다!`);
+      // ── Item: Blunder Policy on miss ──
+      if (atkPoke.heldItem === "blunder-policy") {
+        atkPoke.heldItem = null;
+        attacker.statStages = applyStatChanges(attacker.statStages, [{ stat: "speed", change: 2 }]);
+        room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 실수보험! 스피드가 크게 올랐다!`);
+      }
       attacker.lastMoveUsed = moveId;
       return;
     }
@@ -1112,7 +1173,16 @@ function executeFight(
     // ── Multi-hit loop ──
     const minHits = effectiveMoveData.meta?.minHits ?? 1;
     const maxHits = effectiveMoveData.meta?.maxHits ?? 1;
-    const hitCount = minHits === maxHits ? minHits : minHits + Math.floor(Math.random() * (maxHits - minHits + 1));
+    let hitCount: number;
+    if (atkPoke.abilityId === "skill-link" && maxHits > 1) {
+      hitCount = maxHits;
+    } else if (atkPoke.heldItem === "loaded-dice" && maxHits > 1) {
+      // Loaded Dice: 4 or 5 hits (capped by maxHits)
+      hitCount = Math.min(maxHits, 4 + Math.floor(Math.random() * 2));
+      hitCount = Math.max(hitCount, minHits);
+    } else {
+      hitCount = minHits === maxHits ? minHits : minHits + Math.floor(Math.random() * (maxHits - minHits + 1));
+    }
 
     // ── Ability: build damage mod context ──
     const dmgCtx = { room, attacker, defender, atkPoke, defPoke, move: moveForCalc, damage: 0 };
@@ -1151,6 +1221,10 @@ function executeFight(
         // ── Item: apply attack/defense multipliers ──
         finalDamage = Math.floor(finalDamage * itemAtkMul);
         finalDamage = Math.floor(finalDamage * itemDefMul);
+        // ── Ability: Sniper boosts crit damage by 1.5x (1.5 -> 2.25 total) ──
+        if (result.critical && atkPoke.abilityId === "sniper") {
+          finalDamage = Math.floor(finalDamage * 1.5);
+        }
         // ── Terrain damage modifiers ──
         if (room.terrain) {
           let terrainMod = 1;
@@ -1229,11 +1303,55 @@ function executeFight(
       triggerAfterAttack(afterCtx);
       triggerAfterBeingHit(afterCtx);
     }
+
+    // ── Batch 3: Ability stat-boost when being hit ──
+    if (hitsMade > 0 && totalDamage > 0 && defPoke.hp > 0) {
+      if (defPoke.abilityId === "justified" && effectiveMoveData.type === "dark") {
+        defender.statStages = applyStatChanges(defender.statStages, [{ stat: "attack", change: 1 }]);
+        room.log.push(`${defPoke.species}의 정의의마음! 공격이 올랐다!`);
+      }
+      if (defPoke.abilityId === "rattled" && ["dark", "bug", "ghost"].includes(effectiveMoveData.type)) {
+        defender.statStages = applyStatChanges(defender.statStages, [{ stat: "speed", change: 1 }]);
+        room.log.push(`${defPoke.species}의 도망태세! 스피드가 올랐다!`);
+      }
+      if (defPoke.abilityId === "stamina") {
+        defender.statStages = applyStatChanges(defender.statStages, [{ stat: "defense", change: 1 }]);
+        room.log.push(`${defPoke.species}의 지구력! 방어가 올랐다!`);
+      }
+      if (defPoke.abilityId === "water-compaction" && effectiveMoveData.type === "water") {
+        defender.statStages = applyStatChanges(defender.statStages, [{ stat: "defense", change: 2 }]);
+        room.log.push(`${defPoke.species}의 수분! 방어가 크게 올랐다!`);
+      }
+    }
+
+    // ── Batch 3: Ability KO-triggered stat boost ──
+    if (hitsMade > 0 && defPoke.hp <= 0 && atkPoke.hp > 0) {
+      if (atkPoke.abilityId === "moxie") {
+        attacker.statStages = applyStatChanges(attacker.statStages, [{ stat: "attack", change: 1 }]);
+        room.log.push(`${atkPoke.species}의 자기과신! 공격이 올랐다!`);
+      } else if (atkPoke.abilityId === "beast-boost") {
+        const stats = atkPoke.stats;
+        let highest: "attack" | "defense" | "spAttack" | "spDefense" | "speed" = "attack";
+        let maxVal = stats.attack;
+        for (const s of ["defense", "spAttack", "spDefense", "speed"] as const) {
+          if (stats[s] > maxVal) { maxVal = stats[s]; highest = s; }
+        }
+        attacker.statStages = applyStatChanges(attacker.statStages, [{ stat: highest, change: 1 }]);
+        room.log.push(`${atkPoke.species}의 비스트부스트! 가장 높은 능력이 올랐다!`);
+      } else if (atkPoke.abilityId === "soul-heart") {
+        attacker.statStages = applyStatChanges(attacker.statStages, [{ stat: "spAttack", change: 1 }]);
+        room.log.push(`${atkPoke.species}의 소울하트! 특수공격이 올랐다!`);
+      }
+    }
   }
 
   // ── Flinch application (faster attacker flinches slower defender) ──
-  if (!isStruggle && hitsMade > 0 && defPoke.hp > 0 && moveData.meta?.flinchChance) {
-    if (Math.random() * 100 < moveData.meta.flinchChance) {
+  // Covert Cloak blocks secondary effects; Serene Grace doubles secondary chances.
+  if (!isStruggle && hitsMade > 0 && defPoke.hp > 0 && moveData.meta?.flinchChance
+      && defPoke.heldItem !== "covert-cloak") {
+    const graceMul = atkPoke.abilityId === "serene-grace" ? 2 : 1;
+    const chance = Math.min(100, moveData.meta.flinchChance * graceMul);
+    if (Math.random() * 100 < chance) {
       if (canReceiveStatus(defPoke, "flinch")) {
         defender.volatiles = addVolatile(defender.volatiles, "flinch", 1);
       }
@@ -1241,7 +1359,9 @@ function executeFight(
   }
 
   // ── Contact ability effects (after physical hit on defender) ──
-  if (hitsMade > 0 && moveData.category === "physical" && defPoke.hp > 0 && atkPoke.hp > 0) {
+  // Protective Pads: skip all contact-triggered ability effects on attacker
+  if (hitsMade > 0 && moveData.category === "physical" && defPoke.hp > 0 && atkPoke.hp > 0
+      && atkPoke.heldItem !== "protective-pads") {
     if (defPoke.abilityId === "static" && !atkPoke.statusCondition && Math.random() < 0.3) {
       if (canReceiveStatus(atkPoke, "paralysis")) {
         atkPoke.statusCondition = "paralysis";
@@ -1289,8 +1409,13 @@ function executeFight(
   // ── Ailment application (only on hit, not for struggle) ──
   if (!isStruggle && hitsMade > 0 && defPoke.hp > 0) {
     const ailment = moveData.meta?.ailment;
-    const chance = moveData.meta?.ailmentChance ?? 0;
-    if (ailment && ailment !== "none") {
+    const baseChance = moveData.meta?.ailmentChance ?? 0;
+    // Covert Cloak blocks secondary ailments that are only a chance (not guaranteed by the move).
+    const covertBlocks = defPoke.heldItem === "covert-cloak" && baseChance > 0 && baseChance < 100;
+    // Serene Grace doubles ailment chance (capped at 100).
+    const graceMul = atkPoke.abilityId === "serene-grace" ? 2 : 1;
+    const chance = Math.min(100, baseChance * graceMul);
+    if (ailment && ailment !== "none" && !covertBlocks) {
       // ── Misty Terrain: block all primary status on grounded defenders ──
       const mistyBlocked = room.terrain === "misty" && isGrounded(defPoke, defender) && !isVolatileAilment(ailment);
       // ── Ability: status guard check for primary (non-volatile) ailments ──
@@ -1321,6 +1446,17 @@ function executeFight(
               poison: "독", burn: "화상", paralysis: "마비", sleep: "잠듦", freeze: "얼음",
             };
             room.log.push(`${defender.nickname}의 ${defPoke.species}: ${statusNames[primary] ?? primary} 상태가 되었다!`);
+            // ── Ability: Synchronize reflects primary status to attacker ──
+            if (defPoke.abilityId === "synchronize"
+                && ["burn", "poison", "paralysis"].includes(primary)
+                && !atkPoke.statusCondition
+                && canReceiveStatus(atkPoke, primary)) {
+              atkPoke.statusCondition = primary;
+              if (primary === "poison" && moveData.id === "toxic") {
+                atkPoke.toxicCounter = 1;
+              }
+              room.log.push(`${defPoke.species}의 싱크로! ${atkPoke.species}에게 상태이상을 전염시켰다!`);
+            }
           }
         }
       }
@@ -1360,8 +1496,10 @@ function executeFight(
 
   // ── Stat changes from move (not for struggle) ──
   if (!isStruggle && moveData.statChanges && moveData.statChanges.length > 0) {
-    const chance = moveData.meta?.statChance ?? 0;
-    const targetsSelf = moveData.target === "user" || (moveData.category === "status" && chance === 0);
+    const baseStatChance = moveData.meta?.statChance ?? 0;
+    const graceStatMul = atkPoke.abilityId === "serene-grace" ? 2 : 1;
+    const chance = Math.min(100, baseStatChance * graceStatMul);
+    const targetsSelf = moveData.target === "user" || (moveData.category === "status" && baseStatChance === 0);
 
     if (targetsSelf) {
       // ── Ability: Contrary reverses stat changes ──
@@ -1374,18 +1512,31 @@ function executeFight(
         const names: Record<string, string> = { attack: "공격", defense: "방어", spAttack: "특수공격", spDefense: "특수방어", speed: "스피드", accuracy: "명중률", evasion: "회피율" };
         room.log.push(`${attacker.nickname}의 ${atkPoke.species}: ${names[sc.stat] ?? sc.stat}이(가) ${dir}!`);
       }
+      // ── Item: White Herb resets negative self stages ──
+      if (atkPoke.heldItem === "white-herb") {
+        const stages = attacker.statStages;
+        const keys = ["attack", "defense", "spAttack", "spDefense", "speed", "accuracy", "evasion"] as const;
+        const hasNeg = keys.some(k => stages[k] < 0);
+        if (hasNeg) {
+          for (const k of keys) {
+            if (stages[k] < 0) stages[k] = 0;
+          }
+          atkPoke.heldItem = null;
+          room.log.push(`${atkPoke.species}의 하양허브! 능력 하락이 리셋됐다!`);
+        }
+      }
     } else if (hitsMade > 0 && defPoke.hp > 0) {
-      const roll = chance === 0 || chance >= 100 || Math.random() * 100 < chance;
+      // Covert Cloak blocks secondary stat drops that are chance-gated.
+      const covertBlocks = defPoke.heldItem === "covert-cloak" && baseStatChance > 0 && baseStatChance < 100;
+      const roll = !covertBlocks && (baseStatChance === 0 || chance >= 100 || Math.random() * 100 < chance);
       if (roll) {
         // ── Ability: Contrary reverses stat changes ──
         const oppChanges = defPoke.abilityId === "contrary"
           ? moveData.statChanges.map((sc) => ({ stat: sc.stat, change: -sc.change }))
           : moveData.statChanges;
-        // ── Ability: Clear Body / White Smoke blocks opponent stat drops ──
-        const filteredChanges = oppChanges.filter((sc) => {
-          if (sc.change < 0 && !canReceiveStatus(defPoke, "stat-drop")) return false;
-          return true;
-        });
+        // ── Ability / Item: Clear Body / White Smoke / Clear Amulet block opponent stat drops ──
+        const blockDrops = !canReceiveStatus(defPoke, "stat-drop") || defPoke.heldItem === "clear-amulet";
+        const filteredChanges = oppChanges.filter((sc) => !(sc.change < 0 && blockDrops));
         if (filteredChanges.length > 0) {
           defender.statStages = applyStatChanges(defender.statStages, filteredChanges);
           for (const sc of filteredChanges) {
@@ -1395,7 +1546,24 @@ function executeFight(
           }
         }
         if (oppChanges.length > filteredChanges.length) {
-          room.log.push(`${defender.nickname}의 ${defPoke.species}: 특성으로 능력치 하락을 막았다!`);
+          if (defPoke.heldItem === "clear-amulet") {
+            room.log.push(`${defender.nickname}의 ${defPoke.species}: 클리어액세서리로 능력 하락을 막았다!`);
+          } else {
+            room.log.push(`${defender.nickname}의 ${defPoke.species}: 특성으로 능력치 하락을 막았다!`);
+          }
+        }
+        // ── Item: White Herb resets negative stages (for the defender) ──
+        if (defPoke.heldItem === "white-herb") {
+          const stages = defender.statStages;
+          const keys = ["attack", "defense", "spAttack", "spDefense", "speed", "accuracy", "evasion"] as const;
+          const hasNeg = keys.some(k => stages[k] < 0);
+          if (hasNeg) {
+            for (const k of keys) {
+              if (stages[k] < 0) stages[k] = 0;
+            }
+            defPoke.heldItem = null;
+            room.log.push(`${defPoke.species}의 하양허브! 능력 하락이 리셋됐다!`);
+          }
         }
       }
     }
@@ -1534,6 +1702,15 @@ function executeFight(
     } else {
       room.trickRoom = 5;
       room.log.push("트릭룸! 느린 포켓몬이 먼저 움직인다!");
+      // ── Item: Room Service triggers when Trick Room goes up ──
+      for (const p of [room.playerA, room.playerB]) {
+        const poke = p.party[p.activeIndex];
+        if (poke.hp > 0 && poke.heldItem === "room-service") {
+          p.statStages = applyStatChanges(p.statStages, [{ stat: "speed", change: -1 }]);
+          poke.heldItem = null;
+          room.log.push(`${poke.species}의 룸서비스! 스피드가 내려갔다!`);
+        }
+      }
     }
   }
 

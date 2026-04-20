@@ -250,16 +250,32 @@ register("intimidate", {
 });
 
 register("drizzle", {
-  onSwitchIn: (ctx) => { ctx.room.weather = "rain"; ctx.room.weatherTurns = 5; ctx.room.log.push("비가 내리기 시작했다!"); },
+  onSwitchIn: (ctx) => {
+    ctx.room.weather = "rain";
+    ctx.room.weatherTurns = ctx.pokemon.heldItem === "damp-rock" ? 8 : 5;
+    ctx.room.log.push("비가 내리기 시작했다!");
+  },
 });
 register("drought", {
-  onSwitchIn: (ctx) => { ctx.room.weather = "sun"; ctx.room.weatherTurns = 5; ctx.room.log.push("햇살이 강해졌다!"); },
+  onSwitchIn: (ctx) => {
+    ctx.room.weather = "sun";
+    ctx.room.weatherTurns = ctx.pokemon.heldItem === "heat-rock" ? 8 : 5;
+    ctx.room.log.push("햇살이 강해졌다!");
+  },
 });
 register("sand-stream", {
-  onSwitchIn: (ctx) => { ctx.room.weather = "sandstorm"; ctx.room.weatherTurns = 5; ctx.room.log.push("모래바람이 불기 시작했다!"); },
+  onSwitchIn: (ctx) => {
+    ctx.room.weather = "sandstorm";
+    ctx.room.weatherTurns = ctx.pokemon.heldItem === "smooth-rock" ? 8 : 5;
+    ctx.room.log.push("모래바람이 불기 시작했다!");
+  },
 });
 register("snow-warning", {
-  onSwitchIn: (ctx) => { ctx.room.weather = "hail"; ctx.room.weatherTurns = 5; ctx.room.log.push("우박이 내리기 시작했다!"); },
+  onSwitchIn: (ctx) => {
+    ctx.room.weather = "hail";
+    ctx.room.weatherTurns = ctx.pokemon.heldItem === "icy-rock" ? 8 : 5;
+    ctx.room.log.push("우박이 내리기 시작했다!");
+  },
 });
 
 // ── Task 4: Offensive Abilities ──
@@ -570,6 +586,153 @@ register("poison-point", {});
 register("flame-body", {});
 register("rough-skin", {});
 register("iron-barbs", {});
+
+// ── Batch 3: KO-Triggered Stat Boost ──
+// These are flagged here and handled in pvp-room.ts when defender faints from our attack.
+register("moxie", {});
+register("beast-boost", {});
+register("soul-heart", {});
+
+// ── Batch 3: Stat Boost on Being Hit ──
+// Handled in pvp-room.ts after damage application.
+register("justified", {});
+register("rattled", {});
+register("stamina", {});
+register("water-compaction", {});
+
+// ── Batch 3: Type-specific Damage Boosts ──
+register("water-bubble", {
+  onAttack: (ctx) => ctx.move.type === "water" ? 2 : 1,
+  onDefense: (ctx) => ctx.move.type === "fire" ? 0.5 : 1,
+});
+register("steelworker", {
+  onAttack: (ctx) => ctx.move.type === "steel" ? 1.5 : 1,
+});
+register("dragons-maw", {
+  onAttack: (ctx) => ctx.move.type === "dragon" ? 1.5 : 1,
+});
+register("transistor", {
+  onAttack: (ctx) => ctx.move.type === "electric" ? 1.5 : 1,
+});
+
+// ── Batch 3: Type Conversion (-ate abilities) ──
+// The actual type override + 1.2x power boost is handled in pvp-room.ts before calculateDamage.
+register("pixilate", {});
+register("refrigerate", {});
+register("aerilate", {});
+register("galvanize", {});
+register("normalize", {});
+
+// ── Batch 3: Protean / Libero (simplified as always-STAB 1.5x) ──
+register("protean", {
+  onAttack: () => 1.5,
+});
+register("libero", {
+  onAttack: () => 1.5,
+});
+
+// ── Batch 3: Accuracy / Crit / Secondary Effect Modifiers ──
+register("serene-grace", {});   // handled in pvp-room.ts (double chances)
+register("compound-eyes", {});  // handled in pvp-room.ts (accuracy * 1.3)
+register("super-luck", {});     // handled in pvp-room.ts (crit +1)
+register("sniper", {});         // handled in pvp-room.ts (crit dmg multiplier)
+register("no-guard", {});       // handled in pvp-room.ts (accuracy bypass)
+register("skill-link", {});     // handled in pvp-room.ts (multi-hit always max)
+register("scrappy", {});        // handled in pvp-room.ts (ignore ghost immunity)
+
+register("tinted-lens", {
+  onAttack: (ctx) => {
+    const typeChart = getTypeChart();
+    const defTypes = getEffectiveTypes(ctx.defPoke.species, ctx.defPoke.variantId, ctx.defender.battleForm);
+    let mult = 1;
+    for (const t of defTypes) mult *= (typeChart[ctx.move.type]?.[t] ?? 1);
+    return mult > 0 && mult < 1 ? 2 : 1;
+  },
+});
+
+// ── Batch 3: Conditional Damage Abilities ──
+register("sand-force", {
+  onAttack: (ctx) => {
+    if (ctx.room.weather === "sandstorm" && ["rock", "ground", "steel"].includes(ctx.move.type)) return 1.3;
+    return 1;
+  },
+});
+
+register("toxic-boost", {
+  onAttack: (ctx) => (ctx.atkPoke.statusCondition === "poison" && ctx.move.category === "physical") ? 1.5 : 1,
+});
+
+register("flare-boost", {
+  onAttack: (ctx) => (ctx.atkPoke.statusCondition === "burn" && ctx.move.category === "special") ? 1.5 : 1,
+});
+
+register("marvel-scale", {
+  onDefense: (ctx) => (ctx.defPoke.statusCondition && ctx.move.category === "physical") ? 0.67 : 1,
+});
+
+register("defeatist", {
+  onAttack: (ctx) => ctx.atkPoke.hp <= ctx.atkPoke.maxHp / 2 ? 0.5 : 1,
+});
+
+// Slow-start / truant need turn tracking (registered as no-ops for now)
+register("slow-start", {});
+register("truant", {});
+
+register("mega-launcher", {
+  onAttack: (ctx) => {
+    const pulseMoves = new Set([
+      "dark-pulse", "water-pulse", "dragon-pulse", "origin-pulse",
+      "aura-sphere", "heal-pulse", "terrain-pulse",
+    ]);
+    return pulseMoves.has(ctx.move.id) ? 1.5 : 1;
+  },
+});
+
+// ── Batch 3: Download (switch-in; boosts the better offensive stat vs. opp defenses) ──
+register("download", {
+  onSwitchIn: (ctx) => {
+    const oppPoke = ctx.opponent.party[ctx.opponent.activeIndex];
+    if (oppPoke.hp <= 0) return;
+    const stat: "attack" | "spAttack" = oppPoke.stats.defense < oppPoke.stats.spDefense ? "attack" : "spAttack";
+    ctx.player.statStages = applyStatChanges(ctx.player.statStages, [{ stat, change: 1 }]);
+    const label = stat === "attack" ? "공격" : "특수공격";
+    ctx.room.log.push(`${ctx.pokemon.species}의 다운로드! ${label}이 올랐다!`);
+  },
+});
+
+// ── Batch 3: Terrain Surges ──
+register("electric-surge", {
+  onSwitchIn: (ctx) => {
+    ctx.room.terrain = "electric";
+    ctx.room.terrainTurns = ctx.pokemon.heldItem === "terrain-extender" ? 8 : 5;
+    ctx.room.log.push("일렉트릭필드가 펼쳐졌다!");
+  },
+});
+register("grassy-surge", {
+  onSwitchIn: (ctx) => {
+    ctx.room.terrain = "grassy";
+    ctx.room.terrainTurns = ctx.pokemon.heldItem === "terrain-extender" ? 8 : 5;
+    ctx.room.log.push("그래스필드가 펼쳐졌다!");
+  },
+});
+register("psychic-surge", {
+  onSwitchIn: (ctx) => {
+    ctx.room.terrain = "psychic";
+    ctx.room.terrainTurns = ctx.pokemon.heldItem === "terrain-extender" ? 8 : 5;
+    ctx.room.log.push("사이코필드가 펼쳐졌다!");
+  },
+});
+register("misty-surge", {
+  onSwitchIn: (ctx) => {
+    ctx.room.terrain = "misty";
+    ctx.room.terrainTurns = ctx.pokemon.heldItem === "terrain-extender" ? 8 : 5;
+    ctx.room.log.push("미스트필드가 펼쳐졌다!");
+  },
+});
+
+// ── Batch 3: Synchronize ──
+// Handled in pvp-room.ts when the defender receives a status.
+register("synchronize", {});
 
 // ── Trapping Abilities ──
 register("shadow-tag", {
