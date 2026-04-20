@@ -210,6 +210,12 @@ export function selectLead(room: PvpRoomState, userId: string, index: number): v
       }
     }
 
+    // ── Fake Out: leads count as "just switched in" for the first action turn ──
+    room.playerA.justSwitchedIn = true;
+    room.playerB.justSwitchedIn = true;
+    room.playerA.switchedInThisTurn = false;
+    room.playerB.switchedInThisTurn = false;
+
     // ── Ability: onSwitchIn for both leads ──
     triggerOnSwitchIn({ room, player: room.playerA, opponent: room.playerB, pokemon: room.playerA.party[room.playerA.activeIndex] });
     triggerOnSwitchIn({ room, player: room.playerB, opponent: room.playerA, pokemon: room.playerB.party[room.playerB.activeIndex] });
@@ -295,6 +301,16 @@ export function submitAction(room: PvpRoomState, userId: string, action: PvpActi
       if (actB.type === "switch") applySwitch(room, room.playerB, actB.pokemonIndex);
     }
 
+    // Promote switchedInThisTurn -> justSwitchedIn so Fake Out works on next turn
+    if (room.playerA.switchedInThisTurn) {
+      room.playerA.justSwitchedIn = true;
+      room.playerA.switchedInThisTurn = false;
+    }
+    if (room.playerB.switchedInThisTurn) {
+      room.playerB.justSwitchedIn = true;
+      room.playerB.switchedInThisTurn = false;
+    }
+
     room.forcedSwitchNeeded = undefined;
     room.phase = "action";
     room.turnDeadline = Date.now() + DEFAULT_CONFIG.turnTimeoutMs;
@@ -325,6 +341,10 @@ function resolveTurn(room: PvpRoomState, actionA: PvpAction, actionB: PvpAction)
   // ── Reset lastDamageTaken at start of each turn ──
   room.playerA.lastDamageTaken = undefined;
   room.playerB.lastDamageTaken = undefined;
+
+  // ── Reset switchedInThisTurn at start of turn (applySwitch calls during this turn will set it again) ──
+  room.playerA.switchedInThisTurn = false;
+  room.playerB.switchedInThisTurn = false;
 
   // ── Auto-submit charging move (two-turn moves) ──
   if (room.playerA.chargingMove && actionA.type === "fight") {
@@ -516,6 +536,16 @@ function resolveTurn(room: PvpRoomState, actionA: PvpAction, actionB: PvpAction)
           room.log.push(`${player.nickname}의 ${poke.species}: ${msg}`);
         }
       }
+      if (poke.hp <= 0) {
+        room.log.push(`${player.nickname}의 ${poke.species}이(가) 쓰러졌다!`);
+      }
+    }
+
+    // ── Curse end-of-turn damage (1/4 maxHp for cursed pokemon, unless magic-guard) ──
+    if (poke.hp > 0 && !hasMagicGuard && hasVolatile(player.volatiles, "curse")) {
+      const curseDmg = Math.max(1, Math.floor(poke.maxHp / 4));
+      poke.hp = Math.max(0, poke.hp - curseDmg);
+      room.log.push(`${player.nickname}의 ${poke.species}: 저주로 ${curseDmg} 데미지!`);
       if (poke.hp <= 0) {
         room.log.push(`${player.nickname}의 ${poke.species}이(가) 쓰러졌다!`);
       }
@@ -755,6 +785,18 @@ function resolveTurn(room: PvpRoomState, actionA: PvpAction, actionB: PvpAction)
     return;
   }
 
+
+  // ── Promote switchedInThisTurn to justSwitchedIn for next turn. Clear justSwitchedIn
+  // for sides that didn't switch this turn (their first action turn is now over).
+  room.playerA.justSwitchedIn = room.playerA.switchedInThisTurn ?? false;
+  room.playerB.justSwitchedIn = room.playerB.switchedInThisTurn ?? false;
+  room.playerA.switchedInThisTurn = false;
+  room.playerB.switchedInThisTurn = false;
+
+  // ── Reset roostedThisTurn at end of each turn (flying type returns) ──
+  room.playerA.roostedThisTurn = false;
+  room.playerB.roostedThisTurn = false;
+
   if (koA || koB) {
     room.phase = "forced_switch";
     room.forcedSwitchNeeded = { a: koA, b: koB };
@@ -876,6 +918,10 @@ function applySwitch(room: PvpRoomState, player: PvpPlayerState, index: number):
   if (poke.megaForm && player.transformationUsed && player.transformationType === "mega") {
     player.battleForm = poke.megaForm.variantId;
   }
+
+  // ── Fake Out: mark that a switch-in happened this turn. At end of turn,
+  // this promotes to justSwitchedIn=true, which Fake Out checks on the NEXT turn.
+  player.switchedInThisTurn = true;
 
   room.log.push(`${player.nickname}: ${player.party[index].species}(으)로 교체!`);
 
@@ -1257,14 +1303,103 @@ function executeFight(
     return;
   }
 
-  // ── Attract: infatuate the defender ──
+  // ── Attract: infatuate the defender (opposite gender only) ──
   if (moveId === "attract") {
-    if (defPoke.hp > 0 && canReceiveStatus(defPoke, "infatuation")
+    const atkGender = atkPoke.gender;
+    const defGender = defPoke.gender;
+    const oppositeGender = atkGender && defGender
+      && atkGender !== "genderless" && defGender !== "genderless"
+      && atkGender !== defGender;
+    if (defPoke.hp > 0 && oppositeGender && canReceiveStatus(defPoke, "infatuation")
         && !hasVolatile(defender.volatiles, "infatuation")) {
       defender.volatiles = addVolatile(defender.volatiles, "infatuation", -1);
       room.log.push(`${defender.nickname}의 ${defPoke.species}: 헤롱헤롱!`);
     } else {
       room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 헤롱헤롱 실패!`);
+    }
+    attacker.lastMoveUsed = moveId;
+    room.lastMoveUsedInBattle = moveId;
+    return;
+  }
+
+  // ── Magic Coat: reflect status moves for the rest of this turn ──
+  if (moveId === "magic-coat") {
+    attacker.volatiles = addVolatile(attacker.volatiles, "magic-coat", 1);
+    room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 매직코트!`);
+    attacker.lastMoveUsed = moveId;
+    room.lastMoveUsedInBattle = moveId;
+    return;
+  }
+
+  // ── Magic Coat / Magic Bounce: reflect status moves back to attacker ──
+  // (Checked BEFORE the move's effect is applied. MVP: block the move and log reflect.)
+  if (moveData.category === "status" && defPoke.hp > 0) {
+    const defReflects = hasVolatile(defender.volatiles, "magic-coat")
+      || defPoke.abilityId === "magic-bounce";
+    // Only reflect moves that target the opponent. Self-targeting status moves pass through.
+    const targetsOpponent = moveData.target === "selected-pokemon" || moveData.target === "all-opponents"
+      || moveData.target === "all-other-pokemon";
+    if (defReflects && targetsOpponent) {
+      const source = defPoke.abilityId === "magic-bounce" ? "매직미러" : "매직코트";
+      room.log.push(`${defender.nickname}의 ${defPoke.species}: ${source}! 기술을 되받았다!`);
+      attacker.lastMoveUsed = moveId;
+      room.lastMoveUsedInBattle = moveId;
+      return;
+    }
+  }
+
+  // ── Trick / Switcheroo: swap held items ──
+  if (moveId === "trick" || moveId === "switcheroo") {
+    if (defPoke.hp > 0) {
+      const temp = atkPoke.heldItem ?? null;
+      atkPoke.heldItem = defPoke.heldItem ?? null;
+      defPoke.heldItem = temp;
+      room.log.push(`${attacker.nickname}과(와) ${defender.nickname}의 도구가 바뀌었다!`);
+    }
+    attacker.lastMoveUsed = moveId;
+    room.lastMoveUsedInBattle = moveId;
+    return;
+  }
+
+  // ── Curse: ghost users lose 50% HP and curse the defender; non-ghost changes stats ──
+  if (moveId === "curse") {
+    const atkTypes = getEffectiveTypes(atkPoke.species, atkPoke.variantId, attacker.battleForm);
+    if (atkTypes.includes("ghost")) {
+      if (defPoke.hp > 0 && !hasVolatile(defender.volatiles, "curse")) {
+        atkPoke.hp = Math.max(0, atkPoke.hp - Math.floor(atkPoke.maxHp / 2));
+        defender.volatiles = addVolatile(defender.volatiles, "curse", -1);
+        room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 저주!`);
+        if (atkPoke.hp <= 0) {
+          room.log.push(`${attacker.nickname}의 ${atkPoke.species}이(가) 쓰러졌다!`);
+        }
+      } else {
+        room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 저주 실패!`);
+      }
+    } else {
+      attacker.statStages = applyStatChanges(attacker.statStages, [
+        { stat: "speed", change: -1 },
+        { stat: "attack", change: 1 },
+        { stat: "defense", change: 1 },
+      ]);
+      room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 저주! 스피드가 내려가고 공격/방어가 올랐다!`);
+    }
+    attacker.lastMoveUsed = moveId;
+    room.lastMoveUsedInBattle = moveId;
+    return;
+  }
+
+  // ── Fake Out: only works on first turn after switch-in, guaranteed flinch ──
+  if (moveId === "fake-out" && !attacker.justSwitchedIn) {
+    room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 속이기 실패!`);
+    attacker.lastMoveUsed = moveId;
+    return;
+  }
+
+  // ── Foresight / Odor Sleuth: remove ghost immunity to normal/fighting (permanent volatile) ──
+  if (moveId === "foresight" || moveId === "odor-sleuth") {
+    if (defPoke.hp > 0 && !hasVolatile(defender.volatiles, "foresight")) {
+      defender.volatiles = addVolatile(defender.volatiles, "foresight", -1);
+      room.log.push(`${defender.nickname}의 ${defPoke.species}: 타입 내성이 사라졌다!`);
     }
     attacker.lastMoveUsed = moveId;
     room.lastMoveUsedInBattle = moveId;
@@ -1344,6 +1479,13 @@ function executeFight(
       const heal = Math.floor(atkPoke.maxHp / 2);
       atkPoke.hp = Math.min(atkPoke.maxHp, atkPoke.hp + heal);
       room.log.push(`${attacker.nickname}의 ${atkPoke.species}: HP를 회복했다!`);
+      // ── Roost: flying type pokemon temporarily lose flying type for the turn ──
+      if (moveId === "roost") {
+        const atkTypes = getEffectiveTypes(atkPoke.species, atkPoke.variantId, attacker.battleForm);
+        if (atkTypes.includes("flying")) {
+          attacker.roostedThisTurn = true;
+        }
+      }
     }
     attacker.lastMoveUsed = moveId;
     return;
@@ -1451,6 +1593,14 @@ function executeFight(
       const newPower = applyAteBoost ? Math.floor(effectiveMoveData.power * 1.2) : effectiveMoveData.power;
       effectiveMoveData = { ...effectiveMoveData, type: moveTypeOverride, power: newPower };
     }
+  }
+
+  // ── Knock Off: 1.5x damage boost when defender holds an item ──
+  if (!isStruggle && moveId === "knock-off" && defPoke.heldItem) {
+    effectiveMoveData = {
+      ...effectiveMoveData,
+      power: Math.floor(effectiveMoveData.power * 1.5),
+    };
   }
 
   // ── Ability / Item: effective crit rate modifiers ──
@@ -1564,7 +1714,22 @@ function executeFight(
 
     const weatherMod = room.weather ? getWeatherTypeModifier(room.weather, moveForCalc.type) : 1;
     const attackerTypes = getEffectiveTypes(atkPoke.species, atkPoke.variantId, attacker.battleForm);
-    const defenderTypes = getEffectiveTypes(defPoke.species, defPoke.variantId, defender.battleForm);
+    let defenderTypes = getEffectiveTypes(defPoke.species, defPoke.variantId, defender.battleForm);
+
+    // ── Scrappy / Foresight / Odor Sleuth: ignore ghost immunity to normal/fighting ──
+    const scrappyActive = atkPoke.abilityId === "scrappy"
+      && (moveForCalc.type === "normal" || moveForCalc.type === "fighting");
+    const foresightActive = hasVolatile(defender.volatiles, "foresight");
+    if ((scrappyActive || foresightActive) && defenderTypes.includes("ghost")) {
+      defenderTypes = defenderTypes.filter((t) => t !== "ghost");
+      if (defenderTypes.length === 0) defenderTypes = ["normal"];
+    }
+
+    // ── Roost: flying-type pokemon lose flying type for the turn (ground moves hit normally) ──
+    if (defender.roostedThisTurn && defenderTypes.includes("flying")) {
+      defenderTypes = defenderTypes.filter((t) => t !== "flying");
+      if (defenderTypes.length === 0) defenderTypes = ["normal"];
+    }
 
     // ── Multi-hit loop ──
     const minHits = effectiveMoveData.meta?.minHits ?? 1;
@@ -1741,6 +1906,12 @@ function executeFight(
         room.log.push(`${atkPoke.species}의 소울하트! 특수공격이 올랐다!`);
       }
     }
+  }
+
+  // ── Knock Off: remove defender's held item after dealing damage ──
+  if (!isStruggle && moveId === "knock-off" && hitsMade > 0 && defPoke.hp > 0 && defPoke.heldItem) {
+    room.log.push(`${defender.nickname}의 ${defPoke.species}: ${defPoke.heldItem}을(를) 떨어뜨렸다!`);
+    defPoke.heldItem = null;
   }
 
   // ── Flinch application (faster attacker flinches slower defender) ──

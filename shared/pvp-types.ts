@@ -1,4 +1,4 @@
-import type { PokemonMove, PokemonStats, PrimaryStatus, StatStages, VolatileStatus, BattleWeather } from "./types.js";
+import type { PokemonMove, PokemonStats, PrimaryStatus, StatStages, VolatileStatus, BattleWeather, PokemonGender } from "./types.js";
 
 export type PvpTransformationType = "mega" | "gigantamax" | "primal" | "dynamax";
 
@@ -30,6 +30,7 @@ export interface PvpPokemon {
   megaForm?: PvpTransformForm | null;
   gmaxForm?: PvpTransformForm | null;
   primalForm?: PvpTransformForm | null;
+  gender?: PokemonGender | null;
 }
 
 // ── 플레이어 사이드 ──
@@ -78,6 +79,9 @@ export interface PvpPlayerState {
     moves: PokemonMove[];
     abilityId?: string | null;
   };
+  roostedThisTurn?: boolean;   // flying type removed for the turn (Roost)
+  justSwitchedIn?: boolean;    // true for the pokemon's "first action turn" after switch-in (Fake Out)
+  switchedInThisTurn?: boolean; // internal: applySwitch ran this turn; promotes to justSwitchedIn at end of turn
 }
 
 // ── 방 상태 ──

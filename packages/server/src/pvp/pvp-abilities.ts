@@ -768,3 +768,6 @@ register("magnet-pull", {
 
 // ── Batch 5: Suction Cups (prevents phazing; handled in pvp-room.ts) ──
 register("suction-cups", {});
+
+// ── Batch 6: Magic Bounce (reflects status moves; handled in pvp-room.ts) ──
+register("magic-bounce", {});

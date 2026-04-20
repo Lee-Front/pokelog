@@ -102,6 +102,7 @@ function userPartyToPvp(
       megaForm: null,
       gmaxForm: null,
       primalForm: null,
+      gender: p.gender ?? null,
     };
 
     // Use a pokemon-like object at the capped level for stat calculations
