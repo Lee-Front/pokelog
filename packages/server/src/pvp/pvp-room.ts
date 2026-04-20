@@ -26,7 +26,7 @@ import {
 } from "./pvp-items.js";
 import {
   hasFlag, getFlag, tryFixedDamage, triggerApplyEffect, triggerHeal,
-  getMoveEffects,
+  triggerOnHit, applyPowerMod, getMoveEffects,
   type MoveContext,
 } from "./pvp-moves.js";
 import type {
@@ -1308,14 +1308,9 @@ function executeFight(
     }
   }
 
-  // ── Trick / Switcheroo: swap held items ──
+  // ── Trick / Switcheroo: swap held items (delegated to registry onHit) ──
   if (moveId === "trick" || moveId === "switcheroo") {
-    if (defPoke.hp > 0) {
-      const temp = atkPoke.heldItem ?? null;
-      atkPoke.heldItem = defPoke.heldItem ?? null;
-      defPoke.heldItem = temp;
-      room.log.push(`${attacker.nickname}과(와) ${defender.nickname}의 도구가 바뀌었다!`);
-    }
+    triggerOnHit({ room, attacker, defender, atkPoke, defPoke, move: moveData, moveId });
     attacker.lastMoveUsed = moveId;
     room.lastMoveUsedInBattle = moveId;
     return;
@@ -1506,12 +1501,16 @@ function executeFight(
     }
   }
 
-  // ── Knock Off: 1.5x damage boost when defender holds an item ──
-  if (!isStruggle && moveId === "knock-off" && defPoke.heldItem) {
-    effectiveMoveData = {
-      ...effectiveMoveData,
-      power: Math.floor(effectiveMoveData.power * 1.5),
+  // ── Registry modifyPower hook (Knock Off's 1.5x boost when defender holds an item) ──
+  if (!isStruggle) {
+    const powerCtx: MoveContext = {
+      room, attacker, defender, atkPoke, defPoke,
+      move: effectiveMoveData, moveId,
     };
+    const modifiedPower = applyPowerMod(powerCtx);
+    if (modifiedPower !== effectiveMoveData.power) {
+      effectiveMoveData = { ...effectiveMoveData, power: Math.floor(modifiedPower) };
+    }
   }
 
   // ── Ability / Item: effective crit rate modifiers ──
@@ -1823,10 +1822,12 @@ function executeFight(
     }
   }
 
-  // ── Knock Off: remove defender's held item after dealing damage ──
-  if (!isStruggle && moveId === "knock-off" && hitsMade > 0 && defPoke.hp > 0 && defPoke.heldItem) {
-    room.log.push(`${defender.nickname}의 ${defPoke.species}: ${defPoke.heldItem}을(를) 떨어뜨렸다!`);
-    defPoke.heldItem = null;
+  // ── Registry onHit hook (Knock Off item drop, Brick Break / Psychic Fangs screen break, etc.) ──
+  if (!isStruggle && hitsMade > 0 && defPoke.hp > 0) {
+    triggerOnHit({
+      room, attacker, defender, atkPoke, defPoke,
+      move: effectiveMoveData, moveId, damage: totalDamage,
+    });
   }
 
   // ── Flinch application (faster attacker flinches slower defender) ──
@@ -1868,14 +1869,6 @@ function executeFight(
       const contactDmg = Math.max(1, Math.floor(atkPoke.maxHp / 8));
       atkPoke.hp = Math.max(0, atkPoke.hp - contactDmg);
       room.log.push(`${defPoke.species}의 ${defPoke.abilityId === "rough-skin" ? "까칠한피부" : "철가시"}! ${atkPoke.species}에게 ${contactDmg} 데미지!`);
-    }
-  }
-
-  // ── Brick Break / Psychic Fangs: remove screens ──
-  if (!isStruggle && (moveId === "brick-break" || moveId === "psychic-fangs") && hitsMade > 0) {
-    if (defender.screens && (defender.screens.reflect || defender.screens.lightScreen || defender.screens.auroraVeil)) {
-      defender.screens = undefined;
-      room.log.push("벽이 부서졌다!");
     }
   }
 
