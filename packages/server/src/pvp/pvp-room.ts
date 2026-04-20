@@ -67,12 +67,6 @@ function effectiveHeldItem(poke: PvpPokemon, player: PvpPlayerState, room: PvpRo
   return poke.heldItem ?? null;
 }
 
-const METRONOME_POOL = [
-  "tackle", "ember", "water-gun", "thunder-shock",
-  "vine-whip", "ice-shard", "rock-throw", "gust",
-  "confusion", "swift",
-];
-
 export const DEFAULT_CONFIG: PvpRoomConfig = {
   levelCap: 50,
   turnTimeoutMs: 30_000,
@@ -1025,53 +1019,9 @@ function executeFight(
     if (lockedMoveData) moveData = lockedMoveData;
   }
 
-  // ── Copycat: copy last move used by anyone ──
-  if (moveId === "copycat") {
-    const last = room.lastMoveUsedInBattle;
-    if (last && last !== "copycat") {
-      const copied = getMoveById(last);
-      if (copied) {
-        moveId = last;
-        moveData = copied;
-        room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 흉내내기로 ${copied.name}을(를) 따라한다!`);
-      } else {
-        room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 흉내낼 기술이 없다!`);
-        attacker.lastMoveUsed = "copycat";
-        return;
-      }
-    } else {
-      room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 흉내낼 기술이 없다!`);
-      attacker.lastMoveUsed = "copycat";
-      return;
-    }
-  }
-
-  // ── Mimic: permanently replaces the mimic slot with the defender's last move ──
-  if (moveId === "mimic") {
-    if (defender.lastMoveUsed) {
-      const mimicSlot = atkPoke.moves.find((m) => m.id === "mimic");
-      if (mimicSlot) {
-        mimicSlot.id = defender.lastMoveUsed;
-        room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 흉내내기! ${defender.lastMoveUsed}을(를) 습득!`);
-      }
-    } else {
-      room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 흉내낼 기술이 없다!`);
-    }
-    attacker.lastMoveUsed = "mimic";
-    room.lastMoveUsedInBattle = "mimic";
-    return;
-  }
-
-  // ── Metronome: picks a random move from the pool ──
-  if (moveId === "metronome") {
-    const picked = METRONOME_POOL[Math.floor(Math.random() * METRONOME_POOL.length)];
-    const pickedData = getMoveById(picked);
-    if (pickedData) {
-      moveId = picked;
-      moveData = pickedData;
-      room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 손가락흔들기! ${pickedData.name}!`);
-    }
-  }
+  // Copycat, Mimic, Metronome migrated to registry customResolve.
+  // Copycat/Metronome use the { redirectTo } return form to swap to another move,
+  // which is handled by the registry-dispatch block below.
 
   // ── Sleep Talk / Snore: bypass sleep block ──
   let bypassSleep = false;
@@ -1153,43 +1103,45 @@ function executeFight(
   }
 
   // ── Registry: try customResolve first (fully handles the move). ──
-  // Registered customResolve moves set their own state; we just stamp lastMove trackers.
+  // Registered customResolve moves either set their own state and return true,
+  // or return { redirectTo } to swap execution to a different move id
+  // (used by copycat, metronome). In that case we continue the normal flow
+  // below with the swapped move data — we do NOT re-run customResolve on the
+  // redirected move (this matches the prior hardcoded behavior and prevents
+  // infinite recursion if a redirect target also has a customResolve).
   {
     const registryCtx: MoveContext = {
       room, attacker, defender, atkPoke, defPoke,
       move: moveData, moveId,
     };
-    if (tryCustomResolve(registryCtx)) {
+    const custom = tryCustomResolve(registryCtx);
+    if (custom === true) {
       attacker.lastMoveUsed = moveId;
       room.lastMoveUsedInBattle = moveId;
       return;
     }
-    const gate = tryBeforeMove(registryCtx);
-    if (gate?.cancel) {
-      if (gate.message) room.log.push(gate.message);
-      attacker.lastMoveUsed = moveId;
-      return;
+    if (custom && typeof custom === "object" && "redirectTo" in custom) {
+      const newMoveId = custom.redirectTo;
+      const newMoveData = getMoveById(newMoveId);
+      if (!newMoveData) {
+        // Redirect target doesn't exist — treat as a failed move.
+        attacker.lastMoveUsed = moveId;
+        room.lastMoveUsedInBattle = moveId;
+        return;
+      }
+      moveId = newMoveId;
+      moveData = newMoveData;
+      // Fall through to continue execution with the swapped move.
+      // Skip the beforeMove gate since the original move's gate shouldn't
+      // apply to the redirected move.
+    } else {
+      const gate = tryBeforeMove(registryCtx);
+      if (gate?.cancel) {
+        if (gate.message) room.log.push(gate.message);
+        attacker.lastMoveUsed = moveId;
+        return;
+      }
     }
-  }
-
-  // ── Counter / Mirror Coat ──
-  if (moveId === "counter" && attacker.lastDamageTaken?.category === "physical") {
-    const counterDmg = attacker.lastDamageTaken.amount * 2;
-    defPoke.hp = Math.max(0, defPoke.hp - counterDmg);
-    room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 카운터! ${counterDmg} 데미지!`);
-    attacker.lastDamageTaken = undefined;
-    if (defPoke.hp <= 0) room.log.push(`${defender.nickname}의 ${defPoke.species}이(가) 쓰러졌다!`);
-    attacker.lastMoveUsed = moveId;
-    return;
-  }
-  if (moveId === "mirror-coat" && attacker.lastDamageTaken?.category === "special") {
-    const mirrorDmg = attacker.lastDamageTaken.amount * 2;
-    defPoke.hp = Math.max(0, defPoke.hp - mirrorDmg);
-    room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 미러코트! ${mirrorDmg} 데미지!`);
-    attacker.lastDamageTaken = undefined;
-    if (defPoke.hp <= 0) room.log.push(`${defender.nickname}의 ${defPoke.species}이(가) 쓰러졌다!`);
-    attacker.lastMoveUsed = moveId;
-    return;
   }
 
   // ── Destiny Bond ──
@@ -1343,28 +1295,7 @@ function executeFight(
     return;
   }
 
-  // ── Transform (변신) ──
-  if (moveId === "transform") {
-    const target = defPoke;
-    if (!attacker.preTransformState) {
-      attacker.preTransformState = {
-        species: atkPoke.species,
-        variantId: atkPoke.variantId ?? null,
-        stats: { ...atkPoke.stats },
-        moves: atkPoke.moves.map((m) => ({ ...m })),
-        abilityId: atkPoke.abilityId ?? null,
-      };
-    }
-    atkPoke.species = target.species;
-    atkPoke.variantId = target.variantId ?? null;
-    atkPoke.stats = { ...target.stats };
-    atkPoke.moves = target.moves.map((m) => ({ ...m, pp: 5, maxPp: 5 }));
-    atkPoke.abilityId = target.abilityId ?? null;
-    attacker.statStages = { ...defender.statStages };
-    room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 변신!`);
-    attacker.lastMoveUsed = moveId;
-    return;
-  }
+  // Transform migrated to registry customResolve.
 
   // ── Execute move (with Struggle fallback) ──
   const move = atkPoke.moves.find((m) => m.id === moveId);

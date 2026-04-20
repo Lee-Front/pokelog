@@ -52,10 +52,20 @@ export interface MoveFlags {
   isTrapping?: boolean;
 }
 
+// ── customResolve return type ──
+/**
+ * customResolve hooks may either:
+ *  - return `true` to signal the move was fully handled (skip default processing),
+ *  - return `{ redirectTo: "move-id" }` to redirect execution to a different move
+ *    (used by copycat, metronome, etc.),
+ *  - return `false`/`void` to let default processing continue.
+ */
+export type CustomResolveResult = boolean | { redirectTo: string };
+
 // ── Effect hooks ──
 export interface MoveEffects {
-  /** Completely custom handler. Returns true to skip all default processing. */
-  customResolve?: (ctx: MoveContext) => boolean;
+  /** Completely custom handler. Returns true to skip, or { redirectTo } to swap move. */
+  customResolve?: (ctx: MoveContext) => CustomResolveResult;
 
   /** Runs before execution. Return { cancel, message } to abort. */
   beforeMove?: (ctx: MoveContext) => { cancel?: boolean; message?: string } | void;
@@ -121,8 +131,13 @@ export function isSelfKO(moveId: string): boolean { return hasFlag(moveId, "self
 // ── Executor helpers ──
 // These are called from pvp-room.ts in specific places.
 
-/** Run customResolve. Returns true if move was fully handled. */
-export function tryCustomResolve(ctx: MoveContext): boolean {
+/**
+ * Run customResolve. Returns:
+ *  - `true` if the move was fully handled (caller should stop normal flow),
+ *  - `{ redirectTo }` if execution should swap to a different move id,
+ *  - `false` otherwise (caller proceeds with default flow).
+ */
+export function tryCustomResolve(ctx: MoveContext): CustomResolveResult {
   const effects = getMoveEffects(ctx.moveId);
   return effects?.customResolve?.(ctx) ?? false;
 }
@@ -816,12 +831,122 @@ register("substitute", {
   },
 });
 
-// ── Complex custom-resolve moves still hardcoded in pvp-room.ts ──
-// Kept as empty registry entries so lookups work and the registry advertises them.
-const COMPLEX_CUSTOM = [
-  "transform", "copycat", "metronome", "snore", "sleep-talk",
-  "counter", "mirror-coat", "mimic",
+// ══════════════════════════════════════════════════════════════
+// ── Phase 5 (final): Complex customResolve moves ─────────────
+// ══════════════════════════════════════════════════════════════
+// Previously hardcoded in pvp-room.ts. The customResolve hook now
+// supports returning `{ redirectTo }` to swap to a different move id,
+// which is required for copycat and metronome.
+
+const METRONOME_POOL = [
+  "tackle", "ember", "water-gun", "thunder-shock",
+  "vine-whip", "ice-shard", "rock-throw", "gust",
+  "confusion", "swift",
 ];
-for (const id of COMPLEX_CUSTOM) {
+
+register("copycat", {
+  customResolve: (ctx) => {
+    const last = ctx.room.lastMoveUsedInBattle;
+    if (!last || last === "copycat") {
+      ctx.room.log.push(`${ctx.attacker.nickname}의 ${ctx.atkPoke.species}: 흉내낼 기술이 없다!`);
+      return true;
+    }
+    // Validate the copied move exists; if not, fail gracefully.
+    // (pvp-room.ts also validates via getMoveById after the redirect.)
+    ctx.room.log.push(`${ctx.attacker.nickname}의 ${ctx.atkPoke.species}: 흉내내기!`);
+    return { redirectTo: last };
+  },
+});
+
+register("mimic", {
+  customResolve: (ctx) => {
+    if (ctx.defender.lastMoveUsed) {
+      const mimicSlot = ctx.atkPoke.moves.find((m) => m.id === "mimic");
+      if (mimicSlot) {
+        mimicSlot.id = ctx.defender.lastMoveUsed;
+        ctx.room.log.push(
+          `${ctx.attacker.nickname}의 ${ctx.atkPoke.species}: 흉내내기! ${ctx.defender.lastMoveUsed}을(를) 습득!`,
+        );
+      }
+    } else {
+      ctx.room.log.push(`${ctx.attacker.nickname}의 ${ctx.atkPoke.species}: 흉내낼 기술이 없다!`);
+    }
+    return true;
+  },
+});
+
+register("metronome", {
+  customResolve: (ctx) => {
+    const picked = METRONOME_POOL[Math.floor(Math.random() * METRONOME_POOL.length)];
+    ctx.room.log.push(`${ctx.attacker.nickname}의 ${ctx.atkPoke.species}: 손가락흔들기!`);
+    return { redirectTo: picked };
+  },
+});
+
+register("counter", {
+  customResolve: (ctx) => {
+    if (ctx.attacker.lastDamageTaken?.category === "physical") {
+      const counterDmg = ctx.attacker.lastDamageTaken.amount * 2;
+      ctx.defPoke.hp = Math.max(0, ctx.defPoke.hp - counterDmg);
+      ctx.room.log.push(
+        `${ctx.attacker.nickname}의 ${ctx.atkPoke.species}: 카운터! ${counterDmg} 데미지!`,
+      );
+      ctx.attacker.lastDamageTaken = undefined;
+      if (ctx.defPoke.hp <= 0) {
+        ctx.room.log.push(`${ctx.defender.nickname}의 ${ctx.defPoke.species}이(가) 쓰러졌다!`);
+      }
+    } else {
+      ctx.room.log.push(`${ctx.attacker.nickname}의 ${ctx.atkPoke.species}: 카운터 실패!`);
+    }
+    return true;
+  },
+});
+
+register("mirror-coat", {
+  customResolve: (ctx) => {
+    if (ctx.attacker.lastDamageTaken?.category === "special") {
+      const mirrorDmg = ctx.attacker.lastDamageTaken.amount * 2;
+      ctx.defPoke.hp = Math.max(0, ctx.defPoke.hp - mirrorDmg);
+      ctx.room.log.push(
+        `${ctx.attacker.nickname}의 ${ctx.atkPoke.species}: 미러코트! ${mirrorDmg} 데미지!`,
+      );
+      ctx.attacker.lastDamageTaken = undefined;
+      if (ctx.defPoke.hp <= 0) {
+        ctx.room.log.push(`${ctx.defender.nickname}의 ${ctx.defPoke.species}이(가) 쓰러졌다!`);
+      }
+    } else {
+      ctx.room.log.push(`${ctx.attacker.nickname}의 ${ctx.atkPoke.species}: 미러코트 실패!`);
+    }
+    return true;
+  },
+});
+
+register("transform", {
+  customResolve: (ctx) => {
+    const target = ctx.defPoke;
+    if (!ctx.attacker.preTransformState) {
+      ctx.attacker.preTransformState = {
+        species: ctx.atkPoke.species,
+        variantId: ctx.atkPoke.variantId ?? null,
+        stats: { ...ctx.atkPoke.stats },
+        moves: ctx.atkPoke.moves.map((m) => ({ ...m })),
+        abilityId: ctx.atkPoke.abilityId ?? null,
+      };
+    }
+    ctx.atkPoke.species = target.species;
+    ctx.atkPoke.variantId = target.variantId ?? null;
+    ctx.atkPoke.stats = { ...target.stats };
+    ctx.atkPoke.moves = target.moves.map((m) => ({ ...m, pp: 5, maxPp: 5 }));
+    ctx.atkPoke.abilityId = target.abilityId ?? null;
+    ctx.attacker.statStages = { ...ctx.defender.statStages };
+    ctx.room.log.push(`${ctx.attacker.nickname}의 ${ctx.atkPoke.species}: 변신!`);
+    return true;
+  },
+});
+
+// ── Still hardcoded in pvp-room.ts: snore, sleep-talk ──
+// These are tightly coupled to the sleep-state bypass flow and are easier to
+// leave in pvp-room.ts. Registered here as empty so the registry advertises them.
+for (const id of ["snore", "sleep-talk"]) {
   if (!getMoveEffects(id)) register(id, {});
 }
