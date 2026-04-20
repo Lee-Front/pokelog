@@ -1144,13 +1144,6 @@ function executeFight(
     }
   }
 
-  // ── Destiny Bond ──
-  if (moveId === "destiny-bond") {
-    triggerApplyEffect({ room, attacker, defender, atkPoke, defPoke, move: moveData, moveId });
-    attacker.lastMoveUsed = moveId;
-    return;
-  }
-
   // ── Magic Room: disable all items (toggle) ──
   if (moveId === "magic-room") {
     if (room.magicRoom && room.magicRoom > 0) {
@@ -1179,25 +1172,7 @@ function executeFight(
     return;
   }
 
-  // ── Ingrain: root the attacker (prevents switching) ──
-  if (moveId === "ingrain") {
-    if (!hasVolatile(attacker.volatiles, "ingrain")) {
-      triggerApplyEffect({ room, attacker, defender, atkPoke, defPoke, move: moveData, moveId });
-    }
-    attacker.lastMoveUsed = moveId;
-    room.lastMoveUsedInBattle = moveId;
-    return;
-  }
-
   // pain-split / endeavor / attract migrated to registry customResolve.
-
-  // ── Magic Coat: reflect status moves for the rest of this turn ──
-  if (moveId === "magic-coat") {
-    triggerApplyEffect({ room, attacker, defender, atkPoke, defPoke, move: moveData, moveId });
-    attacker.lastMoveUsed = moveId;
-    room.lastMoveUsedInBattle = moveId;
-    return;
-  }
 
   // ── Magic Coat / Magic Bounce: reflect status moves back to attacker ──
   // (Checked BEFORE the move's effect is applied. MVP: block the move and log reflect.)
@@ -1226,50 +1201,33 @@ function executeFight(
 
   // curse / fake-out migrated to registry (customResolve / beforeMove).
 
-  // ── Foresight / Odor Sleuth: remove ghost immunity to normal/fighting (permanent volatile) ──
-  if (moveId === "foresight" || moveId === "odor-sleuth") {
-    if (!hasVolatile(defender.volatiles, "foresight")) {
+  // ── Unified applyEffect dispatcher ──
+  // Catches all registered status moves (power 0, no customResolve) whose only
+  // runtime logic is an applyEffect callback. Replaces what were previously
+  // individual moveId === "..." dispatch blocks for: destiny-bond, magic-coat,
+  // ingrain, foresight/odor-sleuth, heal-block, embargo, leech-seed,
+  // safeguard/mist/lucky-chant/endure, focus-energy, perish-song.
+  //
+  // Exclusions (still handled elsewhere):
+  //   - taunt/disable/encore/torment: run at the post-damage stage (line ~2137)
+  //     so they fire alongside lastMoveUsed updates in the expected order.
+  //   - yawn: applied via the ailment pipeline, not a direct dispatcher.
+  {
+    const effects = getMoveEffects(moveId);
+    const deferredApplyEffects = new Set([
+      "taunt", "disable", "encore", "torment", "yawn",
+    ]);
+    if (
+      effects?.applyEffect
+      && moveData.power === 0
+      && !effects.customResolve
+      && !deferredApplyEffects.has(moveId)
+    ) {
       triggerApplyEffect({ room, attacker, defender, atkPoke, defPoke, move: moveData, moveId });
+      attacker.lastMoveUsed = moveId;
+      room.lastMoveUsedInBattle = moveId;
+      return;
     }
-    attacker.lastMoveUsed = moveId;
-    room.lastMoveUsedInBattle = moveId;
-    return;
-  }
-
-  // ── Heal Block: prevent defender from healing ──
-  if (moveId === "heal-block") {
-    if (!hasVolatile(defender.volatiles, "heal-block")) {
-      triggerApplyEffect({ room, attacker, defender, atkPoke, defPoke, move: moveData, moveId });
-    }
-    attacker.lastMoveUsed = moveId;
-    room.lastMoveUsedInBattle = moveId;
-    return;
-  }
-
-  // ── Embargo: disable defender's held item ──
-  if (moveId === "embargo") {
-    if (!hasVolatile(defender.volatiles, "embargo")) {
-      triggerApplyEffect({ room, attacker, defender, atkPoke, defPoke, move: moveData, moveId });
-    }
-    attacker.lastMoveUsed = moveId;
-    room.lastMoveUsedInBattle = moveId;
-    return;
-  }
-
-  // ── Leech Seed: seed the defender (grass types immune) ──
-  if (moveId === "leech-seed") {
-    triggerApplyEffect({ room, attacker, defender, atkPoke, defPoke, move: moveData, moveId });
-    attacker.lastMoveUsed = moveId;
-    room.lastMoveUsedInBattle = moveId;
-    return;
-  }
-
-  // ── Safeguard / Mist / Lucky Chant / Endure (registry applyEffect) ──
-  if (moveId === "safeguard" || moveId === "mist" || moveId === "lucky-chant" || moveId === "endure") {
-    triggerApplyEffect({ room, attacker, defender, atkPoke, defPoke, move: moveData, moveId });
-    attacker.lastMoveUsed = moveId;
-    room.lastMoveUsedInBattle = moveId;
-    return;
   }
 
   // wish migrated to registry customResolve.
@@ -1287,13 +1245,7 @@ function executeFight(
   }
 
   // belly-drum migrated to registry customResolve.
-
-  // ── Focus Energy (초점맞추기) ──
-  if (moveId === "focus-energy") {
-    triggerApplyEffect({ room, attacker, defender, atkPoke, defPoke, move: moveData, moveId });
-    attacker.lastMoveUsed = moveId;
-    return;
-  }
+  // focus-energy handled by the unified applyEffect dispatcher above.
 
   // Transform migrated to registry customResolve.
 
@@ -2068,10 +2020,7 @@ function executeFight(
     room.log.push(`${attacker.nickname}: 순풍! 스피드가 올랐다!`);
   }
 
-  // ── Perish Song ──
-  if (!isStruggle && moveId === "perish-song") {
-    triggerApplyEffect({ room, attacker, defender, atkPoke, defPoke, move: moveData, moveId });
-  }
+  // perish-song handled by the unified applyEffect dispatcher earlier in executeFight.
 
   // ── Switch-after-move (U-Turn, Volt Switch, Flip Turn, Parting Shot) ──
   // baton-pass also has forcesSwitch="user"; handled by its dedicated block below.
