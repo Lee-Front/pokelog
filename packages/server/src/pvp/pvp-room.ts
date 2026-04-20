@@ -24,7 +24,7 @@ import {
   triggerItemEndOfTurn, getItemSpeedMultiplier,
   checkItemPreventKO, isItemLockMove,
 } from "./pvp-items.js";
-import { hasFlag, getFlag, tryFixedDamage, type MoveContext } from "./pvp-moves.js";
+import { hasFlag, getFlag, tryFixedDamage, triggerApplyEffect, type MoveContext } from "./pvp-moves.js";
 import type {
   PvpRoomState, PvpPlayerState, PvpPokemon,
   PvpClientRoomView, PvpRoomConfig, PvpAction,
@@ -1190,8 +1190,7 @@ function executeFight(
 
   // ── Destiny Bond ──
   if (moveId === "destiny-bond") {
-    attacker.volatiles = addVolatile(attacker.volatiles, "destiny-bond", 2);
-    room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 운명의끈!`);
+    triggerApplyEffect({ room, attacker, defender, atkPoke, defPoke, move: moveData, moveId });
     attacker.lastMoveUsed = moveId;
     return;
   }
@@ -1227,8 +1226,7 @@ function executeFight(
   // ── Ingrain: root the attacker (prevents switching) ──
   if (moveId === "ingrain") {
     if (!hasVolatile(attacker.volatiles, "ingrain")) {
-      attacker.volatiles = addVolatile(attacker.volatiles, "ingrain", -1);
-      room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 뿌리내리기!`);
+      triggerApplyEffect({ room, attacker, defender, atkPoke, defPoke, move: moveData, moveId });
     }
     attacker.lastMoveUsed = moveId;
     room.lastMoveUsedInBattle = moveId;
@@ -1288,8 +1286,7 @@ function executeFight(
 
   // ── Magic Coat: reflect status moves for the rest of this turn ──
   if (moveId === "magic-coat") {
-    attacker.volatiles = addVolatile(attacker.volatiles, "magic-coat", 1);
-    room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 매직코트!`);
+    triggerApplyEffect({ room, attacker, defender, atkPoke, defPoke, move: moveData, moveId });
     attacker.lastMoveUsed = moveId;
     room.lastMoveUsedInBattle = moveId;
     return;
@@ -1361,9 +1358,8 @@ function executeFight(
 
   // ── Foresight / Odor Sleuth: remove ghost immunity to normal/fighting (permanent volatile) ──
   if (moveId === "foresight" || moveId === "odor-sleuth") {
-    if (defPoke.hp > 0 && !hasVolatile(defender.volatiles, "foresight")) {
-      defender.volatiles = addVolatile(defender.volatiles, "foresight", -1);
-      room.log.push(`${defender.nickname}의 ${defPoke.species}: 타입 내성이 사라졌다!`);
+    if (!hasVolatile(defender.volatiles, "foresight")) {
+      triggerApplyEffect({ room, attacker, defender, atkPoke, defPoke, move: moveData, moveId });
     }
     attacker.lastMoveUsed = moveId;
     room.lastMoveUsedInBattle = moveId;
@@ -1372,9 +1368,8 @@ function executeFight(
 
   // ── Heal Block: prevent defender from healing ──
   if (moveId === "heal-block") {
-    if (defPoke.hp > 0 && !hasVolatile(defender.volatiles, "heal-block")) {
-      defender.volatiles = addVolatile(defender.volatiles, "heal-block", 5);
-      room.log.push(`${defender.nickname}의 ${defPoke.species}: 회복봉인!`);
+    if (!hasVolatile(defender.volatiles, "heal-block")) {
+      triggerApplyEffect({ room, attacker, defender, atkPoke, defPoke, move: moveData, moveId });
     }
     attacker.lastMoveUsed = moveId;
     room.lastMoveUsedInBattle = moveId;
@@ -1383,9 +1378,8 @@ function executeFight(
 
   // ── Embargo: disable defender's held item ──
   if (moveId === "embargo") {
-    if (defPoke.hp > 0 && !hasVolatile(defender.volatiles, "embargo")) {
-      defender.volatiles = addVolatile(defender.volatiles, "embargo", 5);
-      room.log.push(`${defender.nickname}의 ${defPoke.species}: 아이템금지!`);
+    if (!hasVolatile(defender.volatiles, "embargo")) {
+      triggerApplyEffect({ room, attacker, defender, atkPoke, defPoke, move: moveData, moveId });
     }
     attacker.lastMoveUsed = moveId;
     room.lastMoveUsedInBattle = moveId;
@@ -1394,15 +1388,7 @@ function executeFight(
 
   // ── Leech Seed: seed the defender (grass types immune) ──
   if (moveId === "leech-seed") {
-    if (defPoke.hp > 0 && !hasVolatile(defender.volatiles, "leech-seed")) {
-      const defTypes = getEffectiveTypes(defPoke.species, defPoke.variantId, defender.battleForm);
-      if (defTypes.includes("grass")) {
-        room.log.push(`${defender.nickname}의 ${defPoke.species}: 씨뿌리기가 통하지 않았다!`);
-      } else {
-        defender.volatiles = addVolatile(defender.volatiles, "leech-seed", -1);
-        room.log.push(`${defender.nickname}의 ${defPoke.species}: 씨뿌리기!`);
-      }
-    }
+    triggerApplyEffect({ room, attacker, defender, atkPoke, defPoke, move: moveData, moveId });
     attacker.lastMoveUsed = moveId;
     room.lastMoveUsedInBattle = moveId;
     return;
@@ -1489,10 +1475,7 @@ function executeFight(
 
   // ── Focus Energy (초점맞추기) ──
   if (moveId === "focus-energy") {
-    if (!hasVolatile(attacker.volatiles, "focus-energy")) {
-      attacker.volatiles = addVolatile(attacker.volatiles, "focus-energy", -1);
-      room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 기력충전! 급소에 맞기 쉬워졌다!`);
-    }
+    triggerApplyEffect({ room, attacker, defender, atkPoke, defPoke, move: moveData, moveId });
     attacker.lastMoveUsed = moveId;
     return;
   }
@@ -2268,12 +2251,7 @@ function executeFight(
 
   // ── Perish Song ──
   if (!isStruggle && moveId === "perish-song") {
-    for (const player of [attacker, defender]) {
-      if (!hasVolatile(player.volatiles, "perish-song")) {
-        player.volatiles = addVolatile(player.volatiles, "perish-song", 4);
-      }
-    }
-    room.log.push("멸망의노래가 울려퍼졌다!");
+    triggerApplyEffect({ room, attacker, defender, atkPoke, defPoke, move: moveData, moveId });
   }
 
   // ── Switch-after-move (U-Turn, Volt Switch, Flip Turn, Parting Shot) ──
@@ -2337,25 +2315,8 @@ function executeFight(
   }
 
   // ── Disable / Encore / Taunt / Torment application ──
-  if (!isStruggle && defPoke.hp > 0) {
-    if (moveId === "disable" && defender.lastMoveUsed) {
-      defender.volatiles = addVolatile(defender.volatiles, "disable", 4);
-      defender.disabledMoveId = defender.lastMoveUsed;
-      room.log.push(`${defender.nickname}의 ${defPoke.species}: ${defender.lastMoveUsed}이(가) 사슬묶기 됐다!`);
-    }
-    if (moveId === "encore" && defender.lastMoveUsed) {
-      defender.volatiles = addVolatile(defender.volatiles, "encore", 3);
-      defender.encoreMoveId = defender.lastMoveUsed;
-      room.log.push(`${defender.nickname}의 ${defPoke.species}: 앵콜!`);
-    }
-    if (moveId === "taunt") {
-      defender.volatiles = addVolatile(defender.volatiles, "taunt", 3);
-      room.log.push(`${defender.nickname}의 ${defPoke.species}: 도발 당했다!`);
-    }
-    if (moveId === "torment") {
-      defender.volatiles = addVolatile(defender.volatiles, "torment", -1);
-      room.log.push(`${defender.nickname}의 ${defPoke.species}: 트집!`);
-    }
+  if (!isStruggle && (moveId === "disable" || moveId === "encore" || moveId === "taunt" || moveId === "torment")) {
+    triggerApplyEffect({ room, attacker, defender, atkPoke, defPoke, move: moveData, moveId });
   }
 
   // ── Record last move used ──
