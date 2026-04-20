@@ -41,12 +41,6 @@ const HAZARD_MOVES: Record<string, (hazards: NonNullable<PvpPlayerState["hazards
   "sticky-web": (h) => { if (h.stickyWeb) return false; h.stickyWeb = true; return true; },
 };
 
-const TWO_TURN_MOVES = new Set([
-  "fly", "dig", "dive", "bounce", "phantom-force", "shadow-force",
-  "sky-attack", "solar-beam", "meteor-beam", "skull-bash", "razor-wind",
-]);
-const SEMI_INVULNERABLE = new Set(["fly", "dig", "dive", "bounce", "phantom-force", "shadow-force"]);
-
 const TERRAIN_NAMES: Record<string, string> = {
   electric: "일렉트릭필드",
   grassy: "그래스필드",
@@ -1131,14 +1125,14 @@ function executeFight(
   }
 
   // ── Two-Turn Moves: charge phase ──
-  if (TWO_TURN_MOVES.has(moveId) && !attacker.chargingMove) {
+  if (hasFlag(moveId, "twoTurn") && !attacker.chargingMove) {
     // Solar Beam skips charge in sun
     const skipChargeSun = moveId === "solar-beam" && room.weather === "sun";
     // Power Herb: consume to skip charge
     const powerHerb = atkPoke.heldItem === "power-herb";
     if (!skipChargeSun && !powerHerb) {
       attacker.chargingMove = { moveId, turn: 1 };
-      if (SEMI_INVULNERABLE.has(moveId)) {
+      if (hasFlag(moveId, "semiInvulnerable")) {
         attacker.volatiles = addVolatile(attacker.volatiles, "semi-invulnerable", 1);
       }
       room.log.push(`${attacker.nickname}의 ${atkPoke.species}: ${moveData.name} 준비 중!`);
