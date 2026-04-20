@@ -27,6 +27,7 @@ import {
 import {
   hasFlag, getFlag, tryFixedDamage, triggerApplyEffect, triggerHeal,
   triggerOnHit, applyPowerMod, getMoveEffects,
+  tryCustomResolve, tryBeforeMove,
   type MoveContext,
 } from "./pvp-moves.js";
 import type {
@@ -1151,14 +1152,24 @@ function executeFight(
     // Continue with normal execution
   }
 
-  // ── Substitute move ──
-  if (moveId === "substitute" && atkPoke.hp > atkPoke.maxHp / 4) {
-    const cost = Math.floor(atkPoke.maxHp / 4);
-    atkPoke.hp -= cost;
-    attacker.substitute = cost;
-    room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 대타출동!`);
-    attacker.lastMoveUsed = moveId;
-    return; // skip normal damage
+  // ── Registry: try customResolve first (fully handles the move). ──
+  // Registered customResolve moves set their own state; we just stamp lastMove trackers.
+  {
+    const registryCtx: MoveContext = {
+      room, attacker, defender, atkPoke, defPoke,
+      move: moveData, moveId,
+    };
+    if (tryCustomResolve(registryCtx)) {
+      attacker.lastMoveUsed = moveId;
+      room.lastMoveUsedInBattle = moveId;
+      return;
+    }
+    const gate = tryBeforeMove(registryCtx);
+    if (gate?.cancel) {
+      if (gate.message) room.log.push(gate.message);
+      attacker.lastMoveUsed = moveId;
+      return;
+    }
   }
 
   // ── Counter / Mirror Coat ──
@@ -1226,56 +1237,7 @@ function executeFight(
     return;
   }
 
-  // ── Pain Split: average HP between attacker and defender ──
-  if (moveId === "pain-split") {
-    if (defPoke.hp > 0) {
-      const avgHp = Math.floor((atkPoke.hp + defPoke.hp) / 2);
-      atkPoke.hp = Math.min(atkPoke.maxHp, avgHp);
-      defPoke.hp = Math.min(defPoke.maxHp, avgHp);
-      room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 아픔나누기! HP가 균등해졌다!`);
-    } else {
-      room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 아픔나누기 실패!`);
-    }
-    attacker.lastMoveUsed = moveId;
-    room.lastMoveUsedInBattle = moveId;
-    return;
-  }
-
-  // ── Endeavor: reduce defender's HP to attacker's HP (fails if attacker already has more HP) ──
-  if (moveId === "endeavor") {
-    if (defPoke.hp > atkPoke.hp) {
-      const damage = defPoke.hp - atkPoke.hp;
-      defPoke.hp = atkPoke.hp;
-      room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 힘껏펀치! ${damage} 데미지!`);
-      if (defPoke.hp <= 0) {
-        room.log.push(`${defender.nickname}의 ${defPoke.species}이(가) 쓰러졌다!`);
-      }
-    } else {
-      room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 힘껏펀치 실패!`);
-    }
-    attacker.lastMoveUsed = moveId;
-    room.lastMoveUsedInBattle = moveId;
-    return;
-  }
-
-  // ── Attract: infatuate the defender (opposite gender only) ──
-  if (moveId === "attract") {
-    const atkGender = atkPoke.gender;
-    const defGender = defPoke.gender;
-    const oppositeGender = atkGender && defGender
-      && atkGender !== "genderless" && defGender !== "genderless"
-      && atkGender !== defGender;
-    if (defPoke.hp > 0 && oppositeGender && canReceiveStatus(defPoke, "infatuation")
-        && !hasVolatile(defender.volatiles, "infatuation")) {
-      defender.volatiles = addVolatile(defender.volatiles, "infatuation", -1);
-      room.log.push(`${defender.nickname}의 ${defPoke.species}: 헤롱헤롱!`);
-    } else {
-      room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 헤롱헤롱 실패!`);
-    }
-    attacker.lastMoveUsed = moveId;
-    room.lastMoveUsedInBattle = moveId;
-    return;
-  }
+  // pain-split / endeavor / attract migrated to registry customResolve.
 
   // ── Magic Coat: reflect status moves for the rest of this turn ──
   if (moveId === "magic-coat") {
@@ -1310,39 +1272,7 @@ function executeFight(
     return;
   }
 
-  // ── Curse: ghost users lose 50% HP and curse the defender; non-ghost changes stats ──
-  if (moveId === "curse") {
-    const atkTypes = getEffectiveTypes(atkPoke.species, atkPoke.variantId, attacker.battleForm);
-    if (atkTypes.includes("ghost")) {
-      if (defPoke.hp > 0 && !hasVolatile(defender.volatiles, "curse")) {
-        atkPoke.hp = Math.max(0, atkPoke.hp - Math.floor(atkPoke.maxHp / 2));
-        defender.volatiles = addVolatile(defender.volatiles, "curse", -1);
-        room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 저주!`);
-        if (atkPoke.hp <= 0) {
-          room.log.push(`${attacker.nickname}의 ${atkPoke.species}이(가) 쓰러졌다!`);
-        }
-      } else {
-        room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 저주 실패!`);
-      }
-    } else {
-      attacker.statStages = applyStatChanges(attacker.statStages, [
-        { stat: "speed", change: -1 },
-        { stat: "attack", change: 1 },
-        { stat: "defense", change: 1 },
-      ]);
-      room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 저주! 스피드가 내려가고 공격/방어가 올랐다!`);
-    }
-    attacker.lastMoveUsed = moveId;
-    room.lastMoveUsedInBattle = moveId;
-    return;
-  }
-
-  // ── Fake Out: only works on first turn after switch-in, guaranteed flinch ──
-  if (moveId === "fake-out" && !attacker.justSwitchedIn) {
-    room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 속이기 실패!`);
-    attacker.lastMoveUsed = moveId;
-    return;
-  }
+  // curse / fake-out migrated to registry (customResolve / beforeMove).
 
   // ── Foresight / Odor Sleuth: remove ghost immunity to normal/fighting (permanent volatile) ──
   if (moveId === "foresight" || moveId === "odor-sleuth") {
@@ -1382,24 +1312,15 @@ function executeFight(
     return;
   }
 
-  // ── Wish (바라기) ──
-  if (moveId === "wish") {
-    if (hasVolatile(attacker.volatiles, "heal-block")) {
-      room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 회복봉인으로 회복할 수 없다!`);
-      attacker.lastMoveUsed = moveId;
-      return;
-    }
-    if (!attacker.wish) {
-      attacker.wish = {
-        turns: 2,
-        healAmount: Math.floor(atkPoke.maxHp / 2),
-        targetIndex: attacker.activeIndex,
-      };
-      room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 바라기!`);
-    }
+  // ── Safeguard / Mist / Lucky Chant / Endure (registry applyEffect) ──
+  if (moveId === "safeguard" || moveId === "mist" || moveId === "lucky-chant" || moveId === "endure") {
+    triggerApplyEffect({ room, attacker, defender, atkPoke, defPoke, move: moveData, moveId });
     attacker.lastMoveUsed = moveId;
+    room.lastMoveUsedInBattle = moveId;
     return;
   }
+
+  // wish migrated to registry customResolve.
 
   // ── Healing moves (registry-driven: heal hook) ──
   if (getMoveEffects(moveId)?.heal) {
@@ -1413,18 +1334,7 @@ function executeFight(
     return;
   }
 
-  // ── Belly Drum (배북) ──
-  if (moveId === "belly-drum") {
-    if (atkPoke.hp > atkPoke.maxHp / 2) {
-      atkPoke.hp -= Math.floor(atkPoke.maxHp / 2);
-      attacker.statStages = { ...attacker.statStages, attack: 6 };
-      room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 배북! 공격이 최대로 올랐다!`);
-    } else {
-      room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 배북 실패!`);
-    }
-    attacker.lastMoveUsed = moveId;
-    return;
-  }
+  // belly-drum migrated to registry customResolve.
 
   // ── Focus Energy (초점맞추기) ──
   if (moveId === "focus-energy") {
@@ -1570,7 +1480,7 @@ function executeFight(
 
   if (fixedDmg != null && !isStruggle) {
     isFixedDamage = true;
-    const damage = fixedDmg;
+    let damage = fixedDmg;
     // ── Substitute absorption for fixed damage ──
     if (defender.substitute && defender.substitute > 0) {
       defender.substitute -= damage;
@@ -1584,6 +1494,11 @@ function executeFight(
       hitsMade = 1;
       room.log.push(`${attacker.nickname}의 ${atkPoke.species}: ${effectiveMoveData.name}! ${damage} 데미지!`);
     } else {
+      // ── Endure: fixed-damage moves also leave defender at 1 HP on a would-be KO ──
+      if (hasVolatile(defender.volatiles, "endure") && damage >= defPoke.hp && defPoke.hp > 0) {
+        damage = defPoke.hp - 1;
+        room.log.push(`${defender.nickname}의 ${defPoke.species}: 버티기로 버텼다!`);
+      }
       defPoke.hp = Math.max(0, defPoke.hp - damage);
       totalDamage = damage;
       hitsMade = 1;
@@ -1667,6 +1582,9 @@ function executeFight(
     const atkStages = defPoke.abilityId === "unaware" ? defaultStatStages() : attacker.statStages;
     const defStages = atkPoke.abilityId === "unaware" ? defaultStatStages() : defender.statStages;
 
+    // ── Lucky Chant: defender cannot be crit this turn ──
+    const luckyChant = hasVolatile(defender.volatiles, "lucky-chant");
+
     let lastResult = { damage: 0, missed: false, effectiveness: 1, message: "", critical: false };
     for (let hit = 0; hit < hitCount; hit++) {
       if (defPoke.hp <= 0) break;
@@ -1676,6 +1594,11 @@ function executeFight(
         atkStages, defStages,
         weatherMod,
       );
+      // ── Lucky Chant: downgrade any crit result and undo the 1.5x damage multiplier ──
+      if (luckyChant && result.critical) {
+        result.critical = false;
+        result.damage = Math.floor(result.damage / 1.5);
+      }
       lastResult = result;
       if (!result.missed) {
         // ── Ability: apply attack/defense multipliers ──
@@ -1739,6 +1662,11 @@ function executeFight(
             finalDamage = defPoke.hp - 1;
             defPoke.heldItem = null; // consume item
           }
+        }
+        // ── Endure: if damage would KO, leave defender at 1 HP ──
+        if (hasVolatile(defender.volatiles, "endure") && finalDamage >= defPoke.hp && defPoke.hp > 0) {
+          finalDamage = defPoke.hp - 1;
+          room.log.push(`${defender.nickname}의 ${defPoke.species}: 버티기로 버텼다!`);
         }
         defPoke.hp = Math.max(0, defPoke.hp - finalDamage);
         // ── Record lastDamageTaken for Counter / Mirror Coat ──
@@ -1889,10 +1817,14 @@ function executeFight(
     if (ailment && ailment !== "none" && !covertBlocks) {
       // ── Misty Terrain: block all primary status on grounded defenders ──
       const mistyBlocked = room.terrain === "misty" && isGrounded(defPoke, defender) && !isVolatileAilment(ailment);
+      // ── Safeguard: blocks primary (non-volatile) status conditions on the defender's side ──
+      const safeguardBlocked = !isVolatileAilment(ailment) && hasVolatile(defender.volatiles, "safeguard");
       // ── Ability: status guard check for primary (non-volatile) ailments ──
       const primaryBlocked = !isVolatileAilment(ailment) && !canReceiveStatus(defPoke, ailment);
       if (mistyBlocked) {
         room.log.push(`미스트필드가 상태이상을 막았다!`);
+      } else if (safeguardBlocked) {
+        room.log.push(`몸지킴이 상태이상을 막았다!`);
       } else if (primaryBlocked) {
         room.log.push(`${defender.nickname}의 ${defPoke.species}: 특성으로 상태이상을 막았다!`);
       } else {
@@ -2012,7 +1944,12 @@ function executeFight(
           : moveData.statChanges;
         // ── Ability / Item: Clear Body / White Smoke / Clear Amulet block opponent stat drops ──
         const blockDrops = !canReceiveStatus(defPoke, "stat-drop") || defPoke.heldItem === "clear-amulet";
-        const filteredChanges = oppChanges.filter((sc) => !(sc.change < 0 && blockDrops));
+        // ── Mist: blocks opponent-caused stat drops on defender's side ──
+        const mistBlocked = hasVolatile(defender.volatiles, "mist");
+        const filteredChanges = oppChanges.filter((sc) => !(sc.change < 0 && (blockDrops || mistBlocked)));
+        if (mistBlocked && oppChanges.some((sc) => sc.change < 0)) {
+          room.log.push(`흰안개가 능력 하락을 막았다!`);
+        }
         if (filteredChanges.length > 0) {
           defender.statStages = applyStatChanges(defender.statStages, filteredChanges);
           for (const sc of filteredChanges) {
