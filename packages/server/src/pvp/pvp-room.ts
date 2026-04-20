@@ -24,7 +24,11 @@ import {
   triggerItemEndOfTurn, getItemSpeedMultiplier,
   checkItemPreventKO, isItemLockMove,
 } from "./pvp-items.js";
-import { hasFlag, getFlag, tryFixedDamage, triggerApplyEffect, type MoveContext } from "./pvp-moves.js";
+import {
+  hasFlag, getFlag, tryFixedDamage, triggerApplyEffect, triggerHeal,
+  getMoveEffects,
+  type MoveContext,
+} from "./pvp-moves.js";
 import type {
   PvpRoomState, PvpPlayerState, PvpPokemon,
   PvpClientRoomView, PvpRoomConfig, PvpAction,
@@ -49,11 +53,6 @@ const TERRAIN_NAMES: Record<string, string> = {
   psychic: "사이코필드",
   misty: "미스트필드",
 };
-
-const HALF_RECOVERY_MOVES = new Set([
-  "recover", "roost", "soft-boiled", "milk-drink", "slack-off", "rest", "shore-up",
-]);
-const WEATHER_RECOVERY_MOVES = new Set(["moonlight", "synthesis", "morning-sun"]);
 
 function isGrounded(poke: PvpPokemon, player: PvpPlayerState): boolean {
   // Iron Ball always grounds the pokemon (beats flying type / levitate).
@@ -1413,49 +1412,14 @@ function executeFight(
     return;
   }
 
-  // ── Recovery moves (1/2 maxHp heal) ──
-  if (HALF_RECOVERY_MOVES.has(moveId)) {
+  // ── Healing moves (registry-driven: heal hook) ──
+  if (getMoveEffects(moveId)?.heal) {
     if (hasVolatile(attacker.volatiles, "heal-block")) {
       room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 회복봉인으로 회복할 수 없다!`);
       attacker.lastMoveUsed = moveId;
       return;
     }
-    if (moveId === "rest") {
-      atkPoke.hp = atkPoke.maxHp;
-      atkPoke.statusCondition = "sleep";
-      atkPoke.sleepTurns = 2;
-      room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 잠듦! HP가 완전히 회복됐다!`);
-    } else {
-      const heal = Math.floor(atkPoke.maxHp / 2);
-      atkPoke.hp = Math.min(atkPoke.maxHp, atkPoke.hp + heal);
-      room.log.push(`${attacker.nickname}의 ${atkPoke.species}: HP를 회복했다!`);
-      // ── Roost: flying type pokemon temporarily lose flying type for the turn ──
-      if (moveId === "roost") {
-        const atkTypes = getEffectiveTypes(atkPoke.species, atkPoke.variantId, attacker.battleForm);
-        if (atkTypes.includes("flying")) {
-          attacker.roostedThisTurn = true;
-        }
-      }
-    }
-    attacker.lastMoveUsed = moveId;
-    return;
-  }
-
-  // ── Weather-dependent recovery moves ──
-  if (WEATHER_RECOVERY_MOVES.has(moveId)) {
-    if (hasVolatile(attacker.volatiles, "heal-block")) {
-      room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 회복봉인으로 회복할 수 없다!`);
-      attacker.lastMoveUsed = moveId;
-      return;
-    }
-    let healRatio = 0.5;
-    if (room.weather === "sun") healRatio = 2 / 3;
-    else if (room.weather === "rain" || room.weather === "hail" || room.weather === "sandstorm") {
-      healRatio = 0.25;
-    }
-    const heal = Math.floor(atkPoke.maxHp * healRatio);
-    atkPoke.hp = Math.min(atkPoke.maxHp, atkPoke.hp + heal);
-    room.log.push(`${attacker.nickname}의 ${atkPoke.species}: HP를 회복했다!`);
+    triggerHeal({ room, attacker, defender, atkPoke, defPoke, move: moveData, moveId });
     attacker.lastMoveUsed = moveId;
     return;
   }

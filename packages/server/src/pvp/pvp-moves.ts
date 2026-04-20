@@ -471,7 +471,7 @@ register("roost", {
     ctx.atkPoke.hp = Math.min(ctx.atkPoke.maxHp, ctx.atkPoke.hp + heal);
     const types = getEffectiveTypes(ctx.atkPoke.species, ctx.atkPoke.variantId, ctx.attacker.battleForm);
     if (types.includes("flying")) ctx.attacker.roostedThisTurn = true;
-    ctx.room.log.push(`${ctx.attacker.nickname}의 ${ctx.atkPoke.species}: 날개쉬기!`);
+    ctx.room.log.push(`${ctx.attacker.nickname}의 ${ctx.atkPoke.species}: HP를 회복했다!`);
   },
 });
 
