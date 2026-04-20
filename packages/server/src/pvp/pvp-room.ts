@@ -24,6 +24,7 @@ import {
   triggerItemEndOfTurn, getItemSpeedMultiplier,
   checkItemPreventKO, isItemLockMove,
 } from "./pvp-items.js";
+import { hasFlag, getFlag } from "./pvp-moves.js";
 import type {
   PvpRoomState, PvpPlayerState, PvpPokemon,
   PvpClientRoomView, PvpRoomConfig, PvpAction,
@@ -37,16 +38,6 @@ const FIXED_DAMAGE_MOVES: Record<string, number | "level"> = {
   "psywave": "level",
 };
 
-const SELF_KO_MOVES = new Set([
-  "self-destruct", "explosion", "memento", "final-gambit",
-  "healing-wish", "lunar-dance", "misty-explosion",
-]);
-
-const PROTECT_MOVES = new Set([
-  "protect", "detect", "kings-shield", "baneful-bunker",
-  "spiky-shield", "obstruct", "silk-trap",
-]);
-
 const HAZARD_MOVES: Record<string, (hazards: NonNullable<PvpPlayerState["hazards"]>) => boolean> = {
   "stealth-rock": (h) => { if (h.stealthRock) return false; h.stealthRock = true; return true; },
   "spikes": (h) => { if ((h.spikes ?? 0) >= 3) return false; h.spikes = (h.spikes ?? 0) + 1; return true; },
@@ -54,15 +45,11 @@ const HAZARD_MOVES: Record<string, (hazards: NonNullable<PvpPlayerState["hazards
   "sticky-web": (h) => { if (h.stickyWeb) return false; h.stickyWeb = true; return true; },
 };
 
-const SWITCH_AFTER_MOVES = new Set(["u-turn", "volt-switch", "flip-turn", "parting-shot"]);
-
 const TWO_TURN_MOVES = new Set([
   "fly", "dig", "dive", "bounce", "phantom-force", "shadow-force",
   "sky-attack", "solar-beam", "meteor-beam", "skull-bash", "razor-wind",
 ]);
 const SEMI_INVULNERABLE = new Set(["fly", "dig", "dive", "bounce", "phantom-force", "shadow-force"]);
-
-const PHAZING_MOVES = new Set(["whirlwind", "roar", "dragon-tail", "circle-throw"]);
 
 const TERRAIN_MOVES: Record<string, NonNullable<PvpRoomState["terrain"]>> = {
   "electric-terrain": "electric",
@@ -77,14 +64,6 @@ const TERRAIN_NAMES: Record<string, string> = {
   psychic: "사이코필드",
   misty: "미스트필드",
 };
-
-const TRAPPING_MOVES = new Set([
-  "mean-look", "block", "spider-web", "jaw-lock",
-  "spirit-shackle", "anchor-shot", "thousand-waves",
-]);
-
-const OHKO_MOVES = new Set(["fissure", "sheer-cold", "horn-drill", "guillotine"]);
-const EVASION_MOVES = new Set(["double-team", "minimize"]);
 
 const HALF_RECOVERY_MOVES = new Set([
   "recover", "roost", "soft-boiled", "milk-drink", "slack-off", "rest", "shore-up",
@@ -372,7 +351,7 @@ function resolveTurn(room: PvpRoomState, actionA: PvpAction, actionB: PvpAction)
   let protectedA = false;
   let protectedB = false;
 
-  if (actionA.type === "fight" && PROTECT_MOVES.has(actionA.moveId)) {
+  if (actionA.type === "fight" && hasFlag(actionA.moveId, "isProtect")) {
     const rate = 1 / Math.pow(3, room.playerA.protectCount ?? 0);
     if (Math.random() < rate) {
       protectedA = true;
@@ -383,7 +362,7 @@ function resolveTurn(room: PvpRoomState, actionA: PvpAction, actionB: PvpAction)
       room.playerA.protectCount = 0;
     }
   }
-  if (actionB.type === "fight" && PROTECT_MOVES.has(actionB.moveId)) {
+  if (actionB.type === "fight" && hasFlag(actionB.moveId, "isProtect")) {
     const rate = 1 / Math.pow(3, room.playerB.protectCount ?? 0);
     if (Math.random() < rate) {
       protectedB = true;
@@ -396,10 +375,10 @@ function resolveTurn(room: PvpRoomState, actionA: PvpAction, actionB: PvpAction)
   }
 
   // Reset protect count if NOT using protect this turn
-  if (actionA.type !== "fight" || !PROTECT_MOVES.has(actionA.moveId)) {
+  if (actionA.type !== "fight" || !hasFlag(actionA.moveId, "isProtect")) {
     room.playerA.protectCount = 0;
   }
-  if (actionB.type !== "fight" || !PROTECT_MOVES.has(actionB.moveId)) {
+  if (actionB.type !== "fight" || !hasFlag(actionB.moveId, "isProtect")) {
     room.playerB.protectCount = 0;
   }
 
@@ -952,12 +931,12 @@ function executeFight(
 
   // ── Battle Clauses ──
   // OHKO Clause: block one-hit KO moves
-  if (OHKO_MOVES.has(moveId)) {
+  if (hasFlag(moveId, "isOHKO")) {
     room.log.push(`${moveData.name}: 일격기 조항으로 사용할 수 없다!`);
     return;
   }
   // Evasion Clause: block evasion-boosting moves
-  if (EVASION_MOVES.has(moveId)) {
+  if (hasFlag(moveId, "isEvasion")) {
     room.log.push(`${moveData.name}: 회피 조항으로 사용할 수 없다!`);
     return;
   }
@@ -1970,7 +1949,7 @@ function executeFight(
   }
 
   // ── Self-KO moves ──
-  if (SELF_KO_MOVES.has(moveId) && !isStruggle) {
+  if (hasFlag(moveId, "selfKO") && !isStruggle) {
     atkPoke.hp = 0;
     room.log.push(`${attacker.nickname}의 ${atkPoke.species}이(가) 쓰러졌다!`);
   }
@@ -2167,7 +2146,7 @@ function executeFight(
   }
 
   // ── Trapping moves: prevent opponent from switching ──
-  if (!isStruggle && TRAPPING_MOVES.has(moveId) && hitsMade >= 0 && defPoke.hp > 0) {
+  if (!isStruggle && hasFlag(moveId, "isTrapping") && hitsMade >= 0 && defPoke.hp > 0) {
     // Most trapping moves land; bind the defender so they can't switch out.
     defender.trapped = true;
     room.log.push(`${defender.nickname}의 ${defPoke.species}: 도망칠 수 없다!`);
@@ -2305,7 +2284,8 @@ function executeFight(
   }
 
   // ── Switch-after-move (U-Turn, Volt Switch, Flip Turn, Parting Shot) ──
-  if (!isStruggle && SWITCH_AFTER_MOVES.has(moveId)) {
+  // baton-pass also has forcesSwitch="user"; handled by its dedicated block below.
+  if (!isStruggle && getFlag(moveId, "forcesSwitch") === "user" && moveId !== "baton-pass") {
     const missed = hitsMade === 0 && !isFixedDamage;
     // parting-shot is status (power 0), so hitsMade will be 0 and isFixedDamage false
     // but parting-shot has accuracy 100 and its stat changes already applied means it succeeded
@@ -2344,7 +2324,7 @@ function executeFight(
   }
 
   // ── Phazing (Whirlwind, Roar, Dragon Tail, Circle Throw) ──
-  if (!isStruggle && PHAZING_MOVES.has(moveId) && hitsMade >= 0 && defPoke.hp > 0) {
+  if (!isStruggle && getFlag(moveId, "forcesSwitch") === "target" && hitsMade >= 0 && defPoke.hp > 0) {
     // Ingrain: rooted defender cannot be phazed.
     if (hasVolatile(defender.volatiles, "ingrain")) {
       room.log.push(`${defender.nickname}의 ${defPoke.species}: 뿌리내리기로 버텼다!`);
