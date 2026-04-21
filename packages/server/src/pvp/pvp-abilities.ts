@@ -91,6 +91,21 @@ export interface OnFaintContext {
   fromContact: boolean;
 }
 
+export interface OnTerastalizeContext {
+  attacker: PvpPlayerState;
+  atkPoke: PvpPokemon;
+  room: PvpRoomState;
+}
+
+export interface OnStatBoostTriggerContext {
+  /** Ability holder whose opportunist-style hook fires. */
+  player: PvpPlayerState;
+  /** Opponent whose stats were boosted. */
+  opponent: PvpPlayerState;
+  changes: Array<{ stat: string; change: number }>;
+  room: PvpRoomState;
+}
+
 export interface AbilityEffects {
   /** Triggered when the pokemon switches in (or is sent out as lead). */
   onSwitchIn?: (ctx: OnSwitchInContext) => void;
@@ -158,10 +173,24 @@ export interface AbilityEffects {
   /** Returns true to prevent critical hits against this pokemon. */
   preventCrit?: boolean;
 
+  /** Fired when this pokemon Terastallizes (Embody Aspect). */
+  onTerastalize?: (ctx: OnTerastalizeContext) => void;
+
+  /** Fired when the opponent's stats get boosted (Opportunist). */
+  onStatBoostTrigger?: (ctx: OnStatBoostTriggerContext) => void;
+
   /** Boolean flags for special ability behaviors. */
   flags?: {
     /** This ability ignores the opponent's ability (e.g. mold-breaker, turboblaze, teravolt). */
     ignoresOpponentAbility?: boolean;
+    /** Armor Tail / Queenly Majesty: blocks priority moves targeting this pokemon. */
+    blocksPriorityMoves?: boolean;
+    /** Good as Gold: blocks opposing status moves. */
+    blocksStatusMoves?: boolean;
+    /** Mind's Eye: normal/fighting hits ghost + ignores opposing accuracy stages. */
+    mindsEye?: boolean;
+    /** Purifying Salt: halves ghost-type damage (in addition to status immunity). */
+    purifyingSalt?: boolean;
   };
 }
 
@@ -387,6 +416,92 @@ export function getDefenseWithMoveMultiplier(ctx: DamageModContext): number {
   const defEffects = registry.get(defAbilityId);
   if (!defEffects?.onDefenseWithMove) return 1;
   return defEffects.onDefenseWithMove(ctx);
+}
+
+/** Fire the onTerastalize hook on the pokemon that just Terastallized. */
+export function triggerOnTerastalize(ctx: OnTerastalizeContext): void {
+  const abilityId = ctx.atkPoke.abilityId;
+  if (!abilityId) return;
+  const effects = registry.get(abilityId);
+  effects?.onTerastalize?.(ctx);
+}
+
+/**
+ * Fire the onStatBoostTrigger hook for the opponent's active pokemon
+ * after `player`'s pokemon receives stat boosts (Opportunist).
+ */
+export function triggerOnStatBoostTrigger(ctx: OnStatBoostTriggerContext): void {
+  // The hook fires on `player`'s ability (they are the ability holder watching
+  // their opponent's boosts).
+  const holder = ctx.player.party[ctx.player.activeIndex];
+  const abilityId = holder?.abilityId;
+  if (!abilityId) return;
+  const effects = registry.get(abilityId);
+  effects?.onStatBoostTrigger?.(ctx);
+}
+
+// ── Paradox Boost helpers (Protosynthesis / Quark Drive / Booster Energy) ──
+
+/**
+ * Returns the highest non-HP stat for Paradox boost selection.
+ * Priority order when tied: attack > defense > spAttack > spDefense > speed.
+ */
+export function paradoxHighestStat(
+  poke: PvpPokemon,
+): "attack" | "defense" | "spAttack" | "spDefense" | "speed" {
+  const stats = poke.stats;
+  let best: "attack" | "defense" | "spAttack" | "spDefense" | "speed" = "attack";
+  let bestVal = stats.attack;
+  const checkOrder = ["defense", "spAttack", "spDefense", "speed"] as const;
+  for (const s of checkOrder) {
+    if (stats[s] > bestVal) {
+      bestVal = stats[s];
+      best = s;
+    }
+  }
+  return best;
+}
+
+/** Activate Paradox boost on a player's active pokemon (no-op if already active). */
+export function activateParadoxBoost(
+  player: PvpPlayerState,
+  poke: PvpPokemon,
+  source: "weather" | "terrain" | "booster-energy",
+  room: PvpRoomState,
+): void {
+  if (player.paradoxBoost) return;
+  const stat = paradoxHighestStat(poke);
+  player.paradoxBoost = { stat, source };
+  if (source === "booster-energy") poke.heldItem = null;
+  const label = source === "weather"
+    ? "고대활성"
+    : source === "terrain"
+      ? "쿼크차지"
+      : "부스터에너지";
+  const statNames: Record<string, string> = {
+    attack: "공격",
+    defense: "방어",
+    spAttack: "특수공격",
+    spDefense: "특수방어",
+    speed: "스피드",
+  };
+  room.log.push(`${poke.species}: ${label} 발동! ${statNames[stat] ?? stat}이(가) 상승!`);
+}
+
+/**
+ * Re-evaluate Paradox boost activation for both players after weather/terrain
+ * changes. Already-active boosts are untouched (they persist until switch-out).
+ */
+export function tryActivateParadoxOnFieldChange(room: PvpRoomState): void {
+  for (const player of [room.playerA, room.playerB]) {
+    const poke = player.party[player.activeIndex];
+    if (!poke || poke.hp <= 0 || player.paradoxBoost) continue;
+    if (poke.abilityId === "protosynthesis" && room.weather === "sun") {
+      activateParadoxBoost(player, poke, "weather", room);
+    } else if (poke.abilityId === "quark-drive" && room.terrain === "electric") {
+      activateParadoxBoost(player, poke, "terrain", room);
+    }
+  }
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -1061,5 +1176,287 @@ register("forewarn", {
     if (oppPoke && oppPoke.moves.length > 0) {
       ctx.room.log.push(`${ctx.pokemon.species}의 예지! 경계하라!`);
     }
+  },
+});
+
+// ══════════════════════════════════════════════════════════════
+// ── Phase 3: Gen 9 Abilities ────────────────────────────────
+// ══════════════════════════════════════════════════════════════
+
+// ── Wind / Slicing move sets (used by multiple Gen 9 abilities) ──
+const WIND_MOVES = new Set([
+  "gust", "twister", "air-cutter", "air-slash", "aeroblast",
+  "hurricane", "whirlwind", "tailwind",
+  "bleakwind-storm", "sandsear-storm", "wildbolt-storm", "springtide-storm",
+  "petal-blizzard", "fairy-wind", "razor-wind", "icy-wind", "heat-wave",
+  "blizzard", // canon: has the `wind` flag in Gen 9
+  "sand-tomb", // not wind-tagged canonically; omitted
+]);
+const SLICING_MOVES = new Set([
+  "cut", "slash", "air-slash", "psycho-cut", "leaf-blade", "night-slash",
+  "sacred-sword", "razor-shell", "fury-cutter", "x-scissor", "cross-poison",
+  "solar-blade", "stone-axe", "ceaseless-edge", "aqua-cutter", "behemoth-blade",
+  "kowtow-cleave", "psyblade", "bitter-blade",
+]);
+
+// ── Paradox (Protosynthesis / Quark Drive) ──
+register("protosynthesis", {
+  onSwitchIn: (ctx) => {
+    if (ctx.room.weather === "sun") {
+      activateParadoxBoost(ctx.player, ctx.pokemon, "weather", ctx.room);
+    } else if (ctx.pokemon.heldItem === "booster-energy") {
+      activateParadoxBoost(ctx.player, ctx.pokemon, "booster-energy", ctx.room);
+    }
+  },
+});
+register("quark-drive", {
+  onSwitchIn: (ctx) => {
+    if (ctx.room.terrain === "electric") {
+      activateParadoxBoost(ctx.player, ctx.pokemon, "terrain", ctx.room);
+    } else if (ctx.pokemon.heldItem === "booster-energy") {
+      activateParadoxBoost(ctx.player, ctx.pokemon, "booster-energy", ctx.room);
+    }
+  },
+});
+
+// ── Supreme Overlord (Kingambit) ──
+register("supreme-overlord", {
+  onAttack: (ctx) => {
+    const fainted = ctx.attacker.party.filter(
+      (p, i) => i !== ctx.attacker.activeIndex && p.hp <= 0,
+    ).length;
+    return 1 + 0.1 * Math.min(fainted, 5);
+  },
+});
+
+// ── Toxic Debris (Glimmora) ── logic in pvp-room.ts (after physical hit)
+register("toxic-debris", {});
+
+// ── Armor Tail (Clodsire/Dondozo? — actually Farigiraf) ── flag for pvp-room.ts
+register("armor-tail", { flags: { blocksPriorityMoves: true } });
+
+// ── Earth Eater (Great Tusk/Ting-Lu-adjacent) ──
+register("earth-eater", {
+  onDefense: (ctx) => {
+    if (ctx.move.type === "ground") {
+      const heal = Math.max(1, Math.floor(ctx.defPoke.maxHp / 4));
+      ctx.defPoke.hp = Math.min(ctx.defPoke.maxHp, ctx.defPoke.hp + heal);
+      ctx.room.log.push(`${ctx.defPoke.species}의 흙먹기! HP를 회복했다!`);
+      return 0;
+    }
+    return 1;
+  },
+});
+
+// ── Mycelium Might (Toedscruel) ──
+// Status moves from this pokemon ignore the target's ability.
+// Simplified as flag-level ignoresOpponentAbility; priority penalty on status
+// moves is handled in pvp-room.ts turn order.
+register("mycelium-might", { flags: { ignoresOpponentAbility: true } });
+
+// ── Mind's Eye (Ursaluna-Bloodmoon) ──
+// Combines Scrappy (normal/fighting hit ghost) + Keen Eye (no accuracy drop).
+register("minds-eye", {
+  flags: { mindsEye: true },
+  preventStatDrop: (stat, fromOpp) => stat === "accuracy" && fromOpp,
+});
+
+// ── Supersweet Syrup (Dipplin/Hydrapple) ──
+register("supersweet-syrup", {
+  onSwitchIn: (ctx) => {
+    if (ctx.player.supersweetSyrupUsed) return;
+    const oppPoke = ctx.opponent.party[ctx.opponent.activeIndex];
+    if (!oppPoke || oppPoke.hp <= 0) return;
+    ctx.opponent.statStages = applyStatChanges(ctx.opponent.statStages, [{ stat: "evasion", change: -1 }]);
+    ctx.player.supersweetSyrupUsed = true;
+    ctx.room.log.push(`${ctx.pokemon.species}의 유혹의꿀! 상대의 회피율이 내려갔다!`);
+  },
+});
+
+// ── Toxic Chain (Pecharunt) ── logic in pvp-room.ts (after damaging hit)
+register("toxic-chain", {});
+
+// ── Tera Shell (Terapagos) ──
+// At full HP, all moves register as not-very-effective (0.5x, regardless of type).
+register("tera-shell", {
+  onDefense: (ctx) => (ctx.defPoke.hp >= ctx.defPoke.maxHp ? 0.5 : 1),
+});
+
+// ── Tera Shift (Terapagos normal form) ──
+register("tera-shift", {
+  onSwitchIn: (ctx) => {
+    if (ctx.pokemon.species === "terapagos") {
+      ctx.pokemon.species = "terapagos-terastal";
+      ctx.room.log.push(`${ctx.pokemon.species}의 테라시프트!`);
+    }
+  },
+});
+
+// ── Teraform Zero (Terapagos-Stellar) ──
+register("teraform-zero", {
+  onSwitchIn: (ctx) => {
+    if (ctx.pokemon.species !== "terapagos-stellar") return;
+    if (ctx.room.weather || ctx.room.terrain) {
+      ctx.room.weather = undefined;
+      ctx.room.weatherTurns = undefined;
+      ctx.room.terrain = undefined;
+      ctx.room.terrainTurns = undefined;
+      ctx.room.log.push("테라폼제로! 날씨와 필드가 사라졌다!");
+    }
+  },
+});
+
+// ── Opportunist (Espathra) ──
+register("opportunist", {
+  onStatBoostTrigger: (ctx) => {
+    const positive = ctx.changes.filter((c) => c.change > 0);
+    if (positive.length === 0) return;
+    ctx.player.statStages = applyStatChanges(ctx.player.statStages, positive);
+    ctx.room.log.push(`${ctx.player.party[ctx.player.activeIndex].species}의 편승! 능력이 올랐다!`);
+  },
+});
+
+// ── Embody Aspect (Ogerpon) ──
+register("embody-aspect", {
+  onTerastalize: (ctx) => {
+    const boosts: Record<string, "attack" | "defense" | "spAttack" | "spDefense" | "speed"> = {
+      "ogerpon": "speed",
+      "ogerpon-wellspring-mask": "spDefense",
+      "ogerpon-hearthflame-mask": "attack",
+      "ogerpon-cornerstone-mask": "defense",
+    };
+    const stat = boosts[ctx.atkPoke.species];
+    if (!stat) return;
+    ctx.attacker.statStages = applyStatChanges(ctx.attacker.statStages, [{ stat, change: 1 }]);
+    ctx.room.log.push(`${ctx.atkPoke.species}의 은혜갚기! 능력이 올랐다!`);
+  },
+});
+
+// ── Good as Gold (Gholdengo) ── flag for pvp-room.ts
+register("good-as-gold", { flags: { blocksStatusMoves: true } });
+
+// ── Purifying Salt (Garganacl) ──
+register("purifying-salt", {
+  canReceiveStatus: (ctx) =>
+    !["poison", "burn", "paralysis", "sleep", "freeze", "infatuation", "toxic"].includes(ctx.status),
+  onDefense: (ctx) => (ctx.move.type === "ghost" ? 0.5 : 1),
+  flags: { purifyingSalt: true },
+});
+
+// ── Well-Baked Body (Dachsbun) ──
+register("well-baked-body", {
+  onDefense: (ctx) => {
+    if (ctx.move.type === "fire") {
+      ctx.defender.statStages = applyStatChanges(ctx.defender.statStages, [{ stat: "defense", change: 2 }]);
+      ctx.room.log.push(`${ctx.defPoke.species}의 구운몸! 방어가 크게 올랐다!`);
+      return 0;
+    }
+    return 1;
+  },
+});
+
+// ── Wind Power (Kilowattrel) ──
+register("wind-power", {
+  onDefense: (ctx) => {
+    if (WIND_MOVES.has(ctx.move.id)) {
+      ctx.defender.volatiles = addVolatile(ctx.defender.volatiles, "charged", -1);
+      ctx.room.log.push(`${ctx.defPoke.species}의 윈드파워! 충전!`);
+    }
+    return 1;
+  },
+});
+
+// ── Wind Rider (Brambleghast) ──
+register("wind-rider", {
+  onDefense: (ctx) => {
+    if (WIND_MOVES.has(ctx.move.id)) {
+      ctx.defender.statStages = applyStatChanges(ctx.defender.statStages, [{ stat: "attack", change: 1 }]);
+      ctx.room.log.push(`${ctx.defPoke.species}의 윈드라이더! 공격이 올랐다!`);
+      return 0;
+    }
+    return 1;
+  },
+});
+
+// ── Rocky Payload (Garganacl) ──
+register("rocky-payload", {
+  onAttack: (ctx) => (ctx.move.type === "rock" ? 1.5 : 1),
+});
+
+// ── Electromorphosis (Bellibolt) ──
+register("electromorphosis", {
+  onDefense: (ctx) => {
+    if (ctx.move.category !== "status") {
+      ctx.defender.volatiles = addVolatile(ctx.defender.volatiles, "charged", -1);
+      ctx.room.log.push(`${ctx.defPoke.species}의 화전일치! 충전!`);
+    }
+    return 1;
+  },
+});
+
+// ── Sharpness (Ceruledge / slicing attackers) ──
+register("sharpness", {
+  onAttack: (ctx) => (SLICING_MOVES.has(ctx.move.id) ? 1.5 : 1),
+});
+
+// ── Cud Chew (Farigiraf) ──
+register("cud-chew", {
+  onEndOfTurn: (ctx) => {
+    if (ctx.pokemon.lastEatenBerry && !ctx.pokemon.heldItem) {
+      ctx.pokemon.heldItem = ctx.pokemon.lastEatenBerry;
+      ctx.pokemon.lastEatenBerry = null;
+      ctx.room.log.push(`${ctx.pokemon.species}의 되새김질! 나무열매를 다시 먹었다!`);
+    }
+  },
+});
+
+// ── Lingering Aroma (Slither Wing) ── logic in pvp-room.ts (contact)
+register("lingering-aroma", {});
+
+// ── Seed Sower (Arboliva) ──
+register("seed-sower", {
+  onDefense: (ctx) => {
+    if (ctx.move.category !== "status") {
+      ctx.room.terrain = "grassy";
+      ctx.room.terrainTurns = 5;
+      ctx.room.log.push(`${ctx.defPoke.species}의 씨드소어! 그래스필드가 펼쳐졌다!`);
+    }
+    return 1;
+  },
+});
+
+// ── Thermal Exchange (Scovillain) ──
+register("thermal-exchange", {
+  onDefense: (ctx) => {
+    if (ctx.move.type === "fire") {
+      ctx.defender.statStages = applyStatChanges(ctx.defender.statStages, [{ stat: "attack", change: 1 }]);
+      ctx.room.log.push(`${ctx.defPoke.species}의 열교환! 공격이 올랐다!`);
+      return 0;
+    }
+    return 1;
+  },
+  canReceiveStatus: (ctx) => ctx.status !== "burn",
+});
+
+// ── Costar (Flamigo) ── doubles-only; flag-only no-op
+register("costar", {});
+
+// ── As One (Calyrex) ──
+// Combines Unnerve + Chilling Neigh (attack) / Grim Neigh (spAttack) on KO.
+// The on-KO trigger is handled similarly to moxie in pvp-room.ts.
+register("as-one-glastrier", {});
+register("as-one-spectrier", {});
+
+// ── Prism Armor (Necrozma) ──
+// Like Filter / Solid Rock: reduces super-effective damage by 25%.
+// Canonically ignores Mold Breaker; the registry lookup in pvp-room.ts will
+// call this hook directly rather than via getDefenseMultiplier.
+register("prism-armor", {
+  onDefense: (ctx) => {
+    const typeChart = getTypeChart();
+    const defTypes = getEffectiveTypes(ctx.defPoke.species, ctx.defPoke.variantId, ctx.defender.battleForm);
+    let mult = 1;
+    for (const t of defTypes) mult *= (typeChart[ctx.move.type]?.[t] ?? 1);
+    return mult > 1 ? 0.75 : 1;
   },
 });
