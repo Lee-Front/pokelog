@@ -17,23 +17,30 @@ import {
 import {
   triggerOnSwitchIn, triggerOnSwitchOut, getAttackMultiplier, getDefenseMultiplier,
   getMoveModifiers, canReceiveStatus, triggerEndOfTurn, getEffectiveSpeed,
+  triggerOpponentStatDrop, triggerContactHit, triggerItemLoss, triggerFaint,
+  isStatDropPrevented, hasCritPrevention, getDefenseWithMoveMultiplier,
 } from "./pvp-abilities.js";
 import {
   getItemAttackMultiplier, getItemDefenseMultiplier,
   triggerAfterAttack, triggerAfterBeingHit,
   triggerItemEndOfTurn, getItemSpeedMultiplier,
-  checkItemPreventKO, isItemLockMove,
+  checkItemPreventKO, isItemLockMove, hasItemFlag,
 } from "./pvp-items.js";
 import {
   hasFlag, getFlag, tryFixedDamage, triggerApplyEffect, triggerHeal,
   triggerOnHit, applyPowerMod, getMoveEffects,
-  tryCustomResolve, tryBeforeMove,
+  tryCustomResolve, tryBeforeMove, isContact,
   type MoveContext,
 } from "./pvp-moves.js";
 import type {
   PvpRoomState, PvpPlayerState, PvpPokemon,
   PvpClientRoomView, PvpRoomConfig, PvpAction,
 } from "../../../../shared/pvp-types.js";
+
+const POWDER_MOVES = new Set([
+  "sleep-powder", "stun-spore", "poison-powder", "spore",
+  "cotton-spore", "rage-powder", "powder",
+]);
 
 const HAZARD_MOVES: Record<string, (hazards: NonNullable<PvpPlayerState["hazards"]>) => boolean> = {
   "stealth-rock": (h) => { if (h.stealthRock) return false; h.stealthRock = true; return true; },
@@ -220,7 +227,8 @@ export function submitAction(room: PvpRoomState, userId: string, action: PvpActi
   // ── Trapping: prevent switching while trapped or ingrained ──
   if (action.type === "switch" && room.phase === "action") {
     const player = getPlayer(room, userId);
-    if (player.trapped) {
+    const poke = player.party[player.activeIndex];
+    if (player.trapped && poke.heldItem !== "shed-shell") {
       return false;
     }
     if (hasVolatile(player.volatiles, "ingrain")) {
@@ -293,6 +301,10 @@ function resolveTurn(room: PvpRoomState, actionA: PvpAction, actionB: PvpAction)
   // ── Reset lastDamageTaken at start of each turn ──
   room.playerA.lastDamageTaken = undefined;
   room.playerB.lastDamageTaken = undefined;
+
+  // ── Snapshot heldItem state for unburden detection ──
+  const prevHeldA = room.playerA.party[room.playerA.activeIndex].heldItem ?? null;
+  const prevHeldB = room.playerB.party[room.playerB.activeIndex].heldItem ?? null;
 
   // ── Reset switchedInThisTurn at start of turn (applySwitch calls during this turn will set it again) ──
   room.playerA.switchedInThisTurn = false;
@@ -376,8 +388,18 @@ function resolveTurn(room: PvpRoomState, actionA: PvpAction, actionB: PvpAction)
     // ── Ability: priority modifiers ──
     const modsA = getMoveModifiers({ room, attacker: room.playerA, atkPoke: pokemonA, move: moveA! });
     const modsB = getMoveModifiers({ room, attacker: room.playerB, atkPoke: pokemonB, move: moveB! });
-    const priorityA = (moveA?.priority ?? 0) + modsA.priorityMod;
-    const priorityB = (moveB?.priority ?? 0) + modsB.priorityMod;
+    let priorityA = (moveA?.priority ?? 0) + modsA.priorityMod;
+    let priorityB = (moveB?.priority ?? 0) + modsB.priorityMod;
+
+    // ── Item: Quick Claw (20% chance to gain +1 priority) ──
+    if (hasItemFlag(pokemonA, "quickClaw") && Math.random() < 0.2) {
+      priorityA += 1;
+      room.log.push(`${room.playerA.nickname}의 ${pokemonA.species}: 선제의발톱 발동!`);
+    }
+    if (hasItemFlag(pokemonB, "quickClaw") && Math.random() < 0.2) {
+      priorityB += 1;
+      room.log.push(`${room.playerB.nickname}의 ${pokemonB.species}: 선제의발톱 발동!`);
+    }
 
     let order = determineTurnOrder(
       speedA, speedB,
@@ -387,6 +409,14 @@ function resolveTurn(room: PvpRoomState, actionA: PvpAction, actionB: PvpAction)
     // ── Trick Room: reverse speed order (only when priorities are equal) ──
     if (room.trickRoom && room.trickRoom > 0 && priorityA === priorityB) {
       order = order === "player" ? "wild" : "player";
+    }
+
+    // ── Item: Lagging Tail / Full Incense — force holder to move last within same priority ──
+    if (priorityA === priorityB) {
+      const aLast = hasItemFlag(pokemonA, "alwaysLast");
+      const bLast = hasItemFlag(pokemonB, "alwaysLast");
+      if (aLast && !bLast) order = "wild";
+      else if (bLast && !aLast) order = "player";
     }
 
     const [first, second] = order === "player"
@@ -536,6 +566,8 @@ function resolveTurn(room: PvpRoomState, actionA: PvpAction, actionB: PvpAction)
       if (poke.abilityId === "magic-guard") continue;
       // ── Item: Safety Goggles skips weather damage ──
       if (poke.heldItem === "safety-goggles") continue;
+      // ── Item: Utility Umbrella blocks weather effects ──
+      if (poke.heldItem === "utility-umbrella") continue;
       const types = getEffectiveTypes(poke.species, poke.variantId, player.battleForm);
       const weatherDmg = getWeatherDamage(room.weather, types, poke.maxHp);
       if (weatherDmg > 0) {
@@ -738,6 +770,18 @@ function resolveTurn(room: PvpRoomState, actionA: PvpAction, actionB: PvpAction)
   }
 
 
+  // ── Ability: Unburden — trigger when heldItem went from non-null to null this turn ──
+  {
+    const curA = room.playerA.party[room.playerA.activeIndex];
+    const curB = room.playerB.party[room.playerB.activeIndex];
+    if (prevHeldA && !curA.heldItem && curA.hp > 0) {
+      triggerItemLoss(room.playerA, curA, room);
+    }
+    if (prevHeldB && !curB.heldItem && curB.hp > 0) {
+      triggerItemLoss(room.playerB, curB, room);
+    }
+  }
+
   // ── Promote switchedInThisTurn to justSwitchedIn for next turn. Clear justSwitchedIn
   // for sides that didn't switch this turn (their first action turn is now over).
   room.playerA.justSwitchedIn = room.playerA.switchedInThisTurn ?? false;
@@ -917,6 +961,13 @@ function executeFight(
   // ── Psychic Terrain: block priority moves targeting grounded defenders ──
   if (room.terrain === "psychic" && (moveData.priority ?? 0) > 0 && isGrounded(defPoke, defender)) {
     room.log.push(`사이코필드가 선제공격 기술을 막았다!`);
+    return;
+  }
+
+  // ── Item: Safety Goggles blocks powder-type moves ──
+  if (POWDER_MOVES.has(moveId) && hasItemFlag(defPoke, "powderImmune")) {
+    room.log.push(`${defender.nickname}의 ${defPoke.species}: 방진고글로 가루 기술을 막았다!`);
+    attacker.lastMoveUsed = moveId;
     return;
   }
 
@@ -1306,6 +1357,10 @@ function executeFight(
     if (atkPoke.abilityId === "super-luck") bonusCrit += 1;
     if (atkPoke.heldItem === "scope-lens" || atkPoke.heldItem === "razor-claw") bonusCrit += 1;
     if (hasVolatile(attacker.volatiles, "focus-energy")) bonusCrit += 2;
+    // ── Ability: Merciless — always crit vs poisoned targets ──
+    if (atkPoke.abilityId === "merciless" && defPoke.statusCondition === "poison") {
+      bonusCrit = Math.max(bonusCrit, 999);
+    }
     if (bonusCrit > 0) {
       const baseCrit = effectiveMoveData.meta?.critRate ?? 0;
       effectiveMoveData = {
@@ -1418,6 +1473,14 @@ function executeFight(
       };
     }
 
+    // ── Sandstorm: Rock-types get 1.5x SpDef when attacked by a special move ──
+    if (room.weather === "sandstorm" && moveForCalc.category === "special") {
+      const defTypes = getEffectiveTypes(defPoke.species, defPoke.variantId, defender.battleForm);
+      if (defTypes.includes("rock")) {
+        effectiveDefStats = { ...effectiveDefStats, spDefense: Math.floor(effectiveDefStats.spDefense * 1.5) };
+      }
+    }
+
     const weatherMod = room.weather ? getWeatherTypeModifier(room.weather, moveForCalc.type) : 1;
     const attackerTypes = getEffectiveTypes(atkPoke.species, atkPoke.variantId, attacker.battleForm);
     let defenderTypes = getEffectiveTypes(defPoke.species, defPoke.variantId, defender.battleForm);
@@ -1455,6 +1518,7 @@ function executeFight(
     const dmgCtx = { room, attacker, defender, atkPoke, defPoke, move: moveForCalc, damage: 0 };
     const atkMul = getAttackMultiplier(dmgCtx);
     const defMul = getDefenseMultiplier(dmgCtx);
+    const defWithMoveMul = getDefenseWithMoveMultiplier(dmgCtx);
     // ── Item: attack/defense multipliers (disabled by Magic Room / Embargo) ──
     const atkItemsActive = effectiveHeldItem(atkPoke, attacker, room) !== null;
     const defItemsActive = effectiveHeldItem(defPoke, defender, room) !== null;
@@ -1482,6 +1546,11 @@ function executeFight(
         result.critical = false;
         result.damage = Math.floor(result.damage / 1.5);
       }
+      // ── Ability: Battle Armor / Shell Armor prevent crits ──
+      if (hasCritPrevention(defPoke) && result.critical) {
+        result.critical = false;
+        result.damage = Math.floor(result.damage / 1.5);
+      }
       lastResult = result;
       if (!result.missed) {
         // ── Ability: apply attack/defense multipliers ──
@@ -1495,6 +1564,8 @@ function executeFight(
         } else {
           finalDamage = Math.floor(finalDamage * defMul);
         }
+        // ── Ability: onDefenseWithMove (Fluffy, Disguise) ──
+        finalDamage = Math.floor(finalDamage * defWithMoveMul);
         // ── Item: apply attack/defense multipliers ──
         finalDamage = Math.floor(finalDamage * itemAtkMul);
         finalDamage = Math.floor(finalDamage * itemDefMul);
@@ -1650,8 +1721,10 @@ function executeFight(
 
   // ── Contact ability effects (after physical hit on defender) ──
   // Protective Pads: skip all contact-triggered ability effects on attacker
+  // Long Reach: attacker's moves are non-contact, so contact abilities don't trigger
+  const effectiveContact = isContact(moveId) && atkPoke.abilityId !== "long-reach";
   if (hitsMade > 0 && moveData.category === "physical" && defPoke.hp > 0 && atkPoke.hp > 0
-      && atkPoke.heldItem !== "protective-pads") {
+      && atkPoke.heldItem !== "protective-pads" && effectiveContact) {
     if (defPoke.abilityId === "static" && !atkPoke.statusCondition && Math.random() < 0.3) {
       if (canReceiveStatus(atkPoke, "paralysis")) {
         atkPoke.statusCondition = "paralysis";
@@ -1675,6 +1748,45 @@ function executeFight(
       atkPoke.hp = Math.max(0, atkPoke.hp - contactDmg);
       room.log.push(`${defPoke.species}의 ${defPoke.abilityId === "rough-skin" ? "까칠한피부" : "철가시"}! ${atkPoke.species}에게 ${contactDmg} 데미지!`);
     }
+    // ── Ability: onContactHit hook (cursed-body etc.) ──
+    triggerContactHit({ attacker, defender, atkPoke, defPoke, move: moveData, room });
+    // ── Ability: Poison Touch (attacker poisons defender on contact hit) ──
+    if (atkPoke.abilityId === "poison-touch" && !defPoke.statusCondition && Math.random() < 0.3) {
+      if (canReceiveStatus(defPoke, "poison")) {
+        defPoke.statusCondition = "poison";
+        room.log.push(`${atkPoke.species}의 독수! ${defPoke.species}이(가) 독에 걸렸다!`);
+      }
+    }
+  }
+
+  // ── Ability: Weak Armor — physical hit triggers DEF -1 / SPD +2 ──
+  if (hitsMade > 0 && totalDamage > 0 && defPoke.hp > 0
+      && defPoke.abilityId === "weak-armor"
+      && moveData.category === "physical") {
+    defender.statStages = applyStatChanges(defender.statStages, [
+      { stat: "defense", change: -1 },
+      { stat: "speed", change: 2 },
+    ]);
+    room.log.push(`${defPoke.species}의 약한갑옷! 방어가 내려가고 스피드가 크게 올랐다!`);
+  }
+
+  // ── Ability: Magician — attacker steals defender's item after a damaging hit ──
+  if (hitsMade > 0 && totalDamage > 0 && !isStruggle
+      && atkPoke.abilityId === "magician"
+      && !atkPoke.heldItem && defPoke.heldItem
+      && moveData.power > 0) {
+    atkPoke.heldItem = defPoke.heldItem;
+    const lostItem = defPoke.heldItem;
+    defPoke.heldItem = null;
+    room.log.push(`${atkPoke.species}의 매지션! ${defPoke.species}의 도구(${lostItem})를 훔쳤다!`);
+    triggerItemLoss(defender, defPoke, room);
+  }
+
+  // ── Ability: Aftermath — if defender KO'd by contact, attacker takes 1/4 maxHp damage ──
+  if (hitsMade > 0 && defPoke.hp <= 0 && atkPoke.hp > 0
+      && defPoke.abilityId === "aftermath" && effectiveContact
+      && atkPoke.heldItem !== "protective-pads") {
+    triggerFaint({ attacker, atkPoke, room, fromContact: true });
   }
 
   // ── Choice Lock: lock into move after using it ──
@@ -1829,7 +1941,19 @@ function executeFight(
         const blockDrops = !canReceiveStatus(defPoke, "stat-drop") || defPoke.heldItem === "clear-amulet";
         // ── Mist: blocks opponent-caused stat drops on defender's side ──
         const mistBlocked = hasVolatile(defender.volatiles, "mist");
-        const filteredChanges = oppChanges.filter((sc) => !(sc.change < 0 && (blockDrops || mistBlocked)));
+        // ── Per-stat ability block (hyper-cutter, keen-eye, big-pecks) ──
+        const filteredChanges = oppChanges.filter((sc) => {
+          if (sc.change >= 0) return true;
+          if (blockDrops || mistBlocked) return false;
+          if (isStatDropPrevented(defPoke, sc.stat, true)) return false;
+          return true;
+        });
+        // Per-stat block logs
+        for (const sc of oppChanges) {
+          if (sc.change < 0 && !blockDrops && !mistBlocked && isStatDropPrevented(defPoke, sc.stat, true)) {
+            room.log.push(`${defender.nickname}의 ${defPoke.species}: 특성으로 ${sc.stat} 하락을 막았다!`);
+          }
+        }
         if (mistBlocked && oppChanges.some((sc) => sc.change < 0)) {
           room.log.push(`흰안개가 능력 하락을 막았다!`);
         }
@@ -1840,11 +1964,27 @@ function executeFight(
             const names: Record<string, string> = { attack: "공격", defense: "방어", spAttack: "특수공격", spDefense: "특수방어", speed: "스피드", accuracy: "명중률", evasion: "회피율" };
             room.log.push(`${defender.nickname}의 ${defPoke.species}: ${names[sc.stat] ?? sc.stat}이(가) ${dir}!`);
           }
+          // ── Ability: Defiant / Competitive reactive boost on opponent-caused drops ──
+          const drops = filteredChanges.filter((sc) => sc.change < 0);
+          if (drops.length > 0) {
+            const reactiveAll: Array<{ stat: string; change: number }> = [];
+            for (const drop of drops) {
+              const reactive = triggerOpponentStatDrop(defender, defPoke, drop.stat, Math.abs(drop.change), room);
+              for (const r of reactive) reactiveAll.push(r);
+            }
+            if (reactiveAll.length > 0) {
+              defender.statStages = applyStatChanges(defender.statStages, reactiveAll);
+              const abilityName = defPoke.abilityId === "defiant" ? "오기"
+                : defPoke.abilityId === "competitive" ? "승기" : defPoke.abilityId;
+              room.log.push(`${defPoke.species}의 ${abilityName}! 능력이 올랐다!`);
+            }
+          }
         }
-        if (oppChanges.length > filteredChanges.length) {
+        const blockedBy = oppChanges.length - filteredChanges.length;
+        if (blockedBy > 0) {
           if (defPoke.heldItem === "clear-amulet") {
             room.log.push(`${defender.nickname}의 ${defPoke.species}: 클리어액세서리로 능력 하락을 막았다!`);
-          } else {
+          } else if (blockDrops) {
             room.log.push(`${defender.nickname}의 ${defPoke.species}: 특성으로 능력치 하락을 막았다!`);
           }
         }
