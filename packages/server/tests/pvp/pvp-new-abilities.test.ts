@@ -188,7 +188,9 @@ describe("new abilities: poison-touch", () => {
       stats: { attack: 80, defense: 50, spAttack: 50, spDefense: 50, speed: 90 },
       abilityId: "poison-touch",
     });
-    const pB = makePokemon("bulbasaur", {
+    // Use eevee (normal-type) as the defender so it isn't immune to poison
+    // (bulbasaur is poison-type and would be immune to secondary poison).
+    const pB = makePokemon("eevee", {
       hp: 300, maxHp: 300,
       stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 40 },
     });

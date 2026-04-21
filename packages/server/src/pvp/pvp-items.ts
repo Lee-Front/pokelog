@@ -603,7 +603,18 @@ register("lagging-tail", { alwaysLast: true });
 register("full-incense", { alwaysLast: true });
 register("quick-claw", { quickClaw: true });
 
-// Trap damage boost / trap duration / consecutive same-move boost handled in pvp-room.ts
+// Binding Band: trap damage boost (1/8 -> 1/6) is applied via `trapDamageBoost` flag
+// that pvp-room.ts sets when a trap move lands while the attacker holds this item.
 register("binding-band", {});
+// Grip Claw: fixes trap duration to 7 turns (handled in pvp-room.ts trap application).
 register("grip-claw", {});
-register("metronome", {});
+// Metronome (item): consecutive uses of the same move multiply attack damage
+// up to 2x. `metronomeCount` is maintained on PvpPlayerState by pvp-room.ts.
+register("metronome", {
+  onAttack: (ctx) => {
+    const count = ctx.attacker.metronomeCount ?? 0;
+    if (count <= 0) return 1;
+    const capped = Math.min(5, count);
+    return 1 + capped * 0.2;
+  },
+});

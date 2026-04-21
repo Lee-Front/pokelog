@@ -660,8 +660,10 @@ describe("pvp toxic", () => {
       moves: [{ id: "toxic", pp: 10, maxPp: 10 }, { id: "tackle", pp: 35, maxPp: 35 }],
       statusCondition: null,
     };
+    // Use eevee (normal-type) as the toxic target so it isn't immune to poison
+    // (bulbasaur is poison-type and would now be immune thanks to type-based immunity).
     const pB: PvpPokemon = {
-      uid: "b-uid", species: "bulbasaur", level: 50,
+      uid: "b-uid", species: "eevee", level: 50,
       hp: 160, maxHp: 160,
       stats: { attack: 50, defense: 50, spAttack: 50, spDefense: 50, speed: 40 },
       moves: [{ id: "tackle", pp: 35, maxPp: 35 }],

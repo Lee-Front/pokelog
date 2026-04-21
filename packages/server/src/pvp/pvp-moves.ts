@@ -950,3 +950,41 @@ register("transform", {
 for (const id of ["snore", "sleep-talk"]) {
   if (!getMoveEffects(id)) register(id, {});
 }
+
+// ══════════════════════════════════════════════════════════════
+// ── Hit-this-turn power boosts (Avalanche / Revenge) ─────────
+// ══════════════════════════════════════════════════════════════
+// These moves double their base power if the user took damage this turn.
+// pvp-room.ts sets `attacker.wasHitThisTurn = true` whenever the pokemon
+// is dealt damage, and resets it at the start of each turn.
+register("avalanche", {
+  modifyPower: (ctx) => (ctx.attacker.wasHitThisTurn ? ctx.move.power * 2 : ctx.move.power),
+});
+register("revenge", {
+  modifyPower: (ctx) => (ctx.attacker.wasHitThisTurn ? ctx.move.power * 2 : ctx.move.power),
+});
+
+// ══════════════════════════════════════════════════════════════
+// ── Last Resort ──────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════
+// Succeeds only if every other move on the user's moveset has been used at
+// least once since switching in. pvp-room.ts maintains `attacker.movesUsed`.
+register("last-resort", {
+  beforeMove: (ctx) => {
+    const used = ctx.attacker.movesUsed ?? [];
+    const otherMoves = ctx.atkPoke.moves.filter((m) => m.id !== "last-resort");
+    if (otherMoves.length === 0) {
+      return {
+        cancel: true,
+        message: `${ctx.attacker.nickname}의 ${ctx.atkPoke.species}: 최후의수단 실패!`,
+      };
+    }
+    const allUsed = otherMoves.every((m) => used.includes(m.id));
+    if (!allUsed) {
+      return {
+        cancel: true,
+        message: `${ctx.attacker.nickname}의 ${ctx.atkPoke.species}: 최후의수단 실패!`,
+      };
+    }
+  },
+});

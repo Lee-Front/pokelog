@@ -302,6 +302,10 @@ function resolveTurn(room: PvpRoomState, actionA: PvpAction, actionB: PvpAction)
   room.playerA.lastDamageTaken = undefined;
   room.playerB.lastDamageTaken = undefined;
 
+  // ── Reset wasHitThisTurn at start of each turn (Avalanche / Revenge) ──
+  room.playerA.wasHitThisTurn = false;
+  room.playerB.wasHitThisTurn = false;
+
   // ── Snapshot heldItem state for unburden detection ──
   const prevHeldA = room.playerA.party[room.playerA.activeIndex].heldItem ?? null;
   const prevHeldB = room.playerB.party[room.playerB.activeIndex].heldItem ?? null;
@@ -533,8 +537,23 @@ function resolveTurn(room: PvpRoomState, actionA: PvpAction, actionB: PvpAction)
       }
     }
 
+    // ── Binding Band: extra trap damage so the total becomes 1/6 maxHp (base 1/8 + extra 1/24) ──
+    if (poke.hp > 0 && !hasMagicGuard && player.trapDamageBoost && hasVolatile(player.volatiles, "trap")) {
+      const extra = Math.max(1, Math.floor(poke.maxHp / 24));
+      poke.hp = Math.max(0, poke.hp - extra);
+      room.log.push(`${player.nickname}의 ${poke.species}: 바인드밴드로 추가 ${extra} 데미지!`);
+      if (poke.hp <= 0) {
+        room.log.push(`${player.nickname}의 ${poke.species}이(가) 쓰러졌다!`);
+      }
+    }
+
     // Tick volatiles
     player.volatiles = tickVolatiles(player.volatiles);
+
+    // ── Clear trap-related side state once the trap volatile is gone ──
+    if (!hasVolatile(player.volatiles, "trap") && player.trapDamageBoost) {
+      player.trapDamageBoost = false;
+    }
 
     // ── Ability: end-of-turn effects ──
     if (poke.hp > 0) {
@@ -830,12 +849,14 @@ function applyHazardDamage(room: PvpRoomState, player: PvpPlayerState, pokemon: 
     }
   }
 
-  // Toxic Spikes: grounded only, poison types absorb
+  // Toxic Spikes: grounded only, poison types absorb, steel types immune
   if (hazards.toxicSpikes && hazards.toxicSpikes > 0) {
     if (isGrounded(pokemon, player)) {
       if (types.includes("poison")) {
         hazards.toxicSpikes = 0;
         room.log.push(`${pokemon.species}이(가) 독압정을 흡수했다!`);
+      } else if (types.includes("steel")) {
+        // Steel types: immune to toxic spikes poisoning but don't absorb them.
       } else if (!pokemon.statusCondition) {
         if (hazards.toxicSpikes >= 2) {
           pokemon.statusCondition = "poison";
@@ -894,6 +915,10 @@ function applySwitch(room: PvpRoomState, player: PvpPlayerState, index: number):
   player.encoreMoveId = undefined;
   player.lastMoveUsed = undefined;
   player.lastDamageTaken = undefined;
+  player.trapDamageBoost = false;
+  player.metronomeCount = 0;
+  player.movesUsed = [];
+  player.wasHitThisTurn = false;
 
   player.activeIndex = index;
 
@@ -1318,6 +1343,25 @@ function executeFight(
     power: 50, accuracy: 100, pp: 1, description: "",
   } : moveData;
 
+  // ── Metronome (item): track consecutive same-move usage for the attacker's power boost ──
+  // Update BEFORE damage calc so onAttack item hook sees the correct count.
+  if (!isStruggle && atkPoke.heldItem === "metronome") {
+    if (attacker.lastMoveUsed === moveId) {
+      attacker.metronomeCount = Math.min(5, (attacker.metronomeCount ?? 0) + 1);
+    } else {
+      attacker.metronomeCount = 0;
+    }
+  } else if (!isStruggle) {
+    // Not holding metronome: keep count at 0 so switching to the item later starts clean.
+    attacker.metronomeCount = 0;
+  }
+
+  // ── Last Resort: record non-Struggle moves as "used" for the active pokemon ──
+  if (!isStruggle) {
+    if (!attacker.movesUsed) attacker.movesUsed = [];
+    if (!attacker.movesUsed.includes(moveId)) attacker.movesUsed.push(moveId);
+  }
+
   // ── Ability: -ate type conversion (applied before accuracy + damage calc) ──
   if (!isStruggle) {
     let moveTypeOverride: string | undefined;
@@ -1443,6 +1487,7 @@ function executeFight(
       // ── Record lastDamageTaken for Counter / Mirror Coat ──
       if (damage > 0) {
         defender.lastDamageTaken = { amount: damage, category: effectiveMoveData.category as "physical" | "special" };
+        defender.wasHitThisTurn = true;
       }
       room.log.push(`${attacker.nickname}의 ${atkPoke.species}: ${effectiveMoveData.name}! ${damage} 데미지!`);
       if (defPoke.hp <= 0) {
@@ -1626,6 +1671,7 @@ function executeFight(
         // ── Record lastDamageTaken for Counter / Mirror Coat ──
         if (finalDamage > 0) {
           defender.lastDamageTaken = { amount: finalDamage, category: effectiveMoveData.category as "physical" | "special" };
+          defender.wasHitThisTurn = true;
         }
         totalDamage += finalDamage;
         hitsMade++;
@@ -1733,7 +1779,11 @@ function executeFight(
       }
     }
     if (defPoke.abilityId === "poison-point" && !atkPoke.statusCondition && Math.random() < 0.3) {
-      if (canReceiveStatus(atkPoke, "poison")) {
+      // Steel/poison types are immune to poison (a pokemon with poison-point cannot also have
+      // corrosion, so no bypass is available here).
+      const atkTypes = getEffectiveTypes(atkPoke.species, atkPoke.variantId, attacker.battleForm);
+      const atkPoisonImmune = atkTypes.includes("steel") || atkTypes.includes("poison");
+      if (!atkPoisonImmune && canReceiveStatus(atkPoke, "poison")) {
         atkPoke.statusCondition = "poison";
         room.log.push(`${defPoke.species}의 독가시! ${atkPoke.species}이(가) 독에 걸렸다!`);
       }
@@ -1753,7 +1803,11 @@ function executeFight(
     triggerContactHit({ attacker, defender, atkPoke, defPoke, move: moveData, room });
     // ── Ability: Poison Touch (attacker poisons defender on contact hit) ──
     if (atkPoke.abilityId === "poison-touch" && !defPoke.statusCondition && Math.random() < 0.3) {
-      if (canReceiveStatus(defPoke, "poison")) {
+      // Steel/poison types are immune to poison (a pokemon with poison-touch cannot also have
+      // corrosion, so no bypass is available here).
+      const defTypesPT = getEffectiveTypes(defPoke.species, defPoke.variantId, defender.battleForm);
+      const defPoisonImmunePT = defTypesPT.includes("steel") || defTypesPT.includes("poison");
+      if (!defPoisonImmunePT && canReceiveStatus(defPoke, "poison")) {
         defPoke.statusCondition = "poison";
         room.log.push(`${atkPoke.species}의 독수! ${defPoke.species}이(가) 독에 걸렸다!`);
       }
@@ -1818,12 +1872,22 @@ function executeFight(
       const safeguardBlocked = !isVolatileAilment(ailment) && hasVolatile(defender.volatiles, "safeguard");
       // ── Ability: status guard check for primary (non-volatile) ailments ──
       const primaryBlocked = !isVolatileAilment(ailment) && !canReceiveStatus(defPoke, ailment);
+      // ── Type immunity: steel/poison types are immune to poison (unless attacker has Corrosion) ──
+      let poisonTypeBlocked = false;
+      if ((ailment === "poison" || ailment === "toxic") && atkPoke.abilityId !== "corrosion") {
+        const defTypes = getEffectiveTypes(defPoke.species, defPoke.variantId, defender.battleForm);
+        if (defTypes.includes("steel") || defTypes.includes("poison")) {
+          poisonTypeBlocked = true;
+        }
+      }
       if (mistyBlocked) {
         room.log.push(`미스트필드가 상태이상을 막았다!`);
       } else if (safeguardBlocked) {
         room.log.push(`몸지킴이 상태이상을 막았다!`);
       } else if (primaryBlocked) {
         room.log.push(`${defender.nickname}의 ${defPoke.species}: 특성으로 상태이상을 막았다!`);
+      } else if (poisonTypeBlocked) {
+        room.log.push(`${defender.nickname}의 ${defPoke.species}: 독이 통하지 않았다!`);
       } else {
         const primary = rollAilment(ailment, chance, defPoke.statusCondition);
         if (primary) {
@@ -1870,7 +1934,10 @@ function executeFight(
         } else if (chance <= 0 || chance >= 100 || Math.random() * 100 < chance) {
           let turns = -1;
           if (ailment === "confusion") turns = rollConfusionTurns();
-          else if (ailment === "trap") turns = rollTrapTurns();
+          else if (ailment === "trap") {
+            // Grip Claw (held by the attacker) extends trap duration to 7 turns.
+            turns = atkPoke.heldItem === "grip-claw" ? 7 : rollTrapTurns();
+          }
           else if (ailment === "yawn") turns = 2;
           const newVols = addVolatile(defender.volatiles, ailment, turns);
           if (newVols !== defender.volatiles) {
@@ -1879,6 +1946,10 @@ function executeFight(
               confusion: "혼란", trap: "조이기", "leech-seed": "씨뿌리기", yawn: "졸음",
             };
             room.log.push(`${defender.nickname}의 ${defPoke.species}: ${volNames[ailment] ?? ailment} 상태가 되었다!`);
+            // ── Binding Band (attacker's item): trap damage boost (1/6 instead of 1/8) ──
+            if (ailment === "trap" && atkPoke.heldItem === "binding-band") {
+              defender.trapDamageBoost = true;
+            }
           }
         }
       }

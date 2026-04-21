@@ -82,6 +82,10 @@ export interface PvpPlayerState {
   roostedThisTurn?: boolean;   // flying type removed for the turn (Roost)
   justSwitchedIn?: boolean;    // true for the pokemon's "first action turn" after switch-in (Fake Out)
   switchedInThisTurn?: boolean; // internal: applySwitch ran this turn; promotes to justSwitchedIn at end of turn
+  trapDamageBoost?: boolean;   // defender trapped by a binding-band holder (1/6 instead of 1/8 per turn)
+  metronomeCount?: number;     // consecutive uses of the same move while holding Metronome item (0-5)
+  movesUsed?: string[];        // move IDs this pokemon has used since switching in (for Last Resort)
+  wasHitThisTurn?: boolean;    // took damage this turn (for Avalanche / Revenge 2x boost)
 }
 
 // ── 방 상태 ──
