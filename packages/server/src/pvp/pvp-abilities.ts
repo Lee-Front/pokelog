@@ -85,6 +85,8 @@ export interface OnItemLossContext {
 export interface OnFaintContext {
   attacker: PvpPlayerState;
   atkPoke: PvpPokemon;
+  /** The pokemon that fainted (whose ability's onFaint fires). Optional for backward-compat. */
+  fainter?: PvpPokemon;
   room: PvpRoomState;
   fromContact: boolean;
 }
@@ -334,9 +336,13 @@ export function triggerItemLoss(
   effects?.onItemLoss?.({ player, pokemon, room });
 }
 
-/** Fire the onFaint hook for the attacker's ability when target faints. */
+/**
+ * Fire the onFaint hook.
+ * Fires on the fainting pokemon's ability (if `fainter` provided) — e.g. Aftermath.
+ * Falls back to the attacker's ability for backward compat.
+ */
 export function triggerFaint(ctx: OnFaintContext): void {
-  const abilityId = ctx.atkPoke.abilityId;
+  const abilityId = ctx.fainter?.abilityId ?? ctx.atkPoke.abilityId;
   if (!abilityId) return;
   const effects = registry.get(abilityId);
   effects?.onFaint?.(ctx);

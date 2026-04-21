@@ -29,7 +29,7 @@ import {
 import {
   hasFlag, getFlag, tryFixedDamage, triggerApplyEffect, triggerHeal,
   triggerOnHit, applyPowerMod, getMoveEffects,
-  tryCustomResolve, tryBeforeMove, isContact,
+  tryCustomResolve, tryBeforeMove,
   type MoveContext,
 } from "./pvp-moves.js";
 import type {
@@ -1722,8 +1722,9 @@ function executeFight(
   // ── Contact ability effects (after physical hit on defender) ──
   // Protective Pads: skip all contact-triggered ability effects on attacker
   // Long Reach: attacker's moves are non-contact, so contact abilities don't trigger
-  const effectiveContact = isContact(moveId) && atkPoke.abilityId !== "long-reach";
-  if (hitsMade > 0 && moveData.category === "physical" && defPoke.hp > 0 && atkPoke.hp > 0
+  // Contact is inferred as physical (until individual moves are tagged with the `contact` flag).
+  const effectiveContact = moveData.category === "physical" && atkPoke.abilityId !== "long-reach";
+  if (hitsMade > 0 && defPoke.hp > 0 && atkPoke.hp > 0
       && atkPoke.heldItem !== "protective-pads" && effectiveContact) {
     if (defPoke.abilityId === "static" && !atkPoke.statusCondition && Math.random() < 0.3) {
       if (canReceiveStatus(atkPoke, "paralysis")) {
@@ -1782,11 +1783,12 @@ function executeFight(
     triggerItemLoss(defender, defPoke, room);
   }
 
-  // ── Ability: Aftermath — if defender KO'd by contact, attacker takes 1/4 maxHp damage ──
+  // ── Ability: Aftermath — if defender KO'd by a physical (contact) hit, attacker takes 1/4 maxHp ──
   if (hitsMade > 0 && defPoke.hp <= 0 && atkPoke.hp > 0
-      && defPoke.abilityId === "aftermath" && effectiveContact
+      && defPoke.abilityId === "aftermath"
+      && moveData.category === "physical" && atkPoke.abilityId !== "long-reach"
       && atkPoke.heldItem !== "protective-pads") {
-    triggerFaint({ attacker, atkPoke, room, fromContact: true });
+    triggerFaint({ attacker, atkPoke, fainter: defPoke, room, fromContact: true });
   }
 
   // ── Choice Lock: lock into move after using it ──
