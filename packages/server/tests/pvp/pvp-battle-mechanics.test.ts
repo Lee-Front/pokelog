@@ -102,6 +102,9 @@ describe("Substitute (대타출동)", () => {
 
 describe("Two-Turn Moves (2턴 기술)", () => {
   it("fly charges on turn 1 then executes on turn 2", () => {
+    // Mock Math.random to a neutral value so fly/tackle accuracy checks
+    // (which use Math.random < accuracy/100) deterministically pass.
+    const randomSpy = vi.spyOn(Math, "random").mockReturnValue(0.5);
     const room = readyRoom(
       [{ moves: [{ id: "fly", pp: 15, maxPp: 15 }, { id: "tackle", pp: 35, maxPp: 35 }] }],
       [{ stats: { attack: 50, defense: 100, spAttack: 50, spDefense: 100, speed: 30 } }],
@@ -130,6 +133,7 @@ describe("Two-Turn Moves (2턴 기술)", () => {
 
     // Now fly should have dealt damage
     expect(room.playerB.party[0].hp).toBeLessThan(defHpBefore);
+    randomSpy.mockRestore();
   });
 
   it("semi-invulnerable dodge: opponent's move misses during charge", () => {
@@ -246,6 +250,10 @@ describe("Counter / Mirror Coat", () => {
   });
 
   it("mirror coat returns 2x special damage", () => {
+    // Mock Math.random to a neutral value so ember's 10% burn chance
+    // never fires (otherwise A burns and end-of-turn residual damage is
+    // added to aDamage, breaking the bDamage === aDamage * 2 equality).
+    const randomSpy = vi.spyOn(Math, "random").mockReturnValue(0.5);
     const room = readyRoom(
       // A uses mirror coat (slower)
       [{
@@ -268,6 +276,7 @@ describe("Counter / Mirror Coat", () => {
     const aDamage = 200 - room.playerA.party[0].hp;
     const bDamage = defHpBefore - room.playerB.party[0].hp;
     expect(bDamage).toBe(aDamage * 2);
+    randomSpy.mockRestore();
   });
 });
 
@@ -421,6 +430,10 @@ describe("Terrain System", () => {
   });
 
   it("misty-terrain blocks status conditions on grounded pokemon", () => {
+    // Mock Math.random so toxic's 90% accuracy check deterministically
+    // passes (otherwise toxic can miss and the misty-terrain block log
+    // never fires).
+    const randomSpy = vi.spyOn(Math, "random").mockReturnValue(0.5);
     const room = readyRoom(
       [{
         moves: [{ id: "misty-terrain", pp: 10, maxPp: 10 }, { id: "toxic", pp: 10, maxPp: 10 }],
@@ -442,6 +455,7 @@ describe("Terrain System", () => {
 
     expect(room.log.some(l => l.includes("미스트필드가 상태이상을 막았다"))).toBe(true);
     expect(room.playerB.party[0].statusCondition).not.toBe("poison");
+    randomSpy.mockRestore();
   });
 
   it("grassy-terrain heals grounded pokemon each turn", () => {
