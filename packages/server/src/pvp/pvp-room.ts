@@ -19,6 +19,8 @@ import {
   getMoveModifiers, canReceiveStatus, triggerEndOfTurn, getEffectiveSpeed,
   triggerOpponentStatDrop, triggerContactHit, triggerItemLoss, triggerFaint,
   isStatDropPrevented, hasCritPrevention, getDefenseWithMoveMultiplier,
+  triggerOnTerastalize, triggerOnStatBoostTrigger,
+  tryActivateParadoxOnFieldChange, hasAbilityFlag,
 } from "./pvp-abilities.js";
 import {
   getItemAttackMultiplier, getItemDefenseMultiplier,
@@ -178,6 +180,8 @@ export function selectLead(room: PvpRoomState, userId: string, index: number): v
     // ── Ability: onSwitchIn for both leads ──
     triggerOnSwitchIn({ room, player: room.playerA, opponent: room.playerB, pokemon: room.playerA.party[room.playerA.activeIndex] });
     triggerOnSwitchIn({ room, player: room.playerB, opponent: room.playerA, pokemon: room.playerB.party[room.playerB.activeIndex] });
+    // ── Paradox: re-check after both leads' abilities resolved (e.g. opponent's drought) ──
+    tryActivateParadoxOnFieldChange(room);
   }
 }
 
@@ -383,6 +387,9 @@ function resolveTurn(room: PvpRoomState, actionA: PvpAction, actionB: PvpAction)
     // ── Item: speed modifiers ──
     speedA = getItemSpeedMultiplier(speedA, pokemonA);
     speedB = getItemSpeedMultiplier(speedB, pokemonB);
+    // ── Paradox Boost on speed ──
+    if (room.playerA.paradoxBoost?.stat === "speed") speedA = Math.floor(speedA * 1.5);
+    if (room.playerB.paradoxBoost?.stat === "speed") speedB = Math.floor(speedB * 1.5);
     // ── Tailwind: 2x speed ──
     if (room.playerA.tailwind && room.playerA.tailwind > 0) speedA *= 2;
     if (room.playerB.tailwind && room.playerB.tailwind > 0) speedB *= 2;
@@ -919,6 +926,8 @@ function applySwitch(room: PvpRoomState, player: PvpPlayerState, index: number):
   player.metronomeCount = 0;
   player.movesUsed = [];
   player.wasHitThisTurn = false;
+  // Paradox boost does NOT persist across switches (canon behavior).
+  player.paradoxBoost = undefined;
 
   player.activeIndex = index;
 
@@ -949,6 +958,8 @@ function applySwitch(room: PvpRoomState, player: PvpPlayerState, index: number):
   // ── Ability: onSwitchIn for new pokemon ──
   const opponent = player === room.playerA ? room.playerB : room.playerA;
   triggerOnSwitchIn({ room, player, opponent, pokemon: poke });
+  // ── Paradox: re-check if weather/terrain was just changed by the new lead ──
+  tryActivateParadoxOnFieldChange(room);
 
   // ── Entry hazard damage on switch-in ──
   if (poke.hp > 0) {
@@ -987,6 +998,22 @@ function executeFight(
   // ── Psychic Terrain: block priority moves targeting grounded defenders ──
   if (room.terrain === "psychic" && (moveData.priority ?? 0) > 0 && isGrounded(defPoke, defender)) {
     room.log.push(`사이코필드가 선제공격 기술을 막았다!`);
+    return;
+  }
+
+  // ── Armor Tail (Farigiraf) / Queenly Majesty / Dazzling: block priority moves ──
+  if ((moveData.priority ?? 0) > 0 && defPoke.abilityId
+      && hasAbilityFlag(defPoke.abilityId, "blocksPriorityMoves")) {
+    room.log.push(`${defender.nickname}의 ${defPoke.species}: 특성으로 선제공격을 막았다!`);
+    return;
+  }
+
+  // ── Good as Gold (Gholdengo): block opposing status moves ──
+  if (moveData.category === "status" && defPoke.abilityId
+      && hasAbilityFlag(defPoke.abilityId, "blocksStatusMoves")
+      // Self-targeting status moves (target === "user") still work.
+      && moveData.target !== "user") {
+    room.log.push(`${defender.nickname}의 ${defPoke.species}: 황금몸! 상태기술이 막혔다!`);
     return;
   }
 
@@ -1054,6 +1081,8 @@ function executeFight(
     attacker.transformationType = "tera";
     attacker.transformationUsed = true;
     room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 테라스탈! (${atkPoke.teraType}타입)`);
+    // Ability hook: Embody Aspect (Ogerpon)
+    triggerOnTerastalize({ attacker, atkPoke, room });
   }
 
   // ── Flinch check (applied by faster attacker, consumed here) ──
@@ -1535,6 +1564,22 @@ function executeFight(
       effectiveAtkStats = { ...atkPoke.stats, attack: Math.floor(atkPoke.stats.attack * 0.5) };
     }
 
+    // ── Paradox Boost (Protosynthesis / Quark Drive) on attacker's offensive stat ──
+    if (attacker.paradoxBoost && moveForCalc.category !== "status") {
+      const stat = attacker.paradoxBoost.stat;
+      // Only apply to the offensive stat actually used by this move.
+      const appliesOffensively =
+        (stat === "attack" && moveForCalc.category === "physical") ||
+        (stat === "spAttack" && moveForCalc.category === "special");
+      if (appliesOffensively) {
+        const mult = 1.3;
+        effectiveAtkStats = {
+          ...effectiveAtkStats,
+          [stat]: Math.floor(effectiveAtkStats[stat] * mult),
+        };
+      }
+    }
+
     // ── Wonder Room: swap defender's defense and spDefense ──
     let effectiveDefStats = defPoke.stats;
     if (room.wonderRoom && room.wonderRoom > 0) {
@@ -1543,6 +1588,21 @@ function executeFight(
         defense: defPoke.stats.spDefense,
         spDefense: defPoke.stats.defense,
       };
+    }
+
+    // ── Paradox Boost on defender's defensive stat ──
+    if (defender.paradoxBoost) {
+      const stat = defender.paradoxBoost.stat;
+      const appliesDefensively =
+        (stat === "defense" && moveForCalc.category === "physical") ||
+        (stat === "spDefense" && moveForCalc.category === "special");
+      if (appliesDefensively) {
+        const mult = 1.3;
+        effectiveDefStats = {
+          ...effectiveDefStats,
+          [stat]: Math.floor(effectiveDefStats[stat] * mult),
+        };
+      }
     }
 
     // ── Sandstorm: Rock-types get 1.5x SpDef when attacked by a special move ──
@@ -1557,8 +1617,8 @@ function executeFight(
     const attackerTypes = getBattleTypes(atkPoke, attacker);
     let defenderTypes = getBattleTypes(defPoke, defender);
 
-    // ── Scrappy / Foresight / Odor Sleuth: ignore ghost immunity to normal/fighting ──
-    const scrappyActive = atkPoke.abilityId === "scrappy"
+    // ── Scrappy / Mind's Eye / Foresight / Odor Sleuth: ignore ghost immunity to normal/fighting ──
+    const scrappyActive = (atkPoke.abilityId === "scrappy" || atkPoke.abilityId === "minds-eye")
       && (moveForCalc.type === "normal" || moveForCalc.type === "fighting");
     const foresightActive = hasVolatile(defender.volatiles, "foresight");
     if ((scrappyActive || foresightActive) && defenderTypes.includes("ghost")) {
@@ -1798,6 +1858,14 @@ function executeFight(
       } else if (atkPoke.abilityId === "soul-heart") {
         attacker.statStages = applyStatChanges(attacker.statStages, [{ stat: "spAttack", change: 1 }]);
         room.log.push(`${atkPoke.species}의 소울하트! 특수공격이 올랐다!`);
+      } else if (atkPoke.abilityId === "as-one-glastrier") {
+        // Combines Unnerve (passive) + Chilling Neigh (attack on KO).
+        attacker.statStages = applyStatChanges(attacker.statStages, [{ stat: "attack", change: 1 }]);
+        room.log.push(`${atkPoke.species}의 혼일체! 공격이 올랐다!`);
+      } else if (atkPoke.abilityId === "as-one-spectrier") {
+        // Combines Unnerve (passive) + Grim Neigh (spAttack on KO).
+        attacker.statStages = applyStatChanges(attacker.statStages, [{ stat: "spAttack", change: 1 }]);
+        room.log.push(`${atkPoke.species}의 혼일체! 특수공격이 올랐다!`);
       }
     }
   }
@@ -1859,6 +1927,11 @@ function executeFight(
     }
     // ── Ability: onContactHit hook (cursed-body etc.) ──
     triggerContactHit({ attacker, defender, atkPoke, defPoke, move: moveData, room });
+    // ── Ability: Lingering Aroma (Slither Wing): contact attackers gain lingering-aroma ──
+    if (defPoke.abilityId === "lingering-aroma" && atkPoke.abilityId !== "lingering-aroma") {
+      atkPoke.abilityId = "lingering-aroma";
+      room.log.push(`${defPoke.species}의 악취! ${atkPoke.species}의 특성이 악취로 변했다!`);
+    }
     // ── Ability: Poison Touch (attacker poisons defender on contact hit) ──
     if (atkPoke.abilityId === "poison-touch" && !defPoke.statusCondition && Math.random() < 0.3) {
       // Steel/poison types are immune to poison (a pokemon with poison-touch cannot also have
@@ -1869,6 +1942,32 @@ function executeFight(
         defPoke.statusCondition = "poison";
         room.log.push(`${atkPoke.species}의 독수! ${defPoke.species}이(가) 독에 걸렸다!`);
       }
+    }
+  }
+
+  // ── Ability: Toxic Debris (Glimmora) — physical hit on holder sets toxic-spikes on attacker's side ──
+  if (hitsMade > 0 && totalDamage > 0
+      && defPoke.abilityId === "toxic-debris"
+      && moveData.category === "physical") {
+    if (!attacker.hazards) attacker.hazards = {};
+    if ((attacker.hazards.toxicSpikes ?? 0) < 2) {
+      attacker.hazards.toxicSpikes = (attacker.hazards.toxicSpikes ?? 0) + 1;
+      room.log.push(`${defPoke.species}의 톡소채! ${attacker.nickname}의 발 밑에 독압정이 깔렸다!`);
+    }
+  }
+
+  // ── Ability: Toxic Chain (Pecharunt) — 30% to badly poison defender on damaging hit ──
+  if (hitsMade > 0 && totalDamage > 0 && defPoke.hp > 0
+      && atkPoke.abilityId === "toxic-chain"
+      && !defPoke.statusCondition
+      && moveData.power > 0
+      && Math.random() < 0.3) {
+    const defTypes = getEffectiveTypes(defPoke.species, defPoke.variantId, defender.battleForm);
+    const poisonImmune = defTypes.includes("steel") || defTypes.includes("poison");
+    if (!poisonImmune && canReceiveStatus(defPoke, "poison")) {
+      defPoke.statusCondition = "poison";
+      defPoke.toxicCounter = 1;
+      room.log.push(`${atkPoke.species}의 독사슬! ${defPoke.species}이(가) 맹독에 걸렸다!`);
     }
   }
 
@@ -2059,6 +2158,15 @@ function executeFight(
           room.log.push(`${atkPoke.species}의 하양허브! 능력 하락이 리셋됐다!`);
         }
       }
+      // ── Opportunist: copy attacker's positive boosts to the defender (opportunist holder) ──
+      if (selfChanges.some((sc) => sc.change > 0)) {
+        triggerOnStatBoostTrigger({
+          player: defender,
+          opponent: attacker,
+          changes: selfChanges,
+          room,
+        });
+      }
     } else if (hitsMade > 0 && defPoke.hp > 0) {
       // Covert Cloak blocks secondary stat drops that are chance-gated.
       const covertBlocks = defPoke.heldItem === "covert-cloak" && baseStatChance > 0 && baseStatChance < 100;
@@ -2146,6 +2254,8 @@ function executeFight(
         sun: "강한 햇살", rain: "비", hail: "우박", sandstorm: "모래바람",
       };
       room.log.push(`${weatherNames[weather] ?? weather} 상태가 되었다!`);
+      // Paradox: re-evaluate activation (Protosynthesis on sun)
+      tryActivateParadoxOnFieldChange(room);
     }
   }
 
@@ -2156,6 +2266,8 @@ function executeFight(
       room.terrain = terrainType;
       room.terrainTurns = 5;
       room.log.push(`${TERRAIN_NAMES[terrainType]}이(가) 펼쳐졌다!`);
+      // Paradox: re-evaluate activation (Quark Drive on electric terrain)
+      tryActivateParadoxOnFieldChange(room);
     }
   }
 
