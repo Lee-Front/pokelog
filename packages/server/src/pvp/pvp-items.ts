@@ -84,6 +84,21 @@ export interface ItemEffects {
 
   /** Whether this item locks the pokemon into the first move used (choice items). */
   lockMove?: boolean;
+
+  /** Allow switching even when trapped (Shed Shell). */
+  bypassTrap?: boolean;
+
+  /** Forces the holder to always move last (Lagging Tail, Full Incense). */
+  alwaysLast?: boolean;
+
+  /** 20% chance to gain +1 priority (Quick Claw). */
+  quickClaw?: boolean;
+
+  /** Immune to weather effects (Utility Umbrella). */
+  weatherImmune?: boolean;
+
+  /** Immune to powder moves (Safety Goggles). */
+  powderImmune?: boolean;
 }
 
 // ── Registry ──
@@ -98,6 +113,22 @@ export function register(itemId: string, effects: ItemEffects): void {
 /** Get registered effects for an item (or undefined if not registered). */
 export function getEffects(itemId: string): ItemEffects | undefined {
   return registry.get(itemId);
+}
+
+/** Alias for getEffects. */
+export function getItemEffects(itemId: string): ItemEffects | undefined {
+  return registry.get(itemId);
+}
+
+/** Return true if the held item has the given boolean flag set. */
+export function hasItemFlag(
+  pokemon: PvpPokemon,
+  flag: "bypassTrap" | "alwaysLast" | "quickClaw" | "weatherImmune" | "powderImmune",
+): boolean {
+  const itemId = pokemon.heldItem;
+  if (!itemId) return false;
+  const effects = registry.get(itemId);
+  return Boolean(effects?.[flag]);
 }
 
 // ── Public API Functions ──
@@ -388,7 +419,7 @@ register("heavy-duty-boots", {
 // ══════════════════════════════════════════════════════════════
 
 // ── Utility / Defense Items ──
-register("safety-goggles", {});        // handled in pvp-room.ts weather tick
+register("safety-goggles", { powderImmune: true });  // weather tick handled in pvp-room.ts
 register("protective-pads", {});        // handled in pvp-room.ts contact-ability block
 register("covert-cloak", {});           // handled in pvp-room.ts secondary effects
 register("clear-amulet", {});           // handled in pvp-room.ts stat-drop block
@@ -561,3 +592,18 @@ register("air-balloon", {
     }
   },
 });
+
+// ══════════════════════════════════════════════════════════════
+// ── Batch 7: New items ──────────────────────────────────────
+// ══════════════════════════════════════════════════════════════
+
+register("utility-umbrella", { weatherImmune: true });
+register("shed-shell", { bypassTrap: true });
+register("lagging-tail", { alwaysLast: true });
+register("full-incense", { alwaysLast: true });
+register("quick-claw", { quickClaw: true });
+
+// Trap damage boost / trap duration / consecutive same-move boost handled in pvp-room.ts
+register("binding-band", {});
+register("grip-claw", {});
+register("metronome", {});

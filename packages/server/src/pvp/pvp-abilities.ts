@@ -11,6 +11,8 @@ import type { MoveData, BattleWeather } from "../../../../shared/types.js";
 import { applyStatChanges } from "../game/battle.js";
 import { getEffectiveTypes } from "../game/pokemon-state.js";
 import { getTypeChart } from "../game/data-loader.js";
+import { addVolatile } from "../game/status-conditions.js";
+import { isContact as moveIsContact } from "./pvp-moves.js";
 
 // ── Hook Context Types ──
 
@@ -57,6 +59,36 @@ export interface OnSwitchOutContext {
 
 // ── Ability Effects Interface ──
 
+export interface OnOpponentStatDropContext {
+  player: PvpPlayerState;
+  pokemon: PvpPokemon;
+  stat: string;
+  amount: number;
+  room: PvpRoomState;
+}
+
+export interface OnContactHitContext {
+  attacker: PvpPlayerState;
+  defender: PvpPlayerState;
+  atkPoke: PvpPokemon;
+  defPoke: PvpPokemon;
+  move: MoveData;
+  room: PvpRoomState;
+}
+
+export interface OnItemLossContext {
+  player: PvpPlayerState;
+  pokemon: PvpPokemon;
+  room: PvpRoomState;
+}
+
+export interface OnFaintContext {
+  attacker: PvpPlayerState;
+  atkPoke: PvpPokemon;
+  room: PvpRoomState;
+  fromContact: boolean;
+}
+
 export interface AbilityEffects {
   /** Triggered when the pokemon switches in (or is sent out as lead). */
   onSwitchIn?: (ctx: OnSwitchInContext) => void;
@@ -79,6 +111,9 @@ export interface AbilityEffects {
    */
   onDefense?: (ctx: DamageModContext) => number;
 
+  /** Extra defense multiplier that inspects the move (e.g. Fluffy halves contact damage). */
+  onDefenseWithMove?: (ctx: DamageModContext) => number;
+
   /**
    * Check whether this pokemon can receive a given status condition.
    * Return true if the status CAN be applied, false to block it.
@@ -95,10 +130,31 @@ export interface AbilityEffects {
    */
   onSpeed?: (speed: number, pokemon: PvpPokemon, weather?: BattleWeather) => number;
 
+  /** Simpler speed modifier (weather-agnostic). Same contract as onSpeed but without weather arg. */
+  modifySpeed?: (speed: number, pokemon: PvpPokemon) => number;
+
   /**
    * Priority modifier for moves. Returns a priority adjustment (e.g. +1 for prankster on status moves).
    */
   onPriority?: (ctx: OnMoveUseContext) => number;
+
+  /** Called when opponent causes stat drop. Return list of reactive changes. */
+  onOpponentStatDrop?: (ctx: OnOpponentStatDropContext) => Array<{ stat: string; change: number }> | void;
+
+  /** Called after being hit by a contact move. */
+  onContactHit?: (ctx: OnContactHitContext) => void;
+
+  /** Called when pokemon loses held item. */
+  onItemLoss?: (ctx: OnItemLossContext) => void;
+
+  /** Called when an attacker's target faints. */
+  onFaint?: (ctx: OnFaintContext) => void;
+
+  /** Check if a specific stat drop is prevented. Returns true to block. */
+  preventStatDrop?: (stat: string, fromOpponent: boolean) => boolean;
+
+  /** Returns true to prevent critical hits against this pokemon. */
+  preventCrit?: boolean;
 
   /** Boolean flags for special ability behaviors. */
   flags?: {
@@ -222,8 +278,11 @@ export function getEffectiveSpeed(speed: number, pokemon: PvpPokemon, weather?: 
   const abilityId = pokemon.abilityId;
   if (!abilityId) return speed;
   const effects = registry.get(abilityId);
-  if (!effects?.onSpeed) return speed;
-  return effects.onSpeed(speed, pokemon, weather);
+  if (!effects) return speed;
+  let result = speed;
+  if (effects.onSpeed) result = effects.onSpeed(result, pokemon, weather);
+  if (effects.modifySpeed) result = effects.modifySpeed(result, pokemon);
+  return result;
 }
 
 /**
@@ -234,6 +293,94 @@ export function hasAbilityFlag(abilityId: string, flag: keyof NonNullable<Abilit
   const effects = registry.get(abilityId);
   if (!effects?.flags) return false;
   return effects.flags[flag] ?? false;
+}
+
+/**
+ * Fire the onOpponentStatDrop hook for the pokemon whose stat dropped.
+ * Returns a list of reactive stat changes (e.g. Defiant +2 attack) to apply.
+ */
+export function triggerOpponentStatDrop(
+  player: PvpPlayerState,
+  pokemon: PvpPokemon,
+  stat: string,
+  amount: number,
+  room: PvpRoomState,
+): Array<{ stat: string; change: number }> {
+  const abilityId = pokemon.abilityId;
+  if (!abilityId) return [];
+  const effects = registry.get(abilityId);
+  if (!effects?.onOpponentStatDrop) return [];
+  const result = effects.onOpponentStatDrop({ player, pokemon, stat, amount, room });
+  return Array.isArray(result) ? result : [];
+}
+
+/** Fire the onContactHit hook for the defender's ability (if any). */
+export function triggerContactHit(ctx: OnContactHitContext): void {
+  const abilityId = ctx.defPoke.abilityId;
+  if (!abilityId) return;
+  const effects = registry.get(abilityId);
+  effects?.onContactHit?.(ctx);
+}
+
+/** Fire the onItemLoss hook for the pokemon whose item was lost. */
+export function triggerItemLoss(
+  player: PvpPlayerState,
+  pokemon: PvpPokemon,
+  room: PvpRoomState,
+): void {
+  const abilityId = pokemon.abilityId;
+  if (!abilityId) return;
+  const effects = registry.get(abilityId);
+  effects?.onItemLoss?.({ player, pokemon, room });
+}
+
+/** Fire the onFaint hook for the attacker's ability when target faints. */
+export function triggerFaint(ctx: OnFaintContext): void {
+  const abilityId = ctx.atkPoke.abilityId;
+  if (!abilityId) return;
+  const effects = registry.get(abilityId);
+  effects?.onFaint?.(ctx);
+}
+
+/**
+ * Check if the pokemon's ability prevents a specific stat drop.
+ * Returns true to block the drop.
+ */
+export function isStatDropPrevented(
+  pokemon: PvpPokemon,
+  stat: string,
+  fromOpponent: boolean,
+): boolean {
+  const abilityId = pokemon.abilityId;
+  if (!abilityId) return false;
+  const effects = registry.get(abilityId);
+  if (!effects?.preventStatDrop) return false;
+  return effects.preventStatDrop(stat, fromOpponent);
+}
+
+/** Return true if the pokemon's ability prevents critical hits against it. */
+export function hasCritPrevention(pokemon: PvpPokemon): boolean {
+  const abilityId = pokemon.abilityId;
+  if (!abilityId) return false;
+  const effects = registry.get(abilityId);
+  return Boolean(effects?.preventCrit);
+}
+
+/**
+ * Compute an additional defense multiplier from onDefenseWithMove hook.
+ * Mold-breaker attackers bypass this.
+ */
+export function getDefenseWithMoveMultiplier(ctx: DamageModContext): number {
+  const defAbilityId = ctx.defPoke.abilityId;
+  if (!defAbilityId) return 1;
+  const atkAbilityId = ctx.atkPoke.abilityId;
+  if (atkAbilityId) {
+    const atkEffects = registry.get(atkAbilityId);
+    if (atkEffects?.flags?.ignoresOpponentAbility) return 1;
+  }
+  const defEffects = registry.get(defAbilityId);
+  if (!defEffects?.onDefenseWithMove) return 1;
+  return defEffects.onDefenseWithMove(ctx);
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -771,3 +918,145 @@ register("suction-cups", {});
 
 // ── Batch 6: Magic Bounce (reflects status moves; handled in pvp-room.ts) ──
 register("magic-bounce", {});
+
+// ══════════════════════════════════════════════════════════════
+// ── Batch 7: New abilities ──────────────────────────────────
+// ══════════════════════════════════════════════════════════════
+
+// ── Switch-in stat boosts ──
+register("intrepid-sword", {
+  onSwitchIn: (ctx) => {
+    ctx.player.statStages = applyStatChanges(ctx.player.statStages, [{ stat: "attack", change: 1 }]);
+    ctx.room.log.push(`${ctx.pokemon.species}의 불굴의검! 공격이 올랐다!`);
+  },
+});
+register("dauntless-shield", {
+  onSwitchIn: (ctx) => {
+    ctx.player.statStages = applyStatChanges(ctx.player.statStages, [{ stat: "defense", change: 1 }]);
+    ctx.room.log.push(`${ctx.pokemon.species}의 불굴의방패! 방어가 올랐다!`);
+  },
+});
+
+// ── Stat-drop immunity ──
+register("hyper-cutter", {
+  preventStatDrop: (stat, fromOpp) => stat === "attack" && fromOpp,
+});
+register("keen-eye", {
+  preventStatDrop: (stat, fromOpp) => stat === "accuracy" && fromOpp,
+});
+register("big-pecks", {
+  preventStatDrop: (stat, fromOpp) => stat === "defense" && fromOpp,
+});
+
+// ── Crit immunity ──
+register("battle-armor", { preventCrit: true });
+register("shell-armor", { preventCrit: true });
+
+// ── Contact-hit reactions ──
+register("cursed-body", {
+  onContactHit: (ctx) => {
+    if (Math.random() < 0.3 && !ctx.attacker.disabledMoveId) {
+      ctx.attacker.disabledMoveId = ctx.move.id;
+      ctx.attacker.volatiles = addVolatile(ctx.attacker.volatiles, "disable", 4);
+      ctx.room.log.push(`${ctx.defPoke.species}의 저주받은바디! ${ctx.move.id}이(가) 사슬묶기 됐다!`);
+    }
+  },
+});
+
+// poison-touch: attacker-side ability. Flag-only here; logic lives in pvp-room.ts.
+register("poison-touch", {});
+
+register("aftermath", {
+  onFaint: (ctx) => {
+    if (ctx.fromContact) {
+      const dmg = Math.max(1, Math.floor(ctx.atkPoke.maxHp / 4));
+      ctx.atkPoke.hp = Math.max(0, ctx.atkPoke.hp - dmg);
+      ctx.room.log.push(`${ctx.atkPoke.species}에게 아픔분담의 반동!`);
+    }
+  },
+});
+
+// ── Reactive stat boosts ──
+register("defiant", {
+  onOpponentStatDrop: () => [{ stat: "attack", change: 2 }],
+});
+register("competitive", {
+  onOpponentStatDrop: () => [{ stat: "spAttack", change: 2 }],
+});
+// Weak Armor: DEF -1, SPD +2 on physical hit (handled in pvp-room.ts after damage)
+register("weak-armor", {});
+
+// ── Item-related ──
+register("unburden", {
+  onItemLoss: (ctx) => {
+    ctx.player.statStages = applyStatChanges(ctx.player.statStages, [{ stat: "speed", change: 2 }]);
+    ctx.room.log.push(`${ctx.pokemon.species}의 짐벗음! 스피드가 크게 올랐다!`);
+  },
+});
+// Magician: steal opponent's item on hit. Handled in pvp-room.ts.
+register("magician", {});
+
+// ── Status / damage modifiers ──
+register("quick-feet", {
+  modifySpeed: (speed, poke) => poke.statusCondition ? Math.floor(speed * 1.5) : speed,
+});
+register("fluffy", {
+  onDefenseWithMove: (ctx) => {
+    let mult = 1;
+    if (ctx.move.type === "fire") mult *= 2;
+    if (moveIsContact(ctx.move.id)) mult *= 0.5;
+    return mult;
+  },
+});
+// Long Reach: flag-only. Checked from pvp-room.ts where contact abilities trigger.
+register("long-reach", {});
+
+// ── Status-bypass ──
+// Corrosion: allows user to poison steel/poison types. Flag-only.
+register("corrosion", {});
+// Merciless: always crit vs poisoned targets. Flag checked in pvp-room.ts crit calc.
+register("merciless", {});
+
+// ── Disguise (Mimikyu) ──
+register("disguise", {
+  onDefenseWithMove: (ctx) => {
+    if (ctx.move.power > 0 && !ctx.defender.volatiles.some(v => v.id === "disguise-busted")) {
+      ctx.defender.volatiles.push({ id: "disguise-busted", turnsRemaining: -1 });
+      ctx.room.log.push(`${ctx.defPoke.species}의 디스가이즈! 공격을 막았다!`);
+      ctx.defPoke.hp = Math.max(0, ctx.defPoke.hp - Math.floor(ctx.defPoke.maxHp / 8));
+      return 0; // block damage
+    }
+    return 1;
+  },
+});
+
+// ── Illusion (visual mechanic; flag-only) ──
+register("illusion", {});
+
+// ── Team/self veils ──
+register("sweet-veil", { canReceiveStatus: (ctx) => ctx.status !== "sleep" });
+register("flower-veil", {
+  canReceiveStatus: (ctx) => {
+    const types = getEffectiveTypes(ctx.pokemon.species, ctx.pokemon.variantId, null);
+    if (!types.includes("grass")) return true;
+    return !["poison", "burn", "paralysis", "sleep", "freeze"].includes(ctx.status);
+  },
+});
+register("aroma-veil", {
+  canReceiveStatus: (ctx) => !["infatuation", "taunt", "encore", "disable", "torment", "heal-block"].includes(ctx.status),
+});
+
+// ── Anticipation / Forewarn (informational — log only) ──
+register("anticipation", {
+  onSwitchIn: (ctx) => {
+    ctx.room.log.push(`${ctx.pokemon.species}의 예지몽! 위협을 감지했다!`);
+  },
+});
+register("forewarn", {
+  onSwitchIn: (ctx) => {
+    const oppPoke = ctx.opponent.party[ctx.opponent.activeIndex];
+    if (oppPoke && oppPoke.moves.length > 0) {
+      ctx.room.log.push(`${ctx.pokemon.species}의 예지! 경계하라!`);
+    }
+  },
+});
