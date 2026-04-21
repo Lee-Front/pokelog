@@ -9,9 +9,9 @@ export const REPO_ROOT = path.resolve(__dirname, "../..");
 export const CACHE_ROOT = path.join(REPO_ROOT, ".cache", "pokeapi");
 
 export const LEARNSET_VERSION_GROUP_PRIORITY = [
+  "scarlet-violet",
   "sword-shield",
   "legends-arceus",
-  "scarlet-violet",
   "ultra-sun-ultra-moon",
 ];
 

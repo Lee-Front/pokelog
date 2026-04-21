@@ -27,9 +27,26 @@ function getHeldEvolutionItemIds(): Set<string> {
   return itemIds;
 }
 
+// Transformation/plot-advancement items that a Pokemon can hold even though
+// PokeAPI places them in non-held-item categories.
+const HOLDABLE_TRANSFORMATION_ITEMS = new Set<string>([
+  "red-orb",
+  "blue-orb",
+  "rusted-sword",
+  "rusted-shield",
+]);
+
 export function isHoldableItem(itemId: string): boolean {
+  if (HOLDABLE_TRANSFORMATION_ITEMS.has(itemId)) {
+    return true;
+  }
+
   const item = getItemById(itemId);
-  if (item?.category === "held-items" || item?.category === "mega-stone") {
+  if (
+    item?.category === "held-items"
+    || item?.category === "mega-stone"
+    || item?.category === "mega-stones"
+  ) {
     return true;
   }
 

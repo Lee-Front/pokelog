@@ -7,10 +7,38 @@
     "shortEffect": ""
   },
   {
+    "id": "abomasite",
+    "name": "눈설왕나이트",
+    "category": "mega-stones",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "absolite",
+    "name": "앱솔나이트",
+    "category": "mega-stones",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "absorb-bulb",
     "name": "구근",
     "category": "held-items",
     "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "acro-bike",
+    "name": "더트자전거",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "adamant-crystal",
+    "name": "Adamant Crystal",
+    "category": "gameplay",
+    "cost": 0,
     "shortEffect": ""
   },
   {
@@ -21,10 +49,73 @@
     "shortEffect": ""
   },
   {
+    "id": "adventure-rules",
+    "name": "탐험수칙",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "aerodactylite",
+    "name": "프테라나이트",
+    "category": "mega-stones",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "aggronite",
+    "name": "보스로라나이트",
+    "category": "mega-stones",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "air-balloon",
     "name": "풍선",
     "category": "held-items",
     "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "alakazite",
+    "name": "후디나이트",
+    "category": "mega-stones",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "altarianite",
+    "name": "파비코리나이트",
+    "category": "mega-stones",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "ampharosite",
+    "name": "전룡나이트",
+    "category": "mega-stones",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "apricorn-box",
+    "name": "규토리케이스",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "aqua-suit",
+    "name": "아쿠아슈트",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "armor-pass",
+    "name": "갑옷패스",
+    "category": "plot-advancement",
+    "cost": 0,
     "shortEffect": ""
   },
   {
@@ -35,9 +126,37 @@
     "shortEffect": ""
   },
   {
+    "id": "audinite",
+    "name": "다부니나이트",
+    "category": "mega-stones",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "banettite",
+    "name": "다크펫나이트",
+    "category": "mega-stones",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "basement-key",
+    "name": "지하의열쇠",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "beast-ball",
     "name": "울트라볼",
     "category": "special-balls",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "beedrillite",
+    "name": "독침붕나이트",
+    "category": "mega-stones",
     "cost": 0,
     "shortEffect": ""
   },
@@ -49,10 +168,31 @@
     "shortEffect": ""
   },
   {
+    "id": "berry-pots",
+    "name": "나무열매플랜터",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "berry-pouch",
+    "name": "Berry Pouch",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "berry-sweet",
     "name": "베리사탕공예",
     "category": "evolution",
     "cost": 500,
+    "shortEffect": ""
+  },
+  {
+    "id": "bicycle",
+    "name": "자전거",
+    "category": "gameplay",
+    "cost": 0,
     "shortEffect": ""
   },
   {
@@ -63,6 +203,13 @@
     "shortEffect": ""
   },
   {
+    "id": "bike-voucher",
+    "name": "Bike Voucher",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "binding-band",
     "name": "조임밴드",
     "category": "held-items",
@@ -70,10 +217,45 @@
     "shortEffect": ""
   },
   {
+    "id": "black-mane-hair",
+    "name": "검은갈기",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "black-sludge",
     "name": "검은진흙",
     "category": "held-items",
     "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "blastoisinite",
+    "name": "거북왕나이트",
+    "category": "mega-stones",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "blazikenite",
+    "name": "번치코나이트",
+    "category": "mega-stones",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "blue-card",
+    "name": "블루카드",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "blue-orb",
+    "name": "쪽빛구슬",
+    "category": "plot-advancement",
+    "cost": 0,
     "shortEffect": ""
   },
   {
@@ -98,10 +280,66 @@
     "shortEffect": ""
   },
   {
+    "id": "cameruptite",
+    "name": "폭타나이트",
+    "category": "mega-stones",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "camping-gear",
+    "name": "캠프세트",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "card-key",
+    "name": "카드키",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "card-key--letsgo",
+    "name": "카드키",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "carrot-seeds",
+    "name": "당근씨",
+    "category": "plot-advancement",
+    "cost": 20,
+    "shortEffect": ""
+  },
+  {
+    "id": "catching-charm",
+    "name": "흔들림없는부적",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "cell-battery",
     "name": "충전지",
     "category": "held-items",
     "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "charizardite-x",
+    "name": "리자몽나이트X",
+    "category": "mega-stones",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "charizardite-y",
+    "name": "리자몽나이트Y",
+    "category": "mega-stones",
+    "cost": 0,
     "shortEffect": ""
   },
   {
@@ -126,10 +364,66 @@
     "shortEffect": ""
   },
   {
+    "id": "clear-bell",
+    "name": "크리스탈방울",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "clover-sweet",
     "name": "네잎사탕공예",
     "category": "evolution",
     "cost": 500,
+    "shortEffect": ""
+  },
+  {
+    "id": "coin-case",
+    "name": "동전케이스",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "colress-machine",
+    "name": "아크로마머신",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "contest-costume--jacket",
+    "name": "라이브슈트",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "contest-pass",
+    "name": "콘테스트패스",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "coupon-1",
+    "name": "교환권1",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "coupon-2",
+    "name": "교환권2",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "coupon-3",
+    "name": "교환권3",
+    "category": "plot-advancement",
+    "cost": 0,
     "shortEffect": ""
   },
   {
@@ -147,10 +441,24 @@
     "shortEffect": ""
   },
   {
+    "id": "crown-pass",
+    "name": "왕관패스",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "damp-rock",
     "name": "축축한바위",
     "category": "held-items",
     "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "dark-stone",
+    "name": "다크스톤",
+    "category": "plot-advancement",
+    "cost": 0,
     "shortEffect": ""
   },
   {
@@ -168,6 +476,41 @@
     "shortEffect": ""
   },
   {
+    "id": "devon-goods",
+    "name": "Devon Goods",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "devon-parts",
+    "name": "데봉화물",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "devon-scope",
+    "name": "데봉스코프",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "devon-scuba-gear",
+    "name": "데봉봄베",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "diancite",
+    "name": "디안시나이트",
+    "category": "mega-stones",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "dire-hit",
     "name": "크리티컬커터",
     "category": "stat-boosts",
@@ -182,6 +525,20 @@
     "shortEffect": ""
   },
   {
+    "id": "dna-splicers",
+    "name": "유전자쐐기",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "dowsing-machine",
+    "name": "다우징머신",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "dragon-scale",
     "name": "용의비늘",
     "category": "evolution",
@@ -189,9 +546,23 @@
     "shortEffect": ""
   },
   {
+    "id": "dragon-skull",
+    "name": "드래곤의뼈",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "dream-ball",
     "name": "드림볼",
     "category": "special-balls",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "dropped-item",
+    "name": "잊은물건",
+    "category": "plot-advancement",
     "cost": 0,
     "shortEffect": ""
   },
@@ -214,6 +585,13 @@
     "name": "어둠의돌",
     "category": "evolution",
     "cost": 3000,
+    "shortEffect": ""
+  },
+  {
+    "id": "dynamax-band",
+    "name": "다이맥스 밴드",
+    "category": "plot-advancement",
+    "cost": 0,
     "shortEffect": ""
   },
   {
@@ -245,6 +623,20 @@
     "shortEffect": ""
   },
   {
+    "id": "elevator-key",
+    "name": "엘리베이터키",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "endorsement",
+    "name": "추천장",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "energy-powder",
     "name": "힘의가루",
     "category": "healing",
@@ -259,10 +651,31 @@
     "shortEffect": ""
   },
   {
+    "id": "enigmatic-card",
+    "name": "괴상한카드",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "eon-flute",
+    "name": "무한의피리",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "eviolite",
     "name": "진화의휘석",
     "category": "held-items",
     "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "exp-charm",
+    "name": "경험부적",
+    "category": "gameplay",
+    "cost": 0,
     "shortEffect": ""
   },
   {
@@ -273,10 +686,52 @@
     "shortEffect": ""
   },
   {
+    "id": "explorer-kit",
+    "name": "탐험세트",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "fame-checker",
+    "name": "Fame Checker",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "fashion-case",
+    "name": "액세서리상자",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "festival-ticket",
+    "name": "페스티켓",
+    "category": "gameplay",
+    "cost": 10,
+    "shortEffect": ""
+  },
+  {
     "id": "fire-stone",
     "name": "불꽃의돌",
     "category": "evolution",
     "cost": 3000,
+    "shortEffect": ""
+  },
+  {
+    "id": "fishing-rod",
+    "name": "낚싯대",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "fishing-rod--galar",
+    "name": "낚싯대",
+    "category": "gameplay",
+    "cost": 0,
     "shortEffect": ""
   },
   {
@@ -308,6 +763,13 @@
     "shortEffect": ""
   },
   {
+    "id": "forage-bag",
+    "name": "재료주머니",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "fresh-water",
     "name": "맛있는물",
     "category": "healing",
@@ -319,6 +781,97 @@
     "name": "회복약",
     "category": "healing",
     "cost": 3000,
+    "shortEffect": ""
+  },
+  {
+    "id": "galactic-key",
+    "name": "갤럭시단의열쇠",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "galladite",
+    "name": "엘레이드나이트",
+    "category": "mega-stones",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "garchompite",
+    "name": "한카리아스나이트",
+    "category": "mega-stones",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "gardevoirite",
+    "name": "가디안나이트",
+    "category": "mega-stones",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "gb-sounds",
+    "name": "GB플레이어",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "gengarite",
+    "name": "팬텀나이트",
+    "category": "mega-stones",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "glalitite",
+    "name": "얼음귀신나이트",
+    "category": "mega-stones",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "go-goggles",
+    "name": "고고고글",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "gold-teeth",
+    "name": "금틀니",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "good-rod",
+    "name": "좋은낚싯대",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "gram-1",
+    "name": "배달물1",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "gram-2",
+    "name": "배달물2",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "gram-3",
+    "name": "배달물3",
+    "category": "plot-advancement",
+    "cost": 0,
     "shortEffect": ""
   },
   {
@@ -343,10 +896,31 @@
     "shortEffect": ""
   },
   {
+    "id": "griseous-core",
+    "name": "Griseous Core",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "grubby-hanky",
+    "name": "더러운손수건",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "guard-spec",
     "name": "이펙트가드",
     "category": "stat-boosts",
     "cost": 1500,
+    "shortEffect": ""
+  },
+  {
+    "id": "gyaradosite",
+    "name": "갸라도스나이트",
+    "category": "mega-stones",
+    "cost": 0,
     "shortEffect": ""
   },
   {
@@ -371,6 +945,41 @@
     "shortEffect": ""
   },
   {
+    "id": "heracronite",
+    "name": "헤라크로스나이트",
+    "category": "mega-stones",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "hi-tech-earbuds",
+    "name": "대단한귀마개",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "holo-caster",
+    "name": "홀로캐스터",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "honor-of-kalos",
+    "name": "칼로스엠블럼",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "houndoominite",
+    "name": "헬가나이트",
+    "category": "mega-stones",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "hyper-potion",
     "name": "고급상처약",
     "category": "healing",
@@ -385,6 +994,13 @@
     "shortEffect": ""
   },
   {
+    "id": "iceroot-carrot",
+    "name": "차가운당근",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "icy-rock",
     "name": "차가운바위",
     "category": "held-items",
@@ -392,10 +1008,94 @@
     "shortEffect": ""
   },
   {
+    "id": "intriguing-stone",
+    "name": "대단할듯한돌",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "jade-orb",
+    "name": "연둣빛구슬",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "journal",
+    "name": "모험노트",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "kangaskhanite",
+    "name": "캥카나이트",
+    "category": "mega-stones",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "key-stone",
+    "name": "키스톤",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "key-to-room-1",
+    "name": "1호실열쇠",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "key-to-room-2",
+    "name": "2호실열쇠",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "key-to-room-4",
+    "name": "4호실열쇠",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "key-to-room-6",
+    "name": "6호실열쇠",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "kings-rock",
     "name": "왕의징표석",
     "category": "held-items",
     "cost": 5000,
+    "shortEffect": ""
+  },
+  {
+    "id": "kofus-wallet",
+    "name": "Kofu’s Wallet",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "latiasite",
+    "name": "라티아스나이트",
+    "category": "mega-stones",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "latiosite",
+    "name": "라티오스나이트",
+    "category": "mega-stones",
+    "cost": 0,
     "shortEffect": ""
   },
   {
@@ -420,10 +1120,52 @@
     "shortEffect": ""
   },
   {
+    "id": "legendary-clue-1",
+    "name": "전설의메모1",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "legendary-clue-2",
+    "name": "전설의메모2",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "legendary-clue-3",
+    "name": "전설의메모3",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "legendary-clue-question",
+    "name": "전설의메모?",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "lemonade",
     "name": "후르츠밀크",
     "category": "healing",
     "cost": 400,
+    "shortEffect": ""
+  },
+  {
+    "id": "lens-case",
+    "name": "렌즈케이스",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "letter",
+    "name": "성호에게줄편지",
+    "category": "plot-advancement",
+    "cost": 0,
     "shortEffect": ""
   },
   {
@@ -434,10 +1176,24 @@
     "shortEffect": ""
   },
   {
+    "id": "lift-key",
+    "name": "엘리베이터열쇠",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "light-clay",
     "name": "빛의점토",
     "category": "held-items",
     "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "light-stone",
+    "name": "라이트스톤",
+    "category": "plot-advancement",
+    "cost": 0,
     "shortEffect": ""
   },
   {
@@ -448,10 +1204,38 @@
     "shortEffect": ""
   },
   {
+    "id": "looker-ticket",
+    "name": "핸섬티켓",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "lopunnite",
+    "name": "이어롭나이트",
+    "category": "mega-stones",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "lost-item",
+    "name": "분실물",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "love-sweet",
     "name": "하트사탕공예",
     "category": "evolution",
     "cost": 500,
+    "shortEffect": ""
+  },
+  {
+    "id": "lucarionite",
+    "name": "루카리오나이트",
+    "category": "mega-stones",
+    "cost": 0,
     "shortEffect": ""
   },
   {
@@ -462,10 +1246,52 @@
     "shortEffect": ""
   },
   {
+    "id": "lustrous-globe",
+    "name": "Lustrous Globe",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "luxury-ball",
     "name": "럭셔리볼",
     "category": "special-balls",
     "cost": 3000,
+    "shortEffect": ""
+  },
+  {
+    "id": "mach-bike",
+    "name": "마하자전거",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "machine-part",
+    "name": "기계부품",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "magma-emblem",
+    "name": "Magma Emblem",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "magma-stone",
+    "name": "화산의돌",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "magma-suit",
+    "name": "마그마슈트",
+    "category": "plot-advancement",
+    "cost": 0,
     "shortEffect": ""
   },
   {
@@ -476,6 +1302,13 @@
     "shortEffect": ""
   },
   {
+    "id": "makeup-bag",
+    "name": "코스메틱파우치",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "malicious-armor",
     "name": "Malicious Armor",
     "category": "evolution",
@@ -483,9 +1316,30 @@
     "shortEffect": ""
   },
   {
+    "id": "manectite",
+    "name": "썬더볼트나이트",
+    "category": "mega-stones",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "mark-charm",
+    "name": "증표의부적",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "master-ball",
     "name": "마스터볼",
     "category": "standard-balls",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "mawilite",
+    "name": "입치트나이트",
+    "category": "mega-stones",
     "cost": 0,
     "shortEffect": ""
   },
@@ -504,6 +1358,34 @@
     "shortEffect": ""
   },
   {
+    "id": "medal-box",
+    "name": "메달박스",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "medichamite",
+    "name": "요가램나이트",
+    "category": "mega-stones",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "mega-bracelet",
+    "name": "메가뱅글",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "mega-ring",
+    "name": "메가링",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "mental-herb",
     "name": "멘탈허브",
     "category": "held-items",
@@ -511,10 +1393,45 @@
     "shortEffect": ""
   },
   {
+    "id": "metagrossite",
+    "name": "메타그로스나이트",
+    "category": "mega-stones",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "meteorite",
+    "name": "운석",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "meteorite-shard",
+    "name": "운석조각",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "metronome",
     "name": "메트로놈",
     "category": "held-items",
     "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "mewtwonite-x",
+    "name": "뮤츠나이트X",
+    "category": "mega-stones",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "mewtwonite-y",
+    "name": "뮤츠나이트Y",
+    "category": "mega-stones",
+    "cost": 0,
     "shortEffect": ""
   },
   {
@@ -539,6 +1456,13 @@
     "shortEffect": ""
   },
   {
+    "id": "moon-flute",
+    "name": "달의피리",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "moon-stone",
     "name": "달의돌",
     "category": "evolution",
@@ -550,6 +1474,13 @@
     "name": "힘의머리띠",
     "category": "held-items",
     "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "mystery-egg",
+    "name": "이상한알",
+    "category": "plot-advancement",
+    "cost": 0,
     "shortEffect": ""
   },
   {
@@ -567,6 +1498,41 @@
     "shortEffect": ""
   },
   {
+    "id": "oaks-parcel",
+    "name": "Oak’s Parcel",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "old-charm",
+    "name": "고대의부적",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "old-letter",
+    "name": "낡은편지",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "old-rod",
+    "name": "낡은낚싯대",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "oval-charm",
+    "name": "둥근부적",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "oval-stone",
     "name": "동글동글돌",
     "category": "evolution",
@@ -574,9 +1540,44 @@
     "shortEffect": ""
   },
   {
+    "id": "pair-of-tickets",
+    "name": "페어티켓",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "pal-pad",
+    "name": "친구수첩",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "parcel",
+    "name": "전해줄물건",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "parcel--letsgo",
+    "name": "전해줄물건",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "park-ball",
     "name": "파크볼",
     "category": "standard-balls",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "pass",
+    "name": "리니어패스",
+    "category": "plot-advancement",
     "cost": 0,
     "shortEffect": ""
   },
@@ -588,10 +1589,87 @@
     "shortEffect": ""
   },
   {
+    "id": "permit",
+    "name": "허가증",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "pidgeotite",
+    "name": "피죤투나이트",
+    "category": "mega-stones",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "pinsirite",
+    "name": "쁘사이저나이트",
+    "category": "mega-stones",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "plasma-card",
+    "name": "플라스마카드",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "poffin-case",
+    "name": "포핀케이스",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "point-card",
+    "name": "포인트카드",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "poke-ball",
     "name": "몬스터볼",
     "category": "standard-balls",
     "cost": 200,
+    "shortEffect": ""
+  },
+  {
+    "id": "poke-flute",
+    "name": "포켓몬피리",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "poke-radar",
+    "name": "포켓트레",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "pokeblock-case",
+    "name": "Pokéblock Case",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "pokeblock-kit",
+    "name": "포켓몬스넥키트",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "pokemon-box-link",
+    "name": "포켓몬 박스",
+    "category": "gameplay",
+    "cost": 0,
     "shortEffect": ""
   },
   {
@@ -602,10 +1680,24 @@
     "shortEffect": ""
   },
   {
+    "id": "powder-jar",
+    "name": "Powder Jar",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "power-herb",
     "name": "파워풀허브",
     "category": "held-items",
     "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "power-plant-pass",
+    "name": "발전소패스",
+    "category": "plot-advancement",
+    "cost": 0,
     "shortEffect": ""
   },
   {
@@ -620,6 +1712,34 @@
     "name": "고운비늘",
     "category": "evolution",
     "cost": 2000,
+    "shortEffect": ""
+  },
+  {
+    "id": "prison-bottle",
+    "name": "굴레의항아리",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "professors-mask",
+    "name": "박사의복면",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "profs-letter",
+    "name": "박사의편지",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "prop-case",
+    "name": "굿즈케이스",
+    "category": "gameplay",
+    "cost": 0,
     "shortEffect": ""
   },
   {
@@ -665,6 +1785,34 @@
     "shortEffect": ""
   },
   {
+    "id": "radiant-petal",
+    "name": "빛나는꽃잎",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "rage-candy-bar",
+    "name": "분노의호두과자",
+    "category": "gameplay",
+    "cost": 350,
+    "shortEffect": ""
+  },
+  {
+    "id": "rainbow-pass",
+    "name": "Rainbow Pass",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "rainbow-wing",
+    "name": "무지갯빛날개",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "razor-claw",
     "name": "예리한손톱",
     "category": "held-items",
@@ -693,10 +1841,38 @@
     "shortEffect": ""
   },
   {
+    "id": "red-orb",
+    "name": "주홍구슬",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "red-scale",
+    "name": "빨간비늘",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "reins-of-unity",
+    "name": "유대의고삐",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "repeat-ball",
     "name": "리피드볼",
     "category": "special-balls",
     "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "reveal-glass",
+    "name": "비추는거울",
+    "category": "gameplay",
+    "cost": 0,
     "shortEffect": ""
   },
   {
@@ -714,6 +1890,34 @@
     "shortEffect": ""
   },
   {
+    "id": "rm-1-key",
+    "name": "Rm. 1 Key",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "rm-2-key",
+    "name": "Rm. 2 Key",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "rm-4-key",
+    "name": "Rm. 4 Key",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "rm-6-key",
+    "name": "Rm. 6 Key",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "rocky-helmet",
     "name": "울퉁불퉁멧",
     "category": "held-items",
@@ -721,10 +1925,45 @@
     "shortEffect": ""
   },
   {
+    "id": "roller-skates",
+    "name": "롤러스케이트",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "room-service",
     "name": "룸서비스",
     "category": "held-items",
     "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "rotom-bike",
+    "name": "로토무자전거",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "rotom-catalog",
+    "name": "로토무카탈로그",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "ruby",
+    "name": "Ruby",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "sablenite",
+    "name": "깜까미나이트",
+    "category": "mega-stones",
+    "cost": 0,
     "shortEffect": ""
   },
   {
@@ -749,10 +1988,94 @@
     "shortEffect": ""
   },
   {
+    "id": "salamencite",
+    "name": "보만다나이트",
+    "category": "mega-stones",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "sapphire",
+    "name": "Sapphire",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "scanner",
+    "name": "탐지기",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "sceptilite",
+    "name": "나무킹나이트",
+    "category": "mega-stones",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "scizorite",
+    "name": "핫삼나이트",
+    "category": "mega-stones",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "scope-lens",
     "name": "초점렌즈",
     "category": "held-items",
     "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "scroll-of-darkness",
+    "name": "Scroll of Darkness",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "scroll-of-waters",
+    "name": "Scroll of Waters",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "seal-case",
+    "name": "실상자",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "secret-key--letsgo",
+    "name": "비밀의열쇠",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "secret-potion",
+    "name": "비전신약",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "shaderoot-carrot",
+    "name": "검은당근",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "sharpedonite",
+    "name": "샤크니아나이트",
+    "category": "mega-stones",
+    "cost": 0,
     "shortEffect": ""
   },
   {
@@ -770,10 +2093,38 @@
     "shortEffect": ""
   },
   {
+    "id": "shiny-charm",
+    "name": "빛나는부적",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "shiny-stone",
     "name": "빛의돌",
     "category": "evolution",
     "cost": 3000,
+    "shortEffect": ""
+  },
+  {
+    "id": "silph-scope",
+    "name": "실프스코프",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "silver-wing",
+    "name": "은빛날개",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "slowbronite",
+    "name": "야도란나이트",
+    "category": "mega-stones",
+    "cost": 0,
     "shortEffect": ""
   },
   {
@@ -805,10 +2156,66 @@
     "shortEffect": ""
   },
   {
+    "id": "sonias-book",
+    "name": "소니아의책",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "soot-sack",
+    "name": "재주머니",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "sparkling-stone",
+    "name": "빛나는돌",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "sport-ball",
     "name": "콤페볼",
     "category": "standard-balls",
     "cost": 300,
+    "shortEffect": ""
+  },
+  {
+    "id": "sprayduck",
+    "name": "고라파덕물뿌리개",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "sprinklotad",
+    "name": "연꽃몬물뿌리개",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "squirt-bottle",
+    "name": "꼬부기물뿌리개",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "ss-ticket",
+    "name": "승선티켓",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "ss-ticket--letsgo",
+    "name": "승선티켓",
+    "category": "plot-advancement",
+    "cost": 0,
     "shortEffect": ""
   },
   {
@@ -819,10 +2226,38 @@
     "shortEffect": ""
   },
   {
+    "id": "steelixite",
+    "name": "강철톤나이트",
+    "category": "mega-stones",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "storage-key",
+    "name": "창고열쇠",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "strawberry-sweet",
     "name": "딸기사탕공예",
     "category": "evolution",
     "cost": 500,
+    "shortEffect": ""
+  },
+  {
+    "id": "style-card",
+    "name": "멋쟁이카드",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "sun-flute",
+    "name": "태양의피리",
+    "category": "plot-advancement",
+    "cost": 0,
     "shortEffect": ""
   },
   {
@@ -837,6 +2272,20 @@
     "name": "좋은상처약",
     "category": "healing",
     "cost": 700,
+    "shortEffect": ""
+  },
+  {
+    "id": "super-rod",
+    "name": "대단한낚싯대",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "swampertite",
+    "name": "대짱이나이트",
+    "category": "mega-stones",
+    "cost": 0,
     "shortEffect": ""
   },
   {
@@ -861,6 +2310,20 @@
     "shortEffect": ""
   },
   {
+    "id": "tea",
+    "name": "차",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "teachy-tv",
+    "name": "Teachy TV",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "terrain-extender",
     "name": "그라운드코트",
     "category": "held-items",
@@ -882,6 +2345,13 @@
     "shortEffect": ""
   },
   {
+    "id": "tidal-bell",
+    "name": "해명의방울",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "timer-ball",
     "name": "타이마볼",
     "category": "special-balls",
@@ -889,10 +2359,52 @@
     "shortEffect": ""
   },
   {
+    "id": "tm-case",
+    "name": "기술머신케이스",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tmv-pass",
+    "name": "TMV패스",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "town-map",
+    "name": "타운맵",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tri-pass",
+    "name": "Tri-Pass",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tyranitarite",
+    "name": "마기라스나이트",
+    "category": "mega-stones",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "ultra-ball",
     "name": "하이퍼볼",
     "category": "standard-balls",
     "cost": 800,
+    "shortEffect": ""
+  },
+  {
+    "id": "unown-report",
+    "name": "안농노트",
+    "category": "gameplay",
+    "cost": 0,
     "shortEffect": ""
   },
   {
@@ -907,6 +2419,34 @@
     "name": "만능우산",
     "category": "held-items",
     "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "venusaurite",
+    "name": "이상해꽃나이트",
+    "category": "mega-stones",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "vs-recorder",
+    "name": "배틀레코더",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "vs-seeker",
+    "name": "배틀서처",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "wailmer-pail",
+    "name": "고래왕자물뿌리개",
+    "category": "gameplay",
+    "cost": 0,
     "shortEffect": ""
   },
   {
@@ -938,6 +2478,13 @@
     "shortEffect": ""
   },
   {
+    "id": "white-mane-hair",
+    "name": "하얀갈기",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "wide-lens",
     "name": "광각렌즈",
     "category": "held-items",
@@ -949,6 +2496,27 @@
     "name": "박식안경",
     "category": "held-items",
     "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "wishing-star",
+    "name": "소원의별",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "wooden-crown",
+    "name": "목각왕관",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "works-key",
+    "name": "발전소키",
+    "category": "plot-advancement",
+    "cost": 0,
     "shortEffect": ""
   },
   {
@@ -994,6 +2562,20 @@
     "shortEffect": ""
   },
   {
+    "id": "xtransceiver",
+    "name": "라이브캐스터",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "z-ring",
+    "name": "Z링",
+    "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "zoom-lens",
     "name": "포커스렌즈",
     "category": "held-items",
@@ -1001,360 +2583,10 @@
     "shortEffect": ""
   },
   {
-    "id": "abomasnowite",
-    "name": "눈설왕나이트",
-    "category": "mega-stone",
-    "cost": 10000,
-    "shortEffect": "눈설왕을 메가진화시킨다."
-  },
-  {
-    "id": "absolite",
-    "name": "앱솔나이트",
-    "category": "mega-stone",
-    "cost": 10000,
-    "shortEffect": "앱솔을 메가진화시킨다."
-  },
-  {
-    "id": "aerodactylite",
-    "name": "프테라나이트",
-    "category": "mega-stone",
-    "cost": 10000,
-    "shortEffect": "프테라를 메가진화시킨다."
-  },
-  {
-    "id": "aggronite",
-    "name": "보스로라나이트",
-    "category": "mega-stone",
-    "cost": 10000,
-    "shortEffect": "보스로라를 메가진화시킨다."
-  },
-  {
-    "id": "alakazamite",
-    "name": "후디나이트",
-    "category": "mega-stone",
-    "cost": 10000,
-    "shortEffect": "후디를 메가진화시킨다."
-  },
-  {
-    "id": "altarianite",
-    "name": "파비코리나이트",
-    "category": "mega-stone",
-    "cost": 10000,
-    "shortEffect": "파비코리를 메가진화시킨다."
-  },
-  {
-    "id": "ampharosite",
-    "name": "전룡나이트",
-    "category": "mega-stone",
-    "cost": 10000,
-    "shortEffect": "전룡을 메가진화시킨다."
-  },
-  {
-    "id": "audinite",
-    "name": "다부니나이트",
-    "category": "mega-stone",
-    "cost": 10000,
-    "shortEffect": "다부니를 메가진화시킨다."
-  },
-  {
-    "id": "banettite",
-    "name": "다크팻나이트",
-    "category": "mega-stone",
-    "cost": 10000,
-    "shortEffect": "다크팻을 메가진화시킨다."
-  },
-  {
-    "id": "beedrillite",
-    "name": "독침봉나이트",
-    "category": "mega-stone",
-    "cost": 10000,
-    "shortEffect": "독침봉을 메가진화시킨다."
-  },
-  {
-    "id": "blastoisinite",
-    "name": "거북왕나이트",
-    "category": "mega-stone",
-    "cost": 10000,
-    "shortEffect": "거북왕을 메가진화시킨다."
-  },
-  {
-    "id": "blazikenite",
-    "name": "번치코나이트",
-    "category": "mega-stone",
-    "cost": 10000,
-    "shortEffect": "번치코를 메가진화시킨다."
-  },
-  {
-    "id": "cameruptite",
-    "name": "폭타나이트",
-    "category": "mega-stone",
-    "cost": 10000,
-    "shortEffect": "폭타를 메가진화시킨다."
-  },
-  {
-    "id": "charizardite-x",
-    "name": "리자몽나이트X",
-    "category": "mega-stone",
-    "cost": 10000,
-    "shortEffect": "리자몽을 메가리자몽X로 진화시킨다."
-  },
-  {
-    "id": "charizardite-y",
-    "name": "리자몽나이트Y",
-    "category": "mega-stone",
-    "cost": 10000,
-    "shortEffect": "리자몽을 메가리자몽Y로 진화시킨다."
-  },
-  {
-    "id": "diancite",
-    "name": "디안시나이트",
-    "category": "mega-stone",
-    "cost": 10000,
-    "shortEffect": "디안시를 메가진화시킨다."
-  },
-  {
-    "id": "galladite",
-    "name": "엘레이드나이트",
-    "category": "mega-stone",
-    "cost": 10000,
-    "shortEffect": "엘레이드를 메가진화시킨다."
-  },
-  {
-    "id": "garchompite",
-    "name": "한카리아스나이트",
-    "category": "mega-stone",
-    "cost": 10000,
-    "shortEffect": "한카리아스를 메가진화시킨다."
-  },
-  {
-    "id": "gardevoirite",
-    "name": "가디안나이트",
-    "category": "mega-stone",
-    "cost": 10000,
-    "shortEffect": "가디안을 메가진화시킨다."
-  },
-  {
-    "id": "gengarite",
-    "name": "팬텀나이트",
-    "category": "mega-stone",
-    "cost": 10000,
-    "shortEffect": "팬텀을 메가진화시킨다."
-  },
-  {
-    "id": "glalite",
-    "name": "얼음귀신나이트",
-    "category": "mega-stone",
-    "cost": 10000,
-    "shortEffect": "얼음귀신을 메가진화시킨다."
-  },
-  {
-    "id": "gyaradosite",
-    "name": "갸라도스나이트",
-    "category": "mega-stone",
-    "cost": 10000,
-    "shortEffect": "갸라도스를 메가진화시킨다."
-  },
-  {
-    "id": "heracrossite",
-    "name": "헤라크로스나이트",
-    "category": "mega-stone",
-    "cost": 10000,
-    "shortEffect": "헤라크로스를 메가진화시킨다."
-  },
-  {
-    "id": "houndoomite",
-    "name": "헬가나이트",
-    "category": "mega-stone",
-    "cost": 10000,
-    "shortEffect": "헬가를 메가진화시킨다."
-  },
-  {
-    "id": "kangaskhanite",
-    "name": "캥카나이트",
-    "category": "mega-stone",
-    "cost": 10000,
-    "shortEffect": "캥카를 메가진화시킨다."
-  },
-  {
-    "id": "latiasite",
-    "name": "라티아스나이트",
-    "category": "mega-stone",
-    "cost": 10000,
-    "shortEffect": "라티아스를 메가진화시킨다."
-  },
-  {
-    "id": "latiosite",
-    "name": "라티오스나이트",
-    "category": "mega-stone",
-    "cost": 10000,
-    "shortEffect": "라티오스를 메가진화시킨다."
-  },
-  {
-    "id": "lopunnite",
-    "name": "이어롭나이트",
-    "category": "mega-stone",
-    "cost": 10000,
-    "shortEffect": "이어롭을 메가진화시킨다."
-  },
-  {
-    "id": "lucarionite",
-    "name": "루카리오나이트",
-    "category": "mega-stone",
-    "cost": 10000,
-    "shortEffect": "루카리오를 메가진화시킨다."
-  },
-  {
-    "id": "manectite",
-    "name": "썬더볼트나이트",
-    "category": "mega-stone",
-    "cost": 10000,
-    "shortEffect": "썬더볼트를 메가진화시킨다."
-  },
-  {
-    "id": "mawilite",
-    "name": "입치트나이트",
-    "category": "mega-stone",
-    "cost": 10000,
-    "shortEffect": "입치트를 메가진화시킨다."
-  },
-  {
-    "id": "medichamite",
-    "name": "요가램나이트",
-    "category": "mega-stone",
-    "cost": 10000,
-    "shortEffect": "요가램을 메가진화시킨다."
-  },
-  {
-    "id": "metagrossite",
-    "name": "메타그로스나이트",
-    "category": "mega-stone",
-    "cost": 10000,
-    "shortEffect": "메타그로스를 메가진화시킨다."
-  },
-  {
-    "id": "mewtwonite-x",
-    "name": "뮤츠나이트X",
-    "category": "mega-stone",
-    "cost": 10000,
-    "shortEffect": "뮤츠를 메가뮤츠X로 진화시킨다."
-  },
-  {
-    "id": "mewtwonite-y",
-    "name": "뮤츠나이트Y",
-    "category": "mega-stone",
-    "cost": 10000,
-    "shortEffect": "뮤츠를 메가뮤츠Y로 진화시킨다."
-  },
-  {
-    "id": "pidgeotite",
-    "name": "피죤투나이트",
-    "category": "mega-stone",
-    "cost": 10000,
-    "shortEffect": "피죤투를 메가진화시킨다."
-  },
-  {
-    "id": "pinsirite",
-    "name": "쁘사이저나이트",
-    "category": "mega-stone",
-    "cost": 10000,
-    "shortEffect": "쁘사이저를 메가진화시킨다."
-  },
-  {
-    "id": "sablenite",
-    "name": "깜까미나이트",
-    "category": "mega-stone",
-    "cost": 10000,
-    "shortEffect": "깜까미를 메가진화시킨다."
-  },
-  {
-    "id": "salamencite",
-    "name": "보만다나이트",
-    "category": "mega-stone",
-    "cost": 10000,
-    "shortEffect": "보만다를 메가진화시킨다."
-  },
-  {
-    "id": "sceptilite",
-    "name": "나무킹나이트",
-    "category": "mega-stone",
-    "cost": 10000,
-    "shortEffect": "나무킹을 메가진화시킨다."
-  },
-  {
-    "id": "scizorite",
-    "name": "핫삼나이트",
-    "category": "mega-stone",
-    "cost": 10000,
-    "shortEffect": "핫삼을 메가진화시킨다."
-  },
-  {
-    "id": "sharpedoite",
-    "name": "샤크니아나이트",
-    "category": "mega-stone",
-    "cost": 10000,
-    "shortEffect": "샤크니아를 메가진화시킨다."
-  },
-  {
-    "id": "slowbronite",
-    "name": "야도란나이트",
-    "category": "mega-stone",
-    "cost": 10000,
-    "shortEffect": "야도란을 메가진화시킨다."
-  },
-  {
-    "id": "steelixite",
-    "name": "강철톤나이트",
-    "category": "mega-stone",
-    "cost": 10000,
-    "shortEffect": "강철톤을 메가진화시킨다."
-  },
-  {
-    "id": "swampertite",
-    "name": "대짱이나이트",
-    "category": "mega-stone",
-    "cost": 10000,
-    "shortEffect": "대짱이를 메가진화시킨다."
-  },
-  {
-    "id": "tyranitarite",
-    "name": "마기라스나이트",
-    "category": "mega-stone",
-    "cost": 10000,
-    "shortEffect": "마기라스를 메가진화시킨다."
-  },
-  {
-    "id": "venusaurite",
-    "name": "이상해꽃나이트",
-    "category": "mega-stone",
-    "cost": 10000,
-    "shortEffect": "이상해꽃을 메가진화시킨다."
-  },
-  {
-    "id": "red-orb",
-    "name": "빨간구슬",
-    "category": "held-items",
-    "cost": 50000,
-    "shortEffect": "그라우돈을 원시회귀시킨다."
-  },
-  {
-    "id": "blue-orb",
-    "name": "파란구슬",
-    "category": "held-items",
-    "cost": 50000,
-    "shortEffect": "가이오가를 원시회귀시킨다."
-  },
-  {
-    "id": "key-stone",
-    "name": "키스톤",
-    "category": "trainer",
+    "id": "zygarde-cube",
+    "name": "지가르데큐브",
+    "category": "gameplay",
     "cost": 0,
-    "shortEffect": "메가진화에 필요한 트레이너 아이템."
-  },
-  {
-    "id": "dynamax-band",
-    "name": "다이맥스밴드",
-    "category": "trainer",
-    "cost": 0,
-    "shortEffect": "기가맥스에 필요한 트레이너 아이템."
+    "shortEffect": ""
   }
 ]

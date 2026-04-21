@@ -111,19 +111,24 @@ export async function syncSpecies(options = {}) {
     projectPath("data", "pokemon", "pokeapi-species-aliases.json"),
     {},
   );
+  const speciesEndpointAliases = await readJsonFile(
+    projectPath("data", "pokemon", "pokeapi-pokemon-species-aliases.json"),
+    {},
+  );
 
   const data = await mapWithConcurrency(
     speciesSlugs,
     async (slug) => {
       const pokemonSlug = pokemonEndpointAliases[slug] ?? slug;
+      const speciesSlug = speciesEndpointAliases[slug] ?? slug;
       const [pokemon, species] = await Promise.all([
         fetchJson(`/pokemon/${pokemonSlug}`, {
           cacheKey: ["pokemon", `${pokemonSlug}.json`],
           noCache: options.noCache,
           fetchImpl: options.fetchImpl,
         }),
-        fetchJson(`/pokemon-species/${slug}`, {
-          cacheKey: ["pokemon-species", `${slug}.json`],
+        fetchJson(`/pokemon-species/${speciesSlug}`, {
+          cacheKey: ["pokemon-species", `${speciesSlug}.json`],
           noCache: options.noCache,
           fetchImpl: options.fetchImpl,
         }),

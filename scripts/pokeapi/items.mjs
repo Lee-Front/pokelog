@@ -8,6 +8,9 @@ const INCLUDED_ITEM_CATEGORIES = new Set([
   "special-balls",
   "held-items",
   "stat-boosts",
+  "mega-stones",
+  "plot-advancement",
+  "gameplay",
 ]);
 
 export async function syncItems(options = {}) {

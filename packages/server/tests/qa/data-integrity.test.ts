@@ -32,9 +32,9 @@ function buildSpeciesLookup(): Set<string> {
 }
 
 describe("QA: Data Integrity", () => {
-  it("A1: species.json has 905 entries with all SpeciesData fields", () => {
+  it("A1: species.json has 1037 entries with all SpeciesData fields", () => {
     const species = getSpecies();
-    expect(species).toHaveLength(905);
+    expect(species).toHaveLength(1037);
 
     const baseStatKeys = ["hp", "attack", "defense", "spAttack", "spDefense", "speed"];
 
@@ -155,7 +155,19 @@ describe("QA: Data Integrity", () => {
       return true;
     });
 
-    const extraEvolution = [...evoKeys].filter((k) => !speciesLookup.has(k));
+    // Form-variant species that live under a PokeAPI-normalized name in
+    // species.json (e.g. calyrex-ice-rider → calyrex-ice) but retain the
+    // full descriptive slug as the evolution key.
+    const FORM_VARIANT_ALIAS_KEYS = new Set([
+      "calyrex-ice-rider",
+      "calyrex-shadow-rider",
+      "necrozma-dawn-wings",
+      "necrozma-dusk-mane",
+    ]);
+
+    const extraEvolution = [...evoKeys].filter(
+      (k) => !speciesLookup.has(k) && !FORM_VARIANT_ALIAS_KEYS.has(k),
+    );
 
     expect(
       missingEvolution,
