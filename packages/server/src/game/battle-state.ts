@@ -1,4 +1,4 @@
-import { calculateDamage, determineTurnOrder, applyStatChanges, defaultStatStages, applyStatStageMultiplier } from "./battle.js";
+import { calculateDamage, determineTurnOrder, applyStatChanges, defaultStatStages, applyStatStageMultiplier, computeStab } from "./battle.js";
 import { checkHpThresholdForm, checkWeatherForm, checkPostAttackForm, checkMoveForm, checkPostSurfForm, checkFirstHitForm } from "./battle-forms.js";
 import { getTransformedStats, revertGmaxHp } from "./battle-transformations.js";
 import { getDefaultWeatherTurns, getWeatherDamage, getWeatherFromMove, getWeatherTypeModifier, tickWeather } from "./weather.js";
@@ -334,12 +334,17 @@ export function executePlayerAttack(
   // Weather type modifier for player attack
   const playerWeatherMod = battle.weather ? getWeatherTypeModifier(battle.weather, moveData.type) : 1;
 
+  const playerTypes = getEffectiveTypes(player.species, player.variantId, battle.playerBattleForm);
+  const wildTypes = getEffectiveTypes(battle.wild.species, battle.wild.variantId, battle.wildBattleForm);
+  const playerStab = computeStab(
+    moveData.type, playerTypes, false, null,
+    player.abilityId === "adaptability",
+  );
   const result = calculateDamage(
     player.level, playerStats, battle.wild.stats, moveData,
-    getEffectiveTypes(player.species, player.variantId, battle.playerBattleForm),
-    getEffectiveTypes(battle.wild.species, battle.wild.variantId, battle.wildBattleForm),
+    playerTypes, wildTypes,
     battle.playerStatStages, battle.wildStatStages,
-    playerWeatherMod,
+    playerWeatherMod, playerStab,
   );
   battle.wild.hp = Math.max(0, battle.wild.hp - result.damage);
   log.push(`${player.species}의 ${moveData.name}! ${result.missed ? "빗나갔다!" : `${result.damage} 데미지!`}`);
@@ -596,16 +601,21 @@ export function wildAttack(
 
   chosen.pp -= 1;
 
+  const wildTypesBF = getEffectiveTypes(wildSpecies, wildVariantId, wildBattleForm);
+  const targetTypesBF = getEffectiveTypes(targetSpecies, targetVariantId, targetBattleForm);
+  // Wild pokemon have no ability wiring here, so Adaptability is treated as absent.
+  const wildStab = computeStab(moveData.type, wildTypesBF, false, null, false);
   const result = calculateDamage(
     wildLevel,
     wildStats,
     targetStats,
     moveData,
-    getEffectiveTypes(wildSpecies, wildVariantId, wildBattleForm),
-    getEffectiveTypes(targetSpecies, targetVariantId, targetBattleForm),
+    wildTypesBF,
+    targetTypesBF,
     attackerStages,
     defenderStages,
     weatherModifier,
+    wildStab,
   );
 
   return {

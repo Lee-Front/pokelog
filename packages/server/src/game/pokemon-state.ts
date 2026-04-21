@@ -1,4 +1,5 @@
 import type { SpeciesData, VariantData, UserData, OwnedPokemon } from "../../../../shared/types.js";
+import type { PvpPlayerState, PvpPokemon } from "../../../../shared/pvp-types.js";
 import { getSpeciesByName, getVariantById } from "./data-loader.js";
 
 export interface PokemonIdentity {
@@ -57,6 +58,18 @@ export function getEffectiveTypes(
     return variant.typing;
   }
   return getSpeciesByName(species)?.types ?? [];
+}
+
+/**
+ * Resolve the effective battle types for a PvP pokemon.
+ * When Terastallized, returns `[teraType]` (single-type override).
+ * Otherwise falls back to getEffectiveTypes with the player's current battle form.
+ */
+export function getBattleTypes(poke: PvpPokemon, player: PvpPlayerState): string[] {
+  if (player.teraActive && poke.teraType) {
+    return [poke.teraType];
+  }
+  return getEffectiveTypes(poke.species, poke.variantId, player.battleForm);
 }
 
 export function getDisplaySpeciesName(species: string): string {

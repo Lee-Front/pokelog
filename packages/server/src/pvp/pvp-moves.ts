@@ -58,9 +58,15 @@ export interface MoveFlags {
  *  - return `true` to signal the move was fully handled (skip default processing),
  *  - return `{ redirectTo: "move-id" }` to redirect execution to a different move
  *    (used by copycat, metronome, etc.),
+ *  - return `{ overrideMove: Partial<MoveData> }` to merge overrides into the
+ *    resolved move data before continuing the normal flow (used by Tera Blast,
+ *    Ivy Cudgel, etc. which mutate type/category/power at runtime),
  *  - return `false`/`void` to let default processing continue.
  */
-export type CustomResolveResult = boolean | { redirectTo: string };
+export type CustomResolveResult =
+  | boolean
+  | { redirectTo: string }
+  | { overrideMove: Partial<MoveData> };
 
 // ── Effect hooks ──
 export interface MoveEffects {

@@ -433,12 +433,9 @@ register("snow-warning", {
 
 // ── Task 4: Offensive Abilities ──
 
-register("adaptability", {
-  onAttack: (ctx) => {
-    const types = getEffectiveTypes(ctx.atkPoke.species, ctx.atkPoke.variantId, ctx.attacker.battleForm);
-    return types.includes(ctx.move.type) ? (2 / 1.5) : 1;
-  },
-});
+// Adaptability: STAB calculation is handled by computeStab() in battle.ts
+// (2.0x STAB for original type, 2.25x when stacked with matching Tera type).
+register("adaptability", {});
 
 register("technician", {
   onAttack: (ctx) => (ctx.move.power > 0 && ctx.move.power <= 60) ? 1.5 : 1,

@@ -1,6 +1,6 @@
 import type { PokemonMove, PokemonStats, PrimaryStatus, StatStages, VolatileStatus, BattleWeather, PokemonGender } from "./types.js";
 
-export type PvpTransformationType = "mega" | "gigantamax" | "primal" | "dynamax";
+export type PvpTransformationType = "mega" | "gigantamax" | "primal" | "dynamax" | "tera" | "ultra-burst";
 
 /** Pre-computed transformation stats (computed at room creation from full OwnedPokemon) */
 export interface PvpTransformForm {
@@ -31,6 +31,12 @@ export interface PvpPokemon {
   gmaxForm?: PvpTransformForm | null;
   primalForm?: PvpTransformForm | null;
   gender?: PokemonGender | null;
+  // ── Gen 9 / Tera ──
+  teraType?: string | null;
+  originalTypes?: string[];
+  stellarTypesUsed?: string[];
+  rageFistHits?: number;
+  lastEatenBerry?: string | null;
 }
 
 // ── 플레이어 사이드 ──
@@ -86,6 +92,14 @@ export interface PvpPlayerState {
   metronomeCount?: number;     // consecutive uses of the same move while holding Metronome item (0-5)
   movesUsed?: string[];        // move IDs this pokemon has used since switching in (for Last Resort)
   wasHitThisTurn?: boolean;    // took damage this turn (for Avalanche / Revenge 2x boost)
+  // ── Gen 9 / Tera ──
+  teraActive?: boolean;        // active Terastal state for this player
+  supersweetSyrupUsed?: boolean;       // 1-per-battle Supersweet Syrup trigger
+  boostedStatsThisTurn?: boolean;      // Alluring Voice trigger (opponent boosted stats this turn)
+  paradoxBoost?: {                     // Protosynthesis / Quark Drive active state
+    stat: "attack" | "defense" | "spAttack" | "spDefense" | "speed";
+    source: "weather" | "terrain" | "booster-energy";
+  };
 }
 
 // ── 방 상태 ──
@@ -120,7 +134,7 @@ export interface PvpRoomState {
 
 // ── 플레이어 액션 ──
 export type PvpAction =
-  | { type: "fight"; moveId: string; mega?: boolean; gigantamax?: boolean; dynamax?: boolean }
+  | { type: "fight"; moveId: string; mega?: boolean; gigantamax?: boolean; dynamax?: boolean; tera?: boolean; ultraBurst?: boolean }
   | { type: "switch"; pokemonIndex: number }
   | { type: "forfeit" };
 

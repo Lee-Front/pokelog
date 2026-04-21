@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
-import { calculateDamage, determineTurnOrder, defaultStatStages, applyStatChanges, calculateAccuracy } from "../game/battle.js";
-import { getEffectiveTypes } from "../game/pokemon-state.js";
+import { calculateDamage, determineTurnOrder, defaultStatStages, applyStatChanges, calculateAccuracy, computeStab } from "../game/battle.js";
+import { getEffectiveTypes, getBattleTypes } from "../game/pokemon-state.js";
 import { getMoveById, getTypeChart } from "../game/data-loader.js";
 import {
   checkPreAttack, applyEndOfTurn, tickVolatiles,
@@ -1527,8 +1527,8 @@ function executeFight(
     }
 
     const weatherMod = room.weather ? getWeatherTypeModifier(room.weather, moveForCalc.type) : 1;
-    const attackerTypes = getEffectiveTypes(atkPoke.species, atkPoke.variantId, attacker.battleForm);
-    let defenderTypes = getEffectiveTypes(defPoke.species, defPoke.variantId, defender.battleForm);
+    const attackerTypes = getBattleTypes(atkPoke, attacker);
+    let defenderTypes = getBattleTypes(defPoke, defender);
 
     // ── Scrappy / Foresight / Odor Sleuth: ignore ghost immunity to normal/fighting ──
     const scrappyActive = atkPoke.abilityId === "scrappy"
@@ -1577,6 +1577,18 @@ function executeFight(
     // ── Lucky Chant: defender cannot be crit this turn ──
     const luckyChant = hasVolatile(defender.volatiles, "lucky-chant");
 
+    // ── STAB (Tera-aware, computed externally) ──
+    // Uses the attacker's originalTypes + teraActive/teraType + Adaptability to
+    // derive the STAB multiplier. Passed as the final parameter to calculateDamage
+    // (which no longer computes STAB internally).
+    const stabMul = computeStab(
+      moveForCalc.type,
+      atkPoke.originalTypes ?? getEffectiveTypes(atkPoke.species, atkPoke.variantId, attacker.battleForm),
+      attacker.teraActive ?? false,
+      atkPoke.teraType ?? null,
+      atkPoke.abilityId === "adaptability",
+    );
+
     let lastResult = { damage: 0, missed: false, effectiveness: 1, message: "", critical: false };
     for (let hit = 0; hit < hitCount; hit++) {
       if (defPoke.hp <= 0) break;
@@ -1585,6 +1597,7 @@ function executeFight(
         attackerTypes, defenderTypes,
         atkStages, defStages,
         weatherMod,
+        stabMul,
       );
       // ── Lucky Chant: downgrade any crit result and undo the 1.5x damage multiplier ──
       if (luckyChant && result.critical) {

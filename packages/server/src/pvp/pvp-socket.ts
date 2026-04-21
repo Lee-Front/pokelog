@@ -11,8 +11,23 @@ import { recordMatch } from "./pvp-store.js";
 import { getMegaVariantForItem, checkPrimalReversion, applyGmaxHp } from "../game/battle-transformations.js";
 import { buildStatsForPokemon } from "../game/pokemon-stats.js";
 import { getVariants } from "../game/data-loader.js";
+import { getEffectiveTypes } from "../game/pokemon-state.js";
 import type { PvpPokemon, PvpTransformForm, PvpAction, PvpRoomState } from "../../../../shared/pvp-types.js";
 import type { OwnedPokemon } from "../../../../shared/types.js";
+
+/**
+ * Default Tera Type for a pokemon at battle start.
+ * Ogerpon masks and Terapagos-Stellar are forced to specific types.
+ * All other pokemon default to their first original type.
+ */
+function getDefaultTeraType(species: string, types: string[]): string {
+  if (species === "ogerpon") return "grass";
+  if (species === "ogerpon-wellspring-mask") return "water";
+  if (species === "ogerpon-hearthflame-mask") return "fire";
+  if (species === "ogerpon-cornerstone-mask") return "rock";
+  if (species === "terapagos-stellar") return "stellar";
+  return types[0] ?? "normal";
+}
 
 // socketId → { userId, roomId }
 const socketState = new Map<string, { userId: string; roomId?: string }>();
@@ -91,6 +106,7 @@ function userPartyToPvp(
 
   const party = unique.map((p) => {
     const level = Math.min(p.level, 50);
+    const effectiveTypes = getEffectiveTypes(p.species, p.variantId ?? null, null);
     const base: PvpPokemon = {
       uid: p.uid, species: p.species, variantId: p.variantId,
       level,
@@ -103,6 +119,11 @@ function userPartyToPvp(
       gmaxForm: null,
       primalForm: null,
       gender: p.gender ?? null,
+      // ── Gen 9 / Tera ──
+      teraType: p.teraType ?? getDefaultTeraType(p.species, effectiveTypes),
+      originalTypes: effectiveTypes,
+      stellarTypesUsed: [],
+      rageFistHits: 0,
     };
 
     // Use a pokemon-like object at the capped level for stat calculations

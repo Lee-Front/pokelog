@@ -135,6 +135,20 @@ export interface OwnedPokemon {
   statusCondition?: PrimaryStatus | null;
   sleepTurns?: number;
   hasGigantamaxFactor?: boolean;
+  // ── Gen 9 / Tera ──
+  teraType?: string | null;
+  // ── Fusion (Kyurem/Necrozma/Calyrex) ──
+  fusedPartnerUid?: string;
+  fusedPartnerData?: {
+    species: string;
+    level: number;
+    stats: PokemonStats;
+    moves: PokemonMove[];
+    abilityId?: string | null;
+    nature?: string;
+    heldItem?: string | null;
+    gender?: PokemonGender | null;
+  };
 }
 
 export type EggTierId = "common" | "rare" | "epic" | "legend" | "manaphy";

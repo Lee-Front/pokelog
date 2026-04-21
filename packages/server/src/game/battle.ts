@@ -40,6 +40,41 @@ export interface DamageResult {
   critical: boolean;
 }
 
+/**
+ * Compute the STAB (Same-Type Attack Bonus) multiplier for a move.
+ *
+ * Rules:
+ *  - Move type matches Tera type AND one of the original types → "combined" STAB
+ *    2.0x (base 1.5 * 1.33 ≈ 2.0). Adaptability stacks: 2.25x.
+ *  - Move type matches Tera type but NOT any original type → 1.5x (Tera-only).
+ *    Adaptability does NOT stack here (canon: adaptability applies to the user's
+ *    intrinsic types, not the Tera-acquired type).
+ *  - No Tera active, move type matches original types → 1.5x (classic STAB).
+ *    Adaptability: 2.0x.
+ *  - Otherwise: 1.0x.
+ */
+export function computeStab(
+  moveType: string,
+  originalTypes: string[],
+  teraActive: boolean,
+  teraType: string | null,
+  hasAdaptability: boolean,
+): number {
+  const matchesOriginal = originalTypes.includes(moveType);
+  const matchesTera = teraActive && teraType != null && moveType === teraType;
+
+  if (matchesTera && matchesOriginal) {
+    return hasAdaptability ? 2.25 : 2.0;
+  }
+  if (matchesTera && !matchesOriginal) {
+    return 1.5;
+  }
+  if (matchesOriginal) {
+    return hasAdaptability ? 2.0 : 1.5;
+  }
+  return 1.0;
+}
+
 export function calculateDamage(
   attackerLevel: number,
   attackerStats: PokemonStats,
@@ -50,6 +85,7 @@ export function calculateDamage(
   attackerStages?: StatStages,
   defenderStages?: StatStages,
   weatherModifier: number = 1,
+  stabMultiplier?: number,
 ): DamageResult {
   const typeChart = getTypeChart();
 
@@ -108,8 +144,10 @@ export function calculateDamage(
     return { damage: 0, missed: false, effectiveness: 0, message, critical: false };
   }
 
-  // STAB (Same-Type Attack Bonus)
-  const stab = attackerTypes.includes(move.type) ? 1.5 : 1.0;
+  // STAB (Same-Type Attack Bonus): caller-supplied via computeStab.
+  // Fallback: infer from attackerTypes (for legacy/PvE call sites that haven't
+  // migrated). Keeping this fallback makes the parameter effectively optional.
+  const stab = stabMultiplier ?? (attackerTypes.includes(move.type) ? 1.5 : 1.0);
 
   // Critical hit multiplier
   const critMultiplier = isCritical ? 1.5 : 1.0;
