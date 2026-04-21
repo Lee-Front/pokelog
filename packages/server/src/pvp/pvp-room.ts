@@ -429,14 +429,14 @@ function resolveTurn(room: PvpRoomState, actionA: PvpAction, actionB: PvpAction)
       : [{ player: room.playerB, action: actionB, opp: room.playerA, defProtected: protectedA },
          { player: room.playerA, action: actionA, opp: room.playerB, defProtected: protectedB }];
 
-    executeFight(room, first.player, first.action.moveId, first.opp, first.action.mega, first.action.gigantamax, first.defProtected, first.action.dynamax);
+    executeFight(room, first.player, first.action.moveId, first.opp, first.action.mega, first.action.gigantamax, first.defProtected, first.action.dynamax, first.action.tera);
     if (first.opp.party[first.opp.activeIndex].hp > 0) {
-      executeFight(room, second.player, second.action.moveId, second.opp, second.action.mega, second.action.gigantamax, second.defProtected, second.action.dynamax);
+      executeFight(room, second.player, second.action.moveId, second.opp, second.action.mega, second.action.gigantamax, second.defProtected, second.action.dynamax, second.action.tera);
     }
   } else if (actionA.type === "fight") {
-    executeFight(room, room.playerA, actionA.moveId, room.playerB, actionA.mega, actionA.gigantamax, protectedB, actionA.dynamax);
+    executeFight(room, room.playerA, actionA.moveId, room.playerB, actionA.mega, actionA.gigantamax, protectedB, actionA.dynamax, actionA.tera);
   } else if (actionB.type === "fight") {
-    executeFight(room, room.playerB, actionB.moveId, room.playerA, actionB.mega, actionB.gigantamax, protectedA, actionB.dynamax);
+    executeFight(room, room.playerB, actionB.moveId, room.playerA, actionB.mega, actionB.gigantamax, protectedA, actionB.dynamax, actionB.tera);
   }
 
   // ── Pending switch after move (U-Turn, Volt Switch, Flip Turn, Parting Shot, Baton Pass) ──
@@ -965,6 +965,7 @@ function executeFight(
   gigantamax?: boolean,
   defenderProtected?: boolean,
   dynamax?: boolean,
+  tera?: boolean,
 ): void {
   const atkPoke = attacker.party[attacker.activeIndex];
   const defPoke = defender.party[defender.activeIndex];
@@ -1042,6 +1043,17 @@ function executeFight(
     poke.maxHp = Math.ceil(poke.maxHp * 2);
     poke.hp = Math.ceil(hpRatio * poke.maxHp);
     room.log.push(`${attacker.nickname}의 ${poke.species}: 다이맥스!`);
+  }
+
+  // ── Terastallize ──
+  // Consumes the shared `transformationUsed` slot (mutually exclusive with
+  // mega/gmax/dynamax). Tera persists until the holder faints — it is NOT
+  // reset on switch-out. The effective types become [teraType] via getBattleTypes.
+  if (tera && !attacker.transformationUsed && atkPoke.teraType) {
+    attacker.teraActive = true;
+    attacker.transformationType = "tera";
+    attacker.transformationUsed = true;
+    room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 테라스탈! (${atkPoke.teraType}타입)`);
   }
 
   // ── Flinch check (applied by faster attacker, consumed here) ──
@@ -1210,6 +1222,21 @@ function executeFight(
       // Fall through to continue execution with the swapped move.
       // Skip the beforeMove gate since the original move's gate shouldn't
       // apply to the redirected move.
+    } else if (custom && typeof custom === "object" && "overrideMove" in custom) {
+      // customResolve requested partial move overrides (Tera Blast, Ivy Cudgel, etc.)
+      // Merge into moveData; meta is shallow-merged on top to preserve unrelated fields.
+      const override = custom.overrideMove;
+      moveData = { ...moveData, ...override };
+      if (override.meta) {
+        moveData.meta = { ...(moveData.meta ?? {}), ...override.meta };
+      }
+      // Keep the beforeMove gate running — override doesn't imply a new move identity.
+      const gate = tryBeforeMove({ ...registryCtx, move: moveData });
+      if (gate?.cancel) {
+        if (gate.message) room.log.push(gate.message);
+        attacker.lastMoveUsed = moveId;
+        return;
+      }
     } else {
       const gate = tryBeforeMove(registryCtx);
       if (gate?.cancel) {
@@ -1630,6 +1657,24 @@ function executeFight(
         // ── Ability: Sniper boosts crit damage by 1.5x (1.5 -> 2.25 total) ──
         if (result.critical && atkPoke.abilityId === "sniper") {
           finalDamage = Math.floor(finalDamage * 1.5);
+        }
+        // ── Stellar Tera (simplified) ──
+        // Terapagos-Stellar attacking while Terastallized: first use of each move type
+        // gets +1.2x (tracked in atkPoke.stellarTypesUsed). Vs a Terastallized target,
+        // the attack additionally gets a flat 2.0x super-effective multiplier.
+        // Applied here on the per-hit damage; tracking updates on the first hit only.
+        if (attacker.teraActive && atkPoke.species === "terapagos-stellar") {
+          const moveType = moveForCalc.type;
+          const used = atkPoke.stellarTypesUsed ?? [];
+          if (!used.includes(moveType)) {
+            finalDamage = Math.floor(finalDamage * 1.2);
+            if (hit === 0) {
+              atkPoke.stellarTypesUsed = [...used, moveType];
+            }
+          }
+          if (defender.teraActive) {
+            finalDamage = Math.floor(finalDamage * 2);
+          }
         }
         // ── Terrain damage modifiers ──
         if (room.terrain) {

@@ -950,6 +950,29 @@ register("transform", {
   },
 });
 
+// ══════════════════════════════════════════════════════════════
+// ── Gen 9: Tera Blast ───────────────────────────────────────
+// ══════════════════════════════════════════════════════════════
+// Default: Normal-type 80 BP special. When the user is Terastallized,
+// overrideMove swaps in the Tera type and chooses category by whichever
+// raw offensive stat is higher (Atk vs SpA).
+register("tera-blast", {
+  customResolve: (ctx) => {
+    if (!ctx.attacker.teraActive || !ctx.atkPoke.teraType) {
+      return false; // fall through to the default move data
+    }
+    const category: "physical" | "special" =
+      ctx.atkPoke.stats.attack > ctx.atkPoke.stats.spAttack ? "physical" : "special";
+    return {
+      overrideMove: {
+        type: ctx.atkPoke.teraType,
+        category,
+        power: 80,
+      },
+    };
+  },
+});
+
 // ── Still hardcoded in pvp-room.ts: snore, sleep-talk ──
 // These are tightly coupled to the sleep-state bypass flow and are easier to
 // leave in pvp-room.ts. Registered here as empty so the registry advertises them.
