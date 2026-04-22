@@ -1,5 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createPokemon, createWildPokemon, wildPokemonToOwned } from "../../src/game/pokemon-factory.js";
+import {
+  createPokemon,
+  createWildPokemon,
+  pickWildAbility,
+  pickWildTeraType,
+  wildPokemonToOwned,
+} from "../../src/game/pokemon-factory.js";
+import { getSpeciesByName } from "../../src/game/data-loader.js";
 
 describe("createPokemon", () => {
   afterEach(() => {
@@ -105,6 +112,102 @@ describe("createWildPokemon", () => {
     vi.spyOn(Math, "random").mockReturnValue(0.5);
     const wild = createWildPokemon("rattata", 3);
     expect(typeof wild.isShiny).toBe("boolean");
+  });
+});
+
+describe("pickWildAbility", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("returns hidden ability when roll is below the hidden-ability threshold", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.01);
+    const ability = pickWildAbility({ normal: ["run-away", "quick-feet"], hidden: "hustle" });
+    expect(ability).toBe("hustle");
+  });
+
+  it("never returns hidden ability when roll is above the threshold", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.99);
+    for (let i = 0; i < 50; i += 1) {
+      const ability = pickWildAbility({ normal: ["run-away", "quick-feet"], hidden: "hustle" });
+      expect(ability).not.toBe("hustle");
+    }
+  });
+
+  it("always picks from normal list when no hidden ability is available", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.01);
+    const ability = pickWildAbility({ normal: ["run-away"] });
+    expect(ability).toBe("run-away");
+  });
+
+  it("returns undefined for undefined abilities", () => {
+    expect(pickWildAbility(undefined)).toBeUndefined();
+  });
+
+  it("over 1000 rolls with fixed high value, never returns hidden", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    for (let i = 0; i < 1000; i += 1) {
+      const ability = pickWildAbility({ normal: ["a", "b"], hidden: "h" });
+      expect(ability).not.toBe("h");
+    }
+  });
+
+  it("over 1000 rolls with fixed low value, always returns hidden when available", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.001);
+    for (let i = 0; i < 1000; i += 1) {
+      const ability = pickWildAbility({ normal: ["a", "b"], hidden: "h" });
+      expect(ability).toBe("h");
+    }
+  });
+});
+
+describe("pickWildTeraType", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("returns species primary type when roll is above random-tera threshold", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.99);
+    expect(pickWildTeraType(["fire", "flying"])).toBe("fire");
+  });
+
+  it("returns a random type when roll is below random-tera threshold", () => {
+    const randomSpy = vi.spyOn(Math, "random");
+    // First call: 0.01 (pass the 5% gate). Second call: 0 (pick index 0 = normal).
+    randomSpy.mockReturnValueOnce(0.01).mockReturnValueOnce(0);
+    expect(pickWildTeraType(["fire"])).toBe("normal");
+  });
+
+  it("falls back to normal when species has no types", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.99);
+    expect(pickWildTeraType(undefined)).toBe("normal");
+    expect(pickWildTeraType([])).toBe("normal");
+  });
+});
+
+describe("createWildPokemon teraType", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("always sets a teraType on wild pokemon", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.99);
+    const wild = createWildPokemon("charmander", 5);
+    expect(typeof wild.teraType).toBe("string");
+    expect(wild.teraType).toBeTruthy();
+  });
+
+  it("defaults teraType to the species primary type when no random roll occurs", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.99);
+    const species = getSpeciesByName("charmander");
+    const wild = createWildPokemon("charmander", 5);
+    expect(wild.teraType).toBe(species?.types?.[0]);
+  });
+
+  it("does not activate tera (no teraActive flag) on wild pokemon", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.99);
+    const wild = createWildPokemon("charmander", 5);
+    expect((wild as { teraActive?: boolean }).teraActive).toBeUndefined();
   });
 });
 

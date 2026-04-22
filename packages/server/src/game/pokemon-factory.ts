@@ -44,6 +44,46 @@ function pickRandomNature(): string {
     : "hardy";
 }
 
+/**
+ * Wild hidden-ability chance. Canon behaviour: normal encounters never roll
+ * a hidden ability, but rare spawns (Mass Outbreak / Friend Safari / 4★+
+ * Tera Raids) can. We approximate with a flat 5% per spawn.
+ */
+const WILD_HIDDEN_ABILITY_CHANCE = 0.05;
+
+export function pickWildAbility(
+  abilities: { normal: string[]; hidden?: string } | undefined,
+): string | undefined {
+  if (!abilities) return undefined;
+  if (abilities.hidden && Math.random() < WILD_HIDDEN_ABILITY_CHANCE) {
+    return abilities.hidden;
+  }
+  const normal = abilities.normal ?? [];
+  if (normal.length === 0) return abilities.hidden ?? undefined;
+  return normal[Math.floor(Math.random() * normal.length)];
+}
+
+const ALL_TERA_TYPES = [
+  "normal", "fire", "water", "electric", "grass", "ice",
+  "fighting", "poison", "ground", "flying", "psychic", "bug",
+  "rock", "ghost", "dragon", "dark", "steel", "fairy",
+];
+
+/**
+ * Wild tera-type selection. Defaults to the species primary type (canonical
+ * for random encounters); a small chance produces a "mismatched" tera type
+ * simulating 5★/6★ Tera Raid spawns.
+ */
+const WILD_RANDOM_TERA_CHANCE = 0.05;
+
+export function pickWildTeraType(speciesTypes: string[] | undefined): string {
+  const primary = speciesTypes?.[0] ?? "normal";
+  if (Math.random() < WILD_RANDOM_TERA_CHANCE) {
+    return ALL_TERA_TYPES[Math.floor(Math.random() * ALL_TERA_TYPES.length)];
+  }
+  return primary;
+}
+
 export { buildStats } from "./pokemon-stats.js";
 
 export function createPokemon(species: string, level: number): OwnedPokemon {
@@ -76,6 +116,7 @@ export function createPokemon(species: string, level: number): OwnedPokemon {
     damageTakenTotal: 0,
     nature,
     isShiny: Math.random() < (1 / 4096),
+    teraType: speciesData.types?.[0] ?? "normal",
   };
 }
 
@@ -88,6 +129,8 @@ export function createWildPokemon(species: string, level: number): WildPokemon {
   const nature = pickRandomNature();
   const { maxHp, stats } = buildStats(speciesData, level, nature, variantId);
   const moves = buildMoves(speciesData, level);
+  const ability = pickWildAbility(speciesData.abilities);
+  const teraType = pickWildTeraType(speciesData.types);
 
   return {
     species: baseSpecies,
@@ -99,8 +142,9 @@ export function createWildPokemon(species: string, level: number): WildPokemon {
     moves,
     nature,
     gender: resolvePokemonGender(speciesData.genderRate, Math.random()),
-    ability: speciesData.abilities?.normal[0] ?? undefined,
+    ability,
     isShiny: Math.random() < (1 / 4096),
+    teraType,
   };
 }
 
@@ -126,6 +170,7 @@ export function wildPokemonToOwned(wild: WildPokemon): OwnedPokemon {
     damageTakenTotal: 0,
     nature: wild.nature ?? "hardy",
     isShiny: wild.isShiny ?? false,
+    teraType: wild.teraType ?? speciesData?.types?.[0] ?? "normal",
   };
 }
 

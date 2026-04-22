@@ -172,6 +172,7 @@ export interface WildPokemon {
   ability?: string;
   isShiny?: boolean;
   statusCondition?: PrimaryStatus | null;
+  teraType?: string | null;
 }
 
 export interface PendingEvent {
