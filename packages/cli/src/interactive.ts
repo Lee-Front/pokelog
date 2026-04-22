@@ -12,6 +12,9 @@ import { leaveCommand } from "./commands/leave.js";
 import { nicknameCommand } from "./commands/profile.js";
 import { partyCommand } from "./commands/party.js";
 import { pokedexCommand } from "./commands/pokedex.js";
+import { pvpHistoryCommand } from "./commands/pvp-history.js";
+import { fusionCommand } from "./commands/fusion.js";
+import { teraCommand } from "./commands/tera.js";
 import { rankingCommand } from "./commands/ranking.js";
 import { regionCommand } from "./commands/region.js";
 import { serversCommand } from "./commands/servers.js";
@@ -53,14 +56,22 @@ function isGroup(node: MenuNode): node is MenuGroup {
 
 const MENU_TREE: MenuNode[] = [
   { label: "야생",     cmd: "encounters", desc: "야생 이벤트",   auth: true, server: true },
-  { label: "대전",     cmd: "pvp",        desc: "PvP 대전",     auth: true, server: true },
+  {
+    label: "대전", desc: "PvP 대전 / 전적", auth: true, server: true,
+    children: [
+      { label: "PvP",      cmd: "pvp",          desc: "PvP 대전" },
+      { label: "전적",     cmd: "pvp-history",  desc: "PvP 매치 기록" },
+    ],
+  },
   { label: "바이옴",   cmd: "region",     desc: "바이옴 이동",   auth: true, server: true },
   {
-    label: "포켓몬", desc: "파티 / 보관함 / 도감", auth: true, server: true,
+    label: "포켓몬", desc: "파티 / 보관함 / 도감 / 합체 / 테라", auth: true, server: true,
     children: [
       { label: "파티",   cmd: "party",   desc: "파티 보기" },
       { label: "보관함", cmd: "storage", desc: "보관함 보기" },
       { label: "도감",   cmd: "pokedex", desc: "도감 보기" },
+      { label: "합체",   cmd: "fusion",  desc: "전설 포켓몬 합체/해제" },
+      { label: "테라",   cmd: "tera",    desc: "테라 타입 변경" },
     ],
   },
   { label: "가방",   cmd: "inventory", desc: "인벤토리",       auth: true, server: true },
@@ -75,9 +86,10 @@ const MENU_TREE: MenuNode[] = [
   {
     label: "기록", desc: "상태 / 랭킹 / 이력", auth: true, server: true,
     children: [
-      { label: "상태", cmd: "status",  desc: "현재 상태 보기" },
-      { label: "랭킹", cmd: "ranking", desc: "랭킹 보기" },
-      { label: "이력", cmd: "history", desc: "적립 이력 보기" },
+      { label: "상태",      cmd: "status",        desc: "현재 상태 보기" },
+      { label: "랭킹",      cmd: "ranking",       desc: "랭킹 (경험치 기준)" },
+      { label: "PvP랭킹",   cmd: "ranking-pvp",   desc: "PvP Elo 랭킹" },
+      { label: "이력",      cmd: "history",       desc: "적립 이력 보기" },
     ],
   },
   {
@@ -239,14 +251,18 @@ async function executeCommand(cmd: string): Promise<"continue" | "quit"> {
     case "pokedex":    await pokedexCommand(); break;
     case "inventory":  await inventoryCommand(); break;
     case "trade":      await tradeCommand(); break;
-    case "pvp":        await pvpCommand(); break;
-    case "evolutions": await evolutionsCommand(); break;
-    case "heal":       await healCommand(); break;
-    case "egg":        await eggCommand(); break;
-    case "shop":       await shopCommand(); break;
-    case "storage":    await storageCommand(); break;
-    case "ranking":    await rankingCommand("exp"); break;
-    case "history":    await historyCommand(); break;
+    case "pvp":          await pvpCommand(); break;
+    case "pvp-history":  await pvpHistoryCommand(); break;
+    case "fusion":       await fusionCommand(); break;
+    case "tera":         await teraCommand(); break;
+    case "evolutions":   await evolutionsCommand(); break;
+    case "heal":         await healCommand(); break;
+    case "egg":          await eggCommand(); break;
+    case "shop":         await shopCommand(); break;
+    case "storage":      await storageCommand(); break;
+    case "ranking":      await rankingCommand("exp"); break;
+    case "ranking-pvp":  await rankingCommand("pvp"); break;
+    case "history":      await historyCommand(); break;
     case "nickname":   await nicknameCommand(); break;
     case "login":      await loginCommand(); break;
     case "logout":     await logoutCommand(); break;

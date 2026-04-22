@@ -15,6 +15,9 @@ import { nicknameCommand, profileCommand, matchCommand, unmatchCommand } from ".
 import { partyCommand, partySetCommand } from "./commands/party.js";
 import { pokedexCommand } from "./commands/pokedex.js";
 import { pokemonCommand } from "./commands/pokemon.js";
+import { pvpHistoryCommand } from "./commands/pvp-history.js";
+import { fusionCommand } from "./commands/fusion.js";
+import { teraCommand } from "./commands/tera.js";
 import { rankingCommand } from "./commands/ranking.js";
 import { regionCommand } from "./commands/region.js";
 import { serversCommand } from "./commands/servers.js";
@@ -89,7 +92,10 @@ if (process.argv.length <= 2) {
   program.command("buy <item> [quantity]").description("buy item").action((item, qty) => buyCommand(item, parseInt(qty || "1", 10)));
   program.command("use-item <item> <pokemonUid>").description("use item").action(useItemCommand);
 
-  program.command("ranking").description("show ranking").option("--by <criteria>", "ranking field", "exp").action((opts) => rankingCommand(opts.by));
+  program.command("ranking").description("show ranking").option("--by <criteria>", "ranking field (exp, level, pokedex, points, pvp)", "exp").action((opts) => rankingCommand(opts.by));
+  program.command("pvp-history").description("show PvP match history").option("--limit <n>", "record count", "20").action((opts) => pvpHistoryCommand(parseInt(opts.limit, 10) || 20));
+  program.command("fusion").description("fuse/unfuse legendary pokemon").action(fusionCommand);
+  program.command("tera [pokemonUid]").description("change a pokemon's Tera type").action(teraCommand);
   program.command("connect").description("manage integrations").action(connectCommand);
 
   program.command("init").description("[deprecated] use join instead").requiredOption("--server <url>", "server url").action((opts) => joinCommand(opts.server));
