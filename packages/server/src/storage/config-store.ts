@@ -28,6 +28,17 @@ const DEFAULT_EVOLUTION_SHOP_ITEMS = {
   "water-stone": { name: "Water Stone", price: 3000 },
 } satisfies ServerConfig["shop"]["items"];
 
+const DEFAULT_VITAMIN_SHOP_ITEMS = {
+  "hp-up": { name: "맥스업", price: 5000, vitaminStat: "hp" as const },
+  protein: { name: "단백질", price: 5000, vitaminStat: "attack" as const },
+  iron: { name: "철분", price: 5000, vitaminStat: "defense" as const },
+  calcium: { name: "칼슘", price: 5000, vitaminStat: "spAttack" as const },
+  zinc: { name: "아연", price: 5000, vitaminStat: "spDefense" as const },
+  carbos: { name: "스피더", price: 5000, vitaminStat: "speed" as const },
+  "pp-up": { name: "포인트업", price: 3000, ppBoost: "increment" as const },
+  "pp-max": { name: "포인트맥스", price: 8000, ppBoost: "max" as const },
+} satisfies ServerConfig["shop"]["items"];
+
 const DEFAULT_HELD_EVOLUTION_SHOP_ITEMS = {
   "deep-sea-scale": { name: "Deep Sea Scale", price: 2000 },
   "deep-sea-tooth": { name: "Deep Sea Tooth", price: 2000 },
@@ -93,6 +104,7 @@ export const DEFAULT_CONFIG: ServerConfig = {
       hyperPotion: { name: "Hyper Potion", price: 800, healAmount: 120 },
       ...DEFAULT_EVOLUTION_SHOP_ITEMS,
       ...DEFAULT_HELD_EVOLUTION_SHOP_ITEMS,
+      ...DEFAULT_VITAMIN_SHOP_ITEMS,
     },
   },
 };

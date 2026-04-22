@@ -93,6 +93,8 @@ export interface PokemonMove {
   id: string;
   pp: number;
   maxPp: number;
+  /** Number of PP Up (or equivalent) applications. Max 3 per move in canon. */
+  ppUpsUsed?: number;
 }
 
 export interface PokemonStats {
@@ -135,6 +137,20 @@ export interface OwnedPokemon {
   statusCondition?: PrimaryStatus | null;
   sleepTurns?: number;
   hasGigantamaxFactor?: boolean;
+  /**
+   * Count of vitamins applied per stat (0–10 each). We do not model the full
+   * canon EV system; instead each application directly boosts the final stat
+   * (see `applyVitamin` in item-usage). This counter enforces the canon cap
+   * of 10 uses per stat (equivalent to +100 EV).
+   */
+  appliedVitamins?: {
+    hp: number;
+    attack: number;
+    defense: number;
+    spAttack: number;
+    spDefense: number;
+    speed: number;
+  };
   // ── Gen 9 / Tera ──
   teraType?: string | null;
   // ── Fusion (Kyurem/Necrozma/Calyrex) ──
@@ -299,12 +315,19 @@ export interface EncounterConfig {
   timeLimitHours: number;
 }
 
+export type VitaminStatKey = "hp" | "attack" | "defense" | "spAttack" | "spDefense" | "speed";
+export type PpBoostKind = "increment" | "max";
+
 export interface ShopItem {
   name: string;
   price: number;
   catchBonus?: number;
   healAmount?: number;
   guaranteedCatch?: boolean;
+  /** If set, using this item boosts the target pokemon's given stat (vitamin). */
+  vitaminStat?: VitaminStatKey;
+  /** If set, using this item modifies a move's maxPp. */
+  ppBoost?: PpBoostKind;
 }
 
 export interface IntegrationRewardRule {

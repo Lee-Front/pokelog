@@ -97,4 +97,109 @@ describe("useInventoryItem", () => {
     expect(pokemon.species).toBe("pikachu");
     expect(user.inventory["moon-stone"]).toBe(1);
   });
+
+  it("applies a vitamin and boosts the matching stat", () => {
+    const user = createUserData();
+    const pokemon = createPokemon("pikachu", 20);
+    const originalAttack = pokemon.stats.attack;
+
+    user.party = [pokemon.uid];
+    user.pokemon = [pokemon];
+    user.inventory = { protein: 1 };
+
+    const protein: ShopItem = { name: "단백질", price: 5000, vitaminStat: "attack" };
+    const result = useInventoryItem(user, "protein", pokemon.uid, protein);
+
+    expect(result.kind).toBe("vitamin");
+    expect(result.vitaminStat).toBe("attack");
+    expect(result.newVitaminCount).toBe(1);
+    expect(pokemon.stats.attack).toBeGreaterThan(originalAttack);
+    expect(pokemon.appliedVitamins?.attack).toBe(1);
+    expect(user.inventory.protein).toBeUndefined();
+  });
+
+  it("hp-up increases maxHp and current hp", () => {
+    const user = createUserData();
+    const pokemon = createPokemon("pikachu", 20);
+    const originalMaxHp = pokemon.maxHp;
+
+    user.party = [pokemon.uid];
+    user.pokemon = [pokemon];
+    user.inventory = { "hp-up": 1 };
+
+    const hpUp: ShopItem = { name: "맥스업", price: 5000, vitaminStat: "hp" };
+    const result = useInventoryItem(user, "hp-up", pokemon.uid, hpUp);
+
+    expect(result.kind).toBe("vitamin");
+    expect(pokemon.maxHp).toBeGreaterThan(originalMaxHp);
+    expect(pokemon.appliedVitamins?.hp).toBe(1);
+  });
+
+  it("rejects a vitamin after the canon 10-use cap", () => {
+    const user = createUserData();
+    const pokemon = createPokemon("pikachu", 20);
+
+    user.party = [pokemon.uid];
+    user.pokemon = [pokemon];
+    user.inventory = { protein: 11 };
+    pokemon.appliedVitamins = { hp: 0, attack: 10, defense: 0, spAttack: 0, spDefense: 0, speed: 0 };
+
+    const protein: ShopItem = { name: "단백질", price: 5000, vitaminStat: "attack" };
+    expect(() => useInventoryItem(user, "protein", pokemon.uid, protein)).toThrow(ItemUseError);
+    expect(user.inventory.protein).toBe(11);
+  });
+
+  it("applies pp-up to a specific move and caps at 3 uses", () => {
+    const user = createUserData();
+    const pokemon = createPokemon("pikachu", 20);
+    const move = pokemon.moves[0];
+    const originalMaxPp = move.maxPp;
+
+    user.party = [pokemon.uid];
+    user.pokemon = [pokemon];
+    user.inventory = { "pp-up": 5 };
+
+    const ppUp: ShopItem = { name: "포인트업", price: 3000, ppBoost: "increment" };
+
+    const first = useInventoryItem(user, "pp-up", pokemon.uid, ppUp, { moveId: move.id });
+    expect(first.kind).toBe("pp-boost");
+    expect(move.maxPp).toBeGreaterThan(originalMaxPp);
+    expect(move.ppUpsUsed).toBe(1);
+
+    useInventoryItem(user, "pp-up", pokemon.uid, ppUp, { moveId: move.id });
+    useInventoryItem(user, "pp-up", pokemon.uid, ppUp, { moveId: move.id });
+    expect(move.ppUpsUsed).toBe(3);
+
+    expect(() => useInventoryItem(user, "pp-up", pokemon.uid, ppUp, { moveId: move.id })).toThrow(ItemUseError);
+  });
+
+  it("pp-max jumps straight to the +3 cap", () => {
+    const user = createUserData();
+    const pokemon = createPokemon("pikachu", 20);
+    const move = pokemon.moves[0];
+    const originalMaxPp = move.maxPp;
+
+    user.party = [pokemon.uid];
+    user.pokemon = [pokemon];
+    user.inventory = { "pp-max": 1 };
+
+    const ppMax: ShopItem = { name: "포인트맥스", price: 8000, ppBoost: "max" };
+    const result = useInventoryItem(user, "pp-max", pokemon.uid, ppMax, { moveId: move.id });
+
+    expect(result.kind).toBe("pp-boost");
+    expect(move.ppUpsUsed).toBe(3);
+    expect(move.maxPp).toBeGreaterThan(originalMaxPp);
+  });
+
+  it("pp-up requires a moveId", () => {
+    const user = createUserData();
+    const pokemon = createPokemon("pikachu", 20);
+
+    user.party = [pokemon.uid];
+    user.pokemon = [pokemon];
+    user.inventory = { "pp-up": 1 };
+
+    const ppUp: ShopItem = { name: "포인트업", price: 3000, ppBoost: "increment" };
+    expect(() => useInventoryItem(user, "pp-up", pokemon.uid, ppUp)).toThrow(ItemUseError);
+  });
 });

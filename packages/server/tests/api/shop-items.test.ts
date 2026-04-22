@@ -27,6 +27,41 @@ describe("shop + item usage", () => {
     expect(typeof shop.body.items.pokeball.name).toBe("string");
   });
 
+  it("lists vitamin items with correct metadata", async () => {
+    const { token } = await t.registerAndLogin();
+    const api = t.authed(token);
+
+    const shop = await api.get("/api/shop");
+    expect(shop.status).toBe(200);
+    for (const id of ["hp-up", "protein", "iron", "calcium", "zinc", "carbos"]) {
+      expect(shop.body.items[id]).toBeDefined();
+      expect(shop.body.items[id].vitaminStat).toBeDefined();
+    }
+    expect(shop.body.items["pp-up"]).toBeDefined();
+    expect(shop.body.items["pp-up"].ppBoost).toBe("increment");
+    expect(shop.body.items["pp-max"]).toBeDefined();
+    expect(shop.body.items["pp-max"].ppBoost).toBe("max");
+  });
+
+  it("buys and uses a vitamin to boost a stat", async () => {
+    const { token, userId } = await t.registerAndLogin();
+    const api = t.authed(token);
+
+    await t.admin().post("/api/admin/test/give-points", { userId, amount: 20000 });
+
+    const buy = await api.post("/api/shop/buy", { item: "protein", quantity: 1 });
+    expect(buy.status).toBe(200);
+
+    const partyRes = await api.get("/api/game/party");
+    const pokemon = partyRes.body.party[0];
+    const originalAttack = pokemon.stats.attack;
+
+    const useRes = await api.post("/api/shop/use", { item: "protein", pokemonUid: pokemon.uid });
+    expect(useRes.status).toBe(200);
+    expect(useRes.body.kind).toBe("vitamin");
+    expect(useRes.body.pokemon.stats.attack).toBeGreaterThan(originalAttack);
+  });
+
   it("rejects purchase when user has insufficient points", async () => {
     const { token, userId } = await t.registerAndLogin();
     const api = t.authed(token);

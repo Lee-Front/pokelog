@@ -75,7 +75,7 @@ shopRoutes.post("/buy", async (req, res) => {
 shopRoutes.post("/use", async (req, res) => {
   try {
     const { userId } = req as AuthRequest;
-    const { item, pokemonUid } = req.body;
+    const { item, pokemonUid, moveId } = req.body;
 
     if (!item || !pokemonUid) {
       res.status(400).json({ error: "Item and pokemonUid are required." });
@@ -91,7 +91,9 @@ shopRoutes.post("/use", async (req, res) => {
       return;
     }
 
-    const result = useInventoryItem(user, item, pokemonUid, shopItem);
+    const result = useInventoryItem(user, item, pokemonUid, shopItem, {
+      moveId: typeof moveId === "string" ? moveId : undefined,
+    });
     await saveUser(user);
 
     if (result.kind === "healing") {
@@ -99,6 +101,30 @@ shopRoutes.post("/use", async (req, res) => {
         kind: result.kind,
         message: `${result.itemName} used successfully.`,
         pokemon: { uid: result.pokemon.uid, hp: result.pokemon.hp, maxHp: result.pokemon.maxHp },
+        inventory: user.inventory,
+      });
+      return;
+    }
+
+    if (result.kind === "vitamin") {
+      res.json({
+        kind: result.kind,
+        message: `${result.itemName} 사용 완료. (${result.vitaminStat}: ${result.newVitaminCount}/10)`,
+        pokemon: result.pokemon,
+        vitaminStat: result.vitaminStat,
+        newVitaminCount: result.newVitaminCount,
+        inventory: user.inventory,
+      });
+      return;
+    }
+
+    if (result.kind === "pp-boost") {
+      res.json({
+        kind: result.kind,
+        message: `${result.itemName} 사용 완료. 최대 PP가 ${result.newMaxPp}이 되었습니다.`,
+        pokemon: result.pokemon,
+        moveId: result.moveId,
+        newMaxPp: result.newMaxPp,
         inventory: user.inventory,
       });
       return;
