@@ -248,3 +248,69 @@ describe("power-formula moves", () => {
     expect(defParalyzed.statusCondition).toBeNull();
   });
 });
+
+// ══════════════════════════════════════════════════════════════
+// ── Weight-based moves ──────────────────────────────────────
+// ══════════════════════════════════════════════════════════════
+describe("Weight-based moves", () => {
+  it("species data carries weight in hectograms (bulbasaur ~69 hg / 6.9 kg)", async () => {
+    const { getSpeciesByName } = await import("../../src/game/data-loader.js");
+    const sp = getSpeciesByName("bulbasaur");
+    expect(sp?.weight).toBeGreaterThan(60);
+    expect(sp?.weight).toBeLessThan(80);
+  });
+
+  it("grass-knot vs snorlax (460 kg) → 120 BP", () => {
+    const atk = makePokemon("pikachu");
+    const def = makePokemon("snorlax");
+    expect(applyPowerMod(makeCtx("grass-knot", atk, def))).toBe(120);
+  });
+
+  it("grass-knot vs bulbasaur (6.9 kg) → 20 BP", () => {
+    const atk = makePokemon("pikachu");
+    const def = makePokemon("bulbasaur");
+    expect(applyPowerMod(makeCtx("grass-knot", atk, def))).toBe(20);
+  });
+
+  it("low-kick vs joltik (0.6 kg) → 20 BP", () => {
+    const atk = makePokemon("machamp");
+    const def = makePokemon("joltik");
+    expect(applyPowerMod(makeCtx("low-kick", atk, def))).toBe(20);
+  });
+
+  it("low-kick vs pikachu (6 kg) → 20 BP (under 10 kg bracket)", () => {
+    const atk = makePokemon("machamp");
+    const def = makePokemon("pikachu");
+    expect(applyPowerMod(makeCtx("low-kick", atk, def))).toBe(20);
+  });
+
+  it("low-kick vs groudon (950 kg) → 120 BP", () => {
+    const atk = makePokemon("machamp");
+    const def = makePokemon("groudon");
+    expect(applyPowerMod(makeCtx("low-kick", atk, def))).toBe(120);
+  });
+
+  it("heavy-slam: snorlax (460 kg) vs joltik (0.6 kg) → 120 BP (≥5x)", () => {
+    const atk = makePokemon("snorlax");
+    const def = makePokemon("joltik");
+    expect(applyPowerMod(makeCtx("heavy-slam", atk, def))).toBe(120);
+  });
+
+  it("heat-crash: groudon (950 kg) vs diglett (0.8 kg) → 120 BP (≥5x)", () => {
+    const atk = makePokemon("groudon");
+    const def = makePokemon("diglett");
+    expect(applyPowerMod(makeCtx("heat-crash", atk, def))).toBe(120);
+  });
+
+  it("heavy-slam: equal-weight matchup → 40 BP (<2x)", () => {
+    const atk = makePokemon("snorlax");
+    const def = makePokemon("snorlax");
+    expect(applyPowerMod(makeCtx("heavy-slam", atk, def))).toBe(40);
+  });
+
+  it("heavy-slam: snorlax (460 kg) vs wailord (398 kg) → 40 BP (ratio < 2)", () => {
+    const atk = makePokemon("snorlax");
+    const def = makePokemon("wailord");
+    expect(applyPowerMod(makeCtx("heavy-slam", atk, def))).toBe(40);
+  });
+});

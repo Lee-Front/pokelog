@@ -11,7 +11,7 @@ import type { PvpAction, PvpPlayerState, PvpPokemon, PvpRoomState } from "../../
 import { addVolatile, hasVolatile } from "../game/status-conditions.js";
 import { applyStatChanges } from "../game/battle.js";
 import { getEffectiveTypes } from "../game/pokemon-state.js";
-import { getTypeChart, getMoveById } from "../game/data-loader.js";
+import { getTypeChart, getMoveById, getSpeciesByName } from "../game/data-loader.js";
 
 // ── Context passed to all move effect hooks ──
 export interface MoveContext {
@@ -1347,4 +1347,54 @@ register("burning-bulwark", {
 // ── Hyper Drill: ignores protect ──
 register("hyper-drill", {
   flags: { ignoresProtect: true },
+});
+
+// ══════════════════════════════════════════════════════════════
+// ── Weight-based moves ──────────────────────────────────────
+// ══════════════════════════════════════════════════════════════
+// Grass Knot / Low Kick: power depends on the target's weight.
+// Heavy Slam / Heat Crash: power depends on the user/target weight ratio.
+// Species weight is in hectograms (kg * 10) and sourced from data-loader.
+
+function getWeightKg(species: string): number {
+  const data = getSpeciesByName(species);
+  return (data?.weight ?? 1000) / 10; // hectograms → kg; default ~100 kg
+}
+
+function weightToPower(kg: number): number {
+  if (kg < 10) return 20;
+  if (kg < 25) return 40;
+  if (kg < 50) return 60;
+  if (kg < 100) return 80;
+  if (kg < 200) return 100;
+  return 120;
+}
+
+function weightRatioPower(userKg: number, targetKg: number): number {
+  if (targetKg <= 0) return 40;
+  const ratio = userKg / targetKg;
+  if (ratio >= 5) return 120;
+  if (ratio >= 4) return 100;
+  if (ratio >= 3) return 80;
+  if (ratio >= 2) return 60;
+  return 40;
+}
+
+register("grass-knot", {
+  flags: { contact: false },
+  modifyPower: (ctx) => weightToPower(getWeightKg(ctx.defPoke.species)),
+});
+register("low-kick", {
+  flags: { contact: true },
+  modifyPower: (ctx) => weightToPower(getWeightKg(ctx.defPoke.species)),
+});
+register("heavy-slam", {
+  flags: { contact: true },
+  modifyPower: (ctx) =>
+    weightRatioPower(getWeightKg(ctx.atkPoke.species), getWeightKg(ctx.defPoke.species)),
+});
+register("heat-crash", {
+  flags: { contact: true },
+  modifyPower: (ctx) =>
+    weightRatioPower(getWeightKg(ctx.atkPoke.species), getWeightKg(ctx.defPoke.species)),
 });
