@@ -57,7 +57,7 @@ export const DEFAULT_CONFIG: ServerConfig = {
     apiVersion: "1",
     featureFlags: {
       pvp: true,
-      trade: false,
+      trade: true,
       achievements: false,
       regions: false,
     },
