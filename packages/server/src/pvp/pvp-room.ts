@@ -302,6 +302,12 @@ export function submitAction(room: PvpRoomState, userId: string, action: PvpActi
 function resolveTurn(room: PvpRoomState, actionA: PvpAction, actionB: PvpAction): void {
   room.log = [];
 
+  // ── Expose pending actions on the room so effect hooks can inspect them.
+  // Upper Hand (and any future move that branches on opponent intent) reads
+  // these to decide whether it should succeed this turn.
+  (room as unknown as { _lastActionA?: PvpAction; _lastActionB?: PvpAction })._lastActionA = actionA;
+  (room as unknown as { _lastActionA?: PvpAction; _lastActionB?: PvpAction })._lastActionB = actionB;
+
   // ── Reset lastDamageTaken at start of each turn ──
   room.playerA.lastDamageTaken = undefined;
   room.playerB.lastDamageTaken = undefined;
@@ -309,6 +315,10 @@ function resolveTurn(room: PvpRoomState, actionA: PvpAction, actionB: PvpAction)
   // ── Reset wasHitThisTurn at start of each turn (Avalanche / Revenge) ──
   room.playerA.wasHitThisTurn = false;
   room.playerB.wasHitThisTurn = false;
+
+  // ── Reset boostedStatsThisTurn at start of each turn (Alluring Voice) ──
+  room.playerA.boostedStatsThisTurn = false;
+  room.playerB.boostedStatsThisTurn = false;
 
   // ── Snapshot heldItem state for unburden detection ──
   const prevHeldA = room.playerA.party[room.playerA.activeIndex].heldItem ?? null;
@@ -552,6 +562,24 @@ function resolveTurn(room: PvpRoomState, actionA: PvpAction, actionB: PvpAction)
       if (poke.hp <= 0) {
         room.log.push(`${player.nickname}의 ${poke.species}이(가) 쓰러졌다!`);
       }
+    }
+
+    // ── Gen 9: Salt Cure end-of-turn damage (1/8, doubled to 1/4 on Steel/Water) ──
+    if (poke.hp > 0 && !hasMagicGuard && hasVolatile(player.volatiles, "salt-cure")) {
+      const types = getEffectiveTypes(poke.species, poke.variantId, player.battleForm);
+      const denom = types.includes("steel") || types.includes("water") ? 4 : 8;
+      const saltDmg = Math.max(1, Math.floor(poke.maxHp / denom));
+      poke.hp = Math.max(0, poke.hp - saltDmg);
+      room.log.push(`${player.nickname}의 ${poke.species}: 소금절임 데미지 ${saltDmg}!`);
+      if (poke.hp <= 0) {
+        room.log.push(`${player.nickname}의 ${poke.species}이(가) 쓰러졌다!`);
+      }
+    }
+
+    // ── Gen 9: Syrup Bomb — speed drops each turn while the volatile ticks ──
+    if (poke.hp > 0 && hasVolatile(player.volatiles, "syrup-bomb")) {
+      player.statStages = applyStatChanges(player.statStages, [{ stat: "speed", change: -1 }]);
+      room.log.push(`${player.nickname}의 ${poke.species}: 시럽폭탄으로 스피드가 내려갔다!`);
     }
 
     // Tick volatiles
@@ -1125,8 +1153,33 @@ function executeFight(
 
   // ── Defender protected check ──
   if (defenderProtected) {
-    room.log.push(`${defender.nickname}의 ${defPoke.species}: 공격을 막았다!`);
-    return;
+    // ── Gen 9: Hyper Drill bypasses Protect ──
+    if (hasFlag(moveId, "ignoresProtect")) {
+      // Continue past the protect check — the move lands normally.
+    } else {
+      room.log.push(`${defender.nickname}의 ${defPoke.species}: 공격을 막았다!`);
+      // ── Gen 9: Burning Bulwark — contact attacker gets burned ──
+      if (hasVolatile(defender.volatiles, "burning-bulwark")
+          && hasFlag(moveId, "contact")
+          && atkPoke.heldItem !== "protective-pads"
+          && atkPoke.abilityId !== "long-reach") {
+        const atkTypes = getEffectiveTypes(atkPoke.species, atkPoke.variantId, attacker.battleForm);
+        const burnImmune = atkTypes.includes("fire");
+        if (!atkPoke.statusCondition && !burnImmune && canReceiveStatus(atkPoke, "burn")) {
+          atkPoke.statusCondition = "burn";
+          room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 불꽃방벽에 데어 화상 상태가 되었다!`);
+        }
+      }
+      // ── Gen 9: Silk Trap — contact attacker's speed drops ──
+      if (hasVolatile(defender.volatiles, "silk-trap")
+          && hasFlag(moveId, "contact")
+          && atkPoke.heldItem !== "protective-pads"
+          && atkPoke.abilityId !== "long-reach") {
+        attacker.statStages = applyStatChanges(attacker.statStages, [{ stat: "speed", change: -1 }]);
+        room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 거미집에 걸려 스피드가 내려갔다!`);
+      }
+      return;
+    }
   }
 
   // ── Choice Lock: enforce locked move (applied before struggle check) ──
@@ -1821,6 +1874,12 @@ function executeFight(
       triggerAfterBeingHit(afterCtx);
     }
 
+    // ── Gen 9: Rage Fist hit counter ──
+    // Increment when the holder takes damage from an attacking move (once per use).
+    if (hitsMade > 0 && totalDamage > 0 && defPoke.hp > 0) {
+      defPoke.rageFistHits = (defPoke.rageFistHits ?? 0) + 1;
+    }
+
     // ── Batch 3: Ability stat-boost when being hit ──
     if (hitsMade > 0 && totalDamage > 0 && defPoke.hp > 0) {
       if (defPoke.abilityId === "justified" && effectiveMoveData.type === "dark") {
@@ -2140,6 +2199,10 @@ function executeFight(
         ? moveData.statChanges.map((sc) => ({ stat: sc.stat, change: -sc.change }))
         : moveData.statChanges;
       attacker.statStages = applyStatChanges(attacker.statStages, selfChanges);
+      // ── Gen 9: Alluring Voice trigger — mark side as having boosted stats this turn ──
+      if (selfChanges.some((sc) => sc.change > 0)) {
+        attacker.boostedStatsThisTurn = true;
+      }
       for (const sc of selfChanges) {
         const dir = sc.change > 0 ? "올랐다" : "내려갔다";
         const names: Record<string, string> = { attack: "공격", defense: "방어", spAttack: "특수공격", spDefense: "특수방어", speed: "스피드", accuracy: "명중률", evasion: "회피율" };
