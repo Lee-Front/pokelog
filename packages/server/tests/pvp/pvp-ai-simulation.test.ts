@@ -3,7 +3,7 @@ import { createRoom, selectLead, submitAction } from "../../src/pvp/pvp-room.js"
 import { chooseAiAction } from "../../src/pvp/pvp-ai.js";
 import type { PvpPokemon } from "../../../../shared/pvp-types.js";
 
-function makePoke(species: string, moves: string[], abilityId?: string, heldItem?: string): PvpPokemon {
+function makePoke(species: string, moves: string[], abilityId?: string, heldItem?: string, teraType?: string, originalTypes?: string[]): PvpPokemon {
   return {
     uid: species + "-" + Math.random().toString(36).slice(2, 8),
     species, level: 50,
@@ -13,6 +13,10 @@ function makePoke(species: string, moves: string[], abilityId?: string, heldItem
     statusCondition: null,
     abilityId: abilityId ?? null,
     heldItem: heldItem ?? null,
+    teraType: teraType ?? null,
+    originalTypes: originalTypes ?? undefined,
+    stellarTypesUsed: [],
+    rageFistHits: 0,
   };
 }
 
@@ -191,5 +195,68 @@ describe("edge case scenarios", () => {
     const uniqueB = ["bulbasaur", "squirtle", "rattata", "eevee", "jolteon", "flareon"].map(s => makePoke(s, ["tackle"]));
     const result = runBattle(uniqueA, uniqueB, 100);
     expect(result.turns).toBeLessThan(100);
+  });
+});
+
+describe("Gen 9 AI simulation", () => {
+  it("Gen 9 battle: Koraidon vs Miraidon finishes without errors", () => {
+    const partyA = [
+      makePoke("koraidon", ["collision-course", "flare-blitz"], "orichalcum-pulse"),
+    ];
+    const partyB = [
+      makePoke("miraidon", ["electro-drift", "draco-meteor"], "hadron-engine"),
+    ];
+    const result = runBattle(partyA, partyB, 30);
+    expect(result.turns).toBeLessThan(30);
+  });
+
+  it("Terastalized battle (Garchomp ice-tera vs Dragonite) finishes", () => {
+    const partyA = [makePoke("garchomp", ["earthquake", "tera-blast"], undefined, undefined, "ice", ["dragon", "ground"])];
+    const partyB = [makePoke("dragonite", ["draco-meteor", "ice-beam"], "multiscale", undefined, "normal", ["dragon", "flying"])];
+    const result = runBattle(partyA, partyB, 30);
+    expect(result.turns).toBeLessThan(30);
+  });
+
+  it("Paradox pokemon battle (Great Tusk vs Iron Treads) finishes", () => {
+    const partyA = [makePoke("great-tusk", ["earthquake", "headlong-rush"], "protosynthesis", "booster-energy")];
+    const partyB = [makePoke("iron-treads", ["earthquake", "iron-head"], "quark-drive", "booster-energy")];
+    const result = runBattle(partyA, partyB, 30);
+    expect(result.turns).toBeLessThan(30);
+  });
+
+  it("Ogerpon-Wellspring + Ivy Cudgel battle finishes", () => {
+    const partyA = [makePoke("ogerpon-wellspring-mask", ["ivy-cudgel", "horn-leech"], "water-absorb", undefined, "water", ["grass", "water"])];
+    const partyB = [makePoke("typhlosion", ["flamethrower", "earthquake"], "blaze")];
+    const result = runBattle(partyA, partyB, 30);
+    expect(result.turns).toBeLessThan(30);
+  });
+
+  it("Gen 9 assorted 5-matchup stress test", () => {
+    const matchups: Array<[PvpPokemon[], PvpPokemon[]]> = [
+      [
+        [makePoke("gholdengo", ["make-it-rain", "shadow-ball"], "good-as-gold")],
+        [makePoke("clodsire", ["earthquake", "toxic"], "water-absorb")],
+      ],
+      [
+        [makePoke("baxcalibur", ["glaive-rush", "icicle-crash"], "thermal-exchange")],
+        [makePoke("kingambit", ["kowtow-cleave", "iron-head"], "supreme-overlord")],
+      ],
+      [
+        [makePoke("annihilape", ["rage-fist", "drain-punch"], "defiant")],
+        [makePoke("dondozo", ["wave-crash", "body-press"], "unaware")],
+      ],
+      [
+        [makePoke("flutter-mane", ["moonblast", "shadow-ball"], "protosynthesis")],
+        [makePoke("iron-bundle", ["hydro-pump", "freeze-dry"], "quark-drive")],
+      ],
+      [
+        [makePoke("ting-lu", ["earthquake", "ruination"], "vessel-of-ruin")],
+        [makePoke("chi-yu", ["overheat", "dark-pulse"], "beads-of-ruin")],
+      ],
+    ];
+    for (const [a, b] of matchups) {
+      const result = runBattle(a, b, 30);
+      expect(result.turns).toBeLessThan(30);
+    }
   });
 });

@@ -219,3 +219,60 @@ describe("Evolution Simulation — 요약", () => {
     expect(gastly.length).toBe(1);
   });
 });
+
+describe("Evolution Simulation — Gen 9 스프리가티토 계열", () => {
+  it("sprigatito → floragato at Lv.16 → meowscarada at Lv.36", () => {
+    const poke = createPokemon("sprigatito", 5);
+    const result = simulateLevelUp(poke, 40);
+
+    expect(result.evolutions.length).toBe(2);
+    expect(result.evolutions[0]).toEqual({ fromLv: 16, to: "floragato" });
+    expect(result.evolutions[1]).toEqual({ fromLv: 36, to: "meowscarada" });
+    expect(result.finalSpecies).toBe("meowscarada");
+  });
+
+  it("meowscarada species exists in data", () => {
+    const sp = getSpeciesByName("meowscarada");
+    expect(sp).toBeDefined();
+    expect(sp?.types).toContain("grass");
+    expect(sp?.types).toContain("dark");
+  });
+});
+
+describe("Evolution Simulation — Gen 9 푸에코코 계열", () => {
+  it("fuecoco → crocalor at Lv.16 → skeledirge at Lv.36", () => {
+    const poke = createPokemon("fuecoco", 5);
+    const result = simulateLevelUp(poke, 40);
+
+    expect(result.evolutions.length).toBe(2);
+    expect(result.evolutions[0]).toEqual({ fromLv: 16, to: "crocalor" });
+    expect(result.evolutions[1]).toEqual({ fromLv: 36, to: "skeledirge" });
+    expect(result.finalSpecies).toBe("skeledirge");
+  });
+
+  it("skeledirge species exists in data", () => {
+    const sp = getSpeciesByName("skeledirge");
+    expect(sp).toBeDefined();
+    expect(sp?.types).toContain("fire");
+    expect(sp?.types).toContain("ghost");
+  });
+});
+
+describe("Evolution Simulation — Gen 9 쿠아쿠아바 계열", () => {
+  it("quaxly → quaxwell at Lv.16 → quaquaval at Lv.36", () => {
+    const poke = createPokemon("quaxly", 5);
+    const result = simulateLevelUp(poke, 40);
+
+    expect(result.evolutions.length).toBe(2);
+    expect(result.evolutions[0]).toEqual({ fromLv: 16, to: "quaxwell" });
+    expect(result.evolutions[1]).toEqual({ fromLv: 36, to: "quaquaval" });
+    expect(result.finalSpecies).toBe("quaquaval");
+  });
+
+  it("quaquaval species exists in data", () => {
+    const sp = getSpeciesByName("quaquaval");
+    expect(sp).toBeDefined();
+    expect(sp?.types).toContain("water");
+    expect(sp?.types).toContain("fighting");
+  });
+});
