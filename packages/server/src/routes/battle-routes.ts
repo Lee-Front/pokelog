@@ -276,7 +276,8 @@ async function handleCatch(
   decrementItem(user.inventory, ballType);
 
   const baseCatchRate = getCatchRate(battle.wild.species);
-  const caught = guaranteedCatch || attemptCapture(catchBonus, battle.wild.hp, battle.wild.maxHp, baseCatchRate);
+  const caught = guaranteedCatch
+    || attemptCapture(catchBonus, battle.wild.hp, battle.wild.maxHp, baseCatchRate, battle.wild.statusCondition ?? null);
 
   if (caught) {
     log.push(`야생 ${battle.wild.species}을(를) 잡았다!`);
