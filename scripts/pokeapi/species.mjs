@@ -146,6 +146,7 @@ export async function syncSpecies(options = {}) {
         rawCaptureRate,
         expGroup: species.growth_rate?.name ?? "medium",
         baseExpYield: pokemon.base_experience ?? 0,
+        weight: pokemon.weight ?? 0, // in hectograms (PokeAPI format)
         learnset: normalizeLearnset(pokemon.moves),
         maxMoves: 4,
         abilities: normalizeAbilities(pokemon.abilities),

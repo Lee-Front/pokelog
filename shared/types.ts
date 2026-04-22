@@ -407,6 +407,7 @@ export interface SpeciesData {
   rawCaptureRate?: number;
   expGroup: string;
   baseExpYield?: number;
+  weight?: number; // in hectograms (kg * 10)
   learnset: SpeciesLearnset;
   maxMoves: number;
   abilities?: {

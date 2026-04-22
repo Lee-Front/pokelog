@@ -19,6 +19,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 64,
+    "weight": 69,
     "learnset": {
       "levelUp": {
         "1": [
@@ -179,6 +180,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 142,
+    "weight": 130,
     "learnset": {
       "levelUp": {
         "1": [
@@ -332,6 +334,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 236,
+    "weight": 1000,
     "learnset": {
       "levelUp": {
         "0": [
@@ -499,6 +502,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 62,
+    "weight": 85,
     "learnset": {
       "levelUp": {
         "1": [
@@ -680,6 +684,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 142,
+    "weight": 190,
     "learnset": {
       "levelUp": {
         "1": [
@@ -854,6 +859,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 240,
+    "weight": 905,
     "learnset": {
       "levelUp": {
         "0": [
@@ -1058,6 +1064,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 63,
+    "weight": 90,
     "learnset": {
       "levelUp": {
         "1": [
@@ -1237,6 +1244,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 142,
+    "weight": 225,
     "learnset": {
       "levelUp": {
         "1": [
@@ -1408,6 +1416,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 239,
+    "weight": 855,
     "learnset": {
       "levelUp": {
         "0": [
@@ -1601,6 +1610,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium",
     "baseExpYield": 39,
+    "weight": 29,
     "learnset": {
       "levelUp": {
         "1": [
@@ -1655,6 +1665,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium",
     "baseExpYield": 72,
+    "weight": 99,
     "learnset": {
       "levelUp": {
         "0": [
@@ -1707,6 +1718,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 178,
+    "weight": 320,
     "learnset": {
       "levelUp": {
         "0": [
@@ -1871,6 +1883,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium",
     "baseExpYield": 39,
+    "weight": 32,
     "learnset": {
       "levelUp": {
         "1": [
@@ -1924,6 +1937,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium",
     "baseExpYield": 72,
+    "weight": 100,
     "learnset": {
       "levelUp": {
         "0": [
@@ -1975,6 +1989,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 178,
+    "weight": 295,
     "learnset": {
       "levelUp": {
         "0": [
@@ -2133,6 +2148,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium-slow",
     "baseExpYield": 50,
+    "weight": 18,
     "learnset": {
       "levelUp": {
         "1": [
@@ -2273,6 +2289,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium-slow",
     "baseExpYield": 122,
+    "weight": 300,
     "learnset": {
       "levelUp": {
         "1": [
@@ -2406,6 +2423,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 216,
+    "weight": 395,
     "learnset": {
       "levelUp": {
         "1": [
@@ -2535,6 +2553,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium",
     "baseExpYield": 51,
+    "weight": 35,
     "learnset": {
       "levelUp": {
         "1": [
@@ -2688,6 +2707,7 @@
     "rawCaptureRate": 127,
     "expGroup": "medium",
     "baseExpYield": 145,
+    "weight": 185,
     "learnset": {
       "levelUp": {
         "0": [
@@ -2843,6 +2863,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium",
     "baseExpYield": 52,
+    "weight": 20,
     "learnset": {
       "levelUp": {
         "1": [
@@ -2983,6 +3004,7 @@
     "rawCaptureRate": 90,
     "expGroup": "medium",
     "baseExpYield": 155,
+    "weight": 380,
     "learnset": {
       "levelUp": {
         "1": [
@@ -3115,6 +3137,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium",
     "baseExpYield": 58,
+    "weight": 69,
     "learnset": {
       "levelUp": {
         "1": [
@@ -3286,6 +3309,7 @@
     "rawCaptureRate": 90,
     "expGroup": "medium",
     "baseExpYield": 157,
+    "weight": 650,
     "learnset": {
       "levelUp": {
         "0": [
@@ -3465,6 +3489,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 112,
+    "weight": 60,
     "learnset": {
       "levelUp": {
         "1": [
@@ -3642,6 +3667,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium",
     "baseExpYield": 218,
+    "weight": 300,
     "learnset": {
       "levelUp": {
         "0": [
@@ -3803,6 +3829,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium",
     "baseExpYield": 60,
+    "weight": 120,
     "learnset": {
       "levelUp": {
         "1": [
@@ -3982,6 +4009,7 @@
     "rawCaptureRate": 90,
     "expGroup": "medium",
     "baseExpYield": 158,
+    "weight": 295,
     "learnset": {
       "levelUp": {
         "1": [
@@ -4161,6 +4189,7 @@
     "rawCaptureRate": 235,
     "expGroup": "medium-slow",
     "baseExpYield": 55,
+    "weight": 70,
     "learnset": {
       "levelUp": {
         "1": [
@@ -4313,6 +4342,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium-slow",
     "baseExpYield": 128,
+    "weight": 200,
     "learnset": {
       "levelUp": {
         "1": [
@@ -4459,6 +4489,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 227,
+    "weight": 600,
     "learnset": {
       "levelUp": {
         "0": [
@@ -4644,6 +4675,7 @@
     "rawCaptureRate": 235,
     "expGroup": "medium-slow",
     "baseExpYield": 55,
+    "weight": 90,
     "learnset": {
       "levelUp": {
         "1": [
@@ -4798,6 +4830,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium-slow",
     "baseExpYield": 128,
+    "weight": 195,
     "learnset": {
       "levelUp": {
         "1": [
@@ -4944,6 +4977,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 227,
+    "weight": 620,
     "learnset": {
       "levelUp": {
         "0": [
@@ -5133,6 +5167,7 @@
     "rawCaptureRate": 150,
     "expGroup": "fast",
     "baseExpYield": 113,
+    "weight": 75,
     "learnset": {
       "levelUp": {
         "1": [
@@ -5379,6 +5414,7 @@
     "rawCaptureRate": 25,
     "expGroup": "fast",
     "baseExpYield": 217,
+    "weight": 400,
     "learnset": {
       "levelUp": {
         "1": [
@@ -5595,6 +5631,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 60,
+    "weight": 99,
     "learnset": {
       "levelUp": {
         "1": [
@@ -5763,6 +5800,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium",
     "baseExpYield": 177,
+    "weight": 199,
     "learnset": {
       "levelUp": {
         "1": [
@@ -5912,6 +5950,7 @@
     "rawCaptureRate": 170,
     "expGroup": "fast",
     "baseExpYield": 95,
+    "weight": 55,
     "learnset": {
       "levelUp": {
         "1": [
@@ -6135,6 +6174,7 @@
     "rawCaptureRate": 50,
     "expGroup": "fast",
     "baseExpYield": 196,
+    "weight": 120,
     "learnset": {
       "levelUp": {
         "1": [
@@ -6339,6 +6379,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium",
     "baseExpYield": 49,
+    "weight": 75,
     "learnset": {
       "levelUp": {
         "1": [
@@ -6493,6 +6534,7 @@
     "rawCaptureRate": 90,
     "expGroup": "medium",
     "baseExpYield": 159,
+    "weight": 550,
     "learnset": {
       "levelUp": {
         "1": [
@@ -6649,6 +6691,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium-slow",
     "baseExpYield": 64,
+    "weight": 54,
     "learnset": {
       "levelUp": {
         "1": [
@@ -6800,6 +6843,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium-slow",
     "baseExpYield": 138,
+    "weight": 86,
     "learnset": {
       "levelUp": {
         "1": [
@@ -6949,6 +6993,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 221,
+    "weight": 186,
     "learnset": {
       "levelUp": {
         "0": [
@@ -7086,6 +7131,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 57,
+    "weight": 54,
     "learnset": {
       "levelUp": {
         "1": [
@@ -7251,6 +7297,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium",
     "baseExpYield": 142,
+    "weight": 295,
     "learnset": {
       "levelUp": {
         "1": [
@@ -7403,6 +7450,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 61,
+    "weight": 300,
     "learnset": {
       "levelUp": {
         "1": [
@@ -7549,6 +7597,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium",
     "baseExpYield": 158,
+    "weight": 125,
     "learnset": {
       "levelUp": {
         "0": [
@@ -7713,6 +7762,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium",
     "baseExpYield": 53,
+    "weight": 8,
     "learnset": {
       "levelUp": {
         "1": [
@@ -7871,6 +7921,7 @@
     "rawCaptureRate": 50,
     "expGroup": "medium",
     "baseExpYield": 149,
+    "weight": 333,
     "learnset": {
       "levelUp": {
         "0": [
@@ -8027,6 +8078,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium",
     "baseExpYield": 58,
+    "weight": 42,
     "learnset": {
       "levelUp": {
         "1": [
@@ -8215,6 +8267,7 @@
     "rawCaptureRate": 90,
     "expGroup": "medium",
     "baseExpYield": 154,
+    "weight": 320,
     "learnset": {
       "levelUp": {
         "0": [
@@ -8399,6 +8452,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 64,
+    "weight": 196,
     "learnset": {
       "levelUp": {
         "1": [
@@ -8593,6 +8647,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium",
     "baseExpYield": 175,
+    "weight": 766,
     "learnset": {
       "levelUp": {
         "1": [
@@ -8789,6 +8844,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 61,
+    "weight": 280,
     "learnset": {
       "levelUp": {
         "1": [
@@ -8980,6 +9036,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium",
     "baseExpYield": 159,
+    "weight": 320,
     "learnset": {
       "levelUp": {
         "0": [
@@ -9173,6 +9230,7 @@
     "rawCaptureRate": 190,
     "expGroup": "slow",
     "baseExpYield": 70,
+    "weight": 190,
     "learnset": {
       "levelUp": {
         "1": [
@@ -9333,6 +9391,7 @@
     "rawCaptureRate": 75,
     "expGroup": "slow",
     "baseExpYield": 194,
+    "weight": 1550,
     "learnset": {
       "levelUp": {
         "0": [
@@ -9475,6 +9534,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium-slow",
     "baseExpYield": 60,
+    "weight": 124,
     "learnset": {
       "levelUp": {
         "1": [
@@ -9626,6 +9686,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium-slow",
     "baseExpYield": 135,
+    "weight": 200,
     "learnset": {
       "levelUp": {
         "1": [
@@ -9788,6 +9849,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 230,
+    "weight": 540,
     "learnset": {
       "levelUp": {
         "0": [
@@ -9955,6 +10017,7 @@
     "rawCaptureRate": 200,
     "expGroup": "medium-slow",
     "baseExpYield": 62,
+    "weight": 195,
     "learnset": {
       "levelUp": {
         "1": [
@@ -10100,6 +10163,7 @@
     "rawCaptureRate": 100,
     "expGroup": "medium-slow",
     "baseExpYield": 140,
+    "weight": 565,
     "learnset": {
       "levelUp": {
         "0": [
@@ -10281,6 +10345,7 @@
     "rawCaptureRate": 50,
     "expGroup": "medium-slow",
     "baseExpYield": 225,
+    "weight": 480,
     "learnset": {
       "levelUp": {
         "1": [
@@ -10468,6 +10533,7 @@
     "rawCaptureRate": 180,
     "expGroup": "medium-slow",
     "baseExpYield": 61,
+    "weight": 195,
     "learnset": {
       "levelUp": {
         "1": [
@@ -10654,6 +10720,7 @@
     "rawCaptureRate": 90,
     "expGroup": "medium-slow",
     "baseExpYield": 142,
+    "weight": 705,
     "learnset": {
       "levelUp": {
         "1": [
@@ -10832,6 +10899,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 227,
+    "weight": 1300,
     "learnset": {
       "levelUp": {
         "1": [
@@ -11024,6 +11092,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium-slow",
     "baseExpYield": 60,
+    "weight": 40,
     "learnset": {
       "levelUp": {
         "1": [
@@ -11181,6 +11250,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium-slow",
     "baseExpYield": 137,
+    "weight": 64,
     "learnset": {
       "levelUp": {
         "1": [
@@ -11336,6 +11406,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 221,
+    "weight": 155,
     "learnset": {
       "levelUp": {
         "0": [
@@ -11482,6 +11553,7 @@
     "rawCaptureRate": 190,
     "expGroup": "slow",
     "baseExpYield": 67,
+    "weight": 455,
     "learnset": {
       "levelUp": {
         "1": [
@@ -11654,6 +11726,7 @@
     "rawCaptureRate": 60,
     "expGroup": "slow",
     "baseExpYield": 180,
+    "weight": 550,
     "learnset": {
       "levelUp": {
         "1": [
@@ -11826,6 +11899,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium-slow",
     "baseExpYield": 60,
+    "weight": 200,
     "learnset": {
       "levelUp": {
         "1": [
@@ -11992,6 +12066,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium-slow",
     "baseExpYield": 137,
+    "weight": 1050,
     "learnset": {
       "levelUp": {
         "1": [
@@ -12156,6 +12231,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 223,
+    "weight": 3000,
     "learnset": {
       "levelUp": {
         "1": [
@@ -12327,6 +12403,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 82,
+    "weight": 300,
     "learnset": {
       "levelUp": {
         "1": [
@@ -12467,6 +12544,7 @@
     "rawCaptureRate": 60,
     "expGroup": "medium",
     "baseExpYield": 175,
+    "weight": 950,
     "learnset": {
       "levelUp": {
         "0": [
@@ -12620,6 +12698,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 63,
+    "weight": 360,
     "learnset": {
       "levelUp": {
         "1": [
@@ -12815,6 +12894,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium",
     "baseExpYield": 172,
+    "weight": 785,
     "learnset": {
       "levelUp": {
         "1": [
@@ -13027,6 +13107,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 65,
+    "weight": 60,
     "learnset": {
       "levelUp": {
         "1": [
@@ -13183,6 +13264,7 @@
     "rawCaptureRate": 60,
     "expGroup": "medium",
     "baseExpYield": 163,
+    "weight": 600,
     "learnset": {
       "levelUp": {
         "0": [
@@ -13341,6 +13423,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 132,
+    "weight": 150,
     "learnset": {
       "levelUp": {
         "1": [
@@ -13517,6 +13600,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 62,
+    "weight": 392,
     "learnset": {
       "levelUp": {
         "1": [
@@ -13673,6 +13757,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 165,
+    "weight": 852,
     "learnset": {
       "levelUp": {
         "0": [
@@ -13832,6 +13917,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 65,
+    "weight": 900,
     "learnset": {
       "levelUp": {
         "1": [
@@ -14002,6 +14088,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium",
     "baseExpYield": 166,
+    "weight": 1200,
     "learnset": {
       "levelUp": {
         "0": [
@@ -14173,6 +14260,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 65,
+    "weight": 300,
     "learnset": {
       "levelUp": {
         "1": [
@@ -14344,6 +14432,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium",
     "baseExpYield": 175,
+    "weight": 300,
     "learnset": {
       "levelUp": {
         "0": [
@@ -14521,6 +14610,7 @@
     "rawCaptureRate": 190,
     "expGroup": "slow",
     "baseExpYield": 61,
+    "weight": 40,
     "learnset": {
       "levelUp": {
         "1": [
@@ -14673,6 +14763,7 @@
     "rawCaptureRate": 60,
     "expGroup": "slow",
     "baseExpYield": 184,
+    "weight": 1325,
     "learnset": {
       "levelUp": {
         "0": [
@@ -14816,6 +14907,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium-slow",
     "baseExpYield": 62,
+    "weight": 1,
     "learnset": {
       "levelUp": {
         "1": [
@@ -14988,6 +15080,7 @@
     "rawCaptureRate": 90,
     "expGroup": "medium-slow",
     "baseExpYield": 142,
+    "weight": 1,
     "learnset": {
       "levelUp": {
         "0": [
@@ -15160,6 +15253,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 225,
+    "weight": 405,
     "learnset": {
       "levelUp": {
         "1": [
@@ -15355,6 +15449,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 77,
+    "weight": 2100,
     "learnset": {
       "levelUp": {
         "1": [
@@ -15523,6 +15618,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 66,
+    "weight": 324,
     "learnset": {
       "levelUp": {
         "1": [
@@ -15711,6 +15807,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium",
     "baseExpYield": 169,
+    "weight": 756,
     "learnset": {
       "levelUp": {
         "1": [
@@ -15899,6 +15996,7 @@
     "rawCaptureRate": 225,
     "expGroup": "medium",
     "baseExpYield": 65,
+    "weight": 65,
     "learnset": {
       "levelUp": {
         "1": [
@@ -16056,6 +16154,7 @@
     "rawCaptureRate": 60,
     "expGroup": "medium",
     "baseExpYield": 166,
+    "weight": 600,
     "learnset": {
       "levelUp": {
         "1": [
@@ -16209,6 +16308,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 66,
+    "weight": 104,
     "learnset": {
       "levelUp": {
         "1": [
@@ -16357,6 +16457,7 @@
     "rawCaptureRate": 60,
     "expGroup": "medium",
     "baseExpYield": 172,
+    "weight": 666,
     "learnset": {
       "levelUp": {
         "1": [
@@ -16505,6 +16606,7 @@
     "rawCaptureRate": 90,
     "expGroup": "slow",
     "baseExpYield": 65,
+    "weight": 25,
     "learnset": {
       "levelUp": {
         "1": [
@@ -16666,6 +16768,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 186,
+    "weight": 1200,
     "learnset": {
       "levelUp": {
         "0": [
@@ -16818,6 +16921,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 64,
+    "weight": 65,
     "learnset": {
       "levelUp": {
         "1": [
@@ -16991,6 +17095,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium",
     "baseExpYield": 149,
+    "weight": 450,
     "learnset": {
       "levelUp": {
         "1": [
@@ -17163,6 +17268,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 159,
+    "weight": 498,
     "learnset": {
       "levelUp": {
         "0": [
@@ -17345,6 +17451,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 159,
+    "weight": 502,
     "learnset": {
       "levelUp": {
         "0": [
@@ -17528,6 +17635,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 77,
+    "weight": 655,
     "learnset": {
       "levelUp": {
         "1": [
@@ -17726,6 +17834,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 68,
+    "weight": 10,
     "learnset": {
       "levelUp": {
         "1": [
@@ -17880,6 +17989,7 @@
     "rawCaptureRate": 60,
     "expGroup": "medium",
     "baseExpYield": 172,
+    "weight": 95,
     "learnset": {
       "levelUp": {
         "0": [
@@ -18031,6 +18141,7 @@
     "rawCaptureRate": 120,
     "expGroup": "slow",
     "baseExpYield": 69,
+    "weight": 1150,
     "learnset": {
       "levelUp": {
         "1": [
@@ -18220,6 +18331,7 @@
     "rawCaptureRate": 60,
     "expGroup": "slow",
     "baseExpYield": 170,
+    "weight": 1200,
     "learnset": {
       "levelUp": {
         "0": [
@@ -18435,6 +18547,7 @@
     "rawCaptureRate": 30,
     "expGroup": "fast",
     "baseExpYield": 395,
+    "weight": 346,
     "learnset": {
       "levelUp": {
         "1": [
@@ -18662,6 +18775,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 87,
+    "weight": 350,
     "learnset": {
       "levelUp": {
         "1": [
@@ -18830,6 +18944,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 172,
+    "weight": 800,
     "learnset": {
       "levelUp": {
         "1": [
@@ -19034,6 +19149,7 @@
     "rawCaptureRate": 225,
     "expGroup": "medium",
     "baseExpYield": 59,
+    "weight": 80,
     "learnset": {
       "levelUp": {
         "1": [
@@ -19177,6 +19293,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium",
     "baseExpYield": 154,
+    "weight": 250,
     "learnset": {
       "levelUp": {
         "1": [
@@ -19318,6 +19435,7 @@
     "rawCaptureRate": 225,
     "expGroup": "medium",
     "baseExpYield": 64,
+    "weight": 150,
     "learnset": {
       "levelUp": {
         "1": [
@@ -19464,6 +19582,7 @@
     "rawCaptureRate": 60,
     "expGroup": "medium",
     "baseExpYield": 158,
+    "weight": 390,
     "learnset": {
       "levelUp": {
         "1": [
@@ -19604,6 +19723,7 @@
     "rawCaptureRate": 225,
     "expGroup": "slow",
     "baseExpYield": 68,
+    "weight": 345,
     "learnset": {
       "levelUp": {
         "1": [
@@ -19769,6 +19889,7 @@
     "rawCaptureRate": 60,
     "expGroup": "slow",
     "baseExpYield": 182,
+    "weight": 800,
     "learnset": {
       "levelUp": {
         "1": [
@@ -19912,6 +20033,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 161,
+    "weight": 545,
     "learnset": {
       "levelUp": {
         "1": [
@@ -20119,6 +20241,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 100,
+    "weight": 560,
     "learnset": {
       "levelUp": {
         "1": [
@@ -20287,6 +20410,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 159,
+    "weight": 406,
     "learnset": {
       "levelUp": {
         "1": [
@@ -20488,6 +20612,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 172,
+    "weight": 300,
     "learnset": {
       "levelUp": {
         "1": [
@@ -20659,6 +20784,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 173,
+    "weight": 445,
     "learnset": {
       "levelUp": {
         "1": [
@@ -20836,6 +20962,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 175,
+    "weight": 550,
     "learnset": {
       "levelUp": {
         "1": [
@@ -20998,6 +21125,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 172,
+    "weight": 884,
     "learnset": {
       "levelUp": {
         "1": [
@@ -21172,6 +21300,7 @@
     "rawCaptureRate": 255,
     "expGroup": "slow",
     "baseExpYield": 40,
+    "weight": 100,
     "learnset": {
       "levelUp": {
         "1": [
@@ -21229,6 +21358,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 189,
+    "weight": 2350,
     "learnset": {
       "levelUp": {
         "0": [
@@ -21409,6 +21539,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 187,
+    "weight": 2200,
     "learnset": {
       "levelUp": {
         "1": [
@@ -21597,6 +21728,7 @@
     "rawCaptureRate": 35,
     "expGroup": "medium",
     "baseExpYield": 101,
+    "weight": 40,
     "learnset": {
       "levelUp": {
         "1": [
@@ -21643,6 +21775,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 65,
+    "weight": 65,
     "learnset": {
       "levelUp": {
         "1": [
@@ -21788,6 +21921,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 184,
+    "weight": 290,
     "learnset": {
       "levelUp": {
         "0": [
@@ -21959,6 +22093,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 184,
+    "weight": 245,
     "learnset": {
       "levelUp": {
         "0": [
@@ -22127,6 +22262,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 184,
+    "weight": 250,
     "learnset": {
       "levelUp": {
         "0": [
@@ -22296,6 +22432,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 79,
+    "weight": 365,
     "learnset": {
       "levelUp": {
         "1": [
@@ -22460,6 +22597,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 71,
+    "weight": 75,
     "learnset": {
       "levelUp": {
         "1": [
@@ -22621,6 +22759,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 173,
+    "weight": 350,
     "learnset": {
       "levelUp": {
         "0": [
@@ -22783,6 +22922,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 71,
+    "weight": 115,
     "learnset": {
       "levelUp": {
         "1": [
@@ -22943,6 +23083,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 173,
+    "weight": 405,
     "learnset": {
       "levelUp": {
         "0": [
@@ -23120,6 +23261,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 180,
+    "weight": 590,
     "learnset": {
       "levelUp": {
         "1": [
@@ -23295,6 +23437,7 @@
     "rawCaptureRate": 25,
     "expGroup": "slow",
     "baseExpYield": 189,
+    "weight": 4600,
     "learnset": {
       "levelUp": {
         "1": [
@@ -23511,6 +23654,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 261,
+    "weight": 554,
     "learnset": {
       "levelUp": {
         "1": [
@@ -23682,6 +23826,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 261,
+    "weight": 526,
     "learnset": {
       "levelUp": {
         "1": [
@@ -23849,6 +23994,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 261,
+    "weight": 600,
     "learnset": {
       "levelUp": {
         "1": [
@@ -24009,6 +24155,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 60,
+    "weight": 33,
     "learnset": {
       "levelUp": {
         "1": [
@@ -24168,6 +24315,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 147,
+    "weight": 165,
     "learnset": {
       "levelUp": {
         "1": [
@@ -24321,6 +24469,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 270,
+    "weight": 2100,
     "learnset": {
       "levelUp": {
         "0": [
@@ -24530,6 +24679,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 306,
+    "weight": 1220,
     "learnset": {
       "levelUp": {
         "1": [
@@ -24770,6 +24920,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 270,
+    "weight": 40,
     "learnset": {
       "levelUp": {
         "1": [
@@ -25211,6 +25362,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 64,
+    "weight": 64,
     "learnset": {
       "levelUp": {
         "1": [
@@ -25360,6 +25512,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 142,
+    "weight": 158,
     "learnset": {
       "levelUp": {
         "1": [
@@ -25507,6 +25660,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 236,
+    "weight": 1005,
     "learnset": {
       "levelUp": {
         "0": [
@@ -25670,6 +25824,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 62,
+    "weight": 79,
     "learnset": {
       "levelUp": {
         "1": [
@@ -25823,6 +25978,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 142,
+    "weight": 190,
     "learnset": {
       "levelUp": {
         "1": [
@@ -25974,6 +26130,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 240,
+    "weight": 795,
     "learnset": {
       "levelUp": {
         "1": [
@@ -26153,6 +26310,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 63,
+    "weight": 95,
     "learnset": {
       "levelUp": {
         "1": [
@@ -26328,6 +26486,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 142,
+    "weight": 250,
     "learnset": {
       "levelUp": {
         "1": [
@@ -26503,6 +26662,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 239,
+    "weight": 888,
     "learnset": {
       "levelUp": {
         "1": [
@@ -26691,6 +26851,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium",
     "baseExpYield": 43,
+    "weight": 60,
     "learnset": {
       "levelUp": {
         "1": [
@@ -26864,6 +27025,7 @@
     "rawCaptureRate": 90,
     "expGroup": "medium",
     "baseExpYield": 145,
+    "weight": 325,
     "learnset": {
       "levelUp": {
         "0": [
@@ -27041,6 +27203,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium",
     "baseExpYield": 52,
+    "weight": 212,
     "learnset": {
       "levelUp": {
         "1": [
@@ -27211,6 +27374,7 @@
     "rawCaptureRate": 90,
     "expGroup": "medium",
     "baseExpYield": 158,
+    "weight": 408,
     "learnset": {
       "levelUp": {
         "1": [
@@ -27381,6 +27545,7 @@
     "rawCaptureRate": 255,
     "expGroup": "fast",
     "baseExpYield": 53,
+    "weight": 108,
     "learnset": {
       "levelUp": {
         "1": [
@@ -27528,6 +27693,7 @@
     "rawCaptureRate": 90,
     "expGroup": "fast",
     "baseExpYield": 137,
+    "weight": 356,
     "learnset": {
       "levelUp": {
         "1": [
@@ -27668,6 +27834,7 @@
     "rawCaptureRate": 255,
     "expGroup": "fast",
     "baseExpYield": 50,
+    "weight": 85,
     "learnset": {
       "levelUp": {
         "1": [
@@ -27830,6 +27997,7 @@
     "rawCaptureRate": 90,
     "expGroup": "fast",
     "baseExpYield": 140,
+    "weight": 335,
     "learnset": {
       "levelUp": {
         "0": [
@@ -27997,6 +28165,7 @@
     "rawCaptureRate": 90,
     "expGroup": "medium",
     "baseExpYield": 241,
+    "weight": 750,
     "learnset": {
       "levelUp": {
         "0": [
@@ -28150,6 +28319,7 @@
     "rawCaptureRate": 190,
     "expGroup": "slow",
     "baseExpYield": 66,
+    "weight": 120,
     "learnset": {
       "levelUp": {
         "1": [
@@ -28301,6 +28471,7 @@
     "rawCaptureRate": 75,
     "expGroup": "slow",
     "baseExpYield": 161,
+    "weight": 225,
     "learnset": {
       "levelUp": {
         "0": [
@@ -28456,6 +28627,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 41,
+    "weight": 20,
     "learnset": {
       "levelUp": {
         "1": [
@@ -28605,6 +28777,7 @@
     "rawCaptureRate": 150,
     "expGroup": "fast",
     "baseExpYield": 44,
+    "weight": 30,
     "learnset": {
       "levelUp": {
         "1": [
@@ -28782,6 +28955,7 @@
     "rawCaptureRate": 170,
     "expGroup": "fast",
     "baseExpYield": 42,
+    "weight": 10,
     "learnset": {
       "levelUp": {
         "1": [
@@ -28937,6 +29111,7 @@
     "rawCaptureRate": 190,
     "expGroup": "fast",
     "baseExpYield": 49,
+    "weight": 15,
     "learnset": {
       "levelUp": {
         "1": [
@@ -29127,6 +29302,7 @@
     "rawCaptureRate": 75,
     "expGroup": "fast",
     "baseExpYield": 142,
+    "weight": 32,
     "learnset": {
       "levelUp": {
         "0": [
@@ -29330,6 +29506,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 64,
+    "weight": 20,
     "learnset": {
       "levelUp": {
         "1": [
@@ -29497,6 +29674,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium",
     "baseExpYield": 165,
+    "weight": 150,
     "learnset": {
       "levelUp": {
         "0": [
@@ -29658,6 +29836,7 @@
     "rawCaptureRate": 235,
     "expGroup": "medium-slow",
     "baseExpYield": 56,
+    "weight": 78,
     "learnset": {
       "levelUp": {
         "1": [
@@ -29804,6 +29983,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium-slow",
     "baseExpYield": 128,
+    "weight": 133,
     "learnset": {
       "levelUp": {
         "1": [
@@ -29961,6 +30141,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 230,
+    "weight": 615,
     "learnset": {
       "levelUp": {
         "0": [
@@ -30133,6 +30314,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 221,
+    "weight": 58,
     "learnset": {
       "levelUp": {
         "0": [
@@ -30270,6 +30452,7 @@
     "rawCaptureRate": 190,
     "expGroup": "fast",
     "baseExpYield": 88,
+    "weight": 85,
     "learnset": {
       "levelUp": {
         "1": [
@@ -30456,6 +30639,7 @@
     "rawCaptureRate": 75,
     "expGroup": "fast",
     "baseExpYield": 189,
+    "weight": 285,
     "learnset": {
       "levelUp": {
         "1": [
@@ -30629,6 +30813,7 @@
     "rawCaptureRate": 65,
     "expGroup": "medium",
     "baseExpYield": 144,
+    "weight": 380,
     "learnset": {
       "levelUp": {
         "0": [
@@ -30805,6 +30990,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 225,
+    "weight": 339,
     "learnset": {
       "levelUp": {
         "0": [
@@ -30949,6 +31135,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium-slow",
     "baseExpYield": 50,
+    "weight": 5,
     "learnset": {
       "levelUp": {
         "1": [
@@ -31111,6 +31298,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium-slow",
     "baseExpYield": 119,
+    "weight": 10,
     "learnset": {
       "levelUp": {
         "1": [
@@ -31264,6 +31452,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 207,
+    "weight": 30,
     "learnset": {
       "levelUp": {
         "1": [
@@ -31417,6 +31606,7 @@
     "rawCaptureRate": 45,
     "expGroup": "fast",
     "baseExpYield": 72,
+    "weight": 115,
     "learnset": {
       "levelUp": {
         "1": [
@@ -31605,6 +31795,7 @@
     "rawCaptureRate": 235,
     "expGroup": "medium-slow",
     "baseExpYield": 36,
+    "weight": 18,
     "learnset": {
       "levelUp": {
         "1": [
@@ -31739,6 +31930,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium-slow",
     "baseExpYield": 149,
+    "weight": 85,
     "learnset": {
       "levelUp": {
         "1": [
@@ -31885,6 +32077,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium",
     "baseExpYield": 78,
+    "weight": 380,
     "learnset": {
       "levelUp": {
         "1": [
@@ -32036,6 +32229,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium",
     "baseExpYield": 42,
+    "weight": 85,
     "learnset": {
       "levelUp": {
         "1": [
@@ -32203,6 +32397,7 @@
     "rawCaptureRate": 90,
     "expGroup": "medium",
     "baseExpYield": 151,
+    "weight": 750,
     "learnset": {
       "levelUp": {
         "1": [
@@ -32372,6 +32567,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 184,
+    "weight": 265,
     "learnset": {
       "levelUp": {
         "0": [
@@ -32544,6 +32740,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 184,
+    "weight": 270,
     "learnset": {
       "levelUp": {
         "0": [
@@ -32714,6 +32911,7 @@
     "rawCaptureRate": 30,
     "expGroup": "medium-slow",
     "baseExpYield": 81,
+    "weight": 21,
     "learnset": {
       "levelUp": {
         "1": [
@@ -32884,6 +33082,7 @@
     "rawCaptureRate": 70,
     "expGroup": "medium",
     "baseExpYield": 172,
+    "weight": 795,
     "learnset": {
       "levelUp": {
         "1": [
@@ -33094,6 +33293,7 @@
     "rawCaptureRate": 45,
     "expGroup": "fast",
     "baseExpYield": 87,
+    "weight": 10,
     "learnset": {
       "levelUp": {
         "1": [
@@ -33273,6 +33473,7 @@
     "rawCaptureRate": 225,
     "expGroup": "medium",
     "baseExpYield": 118,
+    "weight": 50,
     "learnset": {
       "levelUp": {
         "1": [
@@ -33318,6 +33519,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 142,
+    "weight": 285,
     "learnset": {
       "levelUp": {
         "0": [
@@ -33374,6 +33576,7 @@
     "rawCaptureRate": 60,
     "expGroup": "medium",
     "baseExpYield": 159,
+    "weight": 415,
     "learnset": {
       "levelUp": {
         "1": [
@@ -33557,6 +33760,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 58,
+    "weight": 72,
     "learnset": {
       "levelUp": {
         "1": [
@@ -33710,6 +33914,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium",
     "baseExpYield": 163,
+    "weight": 1258,
     "learnset": {
       "levelUp": {
         "0": [
@@ -33876,6 +34081,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 145,
+    "weight": 140,
     "learnset": {
       "levelUp": {
         "1": [
@@ -34068,6 +34274,7 @@
     "rawCaptureRate": 60,
     "expGroup": "medium-slow",
     "baseExpYield": 86,
+    "weight": 648,
     "learnset": {
       "levelUp": {
         "1": [
@@ -34260,6 +34467,7 @@
     "rawCaptureRate": 25,
     "expGroup": "medium",
     "baseExpYield": 179,
+    "weight": 4000,
     "learnset": {
       "levelUp": {
         "1": [
@@ -34436,6 +34644,7 @@
     "rawCaptureRate": 190,
     "expGroup": "fast",
     "baseExpYield": 60,
+    "weight": 78,
     "learnset": {
       "levelUp": {
         "1": [
@@ -34613,6 +34822,7 @@
     "rawCaptureRate": 75,
     "expGroup": "fast",
     "baseExpYield": 158,
+    "weight": 487,
     "learnset": {
       "levelUp": {
         "1": [
@@ -34798,6 +35008,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 88,
+    "weight": 39,
     "learnset": {
       "levelUp": {
         "1": [
@@ -34979,6 +35190,7 @@
     "rawCaptureRate": 25,
     "expGroup": "medium",
     "baseExpYield": 175,
+    "weight": 1180,
     "learnset": {
       "levelUp": {
         "0": [
@@ -35153,6 +35365,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium-slow",
     "baseExpYield": 177,
+    "weight": 205,
     "learnset": {
       "levelUp": {
         "1": [
@@ -35310,6 +35523,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 175,
+    "weight": 540,
     "learnset": {
       "levelUp": {
         "1": [
@@ -35487,6 +35701,7 @@
     "rawCaptureRate": 60,
     "expGroup": "medium-slow",
     "baseExpYield": 86,
+    "weight": 280,
     "learnset": {
       "levelUp": {
         "1": [
@@ -35679,6 +35894,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium",
     "baseExpYield": 66,
+    "weight": 88,
     "learnset": {
       "levelUp": {
         "1": [
@@ -35855,6 +36071,7 @@
     "rawCaptureRate": 60,
     "expGroup": "medium",
     "baseExpYield": 175,
+    "weight": 1258,
     "learnset": {
       "levelUp": {
         "1": [
@@ -36036,6 +36253,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 50,
+    "weight": 350,
     "learnset": {
       "levelUp": {
         "1": [
@@ -36192,6 +36410,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium",
     "baseExpYield": 151,
+    "weight": 550,
     "learnset": {
       "levelUp": {
         "0": [
@@ -36356,6 +36575,7 @@
     "rawCaptureRate": 225,
     "expGroup": "slow",
     "baseExpYield": 50,
+    "weight": 65,
     "learnset": {
       "levelUp": {
         "1": [
@@ -36506,6 +36726,7 @@
     "rawCaptureRate": 75,
     "expGroup": "slow",
     "baseExpYield": 158,
+    "weight": 558,
     "learnset": {
       "levelUp": {
         "0": [
@@ -36663,6 +36884,7 @@
     "rawCaptureRate": 60,
     "expGroup": "fast",
     "baseExpYield": 144,
+    "weight": 50,
     "learnset": {
       "levelUp": {
         "1": [
@@ -36835,6 +37057,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 60,
+    "weight": 120,
     "learnset": {
       "levelUp": {
         "1": [
@@ -36984,6 +37207,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium",
     "baseExpYield": 168,
+    "weight": 285,
     "learnset": {
       "levelUp": {
         "0": [
@@ -37143,6 +37367,7 @@
     "rawCaptureRate": 45,
     "expGroup": "fast",
     "baseExpYield": 116,
+    "weight": 160,
     "learnset": {
       "levelUp": {
         "1": [
@@ -37297,6 +37522,7 @@
     "rawCaptureRate": 25,
     "expGroup": "slow",
     "baseExpYield": 170,
+    "weight": 2200,
     "learnset": {
       "levelUp": {
         "1": [
@@ -37460,6 +37686,7 @@
     "rawCaptureRate": 25,
     "expGroup": "slow",
     "baseExpYield": 163,
+    "weight": 505,
     "learnset": {
       "levelUp": {
         "1": [
@@ -37626,6 +37853,7 @@
     "rawCaptureRate": 120,
     "expGroup": "slow",
     "baseExpYield": 66,
+    "weight": 108,
     "learnset": {
       "levelUp": {
         "1": [
@@ -37800,6 +38028,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 175,
+    "weight": 350,
     "learnset": {
       "levelUp": {
         "1": [
@@ -37966,6 +38195,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 243,
+    "weight": 1520,
     "learnset": {
       "levelUp": {
         "1": [
@@ -38114,6 +38344,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium",
     "baseExpYield": 66,
+    "weight": 335,
     "learnset": {
       "levelUp": {
         "1": [
@@ -38257,6 +38488,7 @@
     "rawCaptureRate": 60,
     "expGroup": "medium",
     "baseExpYield": 175,
+    "weight": 1200,
     "learnset": {
       "levelUp": {
         "0": [
@@ -38420,6 +38652,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 180,
+    "weight": 325,
     "learnset": {
       "levelUp": {
         "1": [
@@ -38568,6 +38801,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 163,
+    "weight": 712,
     "learnset": {
       "levelUp": {
         "1": [
@@ -38750,6 +38984,7 @@
     "rawCaptureRate": 45,
     "expGroup": "fast",
     "baseExpYield": 88,
+    "weight": 580,
     "learnset": {
       "levelUp": {
         "1": [
@@ -38797,6 +39032,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium",
     "baseExpYield": 42,
+    "weight": 210,
     "learnset": {
       "levelUp": {
         "1": [
@@ -38912,6 +39148,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 159,
+    "weight": 480,
     "learnset": {
       "levelUp": {
         "0": [
@@ -39075,6 +39312,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 61,
+    "weight": 60,
     "learnset": {
       "levelUp": {
         "1": [
@@ -39245,6 +39483,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 72,
+    "weight": 235,
     "learnset": {
       "levelUp": {
         "1": [
@@ -39406,6 +39645,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 73,
+    "weight": 214,
     "learnset": {
       "levelUp": {
         "1": [
@@ -39569,6 +39809,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 172,
+    "weight": 755,
     "learnset": {
       "levelUp": {
         "1": [
@@ -39739,6 +39980,7 @@
     "rawCaptureRate": 30,
     "expGroup": "fast",
     "baseExpYield": 608,
+    "weight": 468,
     "learnset": {
       "levelUp": {
         "1": [
@@ -39959,6 +40201,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 261,
+    "weight": 1780,
     "learnset": {
       "levelUp": {
         "1": [
@@ -40118,6 +40361,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 261,
+    "weight": 1980,
     "learnset": {
       "levelUp": {
         "1": [
@@ -40273,6 +40517,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 261,
+    "weight": 1870,
     "learnset": {
       "levelUp": {
         "1": [
@@ -40434,6 +40679,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 60,
+    "weight": 720,
     "learnset": {
       "levelUp": {
         "1": [
@@ -40593,6 +40839,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 144,
+    "weight": 1520,
     "learnset": {
       "levelUp": {
         "0": [
@@ -40749,6 +40996,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 270,
+    "weight": 2020,
     "learnset": {
       "levelUp": {
         "1": [
@@ -40959,6 +41207,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 306,
+    "weight": 2160,
     "learnset": {
       "levelUp": {
         "1": [
@@ -41152,6 +41401,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 306,
+    "weight": 1990,
     "learnset": {
       "levelUp": {
         "1": [
@@ -41328,6 +41578,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 270,
+    "weight": 50,
     "learnset": {
       "levelUp": {
         "1": [
@@ -41502,6 +41753,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 62,
+    "weight": 50,
     "learnset": {
       "levelUp": {
         "1": [
@@ -41677,6 +41929,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 142,
+    "weight": 216,
     "learnset": {
       "levelUp": {
         "1": [
@@ -41850,6 +42103,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 239,
+    "weight": 522,
     "learnset": {
       "levelUp": {
         "0": [
@@ -42044,6 +42298,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 62,
+    "weight": 25,
     "learnset": {
       "levelUp": {
         "1": [
@@ -42205,6 +42460,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 142,
+    "weight": 195,
     "learnset": {
       "levelUp": {
         "0": [
@@ -42383,6 +42639,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 239,
+    "weight": 520,
     "learnset": {
       "levelUp": {
         "0": [
@@ -42579,6 +42836,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 62,
+    "weight": 76,
     "learnset": {
       "levelUp": {
         "1": [
@@ -42744,6 +43002,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 142,
+    "weight": 280,
     "learnset": {
       "levelUp": {
         "0": [
@@ -42918,6 +43177,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 241,
+    "weight": 819,
     "learnset": {
       "levelUp": {
         "1": [
@@ -43109,6 +43369,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium",
     "baseExpYield": 56,
+    "weight": 136,
     "learnset": {
       "levelUp": {
         "1": [
@@ -43264,6 +43525,7 @@
     "rawCaptureRate": 127,
     "expGroup": "medium",
     "baseExpYield": 147,
+    "weight": 370,
     "learnset": {
       "levelUp": {
         "0": [
@@ -43417,6 +43679,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium",
     "baseExpYield": 56,
+    "weight": 175,
     "learnset": {
       "levelUp": {
         "1": [
@@ -43577,6 +43840,7 @@
     "rawCaptureRate": 90,
     "expGroup": "medium",
     "baseExpYield": 147,
+    "weight": 325,
     "learnset": {
       "levelUp": {
         "0": [
@@ -43741,6 +44005,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium",
     "baseExpYield": 56,
+    "weight": 36,
     "learnset": {
       "levelUp": {
         "1": [
@@ -43797,6 +44062,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium",
     "baseExpYield": 72,
+    "weight": 100,
     "learnset": {
       "levelUp": {
         "0": [
@@ -43854,6 +44120,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 178,
+    "weight": 284,
     "learnset": {
       "levelUp": {
         "0": [
@@ -43997,6 +44264,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium",
     "baseExpYield": 72,
+    "weight": 115,
     "learnset": {
       "levelUp": {
         "0": [
@@ -44054,6 +44322,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 173,
+    "weight": 316,
     "learnset": {
       "levelUp": {
         "0": [
@@ -44196,6 +44465,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium-slow",
     "baseExpYield": 44,
+    "weight": 26,
     "learnset": {
       "levelUp": {
         "1": [
@@ -44341,6 +44611,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium-slow",
     "baseExpYield": 119,
+    "weight": 325,
     "learnset": {
       "levelUp": {
         "1": [
@@ -44509,6 +44780,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 216,
+    "weight": 550,
     "learnset": {
       "levelUp": {
         "1": [
@@ -44663,6 +44935,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium-slow",
     "baseExpYield": 44,
+    "weight": 40,
     "learnset": {
       "levelUp": {
         "1": [
@@ -44812,6 +45085,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium-slow",
     "baseExpYield": 119,
+    "weight": 280,
     "learnset": {
       "levelUp": {
         "0": [
@@ -44993,6 +45267,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 216,
+    "weight": 596,
     "learnset": {
       "levelUp": {
         "0": [
@@ -45182,6 +45457,7 @@
     "rawCaptureRate": 200,
     "expGroup": "medium-slow",
     "baseExpYield": 54,
+    "weight": 23,
     "learnset": {
       "levelUp": {
         "1": [
@@ -45314,6 +45590,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 159,
+    "weight": 198,
     "learnset": {
       "levelUp": {
         "1": [
@@ -45434,6 +45711,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 54,
+    "weight": 95,
     "learnset": {
       "levelUp": {
         "1": [
@@ -45581,6 +45859,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 154,
+    "weight": 280,
     "learnset": {
       "levelUp": {
         "1": [
@@ -45735,6 +46014,7 @@
     "rawCaptureRate": 235,
     "expGroup": "slow",
     "baseExpYield": 40,
+    "weight": 66,
     "learnset": {
       "levelUp": {
         "1": [
@@ -45920,6 +46200,7 @@
     "rawCaptureRate": 120,
     "expGroup": "slow",
     "baseExpYield": 97,
+    "weight": 202,
     "learnset": {
       "levelUp": {
         "1": [
@@ -46092,6 +46373,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 233,
+    "weight": 484,
     "learnset": {
       "levelUp": {
         "0": [
@@ -46285,6 +46567,7 @@
     "rawCaptureRate": 200,
     "expGroup": "medium",
     "baseExpYield": 54,
+    "weight": 17,
     "learnset": {
       "levelUp": {
         "1": [
@@ -46425,6 +46708,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium",
     "baseExpYield": 159,
+    "weight": 36,
     "learnset": {
       "levelUp": {
         "1": [
@@ -46581,6 +46865,7 @@
     "rawCaptureRate": 255,
     "expGroup": "fast-then-very-slow",
     "baseExpYield": 59,
+    "weight": 45,
     "learnset": {
       "levelUp": {
         "1": [
@@ -46716,6 +47001,7 @@
     "rawCaptureRate": 90,
     "expGroup": "fast-then-very-slow",
     "baseExpYield": 161,
+    "weight": 392,
     "learnset": {
       "levelUp": {
         "0": [
@@ -46890,6 +47176,7 @@
     "rawCaptureRate": 255,
     "expGroup": "slow",
     "baseExpYield": 56,
+    "weight": 240,
     "learnset": {
       "levelUp": {
         "1": [
@@ -47051,6 +47338,7 @@
     "rawCaptureRate": 120,
     "expGroup": "slow",
     "baseExpYield": 154,
+    "weight": 465,
     "learnset": {
       "levelUp": {
         "1": [
@@ -47224,6 +47512,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 252,
+    "weight": 1305,
     "learnset": {
       "levelUp": {
         "0": [
@@ -47418,6 +47707,7 @@
     "rawCaptureRate": 255,
     "expGroup": "slow-then-very-fast",
     "baseExpYield": 53,
+    "weight": 55,
     "learnset": {
       "levelUp": {
         "1": [
@@ -47539,6 +47829,7 @@
     "rawCaptureRate": 120,
     "expGroup": "slow-then-very-fast",
     "baseExpYield": 160,
+    "weight": 120,
     "learnset": {
       "levelUp": {
         "0": [
@@ -47674,6 +47965,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow-then-very-fast",
     "baseExpYield": 83,
+    "weight": 12,
     "learnset": {
       "levelUp": {
         "1": [
@@ -47804,6 +48096,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium-slow",
     "baseExpYield": 48,
+    "weight": 163,
     "learnset": {
       "levelUp": {
         "1": [
@@ -47945,6 +48238,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium-slow",
     "baseExpYield": 126,
+    "weight": 405,
     "learnset": {
       "levelUp": {
         "0": [
@@ -48088,6 +48382,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 221,
+    "weight": 840,
     "learnset": {
       "levelUp": {
         "0": [
@@ -48252,6 +48547,7 @@
     "rawCaptureRate": 180,
     "expGroup": "fast-then-very-slow",
     "baseExpYield": 47,
+    "weight": 864,
     "learnset": {
       "levelUp": {
         "1": [
@@ -48432,6 +48728,7 @@
     "rawCaptureRate": 200,
     "expGroup": "fast-then-very-slow",
     "baseExpYield": 166,
+    "weight": 2538,
     "learnset": {
       "levelUp": {
         "1": [
@@ -48610,6 +48907,7 @@
     "rawCaptureRate": 150,
     "expGroup": "fast",
     "baseExpYield": 38,
+    "weight": 20,
     "learnset": {
       "levelUp": {
         "1": [
@@ -48747,6 +49045,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium",
     "baseExpYield": 75,
+    "weight": 970,
     "learnset": {
       "levelUp": {
         "1": [
@@ -48908,6 +49207,7 @@
     "rawCaptureRate": 255,
     "expGroup": "fast",
     "baseExpYield": 52,
+    "weight": 110,
     "learnset": {
       "levelUp": {
         "1": [
@@ -49073,6 +49373,7 @@
     "rawCaptureRate": 60,
     "expGroup": "fast",
     "baseExpYield": 140,
+    "weight": 326,
     "learnset": {
       "levelUp": {
         "1": [
@@ -49205,6 +49506,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 133,
+    "weight": 110,
     "learnset": {
       "levelUp": {
         "1": [
@@ -49424,6 +49726,7 @@
     "rawCaptureRate": 45,
     "expGroup": "fast",
     "baseExpYield": 133,
+    "weight": 115,
     "learnset": {
       "levelUp": {
         "1": [
@@ -49613,6 +49916,7 @@
     "rawCaptureRate": 180,
     "expGroup": "slow",
     "baseExpYield": 66,
+    "weight": 600,
     "learnset": {
       "levelUp": {
         "1": [
@@ -49767,6 +50071,7 @@
     "rawCaptureRate": 90,
     "expGroup": "slow",
     "baseExpYield": 151,
+    "weight": 1200,
     "learnset": {
       "levelUp": {
         "1": [
@@ -49915,6 +50220,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 239,
+    "weight": 3600,
     "learnset": {
       "levelUp": {
         "1": [
@@ -50111,6 +50417,7 @@
     "rawCaptureRate": 180,
     "expGroup": "medium",
     "baseExpYield": 56,
+    "weight": 112,
     "learnset": {
       "levelUp": {
         "1": [
@@ -50300,6 +50607,7 @@
     "rawCaptureRate": 90,
     "expGroup": "medium",
     "baseExpYield": 144,
+    "weight": 315,
     "learnset": {
       "levelUp": {
         "1": [
@@ -50480,6 +50788,7 @@
     "rawCaptureRate": 120,
     "expGroup": "slow",
     "baseExpYield": 59,
+    "weight": 152,
     "learnset": {
       "levelUp": {
         "1": [
@@ -50616,6 +50925,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 166,
+    "weight": 402,
     "learnset": {
       "levelUp": {
         "1": [
@@ -50757,6 +51067,7 @@
     "rawCaptureRate": 200,
     "expGroup": "medium",
     "baseExpYield": 142,
+    "weight": 42,
     "learnset": {
       "levelUp": {
         "1": [
@@ -50922,6 +51233,7 @@
     "rawCaptureRate": 200,
     "expGroup": "medium",
     "baseExpYield": 142,
+    "weight": 42,
     "learnset": {
       "levelUp": {
         "1": [
@@ -51085,6 +51397,7 @@
     "rawCaptureRate": 150,
     "expGroup": "slow-then-very-fast",
     "baseExpYield": 151,
+    "weight": 177,
     "learnset": {
       "levelUp": {
         "1": [
@@ -51251,6 +51564,7 @@
     "rawCaptureRate": 150,
     "expGroup": "fast-then-very-slow",
     "baseExpYield": 151,
+    "weight": 177,
     "learnset": {
       "levelUp": {
         "1": [
@@ -51422,6 +51736,7 @@
     "rawCaptureRate": 150,
     "expGroup": "medium-slow",
     "baseExpYield": 140,
+    "weight": 20,
     "learnset": {
       "levelUp": {
         "0": [
@@ -51579,6 +51894,7 @@
     "rawCaptureRate": 225,
     "expGroup": "fast-then-very-slow",
     "baseExpYield": 60,
+    "weight": 103,
     "learnset": {
       "levelUp": {
         "1": [
@@ -51741,6 +52057,7 @@
     "rawCaptureRate": 75,
     "expGroup": "fast-then-very-slow",
     "baseExpYield": 163,
+    "weight": 800,
     "learnset": {
       "levelUp": {
         "0": [
@@ -51898,6 +52215,7 @@
     "rawCaptureRate": 225,
     "expGroup": "slow",
     "baseExpYield": 61,
+    "weight": 208,
     "learnset": {
       "levelUp": {
         "1": [
@@ -52040,6 +52358,7 @@
     "rawCaptureRate": 60,
     "expGroup": "slow",
     "baseExpYield": 161,
+    "weight": 888,
     "learnset": {
       "levelUp": {
         "0": [
@@ -52191,6 +52510,7 @@
     "rawCaptureRate": 125,
     "expGroup": "fast-then-very-slow",
     "baseExpYield": 80,
+    "weight": 1300,
     "learnset": {
       "levelUp": {
         "1": [
@@ -52339,6 +52659,7 @@
     "rawCaptureRate": 60,
     "expGroup": "fast-then-very-slow",
     "baseExpYield": 175,
+    "weight": 3980,
     "learnset": {
       "levelUp": {
         "1": [
@@ -52481,6 +52802,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium",
     "baseExpYield": 61,
+    "weight": 240,
     "learnset": {
       "levelUp": {
         "1": [
@@ -52645,6 +52967,7 @@
     "rawCaptureRate": 150,
     "expGroup": "medium",
     "baseExpYield": 161,
+    "weight": 2200,
     "learnset": {
       "levelUp": {
         "0": [
@@ -52804,6 +53127,7 @@
     "rawCaptureRate": 90,
     "expGroup": "medium",
     "baseExpYield": 165,
+    "weight": 804,
     "learnset": {
       "levelUp": {
         "1": [
@@ -52973,6 +53297,7 @@
     "rawCaptureRate": 255,
     "expGroup": "fast",
     "baseExpYield": 66,
+    "weight": 306,
     "learnset": {
       "levelUp": {
         "1": [
@@ -53138,6 +53463,7 @@
     "rawCaptureRate": 60,
     "expGroup": "fast",
     "baseExpYield": 165,
+    "weight": 715,
     "learnset": {
       "levelUp": {
         "0": [
@@ -53331,6 +53657,7 @@
     "rawCaptureRate": 255,
     "expGroup": "fast",
     "baseExpYield": 126,
+    "weight": 50,
     "learnset": {
       "levelUp": {
         "1": [
@@ -53505,6 +53832,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium-slow",
     "baseExpYield": 58,
+    "weight": 150,
     "learnset": {
       "levelUp": {
         "1": [
@@ -53643,6 +53971,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium-slow",
     "baseExpYield": 119,
+    "weight": 153,
     "learnset": {
       "levelUp": {
         "0": [
@@ -53809,6 +54138,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 234,
+    "weight": 820,
     "learnset": {
       "levelUp": {
         "0": [
@@ -53995,6 +54325,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium-slow",
     "baseExpYield": 67,
+    "weight": 513,
     "learnset": {
       "levelUp": {
         "1": [
@@ -54179,6 +54510,7 @@
     "rawCaptureRate": 60,
     "expGroup": "medium-slow",
     "baseExpYield": 166,
+    "weight": 774,
     "learnset": {
       "levelUp": {
         "0": [
@@ -54366,6 +54698,7 @@
     "rawCaptureRate": 255,
     "expGroup": "slow-then-very-fast",
     "baseExpYield": 62,
+    "weight": 12,
     "learnset": {
       "levelUp": {
         "1": [
@@ -54525,6 +54858,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow-then-very-fast",
     "baseExpYield": 172,
+    "weight": 206,
     "learnset": {
       "levelUp": {
         "0": [
@@ -54697,6 +55031,7 @@
     "rawCaptureRate": 90,
     "expGroup": "slow-then-very-fast",
     "baseExpYield": 160,
+    "weight": 403,
     "learnset": {
       "levelUp": {
         "1": [
@@ -54898,6 +55233,7 @@
     "rawCaptureRate": 90,
     "expGroup": "fast-then-very-slow",
     "baseExpYield": 160,
+    "weight": 525,
     "learnset": {
       "levelUp": {
         "1": [
@@ -55082,6 +55418,7 @@
     "rawCaptureRate": 45,
     "expGroup": "fast",
     "baseExpYield": 161,
+    "weight": 1680,
     "learnset": {
       "levelUp": {
         "1": [
@@ -55249,6 +55586,7 @@
     "rawCaptureRate": 45,
     "expGroup": "fast",
     "baseExpYield": 161,
+    "weight": 1540,
     "learnset": {
       "levelUp": {
         "1": [
@@ -55420,6 +55758,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 58,
+    "weight": 19,
     "learnset": {
       "levelUp": {
         "1": [
@@ -55560,6 +55899,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium",
     "baseExpYield": 164,
+    "weight": 236,
     "learnset": {
       "levelUp": {
         "0": [
@@ -55709,6 +56049,7 @@
     "rawCaptureRate": 205,
     "expGroup": "fast-then-very-slow",
     "baseExpYield": 62,
+    "weight": 115,
     "learnset": {
       "levelUp": {
         "1": [
@@ -55873,6 +56214,7 @@
     "rawCaptureRate": 155,
     "expGroup": "fast-then-very-slow",
     "baseExpYield": 164,
+    "weight": 328,
     "learnset": {
       "levelUp": {
         "0": [
@@ -56046,6 +56388,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium",
     "baseExpYield": 60,
+    "weight": 215,
     "learnset": {
       "levelUp": {
         "1": [
@@ -56208,6 +56551,7 @@
     "rawCaptureRate": 90,
     "expGroup": "medium",
     "baseExpYield": 175,
+    "weight": 1080,
     "learnset": {
       "levelUp": {
         "0": [
@@ -56377,6 +56721,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow-then-very-fast",
     "baseExpYield": 71,
+    "weight": 238,
     "learnset": {
       "levelUp": {
         "1": [
@@ -56520,6 +56865,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow-then-very-fast",
     "baseExpYield": 173,
+    "weight": 604,
     "learnset": {
       "levelUp": {
         "1": [
@@ -56665,6 +57011,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow-then-very-fast",
     "baseExpYield": 71,
+    "weight": 125,
     "learnset": {
       "levelUp": {
         "1": [
@@ -56802,6 +57149,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow-then-very-fast",
     "baseExpYield": 173,
+    "weight": 682,
     "learnset": {
       "levelUp": {
         "1": [
@@ -56946,6 +57294,7 @@
     "rawCaptureRate": 255,
     "expGroup": "slow-then-very-fast",
     "baseExpYield": 40,
+    "weight": 74,
     "learnset": {
       "levelUp": {
         "1": [
@@ -57053,6 +57402,7 @@
     "rawCaptureRate": 60,
     "expGroup": "slow-then-very-fast",
     "baseExpYield": 189,
+    "weight": 1620,
     "learnset": {
       "levelUp": {
         "0": [
@@ -57223,6 +57573,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 147,
+    "weight": 8,
     "learnset": {
       "levelUp": {
         "1": [
@@ -57353,6 +57704,7 @@
     "rawCaptureRate": 200,
     "expGroup": "medium-slow",
     "baseExpYield": 154,
+    "weight": 220,
     "learnset": {
       "levelUp": {
         "1": [
@@ -57540,6 +57892,7 @@
     "rawCaptureRate": 225,
     "expGroup": "fast",
     "baseExpYield": 59,
+    "weight": 23,
     "learnset": {
       "levelUp": {
         "1": [
@@ -57703,6 +58056,7 @@
     "rawCaptureRate": 45,
     "expGroup": "fast",
     "baseExpYield": 159,
+    "weight": 125,
     "learnset": {
       "levelUp": {
         "0": [
@@ -57866,6 +58220,7 @@
     "rawCaptureRate": 190,
     "expGroup": "fast",
     "baseExpYield": 59,
+    "weight": 150,
     "learnset": {
       "levelUp": {
         "1": [
@@ -58023,6 +58378,7 @@
     "rawCaptureRate": 90,
     "expGroup": "fast",
     "baseExpYield": 159,
+    "weight": 306,
     "learnset": {
       "levelUp": {
         "0": [
@@ -58199,6 +58555,7 @@
     "rawCaptureRate": 200,
     "expGroup": "slow",
     "baseExpYield": 161,
+    "weight": 1000,
     "learnset": {
       "levelUp": {
         "1": [
@@ -58366,6 +58723,7 @@
     "rawCaptureRate": 45,
     "expGroup": "fast",
     "baseExpYield": 159,
+    "weight": 10,
     "learnset": {
       "levelUp": {
         "1": [
@@ -58536,6 +58894,7 @@
     "rawCaptureRate": 30,
     "expGroup": "medium-slow",
     "baseExpYield": 163,
+    "weight": 470,
     "learnset": {
       "levelUp": {
         "1": [
@@ -58723,6 +59082,7 @@
     "rawCaptureRate": 125,
     "expGroup": "medium",
     "baseExpYield": 52,
+    "weight": 140,
     "learnset": {
       "levelUp": {
         "1": [
@@ -58776,6 +59136,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 60,
+    "weight": 168,
     "learnset": {
       "levelUp": {
         "1": [
@@ -58913,6 +59274,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium",
     "baseExpYield": 168,
+    "weight": 2565,
     "learnset": {
       "levelUp": {
         "0": [
@@ -59067,6 +59429,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium-slow",
     "baseExpYield": 58,
+    "weight": 395,
     "learnset": {
       "levelUp": {
         "1": [
@@ -59217,6 +59580,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium-slow",
     "baseExpYield": 144,
+    "weight": 876,
     "learnset": {
       "levelUp": {
         "0": [
@@ -59357,6 +59721,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 239,
+    "weight": 1506,
     "learnset": {
       "levelUp": {
         "1": [
@@ -59505,6 +59870,7 @@
     "rawCaptureRate": 255,
     "expGroup": "slow-then-very-fast",
     "baseExpYield": 69,
+    "weight": 525,
     "learnset": {
       "levelUp": {
         "1": [
@@ -59600,6 +59966,7 @@
     "rawCaptureRate": 60,
     "expGroup": "slow-then-very-fast",
     "baseExpYield": 170,
+    "weight": 270,
     "learnset": {
       "levelUp": {
         "1": [
@@ -59731,6 +60098,7 @@
     "rawCaptureRate": 60,
     "expGroup": "slow-then-very-fast",
     "baseExpYield": 170,
+    "weight": 226,
     "learnset": {
       "levelUp": {
         "1": [
@@ -59864,6 +60232,7 @@
     "rawCaptureRate": 25,
     "expGroup": "slow",
     "baseExpYield": 170,
+    "weight": 234,
     "learnset": {
       "levelUp": {
         "1": [
@@ -60014,6 +60383,7 @@
     "rawCaptureRate": 225,
     "expGroup": "fast",
     "baseExpYield": 116,
+    "weight": 87,
     "learnset": {
       "levelUp": {
         "1": [
@@ -60156,6 +60526,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 60,
+    "weight": 421,
     "learnset": {
       "levelUp": {
         "1": [
@@ -60297,6 +60668,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 147,
+    "weight": 1105,
     "learnset": {
       "levelUp": {
         "0": [
@@ -60435,6 +60807,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 270,
+    "weight": 1026,
     "learnset": {
       "levelUp": {
         "0": [
@@ -60596,6 +60969,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 60,
+    "weight": 952,
     "learnset": {
       "levelUp": {
         "1": [
@@ -60652,6 +61026,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 147,
+    "weight": 2025,
     "learnset": {
       "levelUp": {
         "0": [
@@ -60819,6 +61194,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 270,
+    "weight": 5500,
     "learnset": {
       "levelUp": {
         "0": [
@@ -60996,6 +61372,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 261,
+    "weight": 2300,
     "learnset": {
       "levelUp": {
         "1": [
@@ -61156,6 +61533,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 261,
+    "weight": 1750,
     "learnset": {
       "levelUp": {
         "1": [
@@ -61312,6 +61690,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 261,
+    "weight": 2050,
     "learnset": {
       "levelUp": {
         "1": [
@@ -61475,6 +61854,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 270,
+    "weight": 400,
     "learnset": {
       "levelUp": {
         "1": [
@@ -61678,6 +62058,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 270,
+    "weight": 600,
     "learnset": {
       "levelUp": {
         "1": [
@@ -61874,6 +62255,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 302,
+    "weight": 3520,
     "learnset": {
       "levelUp": {
         "1": [
@@ -62011,6 +62393,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 302,
+    "weight": 9500,
     "learnset": {
       "levelUp": {
         "1": [
@@ -62186,6 +62569,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 306,
+    "weight": 2065,
     "learnset": {
       "levelUp": {
         "1": [
@@ -62358,6 +62742,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 270,
+    "weight": 11,
     "learnset": {
       "levelUp": {
         "1": [
@@ -62542,6 +62927,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 270,
+    "weight": 608,
     "learnset": {
       "levelUp": {
         "1": [
@@ -62728,6 +63114,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 64,
+    "weight": 102,
     "learnset": {
       "levelUp": {
         "1": [
@@ -62887,6 +63274,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 142,
+    "weight": 970,
     "learnset": {
       "levelUp": {
         "1": [
@@ -63045,6 +63433,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 236,
+    "weight": 3100,
     "learnset": {
       "levelUp": {
         "0": [
@@ -63226,6 +63615,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 62,
+    "weight": 62,
     "learnset": {
       "levelUp": {
         "1": [
@@ -63398,6 +63788,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 142,
+    "weight": 220,
     "learnset": {
       "levelUp": {
         "0": [
@@ -63577,6 +63968,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 240,
+    "weight": 550,
     "learnset": {
       "levelUp": {
         "0": [
@@ -63771,6 +64163,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 63,
+    "weight": 52,
     "learnset": {
       "levelUp": {
         "1": [
@@ -63933,6 +64326,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 142,
+    "weight": 230,
     "learnset": {
       "levelUp": {
         "0": [
@@ -64097,6 +64491,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 239,
+    "weight": 845,
     "learnset": {
       "levelUp": {
         "0": [
@@ -64291,6 +64686,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium-slow",
     "baseExpYield": 49,
+    "weight": 20,
     "learnset": {
       "levelUp": {
         "1": [
@@ -64429,6 +64825,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium-slow",
     "baseExpYield": 119,
+    "weight": 155,
     "learnset": {
       "levelUp": {
         "1": [
@@ -64559,6 +64956,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 218,
+    "weight": 249,
     "learnset": {
       "levelUp": {
         "0": [
@@ -64691,6 +65089,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium",
     "baseExpYield": 50,
+    "weight": 200,
     "learnset": {
       "levelUp": {
         "1": [
@@ -64841,6 +65240,7 @@
     "rawCaptureRate": 127,
     "expGroup": "medium",
     "baseExpYield": 144,
+    "weight": 315,
     "learnset": {
       "levelUp": {
         "0": [
@@ -65000,6 +65400,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium-slow",
     "baseExpYield": 39,
+    "weight": 22,
     "learnset": {
       "levelUp": {
         "1": [
@@ -65066,6 +65467,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 134,
+    "weight": 255,
     "learnset": {
       "levelUp": {
         "0": [
@@ -65213,6 +65615,7 @@
     "rawCaptureRate": 235,
     "expGroup": "medium-slow",
     "baseExpYield": 53,
+    "weight": 95,
     "learnset": {
       "levelUp": {
         "1": [
@@ -65358,6 +65761,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium-slow",
     "baseExpYield": 127,
+    "weight": 305,
     "learnset": {
       "levelUp": {
         "1": [
@@ -65494,6 +65898,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 235,
+    "weight": 420,
     "learnset": {
       "levelUp": {
         "1": [
@@ -65639,6 +66044,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium-slow",
     "baseExpYield": 56,
+    "weight": 12,
     "learnset": {
       "levelUp": {
         "1": [
@@ -65762,6 +66168,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium-slow",
     "baseExpYield": 232,
+    "weight": 145,
     "learnset": {
       "levelUp": {
         "1": [
@@ -65883,6 +66290,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow-then-very-fast",
     "baseExpYield": 70,
+    "weight": 315,
     "learnset": {
       "levelUp": {
         "1": [
@@ -66040,6 +66448,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow-then-very-fast",
     "baseExpYield": 173,
+    "weight": 1025,
     "learnset": {
       "levelUp": {
         "0": [
@@ -66216,6 +66625,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow-then-very-fast",
     "baseExpYield": 70,
+    "weight": 570,
     "learnset": {
       "levelUp": {
         "1": [
@@ -66362,6 +66772,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow-then-very-fast",
     "baseExpYield": 173,
+    "weight": 1495,
     "learnset": {
       "levelUp": {
         "0": [
@@ -66516,6 +66927,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium",
     "baseExpYield": 45,
+    "weight": 34,
     "learnset": {
       "levelUp": {
         "1": [
@@ -66577,6 +66989,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 148,
+    "weight": 65,
     "learnset": {
       "levelUp": {
         "0": [
@@ -66719,6 +67132,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 148,
+    "weight": 233,
     "learnset": {
       "levelUp": {
         "0": [
@@ -66854,6 +67268,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium-slow",
     "baseExpYield": 49,
+    "weight": 55,
     "learnset": {
       "levelUp": {
         "1": [
@@ -66920,6 +67335,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 166,
+    "weight": 385,
     "learnset": {
       "levelUp": {
         "0": [
@@ -67095,6 +67511,7 @@
     "rawCaptureRate": 200,
     "expGroup": "medium",
     "baseExpYield": 142,
+    "weight": 39,
     "learnset": {
       "levelUp": {
         "1": [
@@ -67262,6 +67679,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 66,
+    "weight": 295,
     "learnset": {
       "levelUp": {
         "1": [
@@ -67426,6 +67844,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium",
     "baseExpYield": 173,
+    "weight": 335,
     "learnset": {
       "levelUp": {
         "1": [
@@ -67587,6 +68006,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 55,
+    "weight": 33,
     "learnset": {
       "levelUp": {
         "1": [
@@ -67724,6 +68144,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium",
     "baseExpYield": 158,
+    "weight": 93,
     "learnset": {
       "levelUp": {
         "0": [
@@ -67855,6 +68276,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 65,
+    "weight": 63,
     "learnset": {
       "levelUp": {
         "1": [
@@ -68006,6 +68428,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium",
     "baseExpYield": 166,
+    "weight": 299,
     "learnset": {
       "levelUp": {
         "1": [
@@ -68154,6 +68577,7 @@
     "rawCaptureRate": 45,
     "expGroup": "fast",
     "baseExpYield": 169,
+    "weight": 203,
     "learnset": {
       "levelUp": {
         "1": [
@@ -68329,6 +68753,7 @@
     "rawCaptureRate": 125,
     "expGroup": "fast-then-very-slow",
     "baseExpYield": 70,
+    "weight": 12,
     "learnset": {
       "levelUp": {
         "1": [
@@ -68499,6 +68924,7 @@
     "rawCaptureRate": 60,
     "expGroup": "fast-then-very-slow",
     "baseExpYield": 174,
+    "weight": 150,
     "learnset": {
       "levelUp": {
         "0": [
@@ -68671,6 +69097,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 70,
+    "weight": 55,
     "learnset": {
       "levelUp": {
         "1": [
@@ -68843,6 +69270,7 @@
     "rawCaptureRate": 60,
     "expGroup": "medium",
     "baseExpYield": 168,
+    "weight": 333,
     "learnset": {
       "levelUp": {
         "0": [
@@ -69023,6 +69451,7 @@
     "rawCaptureRate": 45,
     "expGroup": "fast",
     "baseExpYield": 173,
+    "weight": 44,
     "learnset": {
       "levelUp": {
         "1": [
@@ -69179,6 +69608,7 @@
     "rawCaptureRate": 30,
     "expGroup": "medium-slow",
     "baseExpYield": 177,
+    "weight": 273,
     "learnset": {
       "levelUp": {
         "1": [
@@ -69329,6 +69759,7 @@
     "rawCaptureRate": 190,
     "expGroup": "fast",
     "baseExpYield": 62,
+    "weight": 39,
     "learnset": {
       "levelUp": {
         "1": [
@@ -69485,6 +69916,7 @@
     "rawCaptureRate": 75,
     "expGroup": "fast",
     "baseExpYield": 158,
+    "weight": 438,
     "learnset": {
       "levelUp": {
         "0": [
@@ -69640,6 +70072,7 @@
     "rawCaptureRate": 120,
     "expGroup": "fast",
     "baseExpYield": 57,
+    "weight": 6,
     "learnset": {
       "levelUp": {
         "1": [
@@ -69788,6 +70221,7 @@
     "rawCaptureRate": 225,
     "expGroup": "medium",
     "baseExpYield": 66,
+    "weight": 192,
     "learnset": {
       "levelUp": {
         "1": [
@@ -69960,6 +70394,7 @@
     "rawCaptureRate": 60,
     "expGroup": "medium",
     "baseExpYield": 168,
+    "weight": 380,
     "learnset": {
       "levelUp": {
         "0": [
@@ -70130,6 +70565,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium",
     "baseExpYield": 60,
+    "weight": 605,
     "learnset": {
       "levelUp": {
         "1": [
@@ -70293,6 +70729,7 @@
     "rawCaptureRate": 90,
     "expGroup": "medium",
     "baseExpYield": 175,
+    "weight": 1870,
     "learnset": {
       "levelUp": {
         "0": [
@@ -70467,6 +70904,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium",
     "baseExpYield": 58,
+    "weight": 150,
     "learnset": {
       "levelUp": {
         "1": [
@@ -70626,6 +71064,7 @@
     "rawCaptureRate": 145,
     "expGroup": "medium",
     "baseExpYield": 62,
+    "weight": 130,
     "learnset": {
       "levelUp": {
         "1": [
@@ -70797,6 +71236,7 @@
     "rawCaptureRate": 130,
     "expGroup": "fast",
     "baseExpYield": 110,
+    "weight": 244,
     "learnset": {
       "levelUp": {
         "1": [
@@ -70951,6 +71391,7 @@
     "rawCaptureRate": 30,
     "expGroup": "medium-slow",
     "baseExpYield": 144,
+    "weight": 19,
     "learnset": {
       "levelUp": {
         "1": [
@@ -71099,6 +71540,7 @@
     "rawCaptureRate": 100,
     "expGroup": "medium",
     "baseExpYield": 170,
+    "weight": 1080,
     "learnset": {
       "levelUp": {
         "1": [
@@ -71260,6 +71702,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 60,
+    "weight": 205,
     "learnset": {
       "levelUp": {
         "1": [
@@ -71409,6 +71852,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 144,
+    "weight": 560,
     "learnset": {
       "levelUp": {
         "1": [
@@ -71557,6 +72001,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 270,
+    "weight": 950,
     "learnset": {
       "levelUp": {
         "0": [
@@ -71718,6 +72163,7 @@
     "rawCaptureRate": 50,
     "expGroup": "slow",
     "baseExpYield": 78,
+    "weight": 1050,
     "learnset": {
       "levelUp": {
         "1": [
@@ -71906,6 +72352,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium-slow",
     "baseExpYield": 57,
+    "weight": 202,
     "learnset": {
       "levelUp": {
         "1": [
@@ -72083,6 +72530,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 184,
+    "weight": 540,
     "learnset": {
       "levelUp": {
         "0": [
@@ -72283,6 +72731,7 @@
     "rawCaptureRate": 140,
     "expGroup": "slow",
     "baseExpYield": 66,
+    "weight": 495,
     "learnset": {
       "levelUp": {
         "1": [
@@ -72427,6 +72876,7 @@
     "rawCaptureRate": 60,
     "expGroup": "slow",
     "baseExpYield": 184,
+    "weight": 3000,
     "learnset": {
       "levelUp": {
         "1": [
@@ -72569,6 +73019,7 @@
     "rawCaptureRate": 120,
     "expGroup": "slow",
     "baseExpYield": 66,
+    "weight": 120,
     "learnset": {
       "levelUp": {
         "1": [
@@ -72731,6 +73182,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 175,
+    "weight": 615,
     "learnset": {
       "levelUp": {
         "1": [
@@ -72901,6 +73353,7 @@
     "rawCaptureRate": 140,
     "expGroup": "medium",
     "baseExpYield": 60,
+    "weight": 230,
     "learnset": {
       "levelUp": {
         "1": [
@@ -73099,6 +73552,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium",
     "baseExpYield": 172,
+    "weight": 444,
     "learnset": {
       "levelUp": {
         "1": [
@@ -73285,6 +73739,7 @@
     "rawCaptureRate": 200,
     "expGroup": "slow",
     "baseExpYield": 159,
+    "weight": 270,
     "learnset": {
       "levelUp": {
         "1": [
@@ -73428,6 +73883,7 @@
     "rawCaptureRate": 190,
     "expGroup": "slow-then-very-fast",
     "baseExpYield": 66,
+    "weight": 70,
     "learnset": {
       "levelUp": {
         "1": [
@@ -73581,6 +74037,7 @@
     "rawCaptureRate": 75,
     "expGroup": "slow-then-very-fast",
     "baseExpYield": 161,
+    "weight": 240,
     "learnset": {
       "levelUp": {
         "1": [
@@ -73724,6 +74181,7 @@
     "rawCaptureRate": 25,
     "expGroup": "slow",
     "baseExpYield": 69,
+    "weight": 650,
     "learnset": {
       "levelUp": {
         "1": [
@@ -73872,6 +74330,7 @@
     "rawCaptureRate": 120,
     "expGroup": "slow",
     "baseExpYield": 67,
+    "weight": 505,
     "learnset": {
       "levelUp": {
         "1": [
@@ -74022,6 +74481,7 @@
     "rawCaptureRate": 60,
     "expGroup": "slow",
     "baseExpYield": 173,
+    "weight": 1355,
     "learnset": {
       "levelUp": {
         "0": [
@@ -74188,6 +74648,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 179,
+    "weight": 340,
     "learnset": {
       "levelUp": {
         "1": [
@@ -74368,6 +74829,7 @@
     "rawCaptureRate": 30,
     "expGroup": "medium",
     "baseExpYield": 241,
+    "weight": 1800,
     "learnset": {
       "levelUp": {
         "1": [
@@ -74525,6 +74987,7 @@
     "rawCaptureRate": 30,
     "expGroup": "medium",
     "baseExpYield": 180,
+    "weight": 1400,
     "learnset": {
       "levelUp": {
         "1": [
@@ -74700,6 +75163,7 @@
     "rawCaptureRate": 30,
     "expGroup": "slow",
     "baseExpYield": 241,
+    "weight": 2828,
     "learnset": {
       "levelUp": {
         "1": [
@@ -74902,6 +75366,7 @@
     "rawCaptureRate": 30,
     "expGroup": "medium",
     "baseExpYield": 187,
+    "weight": 1286,
     "learnset": {
       "levelUp": {
         "1": [
@@ -75066,6 +75531,7 @@
     "rawCaptureRate": 30,
     "expGroup": "medium",
     "baseExpYield": 243,
+    "weight": 1386,
     "learnset": {
       "levelUp": {
         "1": [
@@ -75236,6 +75702,7 @@
     "rawCaptureRate": 30,
     "expGroup": "medium",
     "baseExpYield": 243,
+    "weight": 680,
     "learnset": {
       "levelUp": {
         "1": [
@@ -75415,6 +75882,7 @@
     "rawCaptureRate": 30,
     "expGroup": "fast",
     "baseExpYield": 245,
+    "weight": 380,
     "learnset": {
       "levelUp": {
         "0": [
@@ -75595,6 +76063,7 @@
     "rawCaptureRate": 30,
     "expGroup": "medium",
     "baseExpYield": 180,
+    "weight": 515,
     "learnset": {
       "levelUp": {
         "1": [
@@ -75749,6 +76218,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 184,
+    "weight": 255,
     "learnset": {
       "levelUp": {
         "0": [
@@ -75912,6 +76382,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 184,
+    "weight": 259,
     "learnset": {
       "levelUp": {
         "0": [
@@ -76073,6 +76544,7 @@
     "rawCaptureRate": 30,
     "expGroup": "medium-slow",
     "baseExpYield": 179,
+    "weight": 425,
     "learnset": {
       "levelUp": {
         "1": [
@@ -76259,6 +76731,7 @@
     "rawCaptureRate": 50,
     "expGroup": "slow",
     "baseExpYield": 239,
+    "weight": 2910,
     "learnset": {
       "levelUp": {
         "0": [
@@ -76421,6 +76894,7 @@
     "rawCaptureRate": 30,
     "expGroup": "medium",
     "baseExpYield": 241,
+    "weight": 340,
     "learnset": {
       "levelUp": {
         "1": [
@@ -76576,6 +77050,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 233,
+    "weight": 520,
     "learnset": {
       "levelUp": {
         "0": [
@@ -76795,6 +77270,7 @@
     "rawCaptureRate": 60,
     "expGroup": "medium",
     "baseExpYield": 184,
+    "weight": 3400,
     "learnset": {
       "levelUp": {
         "0": [
@@ -76958,6 +77434,7 @@
     "rawCaptureRate": 45,
     "expGroup": "fast",
     "baseExpYield": 236,
+    "weight": 1066,
     "learnset": {
       "levelUp": {
         "1": [
@@ -77134,6 +77611,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium",
     "baseExpYield": 168,
+    "weight": 266,
     "learnset": {
       "levelUp": {
         "0": [
@@ -77306,6 +77784,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 154,
+    "weight": 3,
     "learnset": {
       "levelUp": {
         "1": [
@@ -77442,6 +77921,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 261,
+    "weight": 3,
     "learnset": {
       "levelUp": {
         "1": [
@@ -77615,6 +78095,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 261,
+    "weight": 3,
     "learnset": {
       "levelUp": {
         "1": [
@@ -77790,6 +78271,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 261,
+    "weight": 3,
     "learnset": {
       "levelUp": {
         "1": [
@@ -77964,6 +78446,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 306,
+    "weight": 6830,
     "learnset": {
       "levelUp": {
         "1": [
@@ -78128,6 +78611,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 306,
+    "weight": 3360,
     "learnset": {
       "levelUp": {
         "1": [
@@ -78296,6 +78780,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 270,
+    "weight": 4300,
     "learnset": {
       "levelUp": {
         "1": [
@@ -78453,6 +78938,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 302,
+    "weight": 4200,
     "learnset": {
       "levelUp": {
         "1": [
@@ -78613,6 +79099,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 306,
+    "weight": 7500,
     "learnset": {
       "levelUp": {
         "1": [
@@ -78783,6 +79270,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 270,
+    "weight": 856,
     "learnset": {
       "levelUp": {
         "1": [
@@ -78937,6 +79425,7 @@
     "rawCaptureRate": 30,
     "expGroup": "slow",
     "baseExpYield": 216,
+    "weight": 31,
     "learnset": {
       "levelUp": {
         "1": [
@@ -79076,6 +79565,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 270,
+    "weight": 14,
     "learnset": {
       "levelUp": {
         "1": [
@@ -79230,6 +79720,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 270,
+    "weight": 505,
     "learnset": {
       "levelUp": {
         "1": [
@@ -79390,6 +79881,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 270,
+    "weight": 21,
     "learnset": {
       "levelUp": {
         "1": [
@@ -79540,6 +80032,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 324,
+    "weight": 3200,
     "learnset": {
       "levelUp": {
         "1": [
@@ -79786,6 +80279,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 270,
+    "weight": 40,
     "learnset": {
       "levelUp": {
         "1": [
@@ -79954,6 +80448,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 62,
+    "weight": 81,
     "learnset": {
       "levelUp": {
         "1": [
@@ -80106,6 +80601,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 145,
+    "weight": 160,
     "learnset": {
       "levelUp": {
         "1": [
@@ -80249,6 +80745,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 238,
+    "weight": 630,
     "learnset": {
       "levelUp": {
         "1": [
@@ -80405,6 +80902,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 62,
+    "weight": 99,
     "learnset": {
       "levelUp": {
         "1": [
@@ -80554,6 +81052,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 146,
+    "weight": 555,
     "learnset": {
       "levelUp": {
         "0": [
@@ -80718,6 +81217,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 238,
+    "weight": 1500,
     "learnset": {
       "levelUp": {
         "1": [
@@ -80890,6 +81390,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 62,
+    "weight": 59,
     "learnset": {
       "levelUp": {
         "1": [
@@ -81044,6 +81545,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 145,
+    "weight": 245,
     "learnset": {
       "levelUp": {
         "1": [
@@ -81193,6 +81695,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 238,
+    "weight": 946,
     "learnset": {
       "levelUp": {
         "0": [
@@ -81360,6 +81863,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium",
     "baseExpYield": 51,
+    "weight": 116,
     "learnset": {
       "levelUp": {
         "1": [
@@ -81504,6 +82008,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium",
     "baseExpYield": 147,
+    "weight": 270,
     "learnset": {
       "levelUp": {
         "0": [
@@ -81659,6 +82164,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium-slow",
     "baseExpYield": 55,
+    "weight": 41,
     "learnset": {
       "levelUp": {
         "1": [
@@ -81794,6 +82300,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium-slow",
     "baseExpYield": 130,
+    "weight": 147,
     "learnset": {
       "levelUp": {
         "1": [
@@ -81918,6 +82425,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 225,
+    "weight": 610,
     "learnset": {
       "levelUp": {
         "1": [
@@ -82047,6 +82555,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium",
     "baseExpYield": 56,
+    "weight": 101,
     "learnset": {
       "levelUp": {
         "1": [
@@ -82198,6 +82707,7 @@
     "rawCaptureRate": 90,
     "expGroup": "medium",
     "baseExpYield": 156,
+    "weight": 375,
     "learnset": {
       "levelUp": {
         "1": [
@@ -82343,6 +82853,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 63,
+    "weight": 105,
     "learnset": {
       "levelUp": {
         "1": [
@@ -82491,6 +83002,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium",
     "baseExpYield": 174,
+    "weight": 305,
     "learnset": {
       "levelUp": {
         "1": [
@@ -82602,6 +83114,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 63,
+    "weight": 110,
     "learnset": {
       "levelUp": {
         "1": [
@@ -82750,6 +83263,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium",
     "baseExpYield": 174,
+    "weight": 280,
     "learnset": {
       "levelUp": {
         "1": [
@@ -82863,6 +83377,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 63,
+    "weight": 135,
     "learnset": {
       "levelUp": {
         "1": [
@@ -83013,6 +83528,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium",
     "baseExpYield": 174,
+    "weight": 290,
     "learnset": {
       "levelUp": {
         "1": [
@@ -83127,6 +83643,7 @@
     "rawCaptureRate": 190,
     "expGroup": "fast",
     "baseExpYield": 58,
+    "weight": 233,
     "learnset": {
       "levelUp": {
         "1": [
@@ -83285,6 +83802,7 @@
     "rawCaptureRate": 75,
     "expGroup": "fast",
     "baseExpYield": 170,
+    "weight": 605,
     "learnset": {
       "levelUp": {
         "1": [
@@ -83405,6 +83923,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium-slow",
     "baseExpYield": 53,
+    "weight": 21,
     "learnset": {
       "levelUp": {
         "1": [
@@ -83529,6 +84048,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium-slow",
     "baseExpYield": 125,
+    "weight": 150,
     "learnset": {
       "levelUp": {
         "1": [
@@ -83644,6 +84164,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 220,
+    "weight": 290,
     "learnset": {
       "levelUp": {
         "1": [
@@ -83763,6 +84284,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 59,
+    "weight": 298,
     "learnset": {
       "levelUp": {
         "1": [
@@ -83899,6 +84421,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium",
     "baseExpYield": 174,
+    "weight": 795,
     "learnset": {
       "levelUp": {
         "1": [
@@ -84040,6 +84563,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium-slow",
     "baseExpYield": 56,
+    "weight": 180,
     "learnset": {
       "levelUp": {
         "1": [
@@ -84162,6 +84686,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium-slow",
     "baseExpYield": 137,
+    "weight": 1020,
     "learnset": {
       "levelUp": {
         "0": [
@@ -84277,6 +84802,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 232,
+    "weight": 2600,
     "learnset": {
       "levelUp": {
         "1": [
@@ -84400,6 +84926,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 65,
+    "weight": 21,
     "learnset": {
       "levelUp": {
         "1": [
@@ -84564,6 +85091,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 149,
+    "weight": 105,
     "learnset": {
       "levelUp": {
         "1": [
@@ -84720,6 +85248,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium",
     "baseExpYield": 66,
+    "weight": 85,
     "learnset": {
       "levelUp": {
         "1": [
@@ -84856,6 +85385,7 @@
     "rawCaptureRate": 60,
     "expGroup": "medium",
     "baseExpYield": 178,
+    "weight": 404,
     "learnset": {
       "levelUp": {
         "0": [
@@ -85001,6 +85531,7 @@
     "rawCaptureRate": 255,
     "expGroup": "fast",
     "baseExpYield": 390,
+    "weight": 310,
     "learnset": {
       "levelUp": {
         "1": [
@@ -85191,6 +85722,7 @@
     "rawCaptureRate": 180,
     "expGroup": "medium-slow",
     "baseExpYield": 61,
+    "weight": 125,
     "learnset": {
       "levelUp": {
         "1": [
@@ -85344,6 +85876,7 @@
     "rawCaptureRate": 90,
     "expGroup": "medium-slow",
     "baseExpYield": 142,
+    "weight": 400,
     "learnset": {
       "levelUp": {
         "1": [
@@ -85490,6 +86023,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 227,
+    "weight": 870,
     "learnset": {
       "levelUp": {
         "1": [
@@ -85645,6 +86179,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium-slow",
     "baseExpYield": 59,
+    "weight": 45,
     "learnset": {
       "levelUp": {
         "1": [
@@ -85770,6 +86305,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium-slow",
     "baseExpYield": 134,
+    "weight": 170,
     "learnset": {
       "levelUp": {
         "1": [
@@ -85891,6 +86427,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 229,
+    "weight": 620,
     "learnset": {
       "levelUp": {
         "0": [
@@ -86037,6 +86574,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 163,
+    "weight": 555,
     "learnset": {
       "levelUp": {
         "1": [
@@ -86177,6 +86715,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 163,
+    "weight": 510,
     "learnset": {
       "levelUp": {
         "1": [
@@ -86318,6 +86857,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium-slow",
     "baseExpYield": 62,
+    "weight": 25,
     "learnset": {
       "levelUp": {
         "1": [
@@ -86448,6 +86988,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium-slow",
     "baseExpYield": 133,
+    "weight": 73,
     "learnset": {
       "levelUp": {
         "0": [
@@ -86570,6 +87111,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 225,
+    "weight": 205,
     "learnset": {
       "levelUp": {
         "0": [
@@ -86723,6 +87265,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium-slow",
     "baseExpYield": 52,
+    "weight": 53,
     "learnset": {
       "levelUp": {
         "1": [
@@ -86849,6 +87392,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium-slow",
     "baseExpYield": 126,
+    "weight": 585,
     "learnset": {
       "levelUp": {
         "0": [
@@ -86971,6 +87515,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 218,
+    "weight": 2005,
     "learnset": {
       "levelUp": {
         "1": [
@@ -87113,6 +87658,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 56,
+    "weight": 6,
     "learnset": {
       "levelUp": {
         "1": [
@@ -87255,6 +87801,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium",
     "baseExpYield": 168,
+    "weight": 66,
     "learnset": {
       "levelUp": {
         "1": [
@@ -87376,6 +87923,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 56,
+    "weight": 66,
     "learnset": {
       "levelUp": {
         "1": [
@@ -87518,6 +88066,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium",
     "baseExpYield": 168,
+    "weight": 163,
     "learnset": {
       "levelUp": {
         "0": [
@@ -87637,6 +88186,7 @@
     "rawCaptureRate": 25,
     "expGroup": "medium",
     "baseExpYield": 161,
+    "weight": 180,
     "learnset": {
       "levelUp": {
         "1": [
@@ -87790,6 +88340,7 @@
     "rawCaptureRate": 180,
     "expGroup": "medium-slow",
     "baseExpYield": 58,
+    "weight": 152,
     "learnset": {
       "levelUp": {
         "1": [
@@ -87948,6 +88499,7 @@
     "rawCaptureRate": 90,
     "expGroup": "medium-slow",
     "baseExpYield": 123,
+    "weight": 334,
     "learnset": {
       "levelUp": {
         "1": [
@@ -88113,6 +88665,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 234,
+    "weight": 963,
     "learnset": {
       "levelUp": {
         "1": [
@@ -88293,6 +88846,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium-slow",
     "baseExpYield": 63,
+    "weight": 375,
     "learnset": {
       "levelUp": {
         "1": [
@@ -88437,6 +88991,7 @@
     "rawCaptureRate": 60,
     "expGroup": "medium-slow",
     "baseExpYield": 168,
+    "weight": 929,
     "learnset": {
       "levelUp": {
         "0": [
@@ -88597,6 +89152,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium",
     "baseExpYield": 161,
+    "weight": 280,
     "learnset": {
       "levelUp": {
         "1": [
@@ -88744,6 +89300,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 65,
+    "weight": 145,
     "learnset": {
       "levelUp": {
         "1": [
@@ -88881,6 +89438,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium",
     "baseExpYield": 170,
+    "weight": 2000,
     "learnset": {
       "levelUp": {
         "1": [
@@ -89015,6 +89573,7 @@
     "rawCaptureRate": 180,
     "expGroup": "medium",
     "baseExpYield": 70,
+    "weight": 118,
     "learnset": {
       "levelUp": {
         "1": [
@@ -89199,6 +89758,7 @@
     "rawCaptureRate": 90,
     "expGroup": "medium",
     "baseExpYield": 171,
+    "weight": 300,
     "learnset": {
       "levelUp": {
         "1": [
@@ -89384,6 +89944,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 172,
+    "weight": 140,
     "learnset": {
       "levelUp": {
         "1": [
@@ -89546,6 +90107,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 61,
+    "weight": 15,
     "learnset": {
       "levelUp": {
         "1": [
@@ -89692,6 +90254,7 @@
     "rawCaptureRate": 90,
     "expGroup": "medium",
     "baseExpYield": 169,
+    "weight": 765,
     "learnset": {
       "levelUp": {
         "0": [
@@ -89843,6 +90406,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 71,
+    "weight": 165,
     "learnset": {
       "levelUp": {
         "1": [
@@ -89993,6 +90557,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 173,
+    "weight": 810,
     "learnset": {
       "levelUp": {
         "1": [
@@ -90142,6 +90707,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 71,
+    "weight": 95,
     "learnset": {
       "levelUp": {
         "1": [
@@ -90296,6 +90862,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 177,
+    "weight": 320,
     "learnset": {
       "levelUp": {
         "1": [
@@ -90451,6 +91018,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 66,
+    "weight": 310,
     "learnset": {
       "levelUp": {
         "1": [
@@ -90587,6 +91155,7 @@
     "rawCaptureRate": 60,
     "expGroup": "medium",
     "baseExpYield": 166,
+    "weight": 1073,
     "learnset": {
       "levelUp": {
         "1": [
@@ -90727,6 +91296,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium-slow",
     "baseExpYield": 66,
+    "weight": 125,
     "learnset": {
       "levelUp": {
         "1": [
@@ -90890,6 +91460,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 179,
+    "weight": 811,
     "learnset": {
       "levelUp": {
         "0": [
@@ -91055,6 +91626,7 @@
     "rawCaptureRate": 255,
     "expGroup": "fast",
     "baseExpYield": 60,
+    "weight": 58,
     "learnset": {
       "levelUp": {
         "1": [
@@ -91209,6 +91781,7 @@
     "rawCaptureRate": 60,
     "expGroup": "fast",
     "baseExpYield": 165,
+    "weight": 75,
     "learnset": {
       "levelUp": {
         "0": [
@@ -91338,6 +91911,7 @@
     "rawCaptureRate": 200,
     "expGroup": "medium-slow",
     "baseExpYield": 58,
+    "weight": 58,
     "learnset": {
       "levelUp": {
         "1": [
@@ -91504,6 +92078,7 @@
     "rawCaptureRate": 100,
     "expGroup": "medium-slow",
     "baseExpYield": 137,
+    "weight": 180,
     "learnset": {
       "levelUp": {
         "1": [
@@ -91662,6 +92237,7 @@
     "rawCaptureRate": 50,
     "expGroup": "medium-slow",
     "baseExpYield": 221,
+    "weight": 440,
     "learnset": {
       "levelUp": {
         "1": [
@@ -91831,6 +92407,7 @@
     "rawCaptureRate": 200,
     "expGroup": "medium-slow",
     "baseExpYield": 58,
+    "weight": 10,
     "learnset": {
       "levelUp": {
         "1": [
@@ -91991,6 +92568,7 @@
     "rawCaptureRate": 100,
     "expGroup": "medium-slow",
     "baseExpYield": 130,
+    "weight": 80,
     "learnset": {
       "levelUp": {
         "1": [
@@ -92143,6 +92721,7 @@
     "rawCaptureRate": 50,
     "expGroup": "medium-slow",
     "baseExpYield": 221,
+    "weight": 201,
     "learnset": {
       "levelUp": {
         "0": [
@@ -92319,6 +92898,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 61,
+    "weight": 55,
     "learnset": {
       "levelUp": {
         "1": [
@@ -92458,6 +93038,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 166,
+    "weight": 242,
     "learnset": {
       "levelUp": {
         "1": [
@@ -92595,6 +93176,7 @@
     "rawCaptureRate": 255,
     "expGroup": "slow",
     "baseExpYield": 61,
+    "weight": 57,
     "learnset": {
       "levelUp": {
         "1": [
@@ -92722,6 +93304,7 @@
     "rawCaptureRate": 120,
     "expGroup": "slow",
     "baseExpYield": 138,
+    "weight": 410,
     "learnset": {
       "levelUp": {
         "1": [
@@ -92838,6 +93421,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 241,
+    "weight": 575,
     "learnset": {
       "levelUp": {
         "1": [
@@ -92961,6 +93545,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 67,
+    "weight": 195,
     "learnset": {
       "levelUp": {
         "1": [
@@ -93106,6 +93691,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium",
     "baseExpYield": 166,
+    "weight": 925,
     "learnset": {
       "levelUp": {
         "0": [
@@ -93255,6 +93841,7 @@
     "rawCaptureRate": 200,
     "expGroup": "medium",
     "baseExpYield": 150,
+    "weight": 50,
     "learnset": {
       "levelUp": {
         "1": [
@@ -93394,6 +93981,7 @@
     "rawCaptureRate": 200,
     "expGroup": "medium",
     "baseExpYield": 63,
+    "weight": 59,
     "learnset": {
       "levelUp": {
         "1": [
@@ -93521,6 +94109,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium",
     "baseExpYield": 173,
+    "weight": 330,
     "learnset": {
       "levelUp": {
         "1": [
@@ -93659,6 +94248,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 59,
+    "weight": 10,
     "learnset": {
       "levelUp": {
         "1": [
@@ -93788,6 +94378,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium",
     "baseExpYield": 162,
+    "weight": 105,
     "learnset": {
       "levelUp": {
         "1": [
@@ -93914,6 +94505,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 67,
+    "weight": 330,
     "learnset": {
       "levelUp": {
         "1": [
@@ -94063,6 +94655,7 @@
     "rawCaptureRate": 60,
     "expGroup": "medium",
     "baseExpYield": 168,
+    "weight": 1350,
     "learnset": {
       "levelUp": {
         "1": [
@@ -94205,6 +94798,7 @@
     "rawCaptureRate": 75,
     "expGroup": "fast",
     "baseExpYield": 165,
+    "weight": 316,
     "learnset": {
       "levelUp": {
         "1": [
@@ -94356,6 +94950,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 64,
+    "weight": 6,
     "learnset": {
       "levelUp": {
         "1": [
@@ -94501,6 +95096,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium",
     "baseExpYield": 165,
+    "weight": 143,
     "learnset": {
       "levelUp": {
         "0": [
@@ -94644,6 +95240,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium",
     "baseExpYield": 61,
+    "weight": 188,
     "learnset": {
       "levelUp": {
         "1": [
@@ -94775,6 +95372,7 @@
     "rawCaptureRate": 90,
     "expGroup": "medium",
     "baseExpYield": 171,
+    "weight": 1100,
     "learnset": {
       "levelUp": {
         "0": [
@@ -94915,6 +95513,7 @@
     "rawCaptureRate": 130,
     "expGroup": "medium-slow",
     "baseExpYield": 60,
+    "weight": 210,
     "learnset": {
       "levelUp": {
         "1": [
@@ -95040,6 +95639,7 @@
     "rawCaptureRate": 60,
     "expGroup": "medium-slow",
     "baseExpYield": 154,
+    "weight": 510,
     "learnset": {
       "levelUp": {
         "1": [
@@ -95162,6 +95762,7 @@
     "rawCaptureRate": 30,
     "expGroup": "medium-slow",
     "baseExpYield": 234,
+    "weight": 810,
     "learnset": {
       "levelUp": {
         "1": [
@@ -95292,6 +95893,7 @@
     "rawCaptureRate": 190,
     "expGroup": "slow",
     "baseExpYield": 55,
+    "weight": 3,
     "learnset": {
       "levelUp": {
         "1": [
@@ -95346,6 +95948,7 @@
     "rawCaptureRate": 60,
     "expGroup": "slow",
     "baseExpYield": 142,
+    "weight": 220,
     "learnset": {
       "levelUp": {
         "0": [
@@ -95475,6 +96078,7 @@
     "rawCaptureRate": 30,
     "expGroup": "slow",
     "baseExpYield": 232,
+    "weight": 805,
     "learnset": {
       "levelUp": {
         "1": [
@@ -95620,6 +96224,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium",
     "baseExpYield": 67,
+    "weight": 90,
     "learnset": {
       "levelUp": {
         "1": [
@@ -95781,6 +96386,7 @@
     "rawCaptureRate": 90,
     "expGroup": "medium",
     "baseExpYield": 170,
+    "weight": 345,
     "learnset": {
       "levelUp": {
         "1": [
@@ -95934,6 +96540,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium-slow",
     "baseExpYield": 55,
+    "weight": 31,
     "learnset": {
       "levelUp": {
         "1": [
@@ -96084,6 +96691,7 @@
     "rawCaptureRate": 90,
     "expGroup": "medium-slow",
     "baseExpYield": 130,
+    "weight": 130,
     "learnset": {
       "levelUp": {
         "1": [
@@ -96229,6 +96837,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 234,
+    "weight": 343,
     "learnset": {
       "levelUp": {
         "1": [
@@ -96353,6 +96962,7 @@
     "rawCaptureRate": 75,
     "expGroup": "slow",
     "baseExpYield": 64,
+    "weight": 180,
     "learnset": {
       "levelUp": {
         "1": [
@@ -96517,6 +97127,7 @@
     "rawCaptureRate": 60,
     "expGroup": "slow",
     "baseExpYield": 144,
+    "weight": 360,
     "learnset": {
       "levelUp": {
         "1": [
@@ -96670,6 +97281,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 243,
+    "weight": 1055,
     "learnset": {
       "levelUp": {
         "1": [
@@ -96833,6 +97445,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium",
     "baseExpYield": 61,
+    "weight": 85,
     "learnset": {
       "levelUp": {
         "1": [
@@ -96993,6 +97606,7 @@
     "rawCaptureRate": 60,
     "expGroup": "medium",
     "baseExpYield": 177,
+    "weight": 2600,
     "learnset": {
       "levelUp": {
         "0": [
@@ -97169,6 +97783,7 @@
     "rawCaptureRate": 25,
     "expGroup": "medium",
     "baseExpYield": 180,
+    "weight": 1480,
     "learnset": {
       "levelUp": {
         "1": [
@@ -97312,6 +97927,7 @@
     "rawCaptureRate": 200,
     "expGroup": "medium",
     "baseExpYield": 61,
+    "weight": 77,
     "learnset": {
       "levelUp": {
         "1": [
@@ -97437,6 +98053,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium",
     "baseExpYield": 173,
+    "weight": 253,
     "learnset": {
       "levelUp": {
         "1": [
@@ -97570,6 +98187,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium",
     "baseExpYield": 165,
+    "weight": 110,
     "learnset": {
       "levelUp": {
         "1": [
@@ -97720,6 +98338,7 @@
     "rawCaptureRate": 180,
     "expGroup": "medium-slow",
     "baseExpYield": 70,
+    "weight": 200,
     "learnset": {
       "levelUp": {
         "1": [
@@ -97881,6 +98500,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 179,
+    "weight": 355,
     "learnset": {
       "levelUp": {
         "1": [
@@ -98046,6 +98666,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 170,
+    "weight": 1390,
     "learnset": {
       "levelUp": {
         "1": [
@@ -98216,6 +98837,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 61,
+    "weight": 920,
     "learnset": {
       "levelUp": {
         "1": [
@@ -98386,6 +99008,7 @@
     "rawCaptureRate": 90,
     "expGroup": "medium",
     "baseExpYield": 169,
+    "weight": 3300,
     "learnset": {
       "levelUp": {
         "1": [
@@ -98569,6 +99192,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium",
     "baseExpYield": 68,
+    "weight": 102,
     "learnset": {
       "levelUp": {
         "1": [
@@ -98733,6 +99357,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 172,
+    "weight": 700,
     "learnset": {
       "levelUp": {
         "1": [
@@ -98892,6 +99517,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 172,
+    "weight": 946,
     "learnset": {
       "levelUp": {
         "1": [
@@ -99039,6 +99665,7 @@
     "rawCaptureRate": 190,
     "expGroup": "slow",
     "baseExpYield": 70,
+    "weight": 105,
     "learnset": {
       "levelUp": {
         "1": [
@@ -99186,6 +99813,7 @@
     "rawCaptureRate": 60,
     "expGroup": "slow",
     "baseExpYield": 179,
+    "weight": 410,
     "learnset": {
       "levelUp": {
         "0": [
@@ -99330,6 +99958,7 @@
     "rawCaptureRate": 190,
     "expGroup": "slow",
     "baseExpYield": 74,
+    "weight": 90,
     "learnset": {
       "levelUp": {
         "1": [
@@ -99487,6 +100116,7 @@
     "rawCaptureRate": 60,
     "expGroup": "slow",
     "baseExpYield": 179,
+    "weight": 395,
     "learnset": {
       "levelUp": {
         "0": [
@@ -99644,6 +100274,7 @@
     "rawCaptureRate": 90,
     "expGroup": "medium",
     "baseExpYield": 169,
+    "weight": 580,
     "learnset": {
       "levelUp": {
         "1": [
@@ -99804,6 +100435,7 @@
     "rawCaptureRate": 90,
     "expGroup": "medium",
     "baseExpYield": 169,
+    "weight": 330,
     "learnset": {
       "levelUp": {
         "1": [
@@ -99947,6 +100579,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 60,
+    "weight": 173,
     "learnset": {
       "levelUp": {
         "1": [
@@ -100092,6 +100725,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 147,
+    "weight": 500,
     "learnset": {
       "levelUp": {
         "1": [
@@ -100233,6 +100867,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 270,
+    "weight": 1600,
     "learnset": {
       "levelUp": {
         "1": [
@@ -100412,6 +101047,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 72,
+    "weight": 288,
     "learnset": {
       "levelUp": {
         "1": [
@@ -100544,6 +101180,7 @@
     "rawCaptureRate": 15,
     "expGroup": "slow",
     "baseExpYield": 248,
+    "weight": 460,
     "learnset": {
       "levelUp": {
         "0": [
@@ -100694,6 +101331,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 261,
+    "weight": 2500,
     "learnset": {
       "levelUp": {
         "1": [
@@ -100843,6 +101481,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 261,
+    "weight": 2600,
     "learnset": {
       "levelUp": {
         "1": [
@@ -100985,6 +101624,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 261,
+    "weight": 2000,
     "learnset": {
       "levelUp": {
         "1": [
@@ -101133,6 +101773,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 261,
+    "weight": 630,
     "learnset": {
       "levelUp": {
         "1": [
@@ -101297,6 +101938,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 261,
+    "weight": 610,
     "learnset": {
       "levelUp": {
         "1": [
@@ -101475,6 +102117,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 306,
+    "weight": 3300,
     "learnset": {
       "levelUp": {
         "1": [
@@ -101635,6 +102278,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 306,
+    "weight": 3450,
     "learnset": {
       "levelUp": {
         "1": [
@@ -101802,6 +102446,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 270,
+    "weight": 680,
     "learnset": {
       "levelUp": {
         "1": [
@@ -101966,6 +102611,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 297,
+    "weight": 3250,
     "learnset": {
       "levelUp": {
         "1": [
@@ -102121,6 +102767,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 261,
+    "weight": 485,
     "learnset": {
       "levelUp": {
         "1": [
@@ -102269,6 +102916,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 270,
+    "weight": 65,
     "learnset": {
       "levelUp": {
         "1": [
@@ -102443,6 +103091,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 270,
+    "weight": 825,
     "learnset": {
       "levelUp": {
         "1": [
@@ -102601,6 +103250,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 63,
+    "weight": 90,
     "learnset": {
       "levelUp": {
         "1": [
@@ -102767,6 +103417,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 142,
+    "weight": 290,
     "learnset": {
       "levelUp": {
         "0": [
@@ -102937,6 +103588,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 239,
+    "weight": 900,
     "learnset": {
       "levelUp": {
         "0": [
@@ -103126,6 +103778,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 61,
+    "weight": 94,
     "learnset": {
       "levelUp": {
         "1": [
@@ -103272,6 +103925,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 143,
+    "weight": 145,
     "learnset": {
       "levelUp": {
         "1": [
@@ -103430,6 +104084,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 240,
+    "weight": 390,
     "learnset": {
       "levelUp": {
         "0": [
@@ -103608,6 +104263,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 63,
+    "weight": 70,
     "learnset": {
       "levelUp": {
         "1": [
@@ -103757,6 +104413,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 142,
+    "weight": 109,
     "learnset": {
       "levelUp": {
         "1": [
@@ -103905,6 +104562,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 239,
+    "weight": 400,
     "learnset": {
       "levelUp": {
         "0": [
@@ -104068,6 +104726,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium",
     "baseExpYield": 47,
+    "weight": 50,
     "learnset": {
       "levelUp": {
         "1": [
@@ -104213,6 +104872,7 @@
     "rawCaptureRate": 127,
     "expGroup": "medium",
     "baseExpYield": 148,
+    "weight": 424,
     "learnset": {
       "levelUp": {
         "1": [
@@ -104378,6 +105038,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium-slow",
     "baseExpYield": 56,
+    "weight": 17,
     "learnset": {
       "levelUp": {
         "1": [
@@ -104508,6 +105169,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium-slow",
     "baseExpYield": 134,
+    "weight": 160,
     "learnset": {
       "levelUp": {
         "0": [
@@ -104643,6 +105305,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 175,
+    "weight": 245,
     "learnset": {
       "levelUp": {
         "1": [
@@ -104783,6 +105446,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium",
     "baseExpYield": 40,
+    "weight": 25,
     "learnset": {
       "levelUp": {
         "1": [
@@ -104844,6 +105508,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium",
     "baseExpYield": 75,
+    "weight": 84,
     "learnset": {
       "levelUp": {
         "0": [
@@ -104902,6 +105567,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 185,
+    "weight": 170,
     "learnset": {
       "levelUp": {
         "0": [
@@ -105036,6 +105702,7 @@
     "rawCaptureRate": 220,
     "expGroup": "medium-slow",
     "baseExpYield": 74,
+    "weight": 135,
     "learnset": {
       "levelUp": {
         "1": [
@@ -105179,6 +105846,7 @@
     "rawCaptureRate": 65,
     "expGroup": "medium-slow",
     "baseExpYield": 177,
+    "weight": 815,
     "learnset": {
       "levelUp": {
         "1": [
@@ -105319,6 +105987,7 @@
     "rawCaptureRate": 225,
     "expGroup": "medium",
     "baseExpYield": 61,
+    "weight": 1,
     "learnset": {
       "levelUp": {
         "1": [
@@ -105460,6 +106129,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium",
     "baseExpYield": 130,
+    "weight": 9,
     "learnset": {
       "levelUp": {
         "1": [
@@ -105597,6 +106267,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 248,
+    "weight": 100,
     "learnset": {
       "levelUp": {
         "1": [
@@ -105716,6 +106387,7 @@
     "rawCaptureRate": 200,
     "expGroup": "medium",
     "baseExpYield": 70,
+    "weight": 310,
     "learnset": {
       "levelUp": {
         "1": [
@@ -105859,6 +106531,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 186,
+    "weight": 910,
     "learnset": {
       "levelUp": {
         "0": [
@@ -106007,6 +106680,7 @@
     "rawCaptureRate": 220,
     "expGroup": "medium",
     "baseExpYield": 70,
+    "weight": 80,
     "learnset": {
       "levelUp": {
         "1": [
@@ -106175,6 +106849,7 @@
     "rawCaptureRate": 65,
     "expGroup": "medium",
     "baseExpYield": 173,
+    "weight": 1360,
     "learnset": {
       "levelUp": {
         "0": [
@@ -106360,6 +107035,7 @@
     "rawCaptureRate": 160,
     "expGroup": "medium",
     "baseExpYield": 165,
+    "weight": 280,
     "learnset": {
       "levelUp": {
         "1": [
@@ -106486,6 +107162,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 71,
+    "weight": 35,
     "learnset": {
       "levelUp": {
         "1": [
@@ -106626,6 +107303,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium",
     "baseExpYield": 163,
+    "weight": 85,
     "learnset": {
       "levelUp": {
         "1": [
@@ -106795,6 +107473,7 @@
     "rawCaptureRate": 180,
     "expGroup": "medium",
     "baseExpYield": 65,
+    "weight": 20,
     "learnset": {
       "levelUp": {
         "1": [
@@ -106926,6 +107605,7 @@
     "rawCaptureRate": 90,
     "expGroup": "medium",
     "baseExpYield": 157,
+    "weight": 45,
     "learnset": {
       "levelUp": {
         "1": [
@@ -107049,6 +107729,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 234,
+    "weight": 530,
     "learnset": {
       "levelUp": {
         "0": [
@@ -107159,6 +107840,7 @@
     "rawCaptureRate": 200,
     "expGroup": "medium",
     "baseExpYield": 68,
+    "weight": 5,
     "learnset": {
       "levelUp": {
         "1": [
@@ -107298,6 +107980,7 @@
     "rawCaptureRate": 140,
     "expGroup": "medium",
     "baseExpYield": 162,
+    "weight": 155,
     "learnset": {
       "levelUp": {
         "1": [
@@ -107436,6 +108119,7 @@
     "rawCaptureRate": 200,
     "expGroup": "medium",
     "baseExpYield": 68,
+    "weight": 35,
     "learnset": {
       "levelUp": {
         "1": [
@@ -107568,6 +108252,7 @@
     "rawCaptureRate": 140,
     "expGroup": "medium",
     "baseExpYield": 168,
+    "weight": 50,
     "learnset": {
       "levelUp": {
         "1": [
@@ -107700,6 +108385,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 58,
+    "weight": 35,
     "learnset": {
       "levelUp": {
         "1": [
@@ -107864,6 +108550,7 @@
     "rawCaptureRate": 80,
     "expGroup": "medium",
     "baseExpYield": 169,
+    "weight": 470,
     "learnset": {
       "levelUp": {
         "1": [
@@ -108030,6 +108717,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium",
     "baseExpYield": 61,
+    "weight": 310,
     "learnset": {
       "levelUp": {
         "1": [
@@ -108188,6 +108876,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 175,
+    "weight": 960,
     "learnset": {
       "levelUp": {
         "1": [
@@ -108357,6 +109046,7 @@
     "rawCaptureRate": 225,
     "expGroup": "medium",
     "baseExpYield": 64,
+    "weight": 73,
     "learnset": {
       "levelUp": {
         "1": [
@@ -108503,6 +109193,7 @@
     "rawCaptureRate": 55,
     "expGroup": "medium",
     "baseExpYield": 173,
+    "weight": 815,
     "learnset": {
       "levelUp": {
         "0": [
@@ -108651,6 +109342,7 @@
     "rawCaptureRate": 225,
     "expGroup": "slow",
     "baseExpYield": 66,
+    "weight": 83,
     "learnset": {
       "levelUp": {
         "1": [
@@ -108791,6 +109483,7 @@
     "rawCaptureRate": 55,
     "expGroup": "slow",
     "baseExpYield": 100,
+    "weight": 353,
     "learnset": {
       "levelUp": {
         "1": [
@@ -108932,6 +109625,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 58,
+    "weight": 60,
     "learnset": {
       "levelUp": {
         "1": [
@@ -109070,6 +109764,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium",
     "baseExpYield": 168,
+    "weight": 210,
     "learnset": {
       "levelUp": {
         "1": [
@@ -109197,6 +109892,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 72,
+    "weight": 260,
     "learnset": {
       "levelUp": {
         "1": [
@@ -109346,6 +110042,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 182,
+    "weight": 2700,
     "learnset": {
       "levelUp": {
         "1": [
@@ -109497,6 +110194,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 72,
+    "weight": 252,
     "learnset": {
       "levelUp": {
         "1": [
@@ -109652,6 +110350,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 104,
+    "weight": 2250,
     "learnset": {
       "levelUp": {
         "1": [
@@ -109803,6 +110502,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 184,
+    "weight": 235,
     "learnset": {
       "levelUp": {
         "0": [
@@ -109955,6 +110655,7 @@
     "rawCaptureRate": 100,
     "expGroup": "medium",
     "baseExpYield": 175,
+    "weight": 215,
     "learnset": {
       "levelUp": {
         "1": [
@@ -110144,6 +110845,7 @@
     "rawCaptureRate": 180,
     "expGroup": "medium",
     "baseExpYield": 151,
+    "weight": 22,
     "learnset": {
       "levelUp": {
         "1": [
@@ -110294,6 +110996,7 @@
     "rawCaptureRate": 60,
     "expGroup": "slow",
     "baseExpYield": 100,
+    "weight": 57,
     "learnset": {
       "levelUp": {
         "1": [
@@ -110447,6 +111150,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 60,
+    "weight": 28,
     "learnset": {
       "levelUp": {
         "1": [
@@ -110579,6 +111283,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 158,
+    "weight": 175,
     "learnset": {
       "levelUp": {
         "0": [
@@ -110698,6 +111403,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 270,
+    "weight": 1505,
     "learnset": {
       "levelUp": {
         "0": [
@@ -110853,6 +111559,7 @@
     "rawCaptureRate": 75,
     "expGroup": "fast",
     "baseExpYield": 165,
+    "weight": 30,
     "learnset": {
       "levelUp": {
         "1": [
@@ -110997,6 +111704,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium",
     "baseExpYield": 62,
+    "weight": 70,
     "learnset": {
       "levelUp": {
         "1": [
@@ -111160,6 +111868,7 @@
     "rawCaptureRate": 60,
     "expGroup": "medium",
     "baseExpYield": 166,
+    "weight": 710,
     "learnset": {
       "levelUp": {
         "0": [
@@ -111336,6 +112045,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium",
     "baseExpYield": 67,
+    "weight": 50,
     "learnset": {
       "levelUp": {
         "1": [
@@ -111481,6 +112191,7 @@
     "rawCaptureRate": 60,
     "expGroup": "medium",
     "baseExpYield": 173,
+    "weight": 125,
     "learnset": {
       "levelUp": {
         "1": [
@@ -111626,6 +112337,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 61,
+    "weight": 995,
     "learnset": {
       "levelUp": {
         "1": [
@@ -111769,6 +112481,7 @@
     "rawCaptureRate": 55,
     "expGroup": "medium",
     "baseExpYield": 180,
+    "weight": 5050,
     "learnset": {
       "levelUp": {
         "0": [
@@ -111923,6 +112636,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 49,
+    "weight": 80,
     "learnset": {
       "levelUp": {
         "1": [
@@ -112074,6 +112788,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 187,
+    "weight": 850,
     "learnset": {
       "levelUp": {
         "0": [
@@ -112237,6 +112952,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 306,
+    "weight": 2150,
     "learnset": {
       "levelUp": {
         "1": [
@@ -112387,6 +113103,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 306,
+    "weight": 2030,
     "learnset": {
       "levelUp": {
         "1": [
@@ -112534,6 +113251,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 270,
+    "weight": 3050,
     "learnset": {
       "levelUp": {
         "1": [
@@ -112676,6 +113394,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 270,
+    "weight": 88,
     "learnset": {
       "levelUp": {
         "1": [
@@ -112839,6 +113558,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 270,
+    "weight": 90,
     "learnset": {
       "levelUp": {
         "1": [
@@ -113008,6 +113728,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 270,
+    "weight": 1950,
     "learnset": {
       "levelUp": {
         "1": [
@@ -113165,6 +113886,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 64,
+    "weight": 15,
     "learnset": {
       "levelUp": {
         "1": [
@@ -113318,6 +114040,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 147,
+    "weight": 160,
     "learnset": {
       "levelUp": {
         "1": [
@@ -113469,6 +114192,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 239,
+    "weight": 366,
     "learnset": {
       "levelUp": {
         "0": [
@@ -113653,6 +114377,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 64,
+    "weight": 43,
     "learnset": {
       "levelUp": {
         "1": [
@@ -113791,6 +114516,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 147,
+    "weight": 250,
     "learnset": {
       "levelUp": {
         "1": [
@@ -113927,6 +114653,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 239,
+    "weight": 830,
     "learnset": {
       "levelUp": {
         "0": [
@@ -114105,6 +114832,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 64,
+    "weight": 75,
     "learnset": {
       "levelUp": {
         "1": [
@@ -114249,6 +114977,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 147,
+    "weight": 175,
     "learnset": {
       "levelUp": {
         "1": [
@@ -114390,6 +115119,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 239,
+    "weight": 440,
     "learnset": {
       "levelUp": {
         "0": [
@@ -114554,6 +115284,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium",
     "baseExpYield": 53,
+    "weight": 12,
     "learnset": {
       "levelUp": {
         "1": [
@@ -114686,6 +115417,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium",
     "baseExpYield": 124,
+    "weight": 148,
     "learnset": {
       "levelUp": {
         "1": [
@@ -114813,6 +115545,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 218,
+    "weight": 260,
     "learnset": {
       "levelUp": {
         "0": [
@@ -114953,6 +115686,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium",
     "baseExpYield": 51,
+    "weight": 60,
     "learnset": {
       "levelUp": {
         "1": [
@@ -115096,6 +115830,7 @@
     "rawCaptureRate": 127,
     "expGroup": "medium",
     "baseExpYield": 146,
+    "weight": 142,
     "learnset": {
       "levelUp": {
         "1": [
@@ -115246,6 +115981,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium",
     "baseExpYield": 60,
+    "weight": 44,
     "learnset": {
       "levelUp": {
         "1": [
@@ -115362,6 +116098,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium",
     "baseExpYield": 140,
+    "weight": 105,
     "learnset": {
       "levelUp": {
         "0": [
@@ -115484,6 +116221,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 225,
+    "weight": 450,
     "learnset": {
       "levelUp": {
         "0": [
@@ -115624,6 +116362,7 @@
     "rawCaptureRate": 225,
     "expGroup": "medium",
     "baseExpYield": 68,
+    "weight": 70,
     "learnset": {
       "levelUp": {
         "1": [
@@ -115770,6 +116509,7 @@
     "rawCaptureRate": 60,
     "expGroup": "medium",
     "baseExpYield": 167,
+    "weight": 1800,
     "learnset": {
       "levelUp": {
         "0": [
@@ -115923,6 +116663,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 167,
+    "weight": 34,
     "learnset": {
       "levelUp": {
         "1": [
@@ -116064,6 +116805,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 61,
+    "weight": 2,
     "learnset": {
       "levelUp": {
         "1": [
@@ -116213,6 +116955,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium",
     "baseExpYield": 162,
+    "weight": 5,
     "learnset": {
       "levelUp": {
         "0": [
@@ -116367,6 +117110,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 56,
+    "weight": 92,
     "learnset": {
       "levelUp": {
         "1": [
@@ -116508,6 +117252,7 @@
     "rawCaptureRate": 90,
     "expGroup": "medium",
     "baseExpYield": 170,
+    "weight": 250,
     "learnset": {
       "levelUp": {
         "0": [
@@ -116658,6 +117403,7 @@
     "rawCaptureRate": 60,
     "expGroup": "fast",
     "baseExpYield": 61,
+    "weight": 3,
     "learnset": {
       "levelUp": {
         "1": [
@@ -116784,6 +117530,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 61,
+    "weight": 80,
     "learnset": {
       "levelUp": {
         "1": [
@@ -116922,6 +117669,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium",
     "baseExpYield": 173,
+    "weight": 145,
     "learnset": {
       "levelUp": {
         "0": [
@@ -117063,6 +117811,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 77,
+    "weight": 1100,
     "learnset": {
       "levelUp": {
         "1": [
@@ -117194,6 +117943,7 @@
     "rawCaptureRate": 60,
     "expGroup": "medium",
     "baseExpYield": 175,
+    "weight": 9200,
     "learnset": {
       "levelUp": {
         "1": [
@@ -117324,6 +118074,7 @@
     "rawCaptureRate": 200,
     "expGroup": "medium",
     "baseExpYield": 54,
+    "weight": 40,
     "learnset": {
       "levelUp": {
         "1": [
@@ -117461,6 +118212,7 @@
     "rawCaptureRate": 100,
     "expGroup": "medium",
     "baseExpYield": 159,
+    "weight": 820,
     "learnset": {
       "levelUp": {
         "1": [
@@ -117600,6 +118352,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 50,
+    "weight": 15,
     "learnset": {
       "levelUp": {
         "1": [
@@ -117725,6 +118478,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium",
     "baseExpYield": 168,
+    "weight": 185,
     "learnset": {
       "levelUp": {
         "0": [
@@ -117862,6 +118616,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 57,
+    "weight": 15,
     "learnset": {
       "levelUp": {
         "1": [
@@ -117992,6 +118747,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium",
     "baseExpYield": 142,
+    "weight": 115,
     "learnset": {
       "levelUp": {
         "1": [
@@ -118119,6 +118875,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium",
     "baseExpYield": 64,
+    "weight": 48,
     "learnset": {
       "levelUp": {
         "1": [
@@ -118274,6 +119031,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 168,
+    "weight": 222,
     "learnset": {
       "levelUp": {
         "0": [
@@ -118439,6 +119197,7 @@
     "rawCaptureRate": 140,
     "expGroup": "medium",
     "baseExpYield": 68,
+    "weight": 68,
     "learnset": {
       "levelUp": {
         "1": [
@@ -118577,6 +119336,7 @@
     "rawCaptureRate": 70,
     "expGroup": "medium",
     "baseExpYield": 175,
+    "weight": 1350,
     "learnset": {
       "levelUp": {
         "0": [
@@ -118719,6 +119479,7 @@
     "rawCaptureRate": 235,
     "expGroup": "medium-slow",
     "baseExpYield": 42,
+    "weight": 32,
     "learnset": {
       "levelUp": {
         "1": [
@@ -118844,6 +119605,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium-slow",
     "baseExpYield": 102,
+    "weight": 82,
     "learnset": {
       "levelUp": {
         "0": [
@@ -118972,6 +119734,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 230,
+    "weight": 214,
     "learnset": {
       "levelUp": {
         "0": [
@@ -119115,6 +119878,7 @@
     "rawCaptureRate": 60,
     "expGroup": "fast",
     "baseExpYield": 170,
+    "weight": 3,
     "learnset": {
       "levelUp": {
         "1": [
@@ -119281,6 +120045,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 172,
+    "weight": 760,
     "learnset": {
       "levelUp": {
         "1": [
@@ -119447,6 +120212,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 172,
+    "weight": 828,
     "learnset": {
       "levelUp": {
         "1": [
@@ -119611,6 +120377,7 @@
     "rawCaptureRate": 90,
     "expGroup": "medium",
     "baseExpYield": 46,
+    "weight": 120,
     "learnset": {
       "levelUp": {
         "1": [
@@ -119698,6 +120465,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 186,
+    "weight": 1080,
     "learnset": {
       "levelUp": {
         "0": [
@@ -119851,6 +120619,7 @@
     "rawCaptureRate": 140,
     "expGroup": "medium",
     "baseExpYield": 64,
+    "weight": 700,
     "learnset": {
       "levelUp": {
         "1": [
@@ -119996,6 +120765,7 @@
     "rawCaptureRate": 60,
     "expGroup": "medium",
     "baseExpYield": 168,
+    "weight": 2500,
     "learnset": {
       "levelUp": {
         "1": [
@@ -120136,6 +120906,7 @@
     "rawCaptureRate": 60,
     "expGroup": "fast",
     "baseExpYield": 144,
+    "weight": 12,
     "learnset": {
       "levelUp": {
         "1": [
@@ -120248,6 +121019,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 107,
+    "weight": 1205,
     "learnset": {
       "levelUp": {
         "1": [
@@ -120378,6 +121150,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 257,
+    "weight": 1005,
     "learnset": {
       "levelUp": {
         "0": [
@@ -120543,6 +121316,7 @@
     "rawCaptureRate": 30,
     "expGroup": "medium-slow",
     "baseExpYield": 154,
+    "weight": 400,
     "learnset": {
       "levelUp": {
         "1": [
@@ -120681,6 +121455,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 168,
+    "weight": 199,
     "learnset": {
       "levelUp": {
         "1": [
@@ -120820,6 +121595,7 @@
     "rawCaptureRate": 70,
     "expGroup": "medium",
     "baseExpYield": 170,
+    "weight": 2120,
     "learnset": {
       "levelUp": {
         "1": [
@@ -120975,6 +121751,7 @@
     "rawCaptureRate": 180,
     "expGroup": "medium",
     "baseExpYield": 152,
+    "weight": 33,
     "learnset": {
       "levelUp": {
         "1": [
@@ -121130,6 +121907,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 167,
+    "weight": 7,
     "learnset": {
       "levelUp": {
         "1": [
@@ -121287,6 +122065,7 @@
     "rawCaptureRate": 80,
     "expGroup": "medium",
     "baseExpYield": 166,
+    "weight": 190,
     "learnset": {
       "levelUp": {
         "1": [
@@ -121443,6 +122222,7 @@
     "rawCaptureRate": 70,
     "expGroup": "medium",
     "baseExpYield": 170,
+    "weight": 1850,
     "learnset": {
       "levelUp": {
         "1": [
@@ -121606,6 +122386,7 @@
     "rawCaptureRate": 25,
     "expGroup": "medium",
     "baseExpYield": 181,
+    "weight": 2100,
     "learnset": {
       "levelUp": {
         "1": [
@@ -121760,6 +122541,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 60,
+    "weight": 297,
     "learnset": {
       "levelUp": {
         "1": [
@@ -121900,6 +122682,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 147,
+    "weight": 470,
     "learnset": {
       "levelUp": {
         "0": [
@@ -122052,6 +122835,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 270,
+    "weight": 782,
     "learnset": {
       "levelUp": {
         "0": [
@@ -122235,6 +123019,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 257,
+    "weight": 205,
     "learnset": {
       "levelUp": {
         "1": [
@@ -122389,6 +123174,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 257,
+    "weight": 186,
     "learnset": {
       "levelUp": {
         "1": [
@@ -122540,6 +123326,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 257,
+    "weight": 455,
     "learnset": {
       "levelUp": {
         "1": [
@@ -122701,6 +123488,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 257,
+    "weight": 212,
     "learnset": {
       "levelUp": {
         "1": [
@@ -122851,6 +123639,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 40,
+    "weight": 1,
     "learnset": {
       "levelUp": {
         "1": [
@@ -122897,6 +123686,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 140,
+    "weight": 9999,
     "learnset": {
       "levelUp": {
         "0": [
@@ -122946,6 +123736,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 306,
+    "weight": 2300,
     "learnset": {
       "levelUp": {
         "0": [
@@ -123106,6 +123897,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 306,
+    "weight": 1200,
     "learnset": {
       "levelUp": {
         "0": [
@@ -123262,6 +124054,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 257,
+    "weight": 555,
     "learnset": {
       "levelUp": {
         "1": [
@@ -123411,6 +124204,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 257,
+    "weight": 3336,
     "learnset": {
       "levelUp": {
         "1": [
@@ -123553,6 +124347,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 257,
+    "weight": 250,
     "learnset": {
       "levelUp": {
         "1": [
@@ -123699,6 +124494,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 257,
+    "weight": 1000,
     "learnset": {
       "levelUp": {
         "1": [
@@ -123836,6 +124632,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 257,
+    "weight": 9999,
     "learnset": {
       "levelUp": {
         "1": [
@@ -123976,6 +124773,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 257,
+    "weight": 1,
     "learnset": {
       "levelUp": {
         "1": [
@@ -124096,6 +124894,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 257,
+    "weight": 8880,
     "learnset": {
       "levelUp": {
         "1": [
@@ -124250,6 +125049,7 @@
     "rawCaptureRate": 255,
     "expGroup": "slow",
     "baseExpYield": 270,
+    "weight": 2300,
     "learnset": {
       "levelUp": {
         "1": [
@@ -124411,6 +125211,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 270,
+    "weight": 805,
     "learnset": {
       "levelUp": {
         "1": [
@@ -124602,6 +125403,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 270,
+    "weight": 222,
     "learnset": {
       "levelUp": {
         "1": [
@@ -124758,6 +125560,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 189,
+    "weight": 18,
     "learnset": {
       "levelUp": {
         "1": [
@@ -124860,6 +125663,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 243,
+    "weight": 1500,
     "learnset": {
       "levelUp": {
         "0": [
@@ -125006,6 +125810,7 @@
     "rawCaptureRate": 30,
     "expGroup": "slow",
     "baseExpYield": 257,
+    "weight": 8200,
     "learnset": {
       "levelUp": {
         "1": [
@@ -125149,6 +125954,7 @@
     "rawCaptureRate": 30,
     "expGroup": "slow",
     "baseExpYield": 257,
+    "weight": 130,
     "learnset": {
       "levelUp": {
         "1": [
@@ -125291,6 +126097,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 270,
+    "weight": 445,
     "learnset": {
       "levelUp": {
         "1": [
@@ -125444,6 +126251,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 135,
+    "weight": 80,
     "learnset": {
       "levelUp": {
         "1": [
@@ -125520,6 +126328,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 270,
+    "weight": 8000,
     "learnset": {
       "levelUp": {
         "0": [
@@ -125635,6 +126444,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 62,
+    "weight": 50,
     "learnset": {
       "levelUp": {
         "1": [
@@ -125759,6 +126569,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 147,
+    "weight": 140,
     "learnset": {
       "levelUp": {
         "0": [
@@ -125883,6 +126694,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 265,
+    "weight": 900,
     "learnset": {
       "levelUp": {
         "0": [
@@ -126032,6 +126844,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 62,
+    "weight": 45,
     "learnset": {
       "levelUp": {
         "1": [
@@ -126154,6 +126967,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 147,
+    "weight": 90,
     "learnset": {
       "levelUp": {
         "1": [
@@ -126275,6 +127089,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 265,
+    "weight": 330,
     "learnset": {
       "levelUp": {
         "0": [
@@ -126419,6 +127234,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 62,
+    "weight": 40,
     "learnset": {
       "levelUp": {
         "1": [
@@ -126531,6 +127347,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 147,
+    "weight": 115,
     "learnset": {
       "levelUp": {
         "1": [
@@ -126640,6 +127457,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 265,
+    "weight": 452,
     "learnset": {
       "levelUp": {
         "0": [
@@ -126781,6 +127599,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium",
     "baseExpYield": 55,
+    "weight": 25,
     "learnset": {
       "levelUp": {
         "1": [
@@ -126893,6 +127712,7 @@
     "rawCaptureRate": 90,
     "expGroup": "medium",
     "baseExpYield": 161,
+    "weight": 60,
     "learnset": {
       "levelUp": {
         "0": [
@@ -127015,6 +127835,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium-slow",
     "baseExpYield": 49,
+    "weight": 18,
     "learnset": {
       "levelUp": {
         "1": [
@@ -127128,6 +127949,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium-slow",
     "baseExpYield": 128,
+    "weight": 160,
     "learnset": {
       "levelUp": {
         "1": [
@@ -127234,6 +128056,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 248,
+    "weight": 750,
     "learnset": {
       "levelUp": {
         "0": [
@@ -127366,6 +128189,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium",
     "baseExpYield": 36,
+    "weight": 80,
     "learnset": {
       "levelUp": {
         "1": [
@@ -127419,6 +128243,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium",
     "baseExpYield": 117,
+    "weight": 195,
     "learnset": {
       "levelUp": {
         "0": [
@@ -127510,6 +128335,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 253,
+    "weight": 408,
     "learnset": {
       "levelUp": {
         "1": [
@@ -127635,6 +128461,7 @@
     "rawCaptureRate": 255,
     "expGroup": "fast",
     "baseExpYield": 49,
+    "weight": 89,
     "learnset": {
       "levelUp": {
         "1": [
@@ -127737,6 +128564,7 @@
     "rawCaptureRate": 127,
     "expGroup": "fast",
     "baseExpYield": 159,
+    "weight": 199,
     "learnset": {
       "levelUp": {
         "0": [
@@ -127849,6 +128677,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 50,
+    "weight": 22,
     "learnset": {
       "levelUp": {
         "1": [
@@ -127954,6 +128783,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium",
     "baseExpYield": 161,
+    "weight": 25,
     "learnset": {
       "levelUp": {
         "0": [
@@ -128058,6 +128888,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium",
     "baseExpYield": 122,
+    "weight": 60,
     "learnset": {
       "levelUp": {
         "1": [
@@ -128157,6 +128988,7 @@
     "rawCaptureRate": 127,
     "expGroup": "medium",
     "baseExpYield": 172,
+    "weight": 430,
     "learnset": {
       "levelUp": {
         "1": [
@@ -128261,6 +129093,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium",
     "baseExpYield": 57,
+    "weight": 85,
     "learnset": {
       "levelUp": {
         "1": [
@@ -128369,6 +129202,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium",
     "baseExpYield": 170,
+    "weight": 1155,
     "learnset": {
       "levelUp": {
         "0": [
@@ -128504,6 +129338,7 @@
     "rawCaptureRate": 255,
     "expGroup": "fast",
     "baseExpYield": 54,
+    "weight": 135,
     "learnset": {
       "levelUp": {
         "1": [
@@ -128608,6 +129443,7 @@
     "rawCaptureRate": 45,
     "expGroup": "fast",
     "baseExpYield": 172,
+    "weight": 340,
     "learnset": {
       "levelUp": {
         "1": [
@@ -128714,6 +129550,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium-slow",
     "baseExpYield": 48,
+    "weight": 120,
     "learnset": {
       "levelUp": {
         "1": [
@@ -128822,6 +129659,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium-slow",
     "baseExpYield": 144,
+    "weight": 780,
     "learnset": {
       "levelUp": {
         "0": [
@@ -128941,6 +129779,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 255,
+    "weight": 3105,
     "learnset": {
       "levelUp": {
         "0": [
@@ -129068,6 +129907,7 @@
     "rawCaptureRate": 255,
     "expGroup": "slow-then-very-fast",
     "baseExpYield": 52,
+    "weight": 5,
     "learnset": {
       "levelUp": {
         "1": [
@@ -129130,6 +129970,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow-then-very-fast",
     "baseExpYield": 170,
+    "weight": 10,
     "learnset": {
       "levelUp": {
         "0": [
@@ -129255,6 +130096,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow-then-very-fast",
     "baseExpYield": 170,
+    "weight": 130,
     "learnset": {
       "levelUp": {
         "0": [
@@ -129387,6 +130229,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium",
     "baseExpYield": 63,
+    "weight": 76,
     "learnset": {
       "levelUp": {
         "1": [
@@ -129499,6 +130342,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium",
     "baseExpYield": 179,
+    "weight": 655,
     "learnset": {
       "levelUp": {
         "1": [
@@ -129617,6 +130461,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 166,
+    "weight": 180,
     "learnset": {
       "levelUp": {
         "1": [
@@ -129741,6 +130586,7 @@
     "rawCaptureRate": 255,
     "expGroup": "slow",
     "baseExpYield": 56,
+    "weight": 10,
     "learnset": {
       "levelUp": {
         "1": [
@@ -129850,6 +130696,7 @@
     "rawCaptureRate": 60,
     "expGroup": "slow",
     "baseExpYield": 172,
+    "weight": 300,
     "learnset": {
       "levelUp": {
         "1": [
@@ -129956,6 +130803,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium-slow",
     "baseExpYield": 48,
+    "weight": 110,
     "learnset": {
       "levelUp": {
         "1": [
@@ -130026,6 +130874,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 176,
+    "weight": 400,
     "learnset": {
       "levelUp": {
         "0": [
@@ -130181,6 +131030,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 61,
+    "weight": 10,
     "learnset": {
       "levelUp": {
         "1": [
@@ -130290,6 +131140,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium",
     "baseExpYield": 184,
+    "weight": 1200,
     "learnset": {
       "levelUp": {
         "1": [
@@ -130402,6 +131253,7 @@
     "rawCaptureRate": 180,
     "expGroup": "medium-slow",
     "baseExpYield": 62,
+    "weight": 40,
     "learnset": {
       "levelUp": {
         "1": [
@@ -130511,6 +131363,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 168,
+    "weight": 390,
     "learnset": {
       "levelUp": {
         "0": [
@@ -130627,6 +131480,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium",
     "baseExpYield": 62,
+    "weight": 2,
     "learnset": {
       "levelUp": {
         "1": [
@@ -130739,6 +131593,7 @@
     "rawCaptureRate": 60,
     "expGroup": "medium",
     "baseExpYield": 178,
+    "weight": 4,
     "learnset": {
       "levelUp": {
         "0": [
@@ -130860,6 +131715,7 @@
     "rawCaptureRate": 235,
     "expGroup": "slow",
     "baseExpYield": 53,
+    "weight": 34,
     "learnset": {
       "levelUp": {
         "1": [
@@ -130977,6 +131833,7 @@
     "rawCaptureRate": 120,
     "expGroup": "slow",
     "baseExpYield": 130,
+    "weight": 48,
     "learnset": {
       "levelUp": {
         "0": [
@@ -131090,6 +131947,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 255,
+    "weight": 51,
     "learnset": {
       "levelUp": {
         "0": [
@@ -131222,6 +132080,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium",
     "baseExpYield": 53,
+    "weight": 55,
     "learnset": {
       "levelUp": {
         "1": [
@@ -131344,6 +132203,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium",
     "baseExpYield": 130,
+    "weight": 125,
     "learnset": {
       "levelUp": {
         "0": [
@@ -131465,6 +132325,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 255,
+    "weight": 610,
     "learnset": {
       "levelUp": {
         "0": [
@@ -131611,6 +132472,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 260,
+    "weight": 460,
     "learnset": {
       "levelUp": {
         "0": [
@@ -131762,6 +132624,7 @@
     "rawCaptureRate": 90,
     "expGroup": "medium",
     "baseExpYield": 154,
+    "weight": 280,
     "learnset": {
       "levelUp": {
         "0": [
@@ -131907,6 +132770,7 @@
     "rawCaptureRate": 30,
     "expGroup": "fast",
     "baseExpYield": 179,
+    "weight": 4,
     "learnset": {
       "levelUp": {
         "1": [
@@ -132042,6 +132906,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 177,
+    "weight": 1170,
     "learnset": {
       "levelUp": {
         "0": [
@@ -132161,6 +133026,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 182,
+    "weight": 582,
     "learnset": {
       "levelUp": {
         "1": [
@@ -132321,6 +133187,7 @@
     "rawCaptureRate": 90,
     "expGroup": "medium",
     "baseExpYield": 169,
+    "weight": 666,
     "learnset": {
       "levelUp": {
         "0": [
@@ -132459,6 +133326,7 @@
     "rawCaptureRate": 200,
     "expGroup": "medium",
     "baseExpYield": 54,
+    "weight": 3,
     "learnset": {
       "levelUp": {
         "1": [
@@ -132554,6 +133422,7 @@
     "rawCaptureRate": 100,
     "expGroup": "medium",
     "baseExpYield": 173,
+    "weight": 5,
     "learnset": {
       "levelUp": {
         "0": [
@@ -132675,6 +133544,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 165,
+    "weight": 620,
     "learnset": {
       "levelUp": {
         "1": [
@@ -132803,6 +133673,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium",
     "baseExpYield": 152,
+    "weight": 10,
     "learnset": {
       "levelUp": {
         "1": [
@@ -132937,6 +133808,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 37,
+    "weight": 38,
     "learnset": {
       "levelUp": {
         "1": [
@@ -133006,6 +133878,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium",
     "baseExpYield": 166,
+    "weight": 420,
     "learnset": {
       "levelUp": {
         "0": [
@@ -133137,6 +134010,7 @@
     "rawCaptureRate": 60,
     "expGroup": "slow",
     "baseExpYield": 165,
+    "weight": 5200,
     "learnset": {
       "levelUp": {
         "1": [
@@ -133260,6 +134134,7 @@
     "rawCaptureRate": 60,
     "expGroup": "slow",
     "baseExpYield": 165,
+    "weight": 890,
     "learnset": {
       "levelUp": {
         "1": [
@@ -133383,6 +134258,7 @@
     "rawCaptureRate": 30,
     "expGroup": "fast",
     "baseExpYield": 166,
+    "weight": 280,
     "learnset": {
       "levelUp": {
         "1": [
@@ -133512,6 +134388,7 @@
     "rawCaptureRate": 180,
     "expGroup": "medium",
     "baseExpYield": 153,
+    "weight": 30,
     "learnset": {
       "levelUp": {
         "1": [
@@ -133658,6 +134535,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 66,
+    "weight": 1000,
     "learnset": {
       "levelUp": {
         "1": [
@@ -133786,6 +134664,7 @@
     "rawCaptureRate": 90,
     "expGroup": "medium",
     "baseExpYield": 175,
+    "weight": 6500,
     "learnset": {
       "levelUp": {
         "0": [
@@ -133919,6 +134798,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 177,
+    "weight": 1900,
     "learnset": {
       "levelUp": {
         "1": [
@@ -134048,6 +134928,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 177,
+    "weight": 1500,
     "learnset": {
       "levelUp": {
         "1": [
@@ -134173,6 +135054,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 177,
+    "weight": 2150,
     "learnset": {
       "levelUp": {
         "1": [
@@ -134294,6 +135176,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 177,
+    "weight": 1750,
     "learnset": {
       "levelUp": {
         "1": [
@@ -134410,6 +135293,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 187,
+    "weight": 400,
     "learnset": {
       "levelUp": {
         "1": [
@@ -134543,6 +135427,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 54,
+    "weight": 20,
     "learnset": {
       "levelUp": {
         "1": [
@@ -134619,6 +135504,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 144,
+    "weight": 110,
     "learnset": {
       "levelUp": {
         "0": [
@@ -134753,6 +135639,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 300,
+    "weight": 500,
     "learnset": {
       "levelUp": {
         "0": [
@@ -134896,6 +135783,7 @@
     "rawCaptureRate": 10,
     "expGroup": "slow",
     "baseExpYield": 335,
+    "weight": 1100,
     "learnset": {
       "levelUp": {
         "1": [
@@ -135020,6 +135908,7 @@
     "rawCaptureRate": 10,
     "expGroup": "slow",
     "baseExpYield": 335,
+    "weight": 2100,
     "learnset": {
       "levelUp": {
         "1": [
@@ -135150,6 +136039,7 @@
     "rawCaptureRate": 255,
     "expGroup": "slow",
     "baseExpYield": 345,
+    "weight": 9500,
     "learnset": {
       "levelUp": {
         "1": [
@@ -135270,6 +136160,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 77,
+    "weight": 120,
     "learnset": {
       "levelUp": {
         "1": [
@@ -135391,6 +136282,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 275,
+    "weight": 1050,
     "learnset": {
       "levelUp": {
         "0": [
@@ -135536,6 +136428,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 300,
+    "weight": 700,
     "learnset": {
       "levelUp": {
         "1": [
@@ -135693,6 +136586,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 290,
+    "weight": 1450,
     "learnset": {
       "levelUp": {
         "1": [
@@ -135812,6 +136706,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 290,
+    "weight": 2000,
     "learnset": {
       "levelUp": {
         "1": [
@@ -135924,6 +136819,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 290,
+    "weight": 8000,
     "learnset": {
       "levelUp": {
         "1": [
@@ -136048,6 +136944,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 290,
+    "weight": 445,
     "learnset": {
       "levelUp": {
         "1": [
@@ -136168,6 +137065,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 250,
+    "weight": 77,
     "learnset": {
       "levelUp": {
         "1": [
@@ -136305,6 +137203,7 @@
     "rawCaptureRate": 135,
     "expGroup": "slow",
     "baseExpYield": 263,
+    "weight": 951,
     "learnset": {
       "levelUp": {
         "0": [
@@ -136453,6 +137352,7 @@
     "rawCaptureRate": 115,
     "expGroup": "medium",
     "baseExpYield": 175,
+    "weight": 890,
     "learnset": {
       "levelUp": {
         "0": [
@@ -136583,6 +137483,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium",
     "baseExpYield": 275,
+    "weight": 2900,
     "learnset": {
       "levelUp": {
         "0": [
@@ -136734,6 +137635,7 @@
     "rawCaptureRate": 135,
     "expGroup": "medium",
     "baseExpYield": 265,
+    "weight": 1100,
     "learnset": {
       "levelUp": {
         "1": [
@@ -136867,6 +137769,7 @@
     "rawCaptureRate": 135,
     "expGroup": "medium-slow",
     "baseExpYield": 102,
+    "weight": 430,
     "learnset": {
       "levelUp": {
         "0": [
@@ -137002,6 +137905,7 @@
     "rawCaptureRate": 135,
     "expGroup": "medium",
     "baseExpYield": 179,
+    "weight": 605,
     "learnset": {
       "levelUp": {
         "1": [
@@ -137147,6 +138051,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 116,
+    "weight": 480,
     "learnset": {
       "levelUp": {
         "1": [
@@ -137281,6 +138186,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 62,
+    "weight": 41,
     "learnset": {
       "levelUp": {
         "1": [
@@ -137395,6 +138301,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 144,
+    "weight": 122,
     "learnset": {
       "levelUp": {
         "1": [
@@ -137512,6 +138419,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 265,
+    "weight": 312,
     "learnset": {
       "levelUp": {
         "0": [
@@ -137662,6 +138570,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 62,
+    "weight": 98,
     "learnset": {
       "levelUp": {
         "1": [
@@ -137772,6 +138681,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 144,
+    "weight": 307,
     "learnset": {
       "levelUp": {
         "1": [
@@ -137884,6 +138794,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 265,
+    "weight": 3265,
     "learnset": {
       "levelUp": {
         "0": [
@@ -138020,6 +138931,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 62,
+    "weight": 61,
     "learnset": {
       "levelUp": {
         "1": [
@@ -138125,6 +139037,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 144,
+    "weight": 215,
     "learnset": {
       "levelUp": {
         "1": [
@@ -138235,6 +139148,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 265,
+    "weight": 619,
     "learnset": {
       "levelUp": {
         "0": [
@@ -138376,6 +139290,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium",
     "baseExpYield": 51,
+    "weight": 102,
     "learnset": {
       "levelUp": {
         "1": [
@@ -138488,6 +139403,7 @@
     "rawCaptureRate": 100,
     "expGroup": "medium",
     "baseExpYield": 171,
+    "weight": 1200,
     "learnset": {
       "levelUp": {
         "1": [
@@ -138608,6 +139524,7 @@
     "rawCaptureRate": 255,
     "expGroup": "slow-then-very-fast",
     "baseExpYield": 42,
+    "weight": 40,
     "learnset": {
       "levelUp": {
         "1": [
@@ -138723,6 +139640,7 @@
     "rawCaptureRate": 120,
     "expGroup": "slow-then-very-fast",
     "baseExpYield": 141,
+    "weight": 165,
     "learnset": {
       "levelUp": {
         "0": [
@@ -138850,6 +139768,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 42,
+    "weight": 10,
     "learnset": {
       "levelUp": {
         "1": [
@@ -138951,6 +139870,7 @@
     "rawCaptureRate": 30,
     "expGroup": "medium",
     "baseExpYield": 158,
+    "weight": 175,
     "learnset": {
       "levelUp": {
         "0": [
@@ -139077,6 +139997,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 48,
+    "weight": 25,
     "learnset": {
       "levelUp": {
         "1": [
@@ -139201,6 +140122,7 @@
     "rawCaptureRate": 80,
     "expGroup": "medium",
     "baseExpYield": 123,
+    "weight": 65,
     "learnset": {
       "levelUp": {
         "0": [
@@ -139330,6 +140252,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 245,
+    "weight": 410,
     "learnset": {
       "levelUp": {
         "0": [
@@ -139480,6 +140403,7 @@
     "rawCaptureRate": 150,
     "expGroup": "fast",
     "baseExpYield": 61,
+    "weight": 18,
     "learnset": {
       "levelUp": {
         "1": [
@@ -139602,6 +140526,7 @@
     "rawCaptureRate": 75,
     "expGroup": "fast",
     "baseExpYield": 165,
+    "weight": 23,
     "learnset": {
       "levelUp": {
         "1": [
@@ -139723,6 +140648,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium-slow",
     "baseExpYield": 62,
+    "weight": 109,
     "learnset": {
       "levelUp": {
         "1": [
@@ -139845,6 +140771,7 @@
     "rawCaptureRate": 90,
     "expGroup": "medium-slow",
     "baseExpYield": 167,
+    "weight": 149,
     "learnset": {
       "levelUp": {
         "1": [
@@ -139967,6 +140894,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium-slow",
     "baseExpYield": 52,
+    "weight": 65,
     "learnset": {
       "levelUp": {
         "1": [
@@ -140073,6 +141001,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium-slow",
     "baseExpYield": 124,
+    "weight": 119,
     "learnset": {
       "levelUp": {
         "1": [
@@ -140175,6 +141104,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 255,
+    "weight": 482,
     "learnset": {
       "levelUp": {
         "1": [
@@ -140297,6 +141227,7 @@
     "rawCaptureRate": 190,
     "expGroup": "slow-then-very-fast",
     "baseExpYield": 146,
+    "weight": 24,
     "learnset": {
       "levelUp": {
         "1": [
@@ -140418,6 +141349,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium-slow",
     "baseExpYield": 56,
+    "weight": 160,
     "learnset": {
       "levelUp": {
         "1": [
@@ -140529,6 +141461,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium-slow",
     "baseExpYield": 124,
+    "weight": 1050,
     "learnset": {
       "levelUp": {
         "0": [
@@ -140644,6 +141577,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 250,
+    "weight": 2400,
     "learnset": {
       "levelUp": {
         "0": [
@@ -140776,6 +141710,7 @@
     "rawCaptureRate": 90,
     "expGroup": "slow",
     "baseExpYield": 51,
+    "weight": 105,
     "learnset": {
       "levelUp": {
         "1": [
@@ -140866,6 +141801,7 @@
     "rawCaptureRate": 25,
     "expGroup": "slow",
     "baseExpYield": 263,
+    "weight": 850,
     "learnset": {
       "levelUp": {
         "0": [
@@ -140997,6 +141933,7 @@
     "rawCaptureRate": 25,
     "expGroup": "slow",
     "baseExpYield": 263,
+    "weight": 620,
     "learnset": {
       "levelUp": {
         "0": [
@@ -141128,6 +142065,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 54,
+    "weight": 4,
     "learnset": {
       "levelUp": {
         "1": [
@@ -141238,6 +142176,7 @@
     "rawCaptureRate": 50,
     "expGroup": "medium",
     "baseExpYield": 173,
+    "weight": 1130,
     "learnset": {
       "levelUp": {
         "1": [
@@ -141351,6 +142290,7 @@
     "rawCaptureRate": 180,
     "expGroup": "medium-slow",
     "baseExpYield": 56,
+    "weight": 36,
     "learnset": {
       "levelUp": {
         "1": [
@@ -141467,6 +142407,7 @@
     "rawCaptureRate": 90,
     "expGroup": "medium-slow",
     "baseExpYield": 172,
+    "weight": 386,
     "learnset": {
       "levelUp": {
         "0": [
@@ -141586,6 +142527,7 @@
     "rawCaptureRate": 150,
     "expGroup": "medium-slow",
     "baseExpYield": 68,
+    "weight": 160,
     "learnset": {
       "levelUp": {
         "1": [
@@ -141701,6 +142643,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium-slow",
     "baseExpYield": 177,
+    "weight": 610,
     "learnset": {
       "levelUp": {
         "0": [
@@ -141827,6 +142770,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium-slow",
     "baseExpYield": 58,
+    "weight": 7,
     "learnset": {
       "levelUp": {
         "1": [
@@ -141953,6 +142897,7 @@
     "rawCaptureRate": 90,
     "expGroup": "medium-slow",
     "baseExpYield": 170,
+    "weight": 272,
     "learnset": {
       "levelUp": {
         "0": [
@@ -142083,6 +143028,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 55,
+    "weight": 6,
     "learnset": {
       "levelUp": {
         "1": [
@@ -142199,6 +143145,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 168,
+    "weight": 60,
     "learnset": {
       "levelUp": {
         "1": [
@@ -142318,6 +143265,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium-slow",
     "baseExpYield": 67,
+    "weight": 330,
     "learnset": {
       "levelUp": {
         "1": [
@@ -142451,6 +143399,7 @@
     "rawCaptureRate": 90,
     "expGroup": "medium-slow",
     "baseExpYield": 180,
+    "weight": 580,
     "learnset": {
       "levelUp": {
         "1": [
@@ -142580,6 +143529,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium",
     "baseExpYield": 158,
+    "weight": 790,
     "learnset": {
       "levelUp": {
         "1": [
@@ -142707,6 +143657,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 61,
+    "weight": 30,
     "learnset": {
       "levelUp": {
         "1": [
@@ -142815,6 +143766,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium",
     "baseExpYield": 170,
+    "weight": 150,
     "learnset": {
       "levelUp": {
         "0": [
@@ -142933,6 +143885,7 @@
     "rawCaptureRate": 190,
     "expGroup": "fast",
     "baseExpYield": 54,
+    "weight": 10,
     "learnset": {
       "levelUp": {
         "1": [
@@ -143030,6 +143983,7 @@
     "rawCaptureRate": 45,
     "expGroup": "fast",
     "baseExpYield": 165,
+    "weight": 35,
     "learnset": {
       "levelUp": {
         "0": [
@@ -143169,6 +144123,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium-slow",
     "baseExpYield": 51,
+    "weight": 15,
     "learnset": {
       "levelUp": {
         "1": [
@@ -143278,6 +144233,7 @@
     "rawCaptureRate": 60,
     "expGroup": "medium-slow",
     "baseExpYield": 168,
+    "weight": 900,
     "learnset": {
       "levelUp": {
         "0": [
@@ -143412,6 +144368,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium-slow",
     "baseExpYield": 59,
+    "weight": 89,
     "learnset": {
       "levelUp": {
         "1": [
@@ -143535,6 +144492,7 @@
     "rawCaptureRate": 90,
     "expGroup": "medium-slow",
     "baseExpYield": 133,
+    "weight": 591,
     "learnset": {
       "levelUp": {
         "1": [
@@ -143655,6 +144613,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium-slow",
     "baseExpYield": 253,
+    "weight": 1128,
     "learnset": {
       "levelUp": {
         "0": [
@@ -143781,6 +144740,7 @@
     "rawCaptureRate": 255,
     "expGroup": "medium",
     "baseExpYield": 49,
+    "weight": 18,
     "learnset": {
       "levelUp": {
         "1": [
@@ -143886,6 +144846,7 @@
     "rawCaptureRate": 50,
     "expGroup": "medium",
     "baseExpYield": 149,
+    "weight": 54,
     "learnset": {
       "levelUp": {
         "1": [
@@ -143993,6 +144954,7 @@
     "rawCaptureRate": 25,
     "expGroup": "slow",
     "baseExpYield": 243,
+    "weight": 429,
     "learnset": {
       "levelUp": {
         "1": [
@@ -144123,6 +145085,7 @@
     "rawCaptureRate": 200,
     "expGroup": "slow",
     "baseExpYield": 63,
+    "weight": 602,
     "learnset": {
       "levelUp": {
         "1": [
@@ -144236,6 +145199,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 160,
+    "weight": 602,
     "learnset": {
       "levelUp": {
         "0": [
@@ -144373,6 +145337,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium",
     "baseExpYield": 60,
+    "weight": 350,
     "learnset": {
       "levelUp": {
         "1": [
@@ -144493,6 +145458,7 @@
     "rawCaptureRate": 75,
     "expGroup": "medium",
     "baseExpYield": 175,
+    "weight": 1200,
     "learnset": {
       "levelUp": {
         "0": [
@@ -144623,6 +145589,7 @@
     "rawCaptureRate": 190,
     "expGroup": "medium-slow",
     "baseExpYield": 175,
+    "weight": 630,
     "learnset": {
       "levelUp": {
         "1": [
@@ -144750,6 +145717,7 @@
     "rawCaptureRate": 25,
     "expGroup": "slow",
     "baseExpYield": 240,
+    "weight": 3100,
     "learnset": {
       "levelUp": {
         "1": [
@@ -144864,6 +145832,7 @@
     "rawCaptureRate": 70,
     "expGroup": "medium-slow",
     "baseExpYield": 70,
+    "weight": 80,
     "learnset": {
       "levelUp": {
         "1": [
@@ -144975,6 +145944,7 @@
     "rawCaptureRate": 25,
     "expGroup": "medium-slow",
     "baseExpYield": 184,
+    "weight": 450,
     "learnset": {
       "levelUp": {
         "0": [
@@ -145092,6 +146062,7 @@
     "rawCaptureRate": 120,
     "expGroup": "medium-slow",
     "baseExpYield": 58,
+    "weight": 350,
     "learnset": {
       "levelUp": {
         "1": [
@@ -145215,6 +146186,7 @@
     "rawCaptureRate": 60,
     "expGroup": "medium-slow",
     "baseExpYield": 171,
+    "weight": 150,
     "learnset": {
       "levelUp": {
         "0": [
@@ -145338,6 +146310,7 @@
     "rawCaptureRate": 100,
     "expGroup": "medium-slow",
     "baseExpYield": 175,
+    "weight": 370,
     "learnset": {
       "levelUp": {
         "1": [
@@ -145466,6 +146439,7 @@
     "rawCaptureRate": 150,
     "expGroup": "medium-slow",
     "baseExpYield": 67,
+    "weight": 450,
     "learnset": {
       "levelUp": {
         "1": [
@@ -145588,6 +146562,7 @@
     "rawCaptureRate": 50,
     "expGroup": "medium-slow",
     "baseExpYield": 182,
+    "weight": 7000,
     "learnset": {
       "levelUp": {
         "1": [
@@ -145708,6 +146683,7 @@
     "rawCaptureRate": 100,
     "expGroup": "fast",
     "baseExpYield": 167,
+    "weight": 900,
     "learnset": {
       "levelUp": {
         "1": [
@@ -145825,6 +146801,7 @@
     "rawCaptureRate": 25,
     "expGroup": "slow",
     "baseExpYield": 265,
+    "weight": 2200,
     "learnset": {
       "levelUp": {
         "1": [
@@ -145946,6 +146923,7 @@
     "rawCaptureRate": 100,
     "expGroup": "medium-slow",
     "baseExpYield": 166,
+    "weight": 80,
     "learnset": {
       "levelUp": {
         "1": [
@@ -146050,6 +147028,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 268,
+    "weight": 560,
     "learnset": {
       "levelUp": {
         "0": [
@@ -146203,6 +147182,7 @@
     "rawCaptureRate": 90,
     "expGroup": "medium",
     "baseExpYield": 151,
+    "weight": 2230,
     "learnset": {
       "levelUp": {
         "0": [
@@ -146332,6 +147312,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 260,
+    "weight": 1600,
     "learnset": {
       "levelUp": {
         "1": [
@@ -146475,6 +147456,7 @@
     "rawCaptureRate": 45,
     "expGroup": "medium",
     "baseExpYield": 182,
+    "weight": 392,
     "learnset": {
       "levelUp": {
         "1": [
@@ -146639,6 +147621,7 @@
     "rawCaptureRate": 25,
     "expGroup": "medium",
     "baseExpYield": 275,
+    "weight": 1200,
     "learnset": {
       "levelUp": {
         "0": [
@@ -146769,6 +147752,7 @@
     "rawCaptureRate": 30,
     "expGroup": "slow",
     "baseExpYield": 285,
+    "weight": 3200,
     "learnset": {
       "levelUp": {
         "1": [
@@ -146899,6 +147883,7 @@
     "rawCaptureRate": 50,
     "expGroup": "slow",
     "baseExpYield": 285,
+    "weight": 80,
     "learnset": {
       "levelUp": {
         "1": [
@@ -147052,6 +148037,7 @@
     "rawCaptureRate": 50,
     "expGroup": "slow",
     "baseExpYield": 285,
+    "weight": 210,
     "learnset": {
       "levelUp": {
         "1": [
@@ -147174,6 +148160,7 @@
     "rawCaptureRate": 30,
     "expGroup": "slow",
     "baseExpYield": 285,
+    "weight": 40,
     "learnset": {
       "levelUp": {
         "1": [
@@ -147296,6 +148283,7 @@
     "rawCaptureRate": 30,
     "expGroup": "slow",
     "baseExpYield": 285,
+    "weight": 920,
     "learnset": {
       "levelUp": {
         "1": [
@@ -147426,6 +148414,7 @@
     "rawCaptureRate": 30,
     "expGroup": "slow",
     "baseExpYield": 285,
+    "weight": 600,
     "learnset": {
       "levelUp": {
         "1": [
@@ -147553,6 +148542,7 @@
     "rawCaptureRate": 30,
     "expGroup": "slow",
     "baseExpYield": 285,
+    "weight": 2400,
     "learnset": {
       "levelUp": {
         "1": [
@@ -147674,6 +148664,7 @@
     "rawCaptureRate": 50,
     "expGroup": "slow",
     "baseExpYield": 285,
+    "weight": 110,
     "learnset": {
       "levelUp": {
         "1": [
@@ -147788,6 +148779,7 @@
     "rawCaptureRate": 50,
     "expGroup": "slow",
     "baseExpYield": 285,
+    "weight": 3807,
     "learnset": {
       "levelUp": {
         "1": [
@@ -147917,6 +148909,7 @@
     "rawCaptureRate": 30,
     "expGroup": "slow",
     "baseExpYield": 285,
+    "weight": 1110,
     "learnset": {
       "levelUp": {
         "1": [
@@ -148043,6 +149036,7 @@
     "rawCaptureRate": 30,
     "expGroup": "slow",
     "baseExpYield": 285,
+    "weight": 360,
     "learnset": {
       "levelUp": {
         "1": [
@@ -148168,6 +149162,7 @@
     "rawCaptureRate": 30,
     "expGroup": "slow",
     "baseExpYield": 285,
+    "weight": 3030,
     "learnset": {
       "levelUp": {
         "1": [
@@ -148314,6 +149309,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 64,
+    "weight": 170,
     "learnset": {
       "levelUp": {
         "1": [
@@ -148418,6 +149414,7 @@
     "rawCaptureRate": 25,
     "expGroup": "slow",
     "baseExpYield": 148,
+    "weight": 300,
     "learnset": {
       "levelUp": {
         "1": [
@@ -148520,6 +149517,7 @@
     "rawCaptureRate": 10,
     "expGroup": "slow",
     "baseExpYield": 300,
+    "weight": 2100,
     "learnset": {
       "levelUp": {
         "0": [
@@ -148642,6 +149640,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 60,
+    "weight": 50,
     "learnset": {
       "levelUp": {
         "1": [
@@ -148706,6 +149705,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 275,
+    "weight": 300,
     "learnset": {
       "levelUp": {
         "1": [
@@ -148817,6 +149817,7 @@
     "rawCaptureRate": 6,
     "expGroup": "slow",
     "baseExpYield": 285,
+    "weight": 742,
     "learnset": {
       "levelUp": {
         "1": [
@@ -148945,6 +149946,7 @@
     "rawCaptureRate": 6,
     "expGroup": "slow",
     "baseExpYield": 285,
+    "weight": 1522,
     "learnset": {
       "levelUp": {
         "1": [
@@ -149066,6 +150068,7 @@
     "rawCaptureRate": 6,
     "expGroup": "slow",
     "baseExpYield": 285,
+    "weight": 6997,
     "learnset": {
       "levelUp": {
         "1": [
@@ -149188,6 +150191,7 @@
     "rawCaptureRate": 6,
     "expGroup": "slow",
     "baseExpYield": 285,
+    "weight": 49,
     "learnset": {
       "levelUp": {
         "1": [
@@ -149310,6 +150314,7 @@
     "rawCaptureRate": 10,
     "expGroup": "slow",
     "baseExpYield": 295,
+    "weight": 3800,
     "learnset": {
       "levelUp": {
         "1": [
@@ -149451,6 +150456,7 @@
     "rawCaptureRate": 10,
     "expGroup": "slow",
     "baseExpYield": 295,
+    "weight": 350,
     "learnset": {
       "levelUp": {
         "1": [
@@ -149604,6 +150610,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 335,
+    "weight": 3030,
     "learnset": {
       "levelUp": {
         "1": [
@@ -149750,6 +150757,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 335,
+    "weight": 2400,
     "learnset": {
       "levelUp": {
         "1": [
@@ -149878,6 +150886,7 @@
     "rawCaptureRate": 5,
     "expGroup": "slow",
     "baseExpYield": 295,
+    "weight": 2800,
     "learnset": {
       "levelUp": {
         "0": [
@@ -149999,6 +151008,7 @@
     "rawCaptureRate": 5,
     "expGroup": "slow",
     "baseExpYield": 295,
+    "weight": 1250,
     "learnset": {
       "levelUp": {
         "0": [
@@ -150129,6 +151139,7 @@
     "rawCaptureRate": 45,
     "expGroup": "slow",
     "baseExpYield": 170,
+    "weight": 97,
     "learnset": {
       "levelUp": {
         "0": [
@@ -150245,6 +151256,7 @@
     "rawCaptureRate": 120,
     "expGroup": "slow",
     "baseExpYield": 62,
+    "weight": 11,
     "learnset": {
       "levelUp": {
         "1": [
@@ -150351,6 +151363,7 @@
     "rawCaptureRate": 60,
     "expGroup": "slow",
     "baseExpYield": 178,
+    "weight": 22,
     "learnset": {
       "levelUp": {
         "0": [
@@ -150462,6 +151475,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 278,
+    "weight": 922,
     "learnset": {
       "levelUp": {
         "1": [
@@ -150592,6 +151606,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 278,
+    "weight": 122,
     "learnset": {
       "levelUp": {
         "1": [
@@ -150713,6 +151728,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 278,
+    "weight": 301,
     "learnset": {
       "levelUp": {
         "1": [
@@ -150840,6 +151856,7 @@
     "rawCaptureRate": 5,
     "expGroup": "slow",
     "baseExpYield": 275,
+    "weight": 398,
     "learnset": {
       "levelUp": {
         "1": [
@@ -150971,6 +151988,7 @@
     "rawCaptureRate": 10,
     "expGroup": "medium",
     "baseExpYield": 300,
+    "weight": 600,
     "learnset": {
       "levelUp": {
         "0": [
@@ -151104,6 +152122,7 @@
     "rawCaptureRate": 10,
     "expGroup": "slow-then-very-fast",
     "baseExpYield": 270,
+    "weight": 930,
     "learnset": {
       "levelUp": {
         "0": [
@@ -151237,6 +152256,7 @@
     "rawCaptureRate": 10,
     "expGroup": "slow",
     "baseExpYield": 295,
+    "weight": 5900,
     "learnset": {
       "levelUp": {
         "1": [
@@ -151371,6 +152391,7 @@
     "rawCaptureRate": 10,
     "expGroup": "slow",
     "baseExpYield": 295,
+    "weight": 4800,
     "learnset": {
       "levelUp": {
         "1": [
@@ -151499,6 +152520,7 @@
     "rawCaptureRate": 10,
     "expGroup": "slow",
     "baseExpYield": 295,
+    "weight": 1625,
     "learnset": {
       "levelUp": {
         "1": [
@@ -151620,6 +152642,7 @@
     "rawCaptureRate": 10,
     "expGroup": "slow",
     "baseExpYield": 295,
+    "weight": 1560,
     "learnset": {
       "levelUp": {
         "1": [
@@ -151740,6 +152763,7 @@
     "rawCaptureRate": 255,
     "expGroup": "slow",
     "baseExpYield": 90,
+    "weight": 65,
     "learnset": {
       "levelUp": {
         "1": [
@@ -151863,6 +152887,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 300,
+    "weight": 3,
     "learnset": {
       "levelUp": {
         "1": [
@@ -151963,6 +152988,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 350,
+    "weight": 3250,
     "learnset": {
       "levelUp": {
         "1": [
@@ -152119,6 +153145,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 350,
+    "weight": 3250,
     "learnset": {
       "levelUp": {
         "1": [
@@ -152275,6 +153302,7 @@
     "rawCaptureRate": 255,
     "expGroup": "slow",
     "baseExpYield": 340,
+    "weight": 4600,
     "learnset": {
       "levelUp": {
         "1": [
@@ -152436,6 +153464,7 @@
     "rawCaptureRate": 255,
     "expGroup": "slow",
     "baseExpYield": 340,
+    "weight": 3500,
     "learnset": {
       "levelUp": {
         "1": [
@@ -152599,6 +153628,7 @@
     "rawCaptureRate": 255,
     "expGroup": "slow",
     "baseExpYield": 339,
+    "weight": 2300,
     "learnset": {
       "levelUp": {
         "1": [
@@ -152747,6 +153777,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 340,
+    "weight": 8091,
     "learnset": {
       "levelUp": {
         "1": [
@@ -152920,6 +153951,7 @@
     "rawCaptureRate": 3,
     "expGroup": "slow",
     "baseExpYield": 340,
+    "weight": 536,
     "learnset": {
       "levelUp": {
         "1": [
@@ -153083,6 +154115,7 @@
     "rawCaptureRate": 5,
     "expGroup": "slow",
     "baseExpYield": 275,
+    "weight": 398,
     "learnset": {
       "levelUp": {
         "1": [
@@ -153214,6 +154247,7 @@
     "rawCaptureRate": 5,
     "expGroup": "slow",
     "baseExpYield": 275,
+    "weight": 398,
     "learnset": {
       "levelUp": {
         "1": [
@@ -153345,6 +154379,7 @@
     "rawCaptureRate": 5,
     "expGroup": "slow",
     "baseExpYield": 275,
+    "weight": 398,
     "learnset": {
       "levelUp": {
         "1": [
@@ -153475,6 +154510,7 @@
     "rawCaptureRate": 255,
     "expGroup": "slow",
     "baseExpYield": 90,
+    "weight": 160,
     "learnset": {
       "levelUp": {
         "1": [
@@ -153597,6 +154633,7 @@
     "rawCaptureRate": 255,
     "expGroup": "slow",
     "baseExpYield": 90,
+    "weight": 770,
     "learnset": {
       "levelUp": {
         "1": [
