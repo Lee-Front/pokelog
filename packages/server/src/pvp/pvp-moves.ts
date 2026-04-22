@@ -7,10 +7,11 @@
  * will migrate existing move handling from pvp-room.ts into this registry.
  */
 import type { MoveData } from "../../../../shared/types.js";
-import type { PvpPlayerState, PvpPokemon, PvpRoomState } from "../../../../shared/pvp-types.js";
+import type { PvpAction, PvpPlayerState, PvpPokemon, PvpRoomState } from "../../../../shared/pvp-types.js";
 import { addVolatile, hasVolatile } from "../game/status-conditions.js";
 import { applyStatChanges } from "../game/battle.js";
 import { getEffectiveTypes } from "../game/pokemon-state.js";
+import { getTypeChart, getMoveById } from "../game/data-loader.js";
 
 // ── Context passed to all move effect hooks ──
 export interface MoveContext {
@@ -1016,4 +1017,334 @@ register("last-resort", {
       };
     }
   },
+});
+
+// ══════════════════════════════════════════════════════════════
+// ── Phase 4: Gen 9 moves ────────────────────────────────────
+// ══════════════════════════════════════════════════════════════
+
+// ── Simple flag-only / stat-change moves (statChanges handled via move data) ──
+register("trailblaze", { flags: { contact: true } });
+register("aqua-step", { flags: { contact: true } });
+register("chilling-water", {}); // Attack -1 via move data statChanges
+register("torch-song", { flags: { sound: true } }); // SpAtk +1 via move data
+register("aqua-cutter", {}); // Slicing flag — Sharpness handled in pvp-abilities via move id list
+// ── Twin Beam: 2 hits — data file does not ship minHits/maxHits for this move,
+// so inject them via customResolve's overrideMove. ──
+register("twin-beam", {
+  customResolve: (ctx) => ({
+    overrideMove: { meta: { ...(ctx.move.meta ?? {}), minHits: 2, maxHits: 2 } },
+  }),
+});
+
+// ── Population Bomb: 1–10 hits. Canon uses a per-hit accuracy roll, but
+// standardizing on (min 1, max 10) via the existing multi-hit path matches
+// the implementation used by bullet-seed et al. ──
+register("population-bomb", {
+  flags: { contact: true },
+  customResolve: (ctx) => ({
+    overrideMove: { meta: { ...(ctx.move.meta ?? {}), minHits: 1, maxHits: 10 } },
+  }),
+});
+
+// ── Tera Starstorm: Stellar type only when Terapagos-Stellar is Terastallized ──
+register("tera-starstorm", {
+  customResolve: (ctx) => {
+    if (ctx.atkPoke.species === "terapagos-stellar" && ctx.attacker.teraActive) {
+      return { overrideMove: { type: "stellar" as unknown as string } };
+    }
+    return false;
+  },
+});
+
+// ── Ice Spinner: removes terrain on hit ──
+register("ice-spinner", {
+  flags: { contact: true },
+  onHit: (ctx) => {
+    if (ctx.room.terrain) {
+      ctx.room.log.push(`아이스스피너로 필드가 사라졌다!`);
+      ctx.room.terrain = undefined;
+      ctx.room.terrainTurns = undefined;
+    }
+  },
+});
+
+// ── Salt Cure: persistent volatile ──
+register("salt-cure", {
+  onHit: (ctx) => {
+    if (ctx.defPoke.hp > 0 && !hasVolatile(ctx.defender.volatiles, "salt-cure")) {
+      ctx.defender.volatiles = addVolatile(ctx.defender.volatiles, "salt-cure", -1);
+      ctx.room.log.push(`${ctx.defender.nickname}의 ${ctx.defPoke.species}: 소금절임 상태!`);
+    }
+  },
+});
+
+// ── Syrup Bomb: 3-turn speed drop volatile ──
+register("syrup-bomb", {
+  onHit: (ctx) => {
+    if (ctx.defPoke.hp > 0 && !hasVolatile(ctx.defender.volatiles, "syrup-bomb")) {
+      ctx.defender.volatiles = addVolatile(ctx.defender.volatiles, "syrup-bomb", 3);
+      ctx.room.log.push(`${ctx.defender.nickname}의 ${ctx.defPoke.species}: 시럽폭탄!`);
+    }
+  },
+});
+
+// ── Alluring Voice: confuses if opponent boosted stats this turn ──
+register("alluring-voice", {
+  flags: { sound: true },
+  onHit: (ctx) => {
+    if (ctx.defender.boostedStatsThisTurn && ctx.defPoke.hp > 0
+        && !hasVolatile(ctx.defender.volatiles, "confusion")) {
+      ctx.defender.volatiles = addVolatile(ctx.defender.volatiles, "confusion", 3);
+      ctx.room.log.push(`${ctx.defender.nickname}의 ${ctx.defPoke.species}: 혼란 상태가 되었다!`);
+    }
+  },
+});
+
+// ── Matcha Gotcha: drain 1/2 + 30% burn ──
+register("matcha-gotcha", {
+  flags: { sound: false },
+  onHit: (ctx) => {
+    const damage = ctx.damage ?? 0;
+    const heal = Math.floor(damage / 2);
+    if (heal > 0 && !hasVolatile(ctx.attacker.volatiles, "heal-block")) {
+      ctx.atkPoke.hp = Math.min(ctx.atkPoke.maxHp, ctx.atkPoke.hp + heal);
+      ctx.room.log.push(`${ctx.attacker.nickname}의 ${ctx.atkPoke.species}: 체력을 흡수했다!`);
+    }
+    if (Math.random() < 0.3 && !ctx.defPoke.statusCondition && ctx.defPoke.hp > 0) {
+      const defTypes = getEffectiveTypes(ctx.defPoke.species, ctx.defPoke.variantId, ctx.defender.battleForm);
+      if (!defTypes.includes("fire")) {
+        ctx.defPoke.statusCondition = "burn";
+        ctx.room.log.push(`${ctx.defender.nickname}의 ${ctx.defPoke.species}: 화상 상태가 되었다!`);
+      }
+    }
+  },
+});
+
+// ── Power modifiers: Collision Course / Electro Drift get 1.3333x vs super-effective ──
+const SUPER_EFFECTIVE_BOOST = (ctx: MoveContext): number => {
+  const typeChart = getTypeChart();
+  const defTypes = getEffectiveTypes(ctx.defPoke.species, ctx.defPoke.variantId, ctx.defender.battleForm);
+  let mult = 1;
+  for (const t of defTypes) mult *= (typeChart[ctx.move.type]?.[t] ?? 1);
+  return mult > 1 ? ctx.move.power * 4 / 3 : ctx.move.power;
+};
+register("collision-course", { flags: { contact: true }, modifyPower: SUPER_EFFECTIVE_BOOST });
+register("electro-drift", { modifyPower: SUPER_EFFECTIVE_BOOST });
+
+// ── Flower Trick: always crits, ignores accuracy ──
+register("flower-trick", {
+  flags: { ignoresAccuracy: true, contact: true },
+  customResolve: (ctx) => ({
+    overrideMove: { meta: { ...(ctx.move.meta ?? {}), critRate: 99 } },
+  }),
+});
+
+// ── Last Respects: 50 + 50*fainted, capped at 350 ──
+register("last-respects", {
+  modifyPower: (ctx) => {
+    const fainted = ctx.attacker.party.filter((p) => p.hp <= 0).length;
+    return Math.min(50 + 50 * fainted, 350);
+  },
+});
+
+// ── Rage Fist: 50 + 50*rageFistHits, capped at 350 ──
+register("rage-fist", {
+  flags: { contact: true, punch: true },
+  modifyPower: (ctx) => {
+    const hits = ctx.atkPoke.rageFistHits ?? 0;
+    return Math.min(50 + 50 * hits, 350);
+  },
+});
+
+// ── Shed Tail: HP cost + substitute + force switch ──
+register("shed-tail", {
+  customResolve: (ctx) => {
+    const aliveOthers = ctx.attacker.party.some(
+      (p, i) => i !== ctx.attacker.activeIndex && p.hp > 0,
+    );
+    const hpCost = Math.floor(ctx.atkPoke.maxHp / 2);
+    if (ctx.atkPoke.hp <= hpCost || !aliveOthers || ctx.attacker.substitute) {
+      ctx.room.log.push(`${ctx.attacker.nickname}의 ${ctx.atkPoke.species}: 탈피꼬리 실패!`);
+      return true;
+    }
+    ctx.atkPoke.hp -= hpCost;
+    ctx.attacker.substitute = Math.floor(ctx.atkPoke.maxHp / 4);
+    if (!ctx.room.pendingSwitchAfterMove) ctx.room.pendingSwitchAfterMove = {};
+    const side = ctx.room.playerA === ctx.attacker ? "a" : "b";
+    ctx.room.pendingSwitchAfterMove[side] = true;
+    ctx.room.log.push(`${ctx.attacker.nickname}의 ${ctx.atkPoke.species}: 탈피꼬리!`);
+    return true;
+  },
+});
+
+// ── Upper Hand: +3 priority, flinches the target.
+// Canon: only succeeds if the target picked a damaging priority move this turn.
+// resolveTurn stashes the raw actions on the room so we can peek at the opponent's
+// pending action without plumbing it through MoveContext.
+register("upper-hand", {
+  flags: { contact: true },
+  beforeMove: (ctx) => {
+    const roomActions = ctx.room as unknown as { _lastActionA?: PvpAction; _lastActionB?: PvpAction };
+    const oppAction = ctx.attacker === ctx.room.playerA ? roomActions._lastActionB : roomActions._lastActionA;
+    if (!oppAction || oppAction.type !== "fight") {
+      return { cancel: true, message: `${ctx.attacker.nickname}의 ${ctx.atkPoke.species}: 어퍼핸드 실패!` };
+    }
+    const oppMove = getMoveById(oppAction.moveId);
+    if (!oppMove || (oppMove.priority ?? 0) <= 0 || oppMove.category === "status") {
+      return { cancel: true, message: `${ctx.attacker.nickname}의 ${ctx.atkPoke.species}: 어퍼핸드 실패!` };
+    }
+  },
+  onHit: (ctx) => {
+    // Flinch volatile applied (consumed next attacker turn).
+    if (ctx.defPoke.hp > 0) {
+      ctx.defender.volatiles = addVolatile(ctx.defender.volatiles, "flinch", 1);
+    }
+  },
+});
+
+// ── Ivy Cudgel: type depends on Ogerpon form, high crit ──
+register("ivy-cudgel", {
+  flags: { contact: true },
+  customResolve: (ctx) => {
+    const typeMap: Record<string, string> = {
+      "ogerpon": "grass",
+      "ogerpon-wellspring-mask": "water",
+      "ogerpon-hearthflame-mask": "fire",
+      "ogerpon-cornerstone-mask": "rock",
+    };
+    const type = typeMap[ctx.atkPoke.species] ?? "grass";
+    return {
+      overrideMove: {
+        type,
+        meta: { ...(ctx.move.meta ?? {}), critRate: 1 },
+      },
+    };
+  },
+});
+
+// ── Revival Blessing: revive a fainted teammate at half HP ──
+register("revival-blessing", {
+  customResolve: (ctx) => {
+    const faintedIdx = ctx.attacker.party.findIndex((p) => p.hp <= 0);
+    if (faintedIdx >= 0) {
+      const poke = ctx.attacker.party[faintedIdx];
+      poke.hp = Math.floor(poke.maxHp / 2);
+      poke.statusCondition = null;
+      poke.sleepTurns = undefined;
+      poke.toxicCounter = undefined;
+      ctx.room.log.push(`${ctx.attacker.nickname}의 ${poke.species}이(가) 부활했다!`);
+    } else {
+      ctx.room.log.push(`${ctx.attacker.nickname}의 ${ctx.atkPoke.species}: 부활축도 실패!`);
+    }
+    return true;
+  },
+});
+
+// ── Doodle: copy opponent's ability ──
+register("doodle", {
+  customResolve: (ctx) => {
+    if (ctx.defPoke.abilityId && ctx.defPoke.abilityId !== ctx.atkPoke.abilityId) {
+      ctx.atkPoke.abilityId = ctx.defPoke.abilityId;
+      ctx.room.log.push(
+        `${ctx.attacker.nickname}의 ${ctx.atkPoke.species}: 낙서! ${ctx.defPoke.abilityId} 특성을 복사!`,
+      );
+    } else {
+      ctx.room.log.push(`${ctx.attacker.nickname}의 ${ctx.atkPoke.species}: 낙서 실패!`);
+    }
+    return true;
+  },
+});
+
+// ── Comeuppance: returns 1.5x the last damage taken ──
+register("comeuppance", {
+  customResolve: (ctx) => {
+    if (ctx.attacker.lastDamageTaken && ctx.defPoke.hp > 0) {
+      const dmg = Math.floor(ctx.attacker.lastDamageTaken.amount * 1.5);
+      ctx.defPoke.hp = Math.max(0, ctx.defPoke.hp - dmg);
+      ctx.room.log.push(
+        `${ctx.attacker.nickname}의 ${ctx.atkPoke.species}: 복수! ${dmg} 데미지!`,
+      );
+      ctx.attacker.lastDamageTaken = undefined;
+      if (ctx.defPoke.hp <= 0) {
+        ctx.room.log.push(`${ctx.defender.nickname}의 ${ctx.defPoke.species}이(가) 쓰러졌다!`);
+      }
+    } else {
+      ctx.room.log.push(`${ctx.attacker.nickname}의 ${ctx.atkPoke.species}: 복수 실패!`);
+    }
+    return true;
+  },
+});
+
+// ── Chilly Reception: set hail + force switch ──
+register("chilly-reception", {
+  customResolve: (ctx) => {
+    ctx.room.weather = "hail";
+    ctx.room.weatherTurns = 5;
+    ctx.room.log.push("눈이 내리기 시작했다!");
+    const aliveOthers = ctx.attacker.party.some(
+      (p, i) => i !== ctx.attacker.activeIndex && p.hp > 0,
+    );
+    if (aliveOthers) {
+      if (!ctx.room.pendingSwitchAfterMove) ctx.room.pendingSwitchAfterMove = {};
+      const side = ctx.room.playerA === ctx.attacker ? "a" : "b";
+      ctx.room.pendingSwitchAfterMove[side] = true;
+    }
+    return true;
+  },
+});
+
+// ── Spicy Extract: +2 Atk / -2 Def on target ──
+register("spicy-extract", {
+  applyEffect: (ctx) => {
+    if (ctx.defPoke.hp > 0) {
+      ctx.defender.statStages = applyStatChanges(ctx.defender.statStages, [
+        { stat: "attack", change: 2 },
+        { stat: "defense", change: -2 },
+      ]);
+      ctx.room.log.push(
+        `${ctx.defender.nickname}의 ${ctx.defPoke.species}: 공격이 크게 올랐고 방어가 크게 내려갔다!`,
+      );
+    }
+  },
+});
+
+// ── Double Shock: remove attacker's electric type after use ──
+register("double-shock", {
+  flags: { contact: true },
+  onHit: (ctx) => {
+    if (ctx.atkPoke.originalTypes && ctx.atkPoke.originalTypes.includes("electric")) {
+      ctx.atkPoke.originalTypes = ctx.atkPoke.originalTypes.filter((t) => t !== "electric");
+      if (ctx.atkPoke.originalTypes.length === 0) ctx.atkPoke.originalTypes = ["normal"];
+      ctx.room.log.push(`${ctx.attacker.nickname}의 ${ctx.atkPoke.species}: 전기 타입이 사라졌다!`);
+    }
+  },
+});
+
+// ── Burning Bulwark: Protect variant + burn contact attacker ──
+register("burning-bulwark", {
+  flags: { isProtect: true },
+  applyEffect: (ctx) => {
+    ctx.attacker.volatiles = addVolatile(ctx.attacker.volatiles, "burning-bulwark", 1);
+    ctx.room.log.push(`${ctx.attacker.nickname}의 ${ctx.atkPoke.species}: 불꽃방벽!`);
+  },
+});
+
+// ── Silk Trap: Protect variant + speed drop on contact — already has isProtect flag above.
+// Register the applyEffect here (add silk-trap volatile) while preserving the flag set earlier.
+{
+  const existing = getMoveEffects("silk-trap") ?? {};
+  register("silk-trap", {
+    ...existing,
+    flags: { ...(existing.flags ?? {}), isProtect: true },
+    applyEffect: (ctx) => {
+      ctx.attacker.volatiles = addVolatile(ctx.attacker.volatiles, "silk-trap", 1);
+      ctx.room.log.push(`${ctx.attacker.nickname}의 ${ctx.atkPoke.species}: 거미집!`);
+    },
+  });
+}
+
+// ── Hyper Drill: ignores protect ──
+register("hyper-drill", {
+  flags: { ignoresProtect: true },
 });
