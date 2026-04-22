@@ -1871,9 +1871,9 @@
   {
     "id": "reveal-glass",
     "name": "비추는거울",
-    "category": "gameplay",
+    "category": "plot-advancement",
     "cost": 0,
-    "shortEffect": ""
+    "shortEffect": "토네로스, 볼트로스, 랜드로스의 모습을 바꾼다."
   },
   {
     "id": "ribbon-sweet",
@@ -2588,5 +2588,159 @@
     "category": "gameplay",
     "cost": 0,
     "shortEffect": ""
+  },
+  {
+    "id": "n-solarizer",
+    "name": "N솔라라이저",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": "네크로즈마를 솔가레오와 합체시킨다."
+  },
+  {
+    "id": "n-lunarizer",
+    "name": "N루나라이저",
+    "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": "네크로즈마를 루나아라와 합체시킨다."
+  },
+  {
+    "id": "ultra-necrozium-z",
+    "name": "울트라네크로z",
+    "category": "z-crystals",
+    "cost": 0,
+    "shortEffect": "네크로즈마의 울트라버스트."
+  },
+  {
+    "id": "tera-shard-normal",
+    "name": "노말테라피스",
+    "category": "plot-advancement",
+    "cost": 50,
+    "shortEffect": "50개로 포켓몬의 테라스탈 타입을 노말로 변경."
+  },
+  {
+    "id": "tera-shard-fire",
+    "name": "불꽃테라피스",
+    "category": "plot-advancement",
+    "cost": 50,
+    "shortEffect": "50개로 포켓몬의 테라스탈 타입을 불꽃으로 변경."
+  },
+  {
+    "id": "tera-shard-water",
+    "name": "물테라피스",
+    "category": "plot-advancement",
+    "cost": 50,
+    "shortEffect": "50개로 포켓몬의 테라스탈 타입을 물로 변경."
+  },
+  {
+    "id": "tera-shard-electric",
+    "name": "전기테라피스",
+    "category": "plot-advancement",
+    "cost": 50,
+    "shortEffect": "50개로 포켓몬의 테라스탈 타입을 전기로 변경."
+  },
+  {
+    "id": "tera-shard-grass",
+    "name": "풀테라피스",
+    "category": "plot-advancement",
+    "cost": 50,
+    "shortEffect": "50개로 포켓몬의 테라스탈 타입을 풀로 변경."
+  },
+  {
+    "id": "tera-shard-ice",
+    "name": "얼음테라피스",
+    "category": "plot-advancement",
+    "cost": 50,
+    "shortEffect": "50개로 포켓몬의 테라스탈 타입을 얼음으로 변경."
+  },
+  {
+    "id": "tera-shard-fighting",
+    "name": "격투테라피스",
+    "category": "plot-advancement",
+    "cost": 50,
+    "shortEffect": "50개로 포켓몬의 테라스탈 타입을 격투로 변경."
+  },
+  {
+    "id": "tera-shard-poison",
+    "name": "독테라피스",
+    "category": "plot-advancement",
+    "cost": 50,
+    "shortEffect": "50개로 포켓몬의 테라스탈 타입을 독으로 변경."
+  },
+  {
+    "id": "tera-shard-ground",
+    "name": "땅테라피스",
+    "category": "plot-advancement",
+    "cost": 50,
+    "shortEffect": "50개로 포켓몬의 테라스탈 타입을 땅으로 변경."
+  },
+  {
+    "id": "tera-shard-flying",
+    "name": "비행테라피스",
+    "category": "plot-advancement",
+    "cost": 50,
+    "shortEffect": "50개로 포켓몬의 테라스탈 타입을 비행으로 변경."
+  },
+  {
+    "id": "tera-shard-psychic",
+    "name": "에스퍼테라피스",
+    "category": "plot-advancement",
+    "cost": 50,
+    "shortEffect": "50개로 포켓몬의 테라스탈 타입을 에스퍼로 변경."
+  },
+  {
+    "id": "tera-shard-bug",
+    "name": "벌레테라피스",
+    "category": "plot-advancement",
+    "cost": 50,
+    "shortEffect": "50개로 포켓몬의 테라스탈 타입을 벌레로 변경."
+  },
+  {
+    "id": "tera-shard-rock",
+    "name": "바위테라피스",
+    "category": "plot-advancement",
+    "cost": 50,
+    "shortEffect": "50개로 포켓몬의 테라스탈 타입을 바위로 변경."
+  },
+  {
+    "id": "tera-shard-ghost",
+    "name": "고스트테라피스",
+    "category": "plot-advancement",
+    "cost": 50,
+    "shortEffect": "50개로 포켓몬의 테라스탈 타입을 고스트로 변경."
+  },
+  {
+    "id": "tera-shard-dragon",
+    "name": "드래곤테라피스",
+    "category": "plot-advancement",
+    "cost": 50,
+    "shortEffect": "50개로 포켓몬의 테라스탈 타입을 드래곤으로 변경."
+  },
+  {
+    "id": "tera-shard-dark",
+    "name": "악테라피스",
+    "category": "plot-advancement",
+    "cost": 50,
+    "shortEffect": "50개로 포켓몬의 테라스탈 타입을 악으로 변경."
+  },
+  {
+    "id": "tera-shard-steel",
+    "name": "강철테라피스",
+    "category": "plot-advancement",
+    "cost": 50,
+    "shortEffect": "50개로 포켓몬의 테라스탈 타입을 강철로 변경."
+  },
+  {
+    "id": "tera-shard-fairy",
+    "name": "페어리테라피스",
+    "category": "plot-advancement",
+    "cost": 50,
+    "shortEffect": "50개로 포켓몬의 테라스탈 타입을 페어리로 변경."
+  },
+  {
+    "id": "tera-shard-stellar",
+    "name": "스텔라테라피스",
+    "category": "plot-advancement",
+    "cost": 50,
+    "shortEffect": "50개로 포켓몬의 테라스탈 타입을 스텔라로 변경."
   }
 ]
