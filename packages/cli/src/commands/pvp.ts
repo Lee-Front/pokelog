@@ -6,6 +6,10 @@ import { renderHpBar } from "../ui/display.js";
 import { enterRaw, waitKey } from "../ui/raw-mode.js";
 import { redraw, clearScreen } from "../ui/screen.js";
 import { padRight } from "../ui/text.js";
+import {
+  formatFieldEffects, formatPokemonPanel, formatPartyStatus, formatOppPartyStatus,
+  loadMoveCatalog, getMoveInfo, formatMoveInfo, TYPE_ABBR,
+} from "../ui/battle-display.js";
 import type { PvpClientRoomView, PvpAction, PvpPokemon } from "../../../../shared/pvp-types.js";
 
 export async function pvpCommand(): Promise<void> {
@@ -231,18 +235,31 @@ async function handleTeamPreview(socket: Socket, state: PvpClientRoomView): Prom
 }
 
 async function handleBattleTurn(socket: Socket, state: PvpClientRoomView): Promise<void> {
+  // Prime move catalog in the background (non-blocking)
+  loadMoveCatalog().catch(() => {});
+
   const my = state.me.party[state.me.activeIndex];
   const opp = state.opponent.activePokemon;
   if (!opp) return;
 
-  const canMega = !state.me.transformationUsed && state.me.hasKeyStone && my.megaForm != null;
-  const canGmax = !state.me.transformationUsed && state.me.hasDynamaxBand && my.gmaxForm != null;
+  const me = state.me;
+  const canMega = !me.transformationUsed && !!me.hasKeyStone && my.megaForm != null;
+  const canGmax = !me.transformationUsed && !!me.hasDynamaxBand && my.gmaxForm != null;
+  const canDynamax = !me.transformationUsed && !!me.hasDynamaxBand && my.gmaxForm == null;
+  const canUltraBurst = !me.transformationUsed && my.ultraForm != null;
+  const canTera = !me.transformationUsed && my.teraType != null;
 
   const menuItems: { label: string; value: string }[] = [
     { label: "싸운다", value: "fight" },
   ];
   if (canMega) menuItems.push({ label: "메가진화 + 싸운다", value: "mega" });
   if (canGmax) menuItems.push({ label: "기가맥스 + 싸운다", value: "gmax" });
+  if (canDynamax) menuItems.push({ label: "다이맥스 + 싸운다", value: "dynamax" });
+  if (canUltraBurst) menuItems.push({ label: "울트라버스트 + 싸운다", value: "ultra" });
+  if (canTera) {
+    const tlabel = my.teraType ? TYPE_ABBR[my.teraType] ?? my.teraType : "";
+    menuItems.push({ label: `테라스탈(${tlabel}) + 싸운다`, value: "tera" });
+  }
   menuItems.push({ label: "교체", value: "switch" });
   menuItems.push({ label: "기권", value: "forfeit" });
 
@@ -263,11 +280,17 @@ async function handleBattleTurn(socket: Socket, state: PvpClientRoomView): Promi
     if (key === "\x1b[B" && cursor < menuItems.length - 1) cursor++;
     if (key === "\r" || key === "\n") {
       const selected = menuItems[cursor].value;
-      if (selected === "fight" || selected === "mega" || selected === "gmax") {
+      if (
+        selected === "fight" || selected === "mega" || selected === "gmax" ||
+        selected === "dynamax" || selected === "ultra" || selected === "tera"
+      ) {
         const moveAction = await selectMove(state, my, opp);
         if (moveAction && moveAction.type === "fight") {
-          if (selected === "mega") (moveAction as any).mega = true;
-          if (selected === "gmax") (moveAction as any).gigantamax = true;
+          if (selected === "mega") moveAction.mega = true;
+          if (selected === "gmax") moveAction.gigantamax = true;
+          if (selected === "dynamax") moveAction.dynamax = true;
+          if (selected === "ultra") moveAction.ultraBurst = true;
+          if (selected === "tera") moveAction.tera = true;
           socket.emit("pvp:action", { action: moveAction });
           clearScreen();
           console.log(`\n  ${DIM}상대 행동 대기 중...${R}\n`);
@@ -299,37 +322,58 @@ function buildBattleLines(
   menuItems: { label: string; value: string }[],
   cursor: number,
 ): string[] {
-  const myTrans = state.me.transformationType;
-  const myLabel = myTrans === "mega" ? `${GRN}${my.species}${R} ${YEL}[MEGA]${R}`
-    : myTrans === "gigantamax" ? `${GRN}${my.species}${R} ${YEL}[GMAX ${state.me.gmaxTurnsRemaining}T]${R}`
-    : myTrans === "primal" ? `${GRN}${my.species}${R} ${YEL}[PRIMAL]${R}`
-    : `${GRN}${my.species}${R}`;
+  const lines: string[] = [];
+  lines.push("");
+  lines.push(`  ${BLD}Turn ${state.turn}${R}`);
 
-  const oppTrans = state.opponent.transformationType;
-  const oppLabel = oppTrans === "mega" ? `${CYN}${opp.species}${R} ${YEL}[MEGA]${R}`
-    : oppTrans === "gigantamax" ? `${CYN}${opp.species}${R} ${YEL}[GMAX ${state.opponent.gmaxTurnsRemaining}T]${R}`
-    : oppTrans === "primal" ? `${CYN}${opp.species}${R} ${YEL}[PRIMAL]${R}`
-    : `${CYN}${opp.species}${R}`;
+  // Field effects
+  const fx = formatFieldEffects(state);
+  if (fx.length > 0) lines.push(...fx);
+  lines.push("");
 
-  return [
-    "",
-    `  ${BLD}Turn ${state.turn}${R}`,
-    "",
-    `  ${DIM}상대${R}  ${oppLabel} Lv.${opp.level}`,
-    `        ${renderHpBar(opp.hp, opp.maxHp, 14)}`,
-    "",
-    `  ${DIM}나${R}    ${myLabel} Lv.${my.level}`,
-    `        ${renderHpBar(my.hp, my.maxHp, 14)}`,
-    "",
-    `  ${DIM}─────────────────────────${R}`,
-    ...menuItems.map((item, i) => {
-      const ptr = i === cursor ? `${YEL}>${R}` : " ";
-      const lbl = i === cursor ? `${BLD}${item.label}${R}` : item.label;
-      return `  ${ptr} ${lbl}`;
-    }),
-    "",
-    `  ${DIM}↑↓ 이동  Enter 선택${R}`,
-  ];
+  // Opponent panel
+  const oppLines = formatPokemonPanel({
+    poke: opp,
+    transformationType: state.opponent.transformationType,
+    gmaxTurnsRemaining: state.opponent.gmaxTurnsRemaining,
+    statStages: state.opponent.statStages,
+    volatiles: state.opponent.volatiles,
+    substitute: state.opponent.substitute,
+    teraActive: state.opponent.teraActive,
+    isOpponent: true,
+  });
+  lines.push(...oppLines);
+  lines.push("");
+
+  // My panel
+  const myLines = formatPokemonPanel({
+    poke: my,
+    transformationType: state.me.transformationType,
+    gmaxTurnsRemaining: state.me.gmaxTurnsRemaining,
+    statStages: state.me.statStages,
+    volatiles: state.me.volatiles,
+    substitute: state.me.substitute,
+    teraActive: state.me.teraActive,
+    isOpponent: false,
+  });
+  lines.push(...myLines);
+  lines.push("");
+
+  // Party bars
+  lines.push(formatPartyStatus(state));
+  lines.push(formatOppPartyStatus(state));
+  lines.push("");
+
+  lines.push(`  ${DIM}─────────────────────────${R}`);
+  for (let i = 0; i < menuItems.length; i++) {
+    const item = menuItems[i];
+    const ptr = i === cursor ? `${YEL}>${R}` : " ";
+    const lbl = i === cursor ? `${BLD}${item.label}${R}` : item.label;
+    lines.push(`  ${ptr} ${lbl}`);
+  }
+  lines.push("");
+  lines.push(`  ${DIM}↑↓ 이동  Enter 선택${R}`);
+  return lines;
 }
 
 async function selectMove(
@@ -343,6 +387,9 @@ async function selectMove(
     return { type: "fight", moveId: my.moves[0]?.id ?? "tackle" };
   }
 
+  // Ensure move catalog loaded for type/category/power display
+  await loadMoveCatalog();
+
   let cursor = 0;
   let lineCount = 0;
   let first = true;
@@ -355,8 +402,10 @@ async function selectMove(
       "",
       ...moves.map((m, i) => {
         const ptr = i === cursor ? `${YEL}>${R}` : " ";
-        const lbl = i === cursor ? `${BLD}${padRight(m.id, 16)}${R}` : padRight(m.id, 16);
-        return `  ${ptr} ${lbl} PP ${m.pp}/${m.maxPp}`;
+        const name = padRight(m.id, 18);
+        const lbl = i === cursor ? `${BLD}${name}${R}` : name;
+        const info = formatMoveInfo(getMoveInfo(m.id));
+        return `  ${ptr} ${lbl} ${info}  PP ${m.pp}/${m.maxPp}`;
       }),
       "",
       `  ${DIM}↑↓ 이동  Enter 선택  Esc 뒤로${R}`,
