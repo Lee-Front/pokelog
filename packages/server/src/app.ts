@@ -10,6 +10,7 @@ import { tradeRoutes } from "./routes/trade-routes.js";
 import { eggRoutes } from "./routes/egg-routes.js";
 import { evolutionRoutes } from "./routes/evolution-routes.js";
 import { itemRoutes } from "./routes/item-routes.js";
+import { fusionRoutes } from "./routes/fusion-routes.js";
 import { storageRoutes } from "./routes/storage-routes.js";
 import { shopRoutes } from "./routes/shop-routes.js";
 import { battleRoutes } from "./routes/battle-routes.js";
@@ -66,6 +67,7 @@ export function createApp() {
   app.use("/api/game", eggRoutes);
   app.use("/api/game", evolutionRoutes);
   app.use("/api/game", itemRoutes);
+  app.use("/api/game", fusionRoutes);
   app.use("/api/game", storageRoutes);
   app.use("/api/shop", shopRoutes);
   app.use("/api/battle", battleRoutes);
