@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { projectPath } from "./paths.js";
 import { getConfig } from "./storage/config-store.js";
+import { getMoves, getMoveById } from "./game/data-loader.js";
 import { authRoutes } from "./routes/auth-routes.js";
 import { userRoutes } from "./routes/user-routes.js";
 import { gameRoutes } from "./routes/game-routes.js";
@@ -25,6 +26,30 @@ export function createApp() {
   app.get("/api/meta", async (_req, res) => {
     const config = await getConfig();
     res.json(config.meta);
+  });
+
+  // 기술 데이터 - 슬림 카탈로그 (CLI가 기술 정보 표시에 사용, 인증 불필요)
+  app.get("/api/moves/catalog", (_req, res) => {
+    const moves = getMoves();
+    const slim = moves.map((m) => ({
+      id: m.id,
+      name: m.name,
+      type: m.type,
+      category: m.category,
+      power: m.power ?? 0,
+      accuracy: m.accuracy ?? 0,
+      pp: m.pp ?? 0,
+      priority: m.priority ?? 0,
+    }));
+    res.json({ moves: slim });
+  });
+
+  // 기술 개별 조회
+  app.get("/api/moves/:id", (req, res) => {
+    const id = req.params.id;
+    const move = getMoveById(id);
+    if (!move) { res.status(404).json({ error: "not_found" }); return; }
+    res.json({ move });
   });
 
   // 아트 파일 읽기 헬퍼 — 경로 순회 방어 포함

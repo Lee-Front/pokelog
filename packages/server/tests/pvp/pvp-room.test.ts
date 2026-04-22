@@ -50,6 +50,42 @@ describe("pvp-room", () => {
     expect(view.opponent.activePokemon).not.toBeNull();
     expect(view.opponent.partyHpRatios).toHaveLength(2);
   });
+
+  it("getPlayerView exposes canonically visible opponent fields + global field effects", () => {
+    const room = createRoom("userA", "A", partyA, "userB", "B", partyB);
+    selectLead(room, "userA", 0);
+    selectLead(room, "userB", 0);
+    // Seed opponent with visible effects
+    room.playerB.statStages.attack = 2;
+    room.playerB.volatiles = [{ id: "confusion", turnsRemaining: 2 }];
+    room.playerB.screens = { reflect: 3 };
+    room.playerB.hazards = { stealthRock: true, spikes: 2 };
+    room.playerB.tailwind = 4;
+    room.playerB.substitute = 25;
+    room.playerB.teraActive = true;
+    room.weather = "rain";
+    room.weatherTurns = 4;
+    room.terrain = "electric";
+    room.terrainTurns = 5;
+    room.trickRoom = 3;
+    room.lastMoveUsedInBattle = "tackle";
+
+    const view = getPlayerView(room, "userA");
+    expect(view.opponent.statStages?.attack).toBe(2);
+    expect(view.opponent.volatiles?.[0].id).toBe("confusion");
+    expect(view.opponent.screens?.reflect).toBe(3);
+    expect(view.opponent.hazards?.stealthRock).toBe(true);
+    expect(view.opponent.hazards?.spikes).toBe(2);
+    expect(view.opponent.tailwind).toBe(4);
+    expect(view.opponent.substitute).toBe(25);
+    expect(view.opponent.teraActive).toBe(true);
+    expect(view.weather).toBe("rain");
+    expect(view.weatherTurns).toBe(4);
+    expect(view.terrain).toBe("electric");
+    expect(view.terrainTurns).toBe(5);
+    expect(view.trickRoom).toBe(3);
+    expect(view.lastMoveUsedInBattle).toBe("tackle");
+  });
 });
 
 describe("pvp turn resolution", () => {

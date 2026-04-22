@@ -202,9 +202,23 @@ export interface PvpClientRoomView {
     actionSubmitted: boolean;
     transformationType?: PvpTransformationType | null;
     gmaxTurnsRemaining?: number;
+    // ── Expanded visible fields (canonically visible in-battle) ──
+    statStages?: StatStages;
+    volatiles?: VolatileStatus[];
+    screens?: PvpPlayerState["screens"];
+    hazards?: PvpPlayerState["hazards"];
+    tailwind?: number;
+    substitute?: number;
+    teraActive?: boolean;
   };
   weather?: BattleWeather;
+  weatherTurns?: number;
   terrain?: PvpRoomState["terrain"];
+  terrainTurns?: number;
+  trickRoom?: number;
+  magicRoom?: number;
+  wonderRoom?: number;
+  lastMoveUsedInBattle?: string;
   turnDeadline: number | null;
   log: string[];
   result?: PvpRoomState["result"];
