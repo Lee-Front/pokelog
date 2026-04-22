@@ -1,5 +1,8 @@
 import { Router } from "express";
+import type { Response } from "express";
 import { getAllUsers } from "../storage/user-store.js";
+import { getMatchHistory } from "../pvp/pvp-store.js";
+import { authMiddleware, type AuthRequest } from "../middleware/auth-middleware.js";
 
 export const socialRoutes = Router();
 
@@ -82,6 +85,17 @@ socialRoutes.get("/ranking/pvp", async (req, res) => {
     res.json({ ranking: ranked });
   } catch (err) {
     console.error("PvP ranking error:", err);
+    res.status(500).json({ error: "서버 오류가 발생했습니다" });
+  }
+});
+
+socialRoutes.get("/pvp-history", authMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 20));
+    const records = await getMatchHistory(limit);
+    res.json({ matches: records });
+  } catch (err) {
+    console.error("pvp-history error:", err);
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
   }
 });
