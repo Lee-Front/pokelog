@@ -30,6 +30,7 @@ export interface PvpPokemon {
   megaForm?: PvpTransformForm | null;
   gmaxForm?: PvpTransformForm | null;
   primalForm?: PvpTransformForm | null;
+  ultraForm?: PvpTransformForm | null;
   gender?: PokemonGender | null;
   // ── Gen 9 / Tera ──
   teraType?: string | null;

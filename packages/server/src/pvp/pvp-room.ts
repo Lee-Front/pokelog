@@ -446,14 +446,14 @@ function resolveTurn(room: PvpRoomState, actionA: PvpAction, actionB: PvpAction)
       : [{ player: room.playerB, action: actionB, opp: room.playerA, defProtected: protectedA },
          { player: room.playerA, action: actionA, opp: room.playerB, defProtected: protectedB }];
 
-    executeFight(room, first.player, first.action.moveId, first.opp, first.action.mega, first.action.gigantamax, first.defProtected, first.action.dynamax, first.action.tera);
+    executeFight(room, first.player, first.action.moveId, first.opp, first.action.mega, first.action.gigantamax, first.defProtected, first.action.dynamax, first.action.tera, first.action.ultraBurst);
     if (first.opp.party[first.opp.activeIndex].hp > 0) {
-      executeFight(room, second.player, second.action.moveId, second.opp, second.action.mega, second.action.gigantamax, second.defProtected, second.action.dynamax, second.action.tera);
+      executeFight(room, second.player, second.action.moveId, second.opp, second.action.mega, second.action.gigantamax, second.defProtected, second.action.dynamax, second.action.tera, second.action.ultraBurst);
     }
   } else if (actionA.type === "fight") {
-    executeFight(room, room.playerA, actionA.moveId, room.playerB, actionA.mega, actionA.gigantamax, protectedB, actionA.dynamax, actionA.tera);
+    executeFight(room, room.playerA, actionA.moveId, room.playerB, actionA.mega, actionA.gigantamax, protectedB, actionA.dynamax, actionA.tera, actionA.ultraBurst);
   } else if (actionB.type === "fight") {
-    executeFight(room, room.playerB, actionB.moveId, room.playerA, actionB.mega, actionB.gigantamax, protectedA, actionB.dynamax, actionB.tera);
+    executeFight(room, room.playerB, actionB.moveId, room.playerA, actionB.mega, actionB.gigantamax, protectedA, actionB.dynamax, actionB.tera, actionB.ultraBurst);
   }
 
   // ── Pending switch after move (U-Turn, Volt Switch, Flip Turn, Parting Shot, Baton Pass) ──
@@ -1005,6 +1005,7 @@ function executeFight(
   defenderProtected?: boolean,
   dynamax?: boolean,
   tera?: boolean,
+  ultraBurst?: boolean,
 ): void {
   const atkPoke = attacker.party[attacker.activeIndex];
   const defPoke = defender.party[defender.activeIndex];
@@ -1098,6 +1099,21 @@ function executeFight(
     poke.maxHp = Math.ceil(poke.maxHp * 2);
     poke.hp = Math.ceil(hpRatio * poke.maxHp);
     room.log.push(`${attacker.nickname}의 ${poke.species}: 다이맥스!`);
+  }
+
+  // ── Ultra Burst ──
+  // Necrozma Dusk Mane / Dawn Wings holding Ultra Necrozium Z transforms into
+  // Ultra Necrozma mid-battle. Consumes the same transformation slot as
+  // mega/gmax/dynamax/tera (once per battle, mutually exclusive).
+  if (ultraBurst && !attacker.transformationUsed && atkPoke.ultraForm) {
+    attacker.battleForm = atkPoke.ultraForm.variantId;
+    attacker.transformationType = "ultra-burst";
+    attacker.transformationUsed = true;
+    atkPoke.stats = { ...atkPoke.ultraForm.stats };
+    const hpRatio = atkPoke.hp / atkPoke.maxHp;
+    atkPoke.maxHp = atkPoke.ultraForm.maxHp;
+    atkPoke.hp = Math.round(hpRatio * atkPoke.maxHp);
+    room.log.push(`${attacker.nickname}의 ${atkPoke.species}: 울트라버스트!`);
   }
 
   // ── Terastallize ──

@@ -174,6 +174,19 @@ function userPartyToPvp(
       } catch { /* variant data unavailable */ }
     }
 
+    // ── Ultra Burst form pre-computation ──
+    // Necrozma Dusk Mane / Dawn Wings + Ultra Necrozium Z → Ultra Necrozma.
+    // Pattern parallels mega-stone pre-compute: gated on species+item.
+    const isUltraBurstEligible =
+      (p.species === "necrozma-dusk" || p.species === "necrozma-dawn")
+      && p.heldItem === "ultra-necrozium-z";
+    if (isUltraBurstEligible) {
+      try {
+        const ultraStats = buildStatsForPokemon(pokemonForStats, "necrozma-ultra");
+        base.ultraForm = { variantId: "necrozma-ultra", maxHp: ultraStats.maxHp, stats: ultraStats.stats };
+      } catch { /* variant data unavailable */ }
+    }
+
     return base;
   });
 
@@ -304,6 +317,7 @@ export function setupPvpSocket(io: Server): void {
         megaForm: deepCopyForm(p.megaForm),
         gmaxForm: deepCopyForm(p.gmaxForm),
         primalForm: deepCopyForm(p.primalForm),
+        ultraForm: deepCopyForm(p.ultraForm),
       }));
 
       const room = createRoom(
