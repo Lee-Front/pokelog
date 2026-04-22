@@ -7,7 +7,8 @@ Git 커밋 활동을 게임 루프로 바꿔 포켓몬을 수집하고 성장시
 - 워크스페이스 구조: `packages/server`, `packages/cli`, `shared`, `data`
 - 서버 메타데이터 기반 멀티 서버 접속 지원: `join`, `servers`, `use`, `leave`, `whereami`
 - 인터랙티브 CLI 셸 지원: 기본 실행 시 대체 화면 버퍼 기반 UI 진입
-- 서버 테스트 통과: 599개 (53개 테스트 파일)
+- 서버 테스트 통과: 1040개 (78개 테스트 파일)
+- PvP 배틀 시스템 (Gen 1~9, 메가진화/기가맥스/다이맥스/테라스탈/울트라버스트/합체)
 - 빌드: `packages/server`, `packages/cli` 모두 정상 통과
 
 ## 빠른 시작
