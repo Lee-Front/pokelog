@@ -19,6 +19,7 @@ import { pokemonCommand } from "./commands/pokemon.js";
 import { pvpHistoryCommand } from "./commands/pvp-history.js";
 import { fusionCommand } from "./commands/fusion.js";
 import { teraCommand } from "./commands/tera.js";
+import { towerCommand } from "./commands/tower.js";
 import { rankingCommand } from "./commands/ranking.js";
 import { regionCommand } from "./commands/region.js";
 import { serversCommand } from "./commands/servers.js";
@@ -98,6 +99,7 @@ if (process.argv.length <= 2) {
   program.command("pvp-history").description("show PvP match history").option("--limit <n>", "record count", "20").action((opts) => pvpHistoryCommand(parseInt(opts.limit, 10) || 20));
   program.command("fusion").description("fuse/unfuse legendary pokemon").action(fusionCommand);
   program.command("tera [pokemonUid]").description("change a pokemon's Tera type").action(teraCommand);
+  program.command("tower").description("battle tower").action(towerCommand);
   program.command("connect").description("manage integrations").action(connectCommand);
 
   program.command("init").description("[deprecated] use join instead").requiredOption("--server <url>", "server url").action((opts) => joinCommand(opts.server));

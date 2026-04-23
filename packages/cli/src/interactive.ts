@@ -15,6 +15,7 @@ import { pokedexCommand } from "./commands/pokedex.js";
 import { pvpHistoryCommand } from "./commands/pvp-history.js";
 import { fusionCommand } from "./commands/fusion.js";
 import { teraCommand } from "./commands/tera.js";
+import { towerCommand } from "./commands/tower.js";
 import { rankingCommand } from "./commands/ranking.js";
 import { regionCommand } from "./commands/region.js";
 import { serversCommand } from "./commands/servers.js";
@@ -57,9 +58,10 @@ function isGroup(node: MenuNode): node is MenuGroup {
 const MENU_TREE: MenuNode[] = [
   { label: "야생",     cmd: "encounters", desc: "야생 이벤트",   auth: true, server: true },
   {
-    label: "대전", desc: "PvP 대전 / 전적", auth: true, server: true,
+    label: "대전", desc: "PvP / 타워 / 전적", auth: true, server: true,
     children: [
       { label: "PvP",      cmd: "pvp",          desc: "PvP 대전" },
+      { label: "타워",     cmd: "tower",        desc: "배틀 타워 도전" },
       { label: "전적",     cmd: "pvp-history",  desc: "PvP 매치 기록" },
     ],
   },
@@ -252,6 +254,7 @@ async function executeCommand(cmd: string): Promise<"continue" | "quit"> {
     case "inventory":  await inventoryCommand(); break;
     case "trade":      await tradeCommand(); break;
     case "pvp":          await pvpCommand(); break;
+    case "tower":        await towerCommand(); break;
     case "pvp-history":  await pvpHistoryCommand(); break;
     case "fusion":       await fusionCommand(); break;
     case "tera":         await teraCommand(); break;
