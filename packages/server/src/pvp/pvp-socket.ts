@@ -8,26 +8,8 @@ import {
 } from "./pvp-room.js";
 import { chooseAiAction } from "./pvp-ai.js";
 import { recordMatch } from "./pvp-store.js";
-import { getMegaVariantForItem, checkPrimalReversion, applyGmaxHp } from "../game/battle-transformations.js";
-import { buildStatsForPokemon } from "../game/pokemon-stats.js";
-import { getVariants } from "../game/data-loader.js";
-import { getEffectiveTypes } from "../game/pokemon-state.js";
-import type { PvpPokemon, PvpTransformForm, PvpAction, PvpRoomState } from "../../../../shared/pvp-types.js";
-import type { OwnedPokemon } from "../../../../shared/types.js";
-
-/**
- * Default Tera Type for a pokemon at battle start.
- * Ogerpon masks and Terapagos-Stellar are forced to specific types.
- * All other pokemon default to their first original type.
- */
-function getDefaultTeraType(species: string, types: string[]): string {
-  if (species === "ogerpon") return "grass";
-  if (species === "ogerpon-wellspring-mask") return "water";
-  if (species === "ogerpon-hearthflame-mask") return "fire";
-  if (species === "ogerpon-cornerstone-mask") return "rock";
-  if (species === "terapagos-stellar") return "stellar";
-  return types[0] ?? "normal";
-}
+import { userPartyToPvp as buildUserPvpParty, deepCopyPvpPokemon } from "./pvp-party-builder.js";
+import type { PvpAction, PvpRoomState } from "../../../../shared/pvp-types.js";
 
 // socketId → { userId, roomId }
 const socketState = new Map<string, { userId: string; roomId?: string }>();
@@ -85,113 +67,7 @@ export function clearTurnTimer(roomId: string): void {
   }
 }
 
-function userPartyToPvp(
-  user: { pokemon: OwnedPokemon[]; party: string[]; inventory?: Record<string, number> },
-): { party: PvpPokemon[]; hasKeyStone: boolean; hasDynamaxBand: boolean } {
-  const partyPokemon = user.party
-    .map((uid) => user.pokemon.find((p) => p.uid === uid))
-    .filter((p): p is OwnedPokemon => p != null && p.hp > 0);
-
-  // Species Clause: one per species
-  const seen = new Set<string>();
-  const unique = partyPokemon.filter((p) => {
-    if (seen.has(p.species)) return false;
-    seen.add(p.species);
-    return true;
-  });
-
-  const inv = user.inventory ?? {};
-  const hasKeyStone = (inv["key-stone"] ?? 0) > 0;
-  const hasDynamaxBand = (inv["dynamax-band"] ?? 0) > 0;
-
-  const party = unique.map((p) => {
-    const level = Math.min(p.level, 50);
-    const effectiveTypes = getEffectiveTypes(p.species, p.variantId ?? null, null);
-    const base: PvpPokemon = {
-      uid: p.uid, species: p.species, variantId: p.variantId,
-      level,
-      hp: p.maxHp, maxHp: p.maxHp, // PvP starts at full HP
-      stats: { ...p.stats }, moves: p.moves.map((m) => ({ ...m, pp: m.maxPp })),
-      statusCondition: null, nature: p.nature, abilityId: p.abilityId, isShiny: p.isShiny,
-      heldItem: p.heldItem ?? null,
-      hasGigantamaxFactor: p.hasGigantamaxFactor ?? false,
-      megaForm: null,
-      gmaxForm: null,
-      primalForm: null,
-      gender: p.gender ?? null,
-      // ── Gen 9 / Tera ──
-      teraType: p.teraType ?? getDefaultTeraType(p.species, effectiveTypes),
-      originalTypes: effectiveTypes,
-      stellarTypesUsed: [],
-      rageFistHits: 0,
-    };
-
-    // Use a pokemon-like object at the capped level for stat calculations
-    const pokemonForStats = { species: p.species, level, nature: p.nature, variantId: p.variantId, ivs: p.ivs };
-
-    // ── Mega form pre-computation ──
-    if (p.species === "rayquaza") {
-      // Rayquaza special case: needs dragon-ascent move, no mega stone required
-      const hasDragonAscent = p.moves.some((m) => m.id === "dragon-ascent");
-      if (hasDragonAscent) {
-        try {
-          const megaStats = buildStatsForPokemon(pokemonForStats, "rayquaza-mega");
-          base.megaForm = { variantId: "rayquaza-mega", maxHp: megaStats.maxHp, stats: megaStats.stats };
-        } catch { /* variant data unavailable */ }
-      }
-    } else if (p.heldItem) {
-      const megaVariantId = getMegaVariantForItem(p.species, p.heldItem);
-      if (megaVariantId) {
-        try {
-          const megaStats = buildStatsForPokemon(pokemonForStats, megaVariantId);
-          base.megaForm = { variantId: megaVariantId, maxHp: megaStats.maxHp, stats: megaStats.stats };
-        } catch { /* variant data unavailable */ }
-      }
-    }
-
-    // ── Gmax form pre-computation ──
-    if (p.hasGigantamaxFactor) {
-      const variantPrefix = p.variantId ?? p.species;
-      const gmaxVariantId = `${variantPrefix}-gmax`;
-      const variant = getVariants().find(
-        (v) => v.id === gmaxVariantId && v.category === "gigantamax",
-      );
-      if (variant) {
-        try {
-          const gmaxStats = buildStatsForPokemon(pokemonForStats, gmaxVariantId);
-          const boosted = applyGmaxHp(gmaxStats.maxHp, gmaxStats.maxHp);
-          base.gmaxForm = { variantId: gmaxVariantId, maxHp: boosted.maxHp, stats: gmaxStats.stats };
-        } catch { /* variant data unavailable */ }
-      }
-    }
-
-    // ── Primal form pre-computation ──
-    const primalVariantId = checkPrimalReversion(p as any);
-    if (primalVariantId) {
-      try {
-        const primalStats = buildStatsForPokemon(pokemonForStats, primalVariantId);
-        base.primalForm = { variantId: primalVariantId, maxHp: primalStats.maxHp, stats: primalStats.stats };
-      } catch { /* variant data unavailable */ }
-    }
-
-    // ── Ultra Burst form pre-computation ──
-    // Necrozma Dusk Mane / Dawn Wings + Ultra Necrozium Z → Ultra Necrozma.
-    // Pattern parallels mega-stone pre-compute: gated on species+item.
-    const isUltraBurstEligible =
-      (p.species === "necrozma-dusk" || p.species === "necrozma-dawn")
-      && p.heldItem === "ultra-necrozium-z";
-    if (isUltraBurstEligible) {
-      try {
-        const ultraStats = buildStatsForPokemon(pokemonForStats, "necrozma-ultra");
-        base.ultraForm = { variantId: "necrozma-ultra", maxHp: ultraStats.maxHp, stats: ultraStats.stats };
-      } catch { /* variant data unavailable */ }
-    }
-
-    return base;
-  });
-
-  return { party, hasKeyStone, hasDynamaxBand };
-}
+const userPartyToPvp = buildUserPvpParty;
 
 export function setupPvpSocket(io: Server): void {
   io.on("connection", (socket: Socket) => {
@@ -308,17 +184,7 @@ export function setupPvpSocket(io: Server): void {
 
       const pvpData = userPartyToPvp(user);
       // AI party = deep copy of user party (mirror match)
-      const deepCopyForm = (f: PvpTransformForm | null | undefined): PvpTransformForm | null =>
-        f ? { variantId: f.variantId, maxHp: f.maxHp, stats: { ...f.stats } } : null;
-      const aiParty = pvpData.party.map((p) => ({
-        ...p, uid: "ai-" + p.uid,
-        stats: { ...p.stats },
-        moves: p.moves.map((m) => ({ ...m })),
-        megaForm: deepCopyForm(p.megaForm),
-        gmaxForm: deepCopyForm(p.gmaxForm),
-        primalForm: deepCopyForm(p.primalForm),
-        ultraForm: deepCopyForm(p.ultraForm),
-      }));
+      const aiParty = pvpData.party.map((p) => ({ ...deepCopyPvpPokemon(p), uid: "ai-" + p.uid }));
 
       const room = createRoom(
         state.userId, user.account.nickname, pvpData.party,

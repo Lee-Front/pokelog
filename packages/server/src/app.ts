@@ -17,6 +17,7 @@ import { shopRoutes } from "./routes/shop-routes.js";
 import { battleRoutes } from "./routes/battle-routes.js";
 import { socialRoutes } from "./routes/social-routes.js";
 import { adminRoutes } from "./routes/admin-routes.js";
+import { towerRoutes } from "./routes/tower-routes.js";
 
 export function createApp() {
   const app = express();
@@ -98,6 +99,7 @@ export function createApp() {
   app.use("/api/battle", battleRoutes);
   app.use("/api/social", socialRoutes);
   app.use("/api/admin", adminRoutes);
+  app.use("/api/tower", towerRoutes);
 
   return app;
 }
