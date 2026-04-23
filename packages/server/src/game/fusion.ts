@@ -141,6 +141,7 @@ export function fusePokemon(
     nature: partner.nature,
     heldItem: partner.heldItem ?? null,
     gender: partner.gender ?? null,
+    ivs: partner.ivs ? { ...partner.ivs } : undefined,
   };
   base.fusedPartnerUid = partner.uid;
 
@@ -231,6 +232,7 @@ export function unfusePokemon(user: UserData, fusedUid: string): FusionResult {
     nature: partnerSnapshot.nature ?? "hardy",
     isShiny: false,
     statusCondition: null,
+    ivs: partnerSnapshot.ivs ? { ...partnerSnapshot.ivs } : undefined,
   };
   const partnerStats = buildStatsForPokemon(partner);
   partner.maxHp = partnerStats.maxHp;

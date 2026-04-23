@@ -1,9 +1,31 @@
 import crypto from "node:crypto";
 import { getSpeciesByName, getMoves, getAllSpeciesList, getNatures } from "./data-loader.js";
-import type { OwnedPokemon, WildPokemon, PokemonMove, SpeciesData } from "../../../../shared/types.js";
+import type {
+  IndividualValues,
+  OwnedPokemon,
+  WildPokemon,
+  PokemonMove,
+  SpeciesData,
+} from "../../../../shared/types.js";
 import { resolvePokemonGender } from "./pokemon-gender.js";
 import { buildStats } from "./pokemon-stats.js";
 import { resolveSpeciesOrVariant } from "./pokemon-state.js";
+
+/**
+ * Roll a fresh set of Individual Values. Each stat independently rolls a
+ * uniform integer in [0, 31], matching canon Gen 3+ wild-pokemon IV
+ * generation.
+ */
+export function rollIvs(): IndividualValues {
+  return {
+    hp: Math.floor(Math.random() * 32),
+    attack: Math.floor(Math.random() * 32),
+    defense: Math.floor(Math.random() * 32),
+    spAttack: Math.floor(Math.random() * 32),
+    spDefense: Math.floor(Math.random() * 32),
+    speed: Math.floor(Math.random() * 32),
+  };
+}
 
 function buildMoves(species: SpeciesData, level: number): PokemonMove[] {
   const allMoves = getMoves();
@@ -93,7 +115,8 @@ export function createPokemon(species: string, level: number): OwnedPokemon {
   }
 
   const nature = pickRandomNature();
-  const { maxHp, stats } = buildStats(speciesData, level, nature, variantId);
+  const ivs = rollIvs();
+  const { maxHp, stats } = buildStats(speciesData, level, nature, variantId, ivs);
   const moves = buildMoves(speciesData, level);
 
   return {
@@ -117,6 +140,7 @@ export function createPokemon(species: string, level: number): OwnedPokemon {
     nature,
     isShiny: Math.random() < (1 / 4096),
     teraType: speciesData.types?.[0] ?? "normal",
+    ivs,
   };
 }
 
@@ -127,7 +151,8 @@ export function createWildPokemon(species: string, level: number): WildPokemon {
   }
 
   const nature = pickRandomNature();
-  const { maxHp, stats } = buildStats(speciesData, level, nature, variantId);
+  const ivs = rollIvs();
+  const { maxHp, stats } = buildStats(speciesData, level, nature, variantId, ivs);
   const moves = buildMoves(speciesData, level);
   const ability = pickWildAbility(speciesData.abilities);
   const teraType = pickWildTeraType(speciesData.types);
@@ -145,6 +170,7 @@ export function createWildPokemon(species: string, level: number): WildPokemon {
     ability,
     isShiny: Math.random() < (1 / 4096),
     teraType,
+    ivs,
   };
 }
 
@@ -171,6 +197,7 @@ export function wildPokemonToOwned(wild: WildPokemon): OwnedPokemon {
     nature: wild.nature ?? "hardy",
     isShiny: wild.isShiny ?? false,
     teraType: wild.teraType ?? speciesData?.types?.[0] ?? "normal",
+    ivs: wild.ivs ? { ...wild.ivs } : undefined,
   };
 }
 
