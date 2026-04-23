@@ -289,6 +289,30 @@ export interface LogEntry {
   [key: string]: unknown;
 }
 
+export interface TowerRecord {
+  currentStreak: number;
+  bestStreak: number;
+  totalClears: number;
+  lastPlayedAt?: string;
+}
+
+export interface TowerPartySnapshot {
+  uid: string;
+  currentHp: number;
+  currentPp: Record<string, number>;
+  statusCondition?: PrimaryStatus | null;
+  sleepTurns?: number;
+  toxicCounter?: number;
+}
+
+export interface ActiveTowerRun {
+  stage: number;
+  partyUids: string[];
+  partySnapshot: TowerPartySnapshot[];
+  roomId?: string;
+  startedAt: string;
+}
+
 export interface UserData {
   account: UserAccount;
   currentRegion?: string;
@@ -308,6 +332,8 @@ export interface UserData {
   log: LogEntry[];
   integrations: Integration[];
   pvpStats?: PvpStats;
+  towerRecord?: TowerRecord;
+  activeTowerRun?: ActiveTowerRun;
 }
 
 // === Config ===
