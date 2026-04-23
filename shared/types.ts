@@ -105,6 +105,15 @@ export interface PokemonStats {
   spDefense: number;
 }
 
+export interface IndividualValues {
+  hp: number;
+  attack: number;
+  defense: number;
+  spAttack: number;
+  spDefense: number;
+  speed: number;
+}
+
 export type PrimaryStatus = "poison" | "burn" | "paralysis" | "sleep" | "freeze";
 
 export interface VolatileStatus {
@@ -151,6 +160,8 @@ export interface OwnedPokemon {
     spDefense: number;
     speed: number;
   };
+  // ── Individual Values (0-31 each) ──
+  ivs?: IndividualValues;
   // ── Gen 9 / Tera ──
   teraType?: string | null;
   // ── Fusion (Kyurem/Necrozma/Calyrex) ──
@@ -164,6 +175,7 @@ export interface OwnedPokemon {
     nature?: string;
     heldItem?: string | null;
     gender?: PokemonGender | null;
+    ivs?: IndividualValues;
   };
 }
 
@@ -189,6 +201,7 @@ export interface WildPokemon {
   isShiny?: boolean;
   statusCondition?: PrimaryStatus | null;
   teraType?: string | null;
+  ivs?: IndividualValues;
 }
 
 export interface PendingEvent {

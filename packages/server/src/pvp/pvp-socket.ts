@@ -127,7 +127,7 @@ function userPartyToPvp(
     };
 
     // Use a pokemon-like object at the capped level for stat calculations
-    const pokemonForStats = { species: p.species, level, nature: p.nature, variantId: p.variantId };
+    const pokemonForStats = { species: p.species, level, nature: p.nature, variantId: p.variantId, ivs: p.ivs };
 
     // ── Mega form pre-computation ──
     if (p.species === "rayquaza") {

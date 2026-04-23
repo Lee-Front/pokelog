@@ -116,7 +116,13 @@ export function evolvePokemon(pokemon: OwnedPokemon, targetSpecies: string, targ
   pokemon.species = targetSpecies;
   pokemon.variantId = targetVariantId ?? null;
 
-  const evolvedStats = calculateStatsForLevel(targetSpecies, pokemon.level, pokemon.nature);
+  const evolvedStats = calculateStatsForLevel(
+    targetSpecies,
+    pokemon.level,
+    pokemon.nature,
+    pokemon.variantId ?? null,
+    pokemon.ivs,
+  );
   pokemon.maxHp = evolvedStats.maxHp;
   pokemon.hp = Math.min(pokemon.hp, pokemon.maxHp);
   pokemon.stats = evolvedStats.stats;
