@@ -10,6 +10,7 @@ import { healCommand } from "./commands/heal.js";
 import { historyCommand } from "./commands/history.js";
 import { inventoryCommand } from "./commands/inventory.js";
 import { joinCommand } from "./commands/join.js";
+import { judgeCommand } from "./commands/judge.js";
 import { leaveCommand } from "./commands/leave.js";
 import { nicknameCommand, profileCommand, matchCommand, unmatchCommand } from "./commands/profile.js";
 import { partyCommand, partySetCommand } from "./commands/party.js";
@@ -76,6 +77,7 @@ if (process.argv.length <= 2) {
   storageCmd.command("deposit <uid>").description("deposit pokemon").action(depositCommand);
 
   program.command("pokemon <uid>").description("pokemon detail").action(pokemonCommand);
+  program.command("judge <uid>").description("appraise pokemon IVs").action(judgeCommand);
   program.command("pokedex").description("show pokedex").action(pokedexCommand);
   program.command("inventory").description("show inventory").action(inventoryCommand);
   program.command("egg").description("buy or hatch eggs").action(eggCommand);

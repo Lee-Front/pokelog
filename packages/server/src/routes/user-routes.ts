@@ -360,3 +360,64 @@ userRoutes.post("/integrations/:id/sync", async (req: AuthRequest, res: Response
   }
 });
 
+// Pokemon IV appraisal (canon "Judge" app). Returns per-stat + total verdict
+// text mirroring the in-game appraiser's flavor lines.
+userRoutes.get("/judge/:uid", async (req: AuthRequest, res: Response) => {
+  try {
+    const user = await getUser(req.userId!);
+    if (!user) {
+      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+      return;
+    }
+
+    const pokemon = [...user.pokemon, ...user.storage].find(
+      (p) => p.uid === req.params.uid,
+    );
+    if (!pokemon) {
+      res.status(404).json({ error: "포켓몬을 찾을 수 없습니다" });
+      return;
+    }
+
+    if (!pokemon.ivs) {
+      res.json({
+        legacy: true,
+        species: pokemon.species,
+        nickname: pokemon.nickname ?? null,
+        message: "개체값 판정 불가 (레거시 포켓몬)",
+      });
+      return;
+    }
+
+    const ivs = pokemon.ivs;
+    const total = ivs.hp + ivs.attack + ivs.defense + ivs.spAttack + ivs.spDefense + ivs.speed;
+    const verdict = total >= 181 ? "환상적이야!"
+      : total >= 151 ? "정말 대단해!"
+      : total >= 121 ? "꽤 괜찮아"
+      : "좀 더 노력해볼까";
+
+    const perStat: Record<string, { value: number; verdict: string }> = {};
+    for (const [k, v] of Object.entries(ivs)) {
+      perStat[k] = {
+        value: v,
+        verdict: v === 31 ? "최고다!"
+          : v >= 26 ? "훌륭해"
+          : v >= 16 ? "그럭저럭"
+          : v >= 1 ? "아쉽네"
+          : "안 좋아",
+      };
+    }
+
+    res.json({
+      legacy: false,
+      species: pokemon.species,
+      nickname: pokemon.nickname ?? null,
+      total,
+      verdict,
+      ivs,
+      perStat,
+    });
+  } catch (err) {
+    console.error("judge error:", err);
+    res.status(500).json({ error: "서버 오류" });
+  }
+});
