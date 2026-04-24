@@ -8,7 +8,8 @@ import {
 } from "./pvp-room.js";
 import { chooseAiAction } from "./pvp-ai.js";
 import { recordMatch } from "./pvp-store.js";
-import { userPartyToPvp as buildUserPvpParty, deepCopyPvpPokemon } from "./pvp-party-builder.js";
+import { userPartyToPvp as buildUserPvpParty, buildPvpPartyFromPokemon } from "./pvp-party-builder.js";
+import { generateTowerParty } from "../game/tower-ai.js";
 import type { PvpAction, PvpRoomState } from "../../../../shared/pvp-types.js";
 
 // socketId → { userId, roomId }
@@ -189,14 +190,34 @@ export function setupPvpSocket(io: Server): void {
       if (!user) return;
 
       const pvpData = userPartyToPvp(user);
-      // AI party = deep copy of user party (mirror match)
-      const aiParty = pvpData.party.map((p) => ({ ...deepCopyPvpPokemon(p), uid: "ai-" + p.uid }));
+      // AI party: generate a fresh Battle Tower party rather than
+      // mirror-matching the user's roster. tower-ai produces randomized
+      // rosters (Species Clause, competitive movesets, optional legendary
+      // pool at higher stages) which gives the AI match a much wider
+      // variety than replaying the user's team. Stage 1 balances the
+      // encounter against a typical party — if we want progressive
+      // difficulty later we'd plumb that through from the client.
+      const towerParty = generateTowerParty(1);
+      // Use the shared PvP party builder so the AI pokemon go through
+      // the same mega/gmax/primal/Tera pre-computation as the player's.
+      // Species Clause stays enforced by default.
+      const aiBuild = buildPvpPartyFromPokemon(towerParty, undefined, {
+        // Tower-ai sometimes assigns items; honour them but don't grant
+        // the AI a Key Stone / Dynamax Band unless the item is present in
+        // inventory. We pass undefined inventory → no Key Stone / Dynamax
+        // capability for AI by default.
+      });
+      // Re-uid the AI pokemon so their UIDs never collide with the
+      // player's (tower-ai uses createPokemon which generates fresh UIDs,
+      // so they already should not collide — but we still prefix for
+      // clarity in logs).
+      const aiParty = aiBuild.party.map((p) => ({ ...p, uid: "ai-" + p.uid }));
 
       const room = createRoom(
         state.userId, user.account.nickname, pvpData.party,
         "__ai__", "AI 트레이너", aiParty, true,
         { hasKeyStone: pvpData.hasKeyStone, hasDynamaxBand: pvpData.hasDynamaxBand },
-        { hasKeyStone: pvpData.hasKeyStone, hasDynamaxBand: pvpData.hasDynamaxBand },
+        { hasKeyStone: aiBuild.hasKeyStone, hasDynamaxBand: aiBuild.hasDynamaxBand },
       );
       state.roomId = room.roomId;
       socket.join(room.roomId);
