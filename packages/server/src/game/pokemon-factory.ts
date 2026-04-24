@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { getSpeciesByName, getMoves, getAllSpeciesList, getNatures } from "./data-loader.js";
+import { getSpeciesByName, getMoves, getAllSpeciesList, getNatures, getMoveById } from "./data-loader.js";
 import type {
   IndividualValues,
   OwnedPokemon,
@@ -28,13 +28,30 @@ export function rollIvs(): IndividualValues {
   };
 }
 
-function buildMoves(species: SpeciesData, level: number): PokemonMove[] {
-  const allMoves = getMoves();
-  const moveMap = new Map(allMoves.map((move) => [move.id, move]));
-  const levelUpLearnset = species.learnset.levelUp;
+/**
+ * Strategy for selecting which moves a pokemon should know from a
+ * levelUp learnset.
+ *
+ * - `latest`   – take the 4 most-recently-learnt moves (canonical default
+ *                for freshly-created NPC / wild encounters)
+ * - `strongest`– rank by move power (status moves rank 0) and take top 4
+ *                (used by the Battle Tower "competitive" AI tier)
+ * - `random`   – shuffle and pick N (for generic randomised builds)
+ */
+export type MoveSelectionStrategy = "latest" | "strongest" | "random";
 
+/**
+ * Build a list of move IDs the pokemon should know at the given level
+ * from a levelUp learnset, applying a selection strategy.
+ */
+export function selectMoves(
+  learnsetLevelUp: Record<string, string[]>,
+  level: number,
+  strategy: MoveSelectionStrategy = "latest",
+  count = 4,
+): string[] {
   const learnableMoves: string[] = [];
-  const sortedLevels = Object.keys(levelUpLearnset)
+  const sortedLevels = Object.keys(learnsetLevelUp)
     .map(Number)
     .sort((left, right) => left - right);
 
@@ -42,8 +59,7 @@ function buildMoves(species: SpeciesData, level: number): PokemonMove[] {
     if (moveLevel > level) {
       continue;
     }
-
-    for (const moveId of levelUpLearnset[String(moveLevel)]) {
+    for (const moveId of learnsetLevelUp[String(moveLevel)]) {
       const duplicateIndex = learnableMoves.indexOf(moveId);
       if (duplicateIndex !== -1) {
         learnableMoves.splice(duplicateIndex, 1);
@@ -52,12 +68,83 @@ function buildMoves(species: SpeciesData, level: number): PokemonMove[] {
     }
   }
 
-  const selectedIds = learnableMoves.slice(-4);
+  if (strategy === "strongest") {
+    const unique = Array.from(new Set(learnableMoves));
+    const scored = unique.map((id) => {
+      const m = getMoveById(id);
+      return { id, power: m?.power ?? 0 };
+    });
+    scored.sort((a, b) => b.power - a.power);
+    return scored.slice(0, count).map((s) => s.id);
+  }
+
+  if (strategy === "random") {
+    const unique = Array.from(new Set(learnableMoves));
+    for (let i = unique.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [unique[i], unique[j]] = [unique[j], unique[i]];
+    }
+    return unique.slice(0, count);
+  }
+
+  // Default: "latest"
+  return learnableMoves.slice(-count);
+}
+
+function buildMoves(species: SpeciesData, level: number): PokemonMove[] {
+  const allMoves = getMoves();
+  const moveMap = new Map(allMoves.map((move) => [move.id, move]));
+  const selectedIds = selectMoves(species.learnset.levelUp, level, "latest", 4);
   return selectedIds.map((id) => {
     const moveData = moveMap.get(id);
     const pp = moveData?.pp ?? 10;
     return { id, pp, maxPp: pp };
   });
+}
+
+/**
+ * Common core for building a freshly-generated pokemon (wild or owned).
+ * Centralises IV rolling, nature, stat computation and moveset.
+ */
+function buildBasePokemon(species: string, level: number): {
+  baseSpecies: string;
+  variantId: string | null;
+  speciesData: SpeciesData;
+  nature: string;
+  ivs: IndividualValues;
+  maxHp: number;
+  stats: import("../../../../shared/types.js").PokemonStats;
+  moves: PokemonMove[];
+  isShiny: boolean;
+  gender: ReturnType<typeof resolvePokemonGender>;
+} {
+  const { baseSpecies, variantId, speciesData } = resolveSpeciesOrVariant(species);
+  if (!speciesData) {
+    throw new Error(`Unknown species: ${species}`);
+  }
+
+  const nature = pickRandomNature();
+  const ivs = rollIvs();
+  const { maxHp, stats } = buildStats(speciesData, level, nature, variantId, ivs);
+  const moves = buildMoves(speciesData, level);
+  const isShiny = Math.random() < (1 / 4096);
+  const gender: ReturnType<typeof resolvePokemonGender> = resolvePokemonGender(
+    speciesData.genderRate,
+    Math.random(),
+  );
+
+  return {
+    baseSpecies,
+    variantId: variantId ?? null,
+    speciesData,
+    nature,
+    ivs,
+    maxHp,
+    stats,
+    moves,
+    isShiny,
+    gender,
+  };
 }
 
 function pickRandomNature(): string {
@@ -104,68 +191,52 @@ export function pickWildTeraType(speciesTypes: string[] | undefined): string {
 export { buildStats } from "./pokemon-stats.js";
 
 export function createPokemon(species: string, level: number): OwnedPokemon {
-  const { baseSpecies, variantId, speciesData } = resolveSpeciesOrVariant(species);
-  if (!speciesData) {
-    throw new Error(`Unknown species: ${species}`);
-  }
-
-  const nature = pickRandomNature();
-  const ivs = rollIvs();
-  const { maxHp, stats } = buildStats(speciesData, level, nature, variantId, ivs);
-  const moves = buildMoves(speciesData, level);
+  const base = buildBasePokemon(species, level);
 
   return {
     uid: crypto.randomUUID(),
-    species: baseSpecies,
-    variantId,
+    species: base.baseSpecies,
+    variantId: base.variantId,
     nickname: null,
     level,
     exp: 0,
-    hp: maxHp,
-    maxHp,
-    stats,
-    moves,
+    hp: base.maxHp,
+    maxHp: base.maxHp,
+    stats: base.stats,
+    moves: base.moves,
     caughtAt: new Date().toISOString(),
-    gender: resolvePokemonGender(speciesData.genderRate, Math.random()),
-    friendship: speciesData.baseHappiness ?? 70,
+    gender: base.gender,
+    friendship: base.speciesData.baseHappiness ?? 70,
     heldItem: null,
-    abilityId: speciesData.abilities?.normal[0] ?? null,
+    abilityId: base.speciesData.abilities?.normal[0] ?? null,
     moveUsageCounts: {},
     damageTakenTotal: 0,
-    nature,
-    isShiny: Math.random() < (1 / 4096),
-    teraType: speciesData.types?.[0] ?? "normal",
-    ivs,
+    nature: base.nature,
+    isShiny: base.isShiny,
+    teraType: base.speciesData.types?.[0] ?? "normal",
+    ivs: base.ivs,
   };
 }
 
 export function createWildPokemon(species: string, level: number): WildPokemon {
-  const { baseSpecies, variantId, speciesData } = resolveSpeciesOrVariant(species);
-  if (!speciesData) {
-    throw new Error(`Unknown species: ${species}`);
-  }
-
-  const nature = pickRandomNature();
-  const ivs = rollIvs();
-  const { maxHp, stats } = buildStats(speciesData, level, nature, variantId, ivs);
-  const moves = buildMoves(speciesData, level);
-  const ability = pickWildAbility(speciesData.abilities);
-  const teraType = pickWildTeraType(speciesData.types);
+  const base = buildBasePokemon(species, level);
+  const ability = pickWildAbility(base.speciesData.abilities);
+  const teraType = pickWildTeraType(base.speciesData.types);
 
   return {
-    species: baseSpecies,
-    variantId: variantId ?? null,
+    species: base.baseSpecies,
+    variantId: base.variantId,
     level,
-    hp: maxHp,
-    maxHp,
-    stats,
-    moves,
-    nature,
-    gender: resolvePokemonGender(speciesData.genderRate, Math.random()),
+    hp: base.maxHp,
+    maxHp: base.maxHp,
+    stats: base.stats,
+    moves: base.moves,
+    nature: base.nature,
+    gender: base.gender,
     ability,
-    isShiny: Math.random() < (1 / 4096),
+    isShiny: base.isShiny,
     teraType,
-    ivs,
+    ivs: base.ivs,
   };
 }
 

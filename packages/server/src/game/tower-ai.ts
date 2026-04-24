@@ -1,5 +1,5 @@
 import type { OwnedPokemon, SpeciesData, PokemonMove } from "../../../../shared/types.js";
-import { createPokemon } from "./pokemon-factory.js";
+import { createPokemon, selectMoves } from "./pokemon-factory.js";
 import { getSpecies, getSpeciesByName, getMoveById } from "./data-loader.js";
 
 /**
@@ -71,30 +71,7 @@ function shuffle<T>(arr: T[]): T[] {
 
 function buildMovesForStage(species: SpeciesData, level: number, competitive: boolean): PokemonMove[] {
   const levelUp = species.learnset?.levelUp ?? {};
-  const available: string[] = [];
-  const learnLevels = Object.keys(levelUp).map(Number).sort((a, b) => a - b);
-  for (const lvl of learnLevels) {
-    if (lvl > level) continue;
-    for (const moveId of levelUp[String(lvl)]) {
-      const dupIdx = available.indexOf(moveId);
-      if (dupIdx !== -1) available.splice(dupIdx, 1);
-      available.push(moveId);
-    }
-  }
-  const unique = Array.from(new Set(available));
-  let selected: string[];
-  if (competitive) {
-    // Rank by power (status moves rank 0). Take top 4.
-    const scored = unique.map((id) => {
-      const m = getMoveById(id);
-      return { id, power: m?.power ?? 0 };
-    });
-    scored.sort((a, b) => b.power - a.power);
-    selected = scored.slice(0, 4).map((s) => s.id);
-  } else {
-    // Recent 4 (last learnt at this level)
-    selected = unique.slice(-4);
-  }
+  let selected = selectMoves(levelUp, level, competitive ? "strongest" : "latest", 4);
   if (selected.length === 0) selected = ["tackle"];
   return selected.map((id) => {
     const m = getMoveById(id);
