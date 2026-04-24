@@ -45,7 +45,9 @@ export async function processCommit(
         timestamp: commit.timestamp,
       });
 
-      // Add log entry (keep max 200)
+      // Add log entry (keep max 200). Use the commit's own timestamp so
+      // replays / backfills associate the reward with when the code was
+      // actually written, not when we happened to poll it.
       user.log.push({
         type: "reward",
         commit: commit.hash,
@@ -54,7 +56,7 @@ export async function processCommit(
         exp: outcome.expAwarded,
         points: outcome.pointsAwarded,
         comboMultiplier: outcome.multiplier,
-        timestamp: new Date().toISOString(),
+        timestamp: commit.timestamp,
       });
       if (user.log.length > 200) {
         user.log = user.log.slice(-200);
