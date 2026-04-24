@@ -7,19 +7,25 @@ import { randomUUID } from "node:crypto";
 /**
  * Task 3.3 — Concurrency regression tests.
  *
- * The project uses per-user JSON file storage. Concurrent read-modify-
- * write flows on the SAME user file are known to lose updates because
- * there is no mutex (documented in docs/known-limitations.md). These
- * tests pin the current behavior: independent writes across distinct
- * users are safe, and same-user concurrent writes lose at least one
- * update. If we ever add a per-user mutex, the "same user" test should
- * be flipped to assert merged state.
+ * The project uses per-user JSON file storage. Unprotected concurrent
+ * read-modify-write flows on the SAME user file lose updates (no
+ * database transaction is possible, documented in
+ * docs/known-limitations.md). These tests pin two behaviors:
+ *
+ *   1. Raw same-user writes (no lock) still lose updates — regression
+ *      guard for anyone who tries to remove the mutex.
+ *   2. withUserLock serializes same-user writes so an additive
+ *      (read → +N → save) cycle converges to the expected sum.
+ *
+ * Independent writes across distinct users remain safe (independent
+ * files).
  */
 
 describe("Concurrency — file storage behavior", () => {
   let dataDir: string;
   let getUserFn: typeof import("../../src/storage/user-store.js").getUser;
   let saveUserFn: typeof import("../../src/storage/user-store.js").saveUser;
+  let withUserLockFn: typeof import("../../src/storage/user-mutex.js").withUserLock;
 
   beforeAll(async () => {
     dataDir = path.join(os.tmpdir(), `pokelog-concurrency-${randomUUID()}`);
@@ -41,6 +47,8 @@ describe("Concurrency — file storage behavior", () => {
     const mod = await import("../../src/storage/user-store.js");
     getUserFn = mod.getUser;
     saveUserFn = mod.saveUser;
+    const mutex = await import("../../src/storage/user-mutex.js");
+    withUserLockFn = mutex.withUserLock;
   });
 
   afterAll(() => {
@@ -135,6 +143,24 @@ describe("Concurrency — file storage behavior", () => {
     const [a, b] = await Promise.all([getUserFn(uidA), getUserFn(uidB)]);
     expect(a!.points).toBe(111);
     expect(b!.points).toBe(222);
+  });
+
+  it("withUserLock serializes same-user additive writes (no lost updates)", async () => {
+    const uid = "race_lock_" + randomUUID().slice(0, 8);
+    await saveUserFn(makeBaseUser(uid));
+
+    // 10 concurrent +10 RMW cycles under the lock must converge to 100.
+    await Promise.all(
+      Array.from({ length: 10 }, (_, i) => withUserLockFn(uid, async () => {
+        const u = await getUserFn(uid);
+        if (!u) throw new Error(`missing user on iter ${i}`);
+        u.points += 10;
+        await saveUserFn(u);
+      })),
+    );
+
+    const final = await getUserFn(uid);
+    expect(final!.points).toBe(100);
   });
 
   it("writeJson never produces a torn/unparseable file on disk", async () => {

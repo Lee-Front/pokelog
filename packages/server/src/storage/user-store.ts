@@ -1,12 +1,48 @@
 import path from "node:path";
 import fs from "node:fs/promises";
 import { readJson, writeJson } from "./json-store.js";
-import type { GitIntegration, Integration, OwnedPokemon, UserData } from "../../../../shared/types.js";
+import type { GitIntegration, Integration, OwnedPokemon, TowerRecord, UserData } from "../../../../shared/types.js";
+import type { PvpStats } from "../../../../shared/pvp-types.js";
 import { getDataDir } from "../paths.js";
 import { getSpeciesByName } from "../game/data-loader.js";
 import { normalizeDamageTakenTotal } from "../game/battle-progress.js";
 import { resolvePokemonGender, seededGenderRoll } from "../game/pokemon-gender.js";
 import { normalizeMoveUsageCounts } from "../game/move-usage.js";
+
+/**
+ * Public projection of UserData safe to expose over unauthenticated
+ * endpoints (ranking, profile-by-nickname). Excludes the `account`
+ * object (which carries the password hash, user id, and matching
+ * identifiers), `integrations` (which hold provider tokens), battle
+ * state, and any log entries that could leak activity patterns.
+ */
+export interface PublicUser {
+  uid: string;
+  nickname: string;
+  createdAt: string;
+  points: number;
+  totalExp: number;
+  pokedex: string[];
+  pokemon: OwnedPokemon[];
+  storage: OwnedPokemon[];
+  pvpStats?: PvpStats;
+  towerRecord?: TowerRecord;
+}
+
+export function toPublicUser(user: UserData): PublicUser {
+  return {
+    uid: user.account.id,
+    nickname: user.account.nickname,
+    createdAt: user.account.createdAt,
+    points: user.points,
+    totalExp: user.totalExp,
+    pokedex: user.pokedex,
+    pokemon: user.pokemon,
+    storage: user.storage,
+    pvpStats: user.pvpStats,
+    towerRecord: user.towerRecord,
+  };
+}
 
 function userPath(userId: string): string {
   return path.join(getDataDir(), "users", `${userId}.json`);

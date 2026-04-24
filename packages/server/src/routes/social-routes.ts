@@ -1,6 +1,6 @@
 import { Router } from "express";
 import type { Response } from "express";
-import { getAllUsers } from "../storage/user-store.js";
+import { getAllUsers, toPublicUser } from "../storage/user-store.js";
 import { getMatchHistory } from "../pvp/pvp-store.js";
 import { authMiddleware, type AuthRequest } from "../middleware/auth-middleware.js";
 
@@ -11,12 +11,19 @@ socialRoutes.get("/ranking", async (req, res) => {
     const by = (req.query.by as string) || "exp";
     const users = await getAllUsers();
 
-    const ranked = users.map((u) => ({
-      nickname: u.account.nickname,
+    // Project to the public-safe shape first — never let ranking leak
+    // `account` (password hash, matching identifiers) or integrations.
+    const ranked = users.map(toPublicUser).map((u) => ({
+      nickname: u.nickname,
       totalExp: u.totalExp,
       points: u.points,
       pokedexCount: u.pokedex.length,
-      topLevel: u.pokemon.reduce((max, p) => Math.max(max, p.level), 0),
+      // Include storage so a player who shelves their high-level team
+      // still shows up honestly in the "top level" ranking.
+      topLevel: [...u.pokemon, ...(u.storage ?? [])].reduce(
+        (max, p) => Math.max(max, p.level),
+        0,
+      ),
     }));
 
     switch (by) {
@@ -54,14 +61,18 @@ socialRoutes.get("/profile/:nickname", async (req, res) => {
       return;
     }
 
+    const publicUser = toPublicUser(user);
     res.json({
-      nickname: user.account.nickname,
-      createdAt: user.account.createdAt,
-      totalExp: user.totalExp,
-      points: user.points,
-      pokedexCount: user.pokedex.length,
-      pokemonCount: user.pokemon.length + user.storage.length,
-      topLevel: user.pokemon.reduce((max, p) => Math.max(max, p.level), 0),
+      nickname: publicUser.nickname,
+      createdAt: publicUser.createdAt,
+      totalExp: publicUser.totalExp,
+      points: publicUser.points,
+      pokedexCount: publicUser.pokedex.length,
+      pokemonCount: publicUser.pokemon.length + publicUser.storage.length,
+      topLevel: [...publicUser.pokemon, ...publicUser.storage].reduce(
+        (max, p) => Math.max(max, p.level),
+        0,
+      ),
     });
   } catch (err) {
     console.error("Public profile error:", err);
@@ -73,9 +84,10 @@ socialRoutes.get("/ranking/pvp", async (req, res) => {
   try {
     const users = await getAllUsers();
     const ranked = users
+      .map(toPublicUser)
       .filter((u) => u.pvpStats && (u.pvpStats.wins + u.pvpStats.losses) > 0)
       .map((u) => ({
-        nickname: u.account.nickname,
+        nickname: u.nickname,
         rating: u.pvpStats!.rating,
         wins: u.pvpStats!.wins,
         losses: u.pvpStats!.losses,
@@ -99,4 +111,3 @@ socialRoutes.get("/pvp-history", authMiddleware, async (req: AuthRequest, res: R
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
   }
 });
-
