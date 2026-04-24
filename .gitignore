@@ -5,3 +5,5 @@ pokelog-data/
 .pokelog/
 *.js.map
 .env.local
+server.log
+*.log
