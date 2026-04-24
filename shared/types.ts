@@ -334,6 +334,12 @@ export interface UserData {
   pvpStats?: PvpStats;
   towerRecord?: TowerRecord;
   activeTowerRun?: ActiveTowerRun;
+  /**
+   * ISO timestamp. Tokens whose `iat` is strictly older than this value
+   * are rejected by the auth middleware. Set by the "logout all
+   * sessions" admin endpoint when a user suspects a token leak.
+   */
+  tokenInvalidatedAt?: string;
 }
 
 // === Config ===

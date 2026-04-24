@@ -23,14 +23,22 @@ export function issueToken(userId: string): string {
   return jwt.sign({ userId }, getJwtSecret(), { expiresIn: "30d" });
 }
 
-export function verifyToken(token: string): { userId: string } | null {
+export interface TokenPayload {
+  userId: string;
+  /** Seconds-since-epoch, as set by jsonwebtoken. Present for any token issued by issueToken. */
+  iat?: number;
+}
+
+export function verifyToken(token: string): TokenPayload | null {
   try {
     const decoded = jwt.verify(token, getJwtSecret());
     if (typeof decoded === "string" || !decoded || typeof decoded !== "object") {
       return null;
     }
     const userId = "userId" in decoded ? decoded.userId : null;
-    return typeof userId === "string" ? { userId } : null;
+    if (typeof userId !== "string") return null;
+    const iat = "iat" in decoded && typeof decoded.iat === "number" ? decoded.iat : undefined;
+    return { userId, iat };
   } catch {
     return null;
   }
