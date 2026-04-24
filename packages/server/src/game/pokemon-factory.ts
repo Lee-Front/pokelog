@@ -7,6 +7,7 @@ import type {
   PokemonMove,
   SpeciesData,
 } from "../../../../shared/types.js";
+import { ALL_TERA_TYPES } from "../../../../shared/constants.js";
 import { resolvePokemonGender } from "./pokemon-gender.js";
 import { buildStats } from "./pokemon-stats.js";
 import { resolveSpeciesOrVariant } from "./pokemon-state.js";
@@ -84,12 +85,6 @@ export function pickWildAbility(
   if (normal.length === 0) return abilities.hidden ?? undefined;
   return normal[Math.floor(Math.random() * normal.length)];
 }
-
-const ALL_TERA_TYPES = [
-  "normal", "fire", "water", "electric", "grass", "ice",
-  "fighting", "poison", "ground", "flying", "psychic", "bug",
-  "rock", "ghost", "dragon", "dark", "steel", "fairy",
-];
 
 /**
  * Wild tera-type selection. Defaults to the species primary type (canonical
