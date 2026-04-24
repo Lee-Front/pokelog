@@ -70,4 +70,49 @@ describe("searchUsersByIdentity", () => {
 
     expect(results[0]?.id).toBe("pikachu");
   });
+
+  it("prefers exact nickname match over exact id match", async () => {
+    // One user's id is "target-query"; a different user's nickname
+    // matches "target-query" exactly. Exact id match scores 100, exact
+    // nickname match scores 95 — id wins.
+    await userStoreModule.saveUser(createUser("target-query", "SomeoneElse"));
+    await userStoreModule.saveUser(createUser("other-id", "target-query"));
+
+    const results = await userStoreModule.searchUsersByIdentity("target-query");
+
+    // Both should appear, with the exact-id match first.
+    expect(results.map((u) => u.id)).toEqual(["target-query", "other-id"]);
+  });
+
+  it("prefers exact nickname match over prefix / substring matches", async () => {
+    await userStoreModule.saveUser(createUser("dragonite", "SomeOtherName"));
+    await userStoreModule.saveUser(createUser("dragonair", "Dragon")); // exact nickname
+    await userStoreModule.saveUser(createUser("dratini", "DragonTamer"));
+
+    const results = await userStoreModule.searchUsersByIdentity("dragon");
+
+    // dragonair is exact nickname match (score 95), others are prefix
+    // (score 80). dragonair comes first.
+    expect(results[0]?.id).toBe("dragonair");
+  });
+
+  it("breaks ties by id lexicographic order (stable)", async () => {
+    // All three have the same kind of prefix nickname match → same
+    // score. Tie-break falls to id ascending.
+    await userStoreModule.saveUser(createUser("charlie", "RockClimber"));
+    await userStoreModule.saveUser(createUser("alice", "RockStar"));
+    await userStoreModule.saveUser(createUser("bob", "RockBand"));
+
+    const results = await userStoreModule.searchUsersByIdentity("rock");
+
+    expect(results.map((u) => u.id)).toEqual(["alice", "bob", "charlie"]);
+  });
+
+  it("ranks prefix match above substring match (fuzzy)", async () => {
+    await userStoreModule.saveUser(createUser("prefixmatch", "Someone"));
+    await userStoreModule.saveUser(createUser("has-prefix-inside", "Other"));
+
+    const results = await userStoreModule.searchUsersByIdentity("prefix");
+    expect(results[0]?.id).toBe("prefixmatch");
+  });
 });
