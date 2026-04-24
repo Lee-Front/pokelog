@@ -2,6 +2,7 @@ import { Router } from "express";
 import type { Response } from "express";
 import { authMiddleware, type AuthRequest } from "../middleware/auth-middleware.js";
 import { getUser, saveUser } from "../storage/user-store.js";
+import { withUserLock } from "../storage/user-mutex.js";
 import { getConfig } from "../storage/config-store.js";
 import { defaultStatStages } from "../game/battle.js";
 import { attemptCapture, getCatchRate } from "../game/capture.js";
@@ -40,6 +41,7 @@ battleRoutes.post("/start", async (req, res) => {
       return;
     }
 
+    await withUserLock(userId!, async () => {
     const user = await getUser(userId!);
     if (!user) {
       res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
@@ -94,6 +96,7 @@ battleRoutes.post("/start", async (req, res) => {
     user.battleState = battleState;
     await saveUser(user);
     res.json({ battleState });
+    });
   } catch (err) {
     console.error("Battle start error:", err);
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
@@ -414,26 +417,28 @@ battleRoutes.post("/action", async (req, res) => {
       return;
     }
 
-    const user = await getUser(userId!);
-    if (!user) { res.status(404).json({ error: "사용자를 찾을 수 없습니다" }); return; }
+    await withUserLock(userId!, async () => {
+      const user = await getUser(userId!);
+      if (!user) { res.status(404).json({ error: "사용자를 찾을 수 없습니다" }); return; }
 
-    if (!user.battleState) { res.status(400).json({ error: "전투 중이 아닙니다" }); return; }
+      if (!user.battleState) { res.status(400).json({ error: "전투 중이 아닙니다" }); return; }
 
-    const battle = user.battleState;
-    const myPokemon = user.pokemon.find((p) => p.uid === battle.myPokemonUid);
-    if (!myPokemon) { res.status(400).json({ error: "전투 포켓몬을 찾을 수 없습니다" }); return; }
+      const battle = user.battleState;
+      const myPokemon = user.pokemon.find((p) => p.uid === battle.myPokemonUid);
+      if (!myPokemon) { res.status(400).json({ error: "전투 포켓몬을 찾을 수 없습니다" }); return; }
 
-    const log: string[] = [];
-    battle.turn += 1;
+      const log: string[] = [];
+      battle.turn += 1;
 
-    switch (action) {
-      case "fight":  await handleFight(user, myPokemon, battle, data ?? {}, log, res); break;
-      case "catch":  await handleCatch(user, myPokemon, battle, data ?? {}, log, res); break;
-      case "item":   await handleItem(user, myPokemon, battle, data ?? {}, log, res); break;
-      case "switch": await handleSwitch(user, myPokemon, battle, data ?? {}, log, res); break;
-      case "run":    await handleRun(user, myPokemon, battle, log, res); break;
-      default:       res.status(400).json({ error: "유효하지 않은 행동입니다" });
-    }
+      switch (action) {
+        case "fight":  await handleFight(user, myPokemon, battle, data ?? {}, log, res); break;
+        case "catch":  await handleCatch(user, myPokemon, battle, data ?? {}, log, res); break;
+        case "item":   await handleItem(user, myPokemon, battle, data ?? {}, log, res); break;
+        case "switch": await handleSwitch(user, myPokemon, battle, data ?? {}, log, res); break;
+        case "run":    await handleRun(user, myPokemon, battle, log, res); break;
+        default:       res.status(400).json({ error: "유효하지 않은 행동입니다" });
+      }
+    });
   } catch (err) {
     console.error("Battle action error:", err);
     res.status(500).json({ error: "서버 오류가 발생했습니다" });

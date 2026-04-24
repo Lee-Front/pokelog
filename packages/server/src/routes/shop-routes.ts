@@ -3,6 +3,7 @@ import type { AuthRequest } from "../middleware/auth-middleware.js";
 import { getUser, saveUser } from "../storage/user-store.js";
 import { getConfig } from "../storage/config-store.js";
 import { authMiddleware } from "../middleware/auth-middleware.js";
+import { withUserLock } from "../storage/user-mutex.js";
 import { incrementItem } from "../game/inventory-utils.js";
 import { useInventoryItem } from "../game/item-usage.js";
 import { GameRuleError } from "../game/game-errors.js";
@@ -46,25 +47,31 @@ shopRoutes.post("/buy", async (req, res) => {
 
     const totalCost = shopItem.price * quantity;
 
-    const user = await getUser(userId!);
-    if (!user) {
-      res.status(404).json({ error: "User not found." });
+    type BuyOutcome =
+      | { kind: "ok"; points: number; inventory: Record<string, number> }
+      | { kind: "error"; status: number; message: string };
+
+    const outcome = await withUserLock<BuyOutcome>(userId!, async () => {
+      const user = await getUser(userId!);
+      if (!user) return { kind: "error", status: 404, message: "User not found." };
+      if (user.points < totalCost) {
+        return { kind: "error", status: 400, message: "Not enough points." };
+      }
+      user.points -= totalCost;
+      incrementItem(user.inventory, item, quantity);
+      await saveUser(user);
+      return { kind: "ok", points: user.points, inventory: user.inventory };
+    });
+
+    if (outcome.kind === "error") {
+      res.status(outcome.status).json({ error: outcome.message });
       return;
     }
-
-    if (user.points < totalCost) {
-      res.status(400).json({ error: "Not enough points." });
-      return;
-    }
-
-    user.points -= totalCost;
-    incrementItem(user.inventory, item, quantity);
-    await saveUser(user);
 
     res.json({
       message: `Purchased ${quantity} ${shopItem.name}.`,
-      points: user.points,
-      inventory: user.inventory,
+      points: outcome.points,
+      inventory: outcome.inventory,
     });
   } catch (err) {
     console.error("Buy error:", err);
@@ -85,16 +92,39 @@ shopRoutes.post("/use", async (req, res) => {
     const config = await getConfig();
     const shopItem = config.shop.items[item];
 
-    const user = await getUser(userId!);
+    type UseOutcome =
+      | { kind: "ok"; user: Awaited<ReturnType<typeof getUser>>; result: ReturnType<typeof useInventoryItem> }
+      | { kind: "not_found" }
+      | { kind: "game_error"; err: GameRuleError };
+
+    const outcome = await withUserLock<UseOutcome>(userId!, async () => {
+      const user = await getUser(userId!);
+      if (!user) return { kind: "not_found" };
+      try {
+        const result = useInventoryItem(user, item, pokemonUid, shopItem, {
+          moveId: typeof moveId === "string" ? moveId : undefined,
+        });
+        await saveUser(user);
+        return { kind: "ok", user, result };
+      } catch (err) {
+        if (err instanceof GameRuleError) return { kind: "game_error", err };
+        throw err;
+      }
+    });
+
+    if (outcome.kind === "not_found") {
+      res.status(404).json({ error: "User not found." });
+      return;
+    }
+    if (outcome.kind === "game_error") {
+      res.status(outcome.err.status).json({ error: outcome.err.message });
+      return;
+    }
+    const { user, result } = outcome;
     if (!user) {
       res.status(404).json({ error: "User not found." });
       return;
     }
-
-    const result = useInventoryItem(user, item, pokemonUid, shopItem, {
-      moveId: typeof moveId === "string" ? moveId : undefined,
-    });
-    await saveUser(user);
 
     if (result.kind === "healing") {
       res.json({

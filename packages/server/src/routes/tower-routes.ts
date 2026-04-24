@@ -1,6 +1,7 @@
 import { Router, type Response } from "express";
 import { authMiddleware, type AuthRequest } from "../middleware/auth-middleware.js";
 import { getUser, saveUser } from "../storage/user-store.js";
+import { withUserLock } from "../storage/user-mutex.js";
 import { startTower, updateTowerRecord, failTower, grantReward } from "../game/tower.js";
 import { generateTowerParty } from "../game/tower-ai.js";
 import {
@@ -114,30 +115,32 @@ function writeSnapshotFromRoom(run: ActiveTowerRun, userParty: PvpPokemon[]): vo
 }
 
 towerRoutes.post("/start", async (req: AuthRequest, res: Response) => {
-  const user = await getUser(req.userId!);
-  if (!user) {
-    res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
-    return;
-  }
-
   const { partyUids } = req.body ?? {};
   if (!Array.isArray(partyUids)) {
     res.status(400).json({ error: "partyUids 배열을 입력해주세요" });
     return;
   }
 
-  const result = startTower(user, partyUids);
-  if (!result.ok || !result.run) {
-    res.status(400).json({ error: result.error ?? "타워 시작 실패" });
-    return;
-  }
+  await withUserLock(req.userId!, async () => {
+    const user = await getUser(req.userId!);
+    if (!user) {
+      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+      return;
+    }
 
-  const room = createStageRoom(user, result.run);
-  await saveUser(user);
+    const result = startTower(user, partyUids);
+    if (!result.ok || !result.run) {
+      res.status(400).json({ error: result.error ?? "타워 시작 실패" });
+      return;
+    }
 
-  res.json({
-    run: result.run,
-    roomState: getPlayerView(room, user.account.id),
+    const room = createStageRoom(user, result.run);
+    await saveUser(user);
+
+    res.json({
+      run: result.run,
+      roomState: getPlayerView(room, user.account.id),
+    });
   });
 });
 
@@ -160,6 +163,7 @@ towerRoutes.get("/status", async (req: AuthRequest, res: Response) => {
 });
 
 towerRoutes.post("/action", async (req: AuthRequest, res: Response) => {
+  await withUserLock(req.userId!, async () => {
   const user = await getUser(req.userId!);
   if (!user) {
     res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
@@ -238,54 +242,59 @@ towerRoutes.post("/action", async (req: AuthRequest, res: Response) => {
 
   await saveUser(user);
   res.json({ roomState: getPlayerView(room, user.account.id) });
+  });
 });
 
 towerRoutes.post("/continue", async (req: AuthRequest, res: Response) => {
-  const user = await getUser(req.userId!);
-  if (!user) {
-    res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
-    return;
-  }
-  const run = user.activeTowerRun;
-  if (!run) {
-    res.status(400).json({ error: "진행 중인 타워 도전이 없습니다" });
-    return;
-  }
-  if (run.roomId) {
-    res.status(400).json({ error: "현재 배틀이 아직 진행 중입니다" });
-    return;
-  }
-  // If every snapshotted pokemon is fainted, reject.
-  const anyAlive = run.partySnapshot.some((s) => s.currentHp > 0);
-  if (!anyAlive) {
-    res.status(400).json({ error: "싸울 수 있는 포켓몬이 없습니다" });
-    return;
-  }
+  await withUserLock(req.userId!, async () => {
+    const user = await getUser(req.userId!);
+    if (!user) {
+      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+      return;
+    }
+    const run = user.activeTowerRun;
+    if (!run) {
+      res.status(400).json({ error: "진행 중인 타워 도전이 없습니다" });
+      return;
+    }
+    if (run.roomId) {
+      res.status(400).json({ error: "현재 배틀이 아직 진행 중입니다" });
+      return;
+    }
+    // If every snapshotted pokemon is fainted, reject.
+    const anyAlive = run.partySnapshot.some((s) => s.currentHp > 0);
+    if (!anyAlive) {
+      res.status(400).json({ error: "싸울 수 있는 포켓몬이 없습니다" });
+      return;
+    }
 
-  const room = createStageRoom(user, run);
-  await saveUser(user);
-  res.json({
-    run,
-    roomState: getPlayerView(room, user.account.id),
+    const room = createStageRoom(user, run);
+    await saveUser(user);
+    res.json({
+      run,
+      roomState: getPlayerView(room, user.account.id),
+    });
   });
 });
 
 towerRoutes.post("/forfeit", async (req: AuthRequest, res: Response) => {
-  const user = await getUser(req.userId!);
-  if (!user) {
-    res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
-    return;
-  }
-  const run = user.activeTowerRun;
-  if (!run) {
-    res.status(400).json({ error: "진행 중인 타워 도전이 없습니다" });
-    return;
-  }
-  if (run.roomId) deleteRoom(run.roomId);
-  const finalStreak = run.stage - 1;
-  failTower(user);
-  await saveUser(user);
-  res.json({ forfeited: true, finalStreak });
+  await withUserLock(req.userId!, async () => {
+    const user = await getUser(req.userId!);
+    if (!user) {
+      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+      return;
+    }
+    const run = user.activeTowerRun;
+    if (!run) {
+      res.status(400).json({ error: "진행 중인 타워 도전이 없습니다" });
+      return;
+    }
+    if (run.roomId) deleteRoom(run.roomId);
+    const finalStreak = run.stage - 1;
+    failTower(user);
+    await saveUser(user);
+    res.json({ forfeited: true, finalStreak });
+  });
 });
 
 // Used in tests: pass-through snapshot writer (internal helper for

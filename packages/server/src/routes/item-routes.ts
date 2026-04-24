@@ -8,6 +8,8 @@ import { equipHeldItem, unequipHeldItem } from "../game/held-item-usage.js";
 import { buildInventoryCatalogEntry } from "../game/inventory-catalog.js";
 import { GameRuleError } from "../game/game-errors.js";
 import { getPartyPokemon } from "../game/pokemon-state.js";
+import { withUserLock } from "../storage/user-mutex.js";
+import { VALID_TERA_TYPES } from "../../../../shared/constants.js";
 
 export const itemRoutes = Router();
 itemRoutes.use(authMiddleware);
@@ -43,20 +45,33 @@ itemRoutes.post("/items/equip", async (req: AuthRequest, res: Response) => {
       return;
     }
 
-    const user = await getUser(req.userId!);
-    if (!user) {
+    const outcome = await withUserLock(req.userId!, async () => {
+      const user = await getUser(req.userId!);
+      if (!user) return { kind: "not_found" as const };
+      try {
+        const result = equipHeldItem(user, pokemonUid, item);
+        await saveUser(user);
+        return { kind: "ok" as const, result, inventory: user.inventory };
+      } catch (err) {
+        if (err instanceof GameRuleError) return { kind: "game_error" as const, err };
+        throw err;
+      }
+    });
+
+    if (outcome.kind === "not_found") {
       res.status(404).json({ error: "User not found." });
       return;
     }
-
-    const result = equipHeldItem(user, pokemonUid, item);
-    await saveUser(user);
+    if (outcome.kind === "game_error") {
+      res.status(outcome.err.status).json({ error: outcome.err.message });
+      return;
+    }
 
     res.json({
-      message: `${result.pokemon.species} is now holding ${result.itemName}.`,
-      pokemon: result.pokemon,
-      previousHeldItem: result.previousHeldItem,
-      inventory: user.inventory,
+      message: `${outcome.result.pokemon.species} is now holding ${outcome.result.itemName}.`,
+      pokemon: outcome.result.pokemon,
+      previousHeldItem: outcome.result.previousHeldItem,
+      inventory: outcome.inventory,
     });
   } catch (err) {
     if (err instanceof GameRuleError) {
@@ -77,19 +92,32 @@ itemRoutes.post("/items/unequip", async (req: AuthRequest, res: Response) => {
       return;
     }
 
-    const user = await getUser(req.userId!);
-    if (!user) {
+    const outcome = await withUserLock(req.userId!, async () => {
+      const user = await getUser(req.userId!);
+      if (!user) return { kind: "not_found" as const };
+      try {
+        const result = unequipHeldItem(user, pokemonUid);
+        await saveUser(user);
+        return { kind: "ok" as const, result, inventory: user.inventory };
+      } catch (err) {
+        if (err instanceof GameRuleError) return { kind: "game_error" as const, err };
+        throw err;
+      }
+    });
+
+    if (outcome.kind === "not_found") {
       res.status(404).json({ error: "User not found." });
       return;
     }
-
-    const result = unequipHeldItem(user, pokemonUid);
-    await saveUser(user);
+    if (outcome.kind === "game_error") {
+      res.status(outcome.err.status).json({ error: outcome.err.message });
+      return;
+    }
 
     res.json({
-      message: `${result.pokemon.species} is no longer holding ${result.itemName}.`,
-      pokemon: result.pokemon,
-      inventory: user.inventory,
+      message: `${outcome.result.pokemon.species} is no longer holding ${outcome.result.itemName}.`,
+      pokemon: outcome.result.pokemon,
+      inventory: outcome.inventory,
     });
   } catch (err) {
     if (err instanceof GameRuleError) {
@@ -101,28 +129,6 @@ itemRoutes.post("/items/unequip", async (req: AuthRequest, res: Response) => {
     res.status(500).json({ error: "Failed to unequip item." });
   }
 });
-
-const VALID_TERA_TYPES = new Set([
-  "normal",
-  "fire",
-  "water",
-  "electric",
-  "grass",
-  "ice",
-  "fighting",
-  "poison",
-  "ground",
-  "flying",
-  "psychic",
-  "bug",
-  "rock",
-  "ghost",
-  "dragon",
-  "dark",
-  "steel",
-  "fairy",
-  "stellar",
-]);
 
 const TERA_SHARD_COST = 50;
 
@@ -138,35 +144,46 @@ itemRoutes.post("/change-tera-type", async (req: AuthRequest, res: Response) => 
       return;
     }
 
-    const user = await getUser(req.userId!);
-    if (!user) {
+    const outcome = await withUserLock(req.userId!, async () => {
+      const user = await getUser(req.userId!);
+      if (!user) return { kind: "no_user" as const };
+
+      const poke =
+        user.pokemon.find((p) => p.uid === pokemonUid) ??
+        user.storage.find((p) => p.uid === pokemonUid);
+      if (!poke) return { kind: "no_pokemon" as const };
+
+      const shardId = `tera-shard-${teraType}`;
+      const owned = user.inventory[shardId] ?? 0;
+      if (owned < TERA_SHARD_COST) {
+        return { kind: "insufficient" as const, shardId };
+      }
+
+      user.inventory[shardId] = owned - TERA_SHARD_COST;
+      if (user.inventory[shardId] <= 0) {
+        delete user.inventory[shardId];
+      }
+      poke.teraType = teraType;
+      await saveUser(user);
+      return { kind: "ok" as const, pokemon: poke, inventory: user.inventory };
+    });
+
+    if (outcome.kind === "no_user") {
       res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
       return;
     }
-
-    const poke =
-      user.pokemon.find((p) => p.uid === pokemonUid) ??
-      user.storage.find((p) => p.uid === pokemonUid);
-    if (!poke) {
+    if (outcome.kind === "no_pokemon") {
       res.status(404).json({ error: "포켓몬을 찾을 수 없습니다" });
       return;
     }
-
-    const shardId = `tera-shard-${teraType}`;
-    const owned = user.inventory[shardId] ?? 0;
-    if (owned < TERA_SHARD_COST) {
-      res.status(400).json({ error: `${shardId}이(가) ${TERA_SHARD_COST}개 필요합니다` });
+    if (outcome.kind === "insufficient") {
+      res.status(400).json({
+        error: `${outcome.shardId}이(가) ${TERA_SHARD_COST}개 필요합니다`,
+      });
       return;
     }
 
-    user.inventory[shardId] = owned - TERA_SHARD_COST;
-    if (user.inventory[shardId] <= 0) {
-      delete user.inventory[shardId];
-    }
-    poke.teraType = teraType;
-    await saveUser(user);
-
-    res.json({ pokemon: poke, inventory: user.inventory });
+    res.json({ pokemon: outcome.pokemon, inventory: outcome.inventory });
   } catch (err) {
     console.error("Change tera type error:", err);
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
@@ -175,20 +192,26 @@ itemRoutes.post("/change-tera-type", async (req: AuthRequest, res: Response) => 
 
 itemRoutes.post("/heal", async (req: AuthRequest, res: Response) => {
   try {
-    const user = await getUser(req.userId!);
-    if (!user) {
+    const outcome = await withUserLock(req.userId!, async () => {
+      const user = await getUser(req.userId!);
+      if (!user) return { kind: "no_user" as const };
+
+      const partyPokemon = getPartyPokemon(user);
+
+      for (const p of partyPokemon) {
+        healPokemon(p);
+      }
+
+      await saveUser(user);
+      return { kind: "ok" as const, count: partyPokemon.length };
+    });
+
+    if (outcome.kind === "no_user") {
       res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
       return;
     }
 
-    const partyPokemon = getPartyPokemon(user);
-
-    for (const p of partyPokemon) {
-      healPokemon(p);
-    }
-
-    await saveUser(user);
-    res.json({ healed: partyPokemon.length });
+    res.json({ healed: outcome.count });
   } catch (err) {
     console.error("Heal error:", err);
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
