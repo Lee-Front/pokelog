@@ -9,6 +9,102 @@ import { normalizeDamageTakenTotal } from "../game/battle-progress.js";
 import { resolvePokemonGender, seededGenderRoll } from "../game/pokemon-gender.js";
 import { normalizeMoveUsageCounts } from "../game/move-usage.js";
 
+// ───────────────────────────────────────────────────────────────────────────
+// In-memory user index
+// ───────────────────────────────────────────────────────────────────────────
+// Lightweight projection of each user's disk file, kept in memory so that
+// cheap lookups (find-by-email, search-by-id/nickname, repo-email taken
+// check) don't need to re-read every JSON file from disk on every call.
+//
+// The index is built lazily on first use, then incrementally updated by
+// saveUser. Anything needing the FULL UserData still goes through getUser
+// (single-file read) or getAllUsers (directory scan) — the index only
+// backs the hot-path identity/email checks.
+//
+// Index is keyed by uid (== account.id). Each entry includes enough to
+// evaluate all known O(N) scans without a disk hit:
+//   - nickname  → searchUsersByIdentity
+//   - gitEmails → findUserByEmail (legacy matchings.git.emails)
+//   - gitIntegrations → getUsersForRepoCommit / isRepoEmailTaken
+//     (we store a thin copy of each GitIntegration config and emails)
+// ───────────────────────────────────────────────────────────────────────────
+
+interface IndexedGitIntegration {
+  id: string;
+  repoUrl: string;
+  normalizedRepoUrl: string;
+  emails: string[];
+  status: GitIntegration["status"];
+  failCount: number;
+}
+
+interface UserIndexEntry {
+  uid: string;
+  nickname: string;
+  gitEmails: string[];               // from account.matchings.git.emails
+  gitIntegrations: IndexedGitIntegration[];
+}
+
+let userIndex: Map<string, UserIndexEntry> | null = null;
+let indexBuildPromise: Promise<void> | null = null;
+
+function toIndexEntry(user: UserData): UserIndexEntry {
+  const gitEmails = user.account.matchings.git?.emails ?? [];
+  const gitIntegrations: IndexedGitIntegration[] = [];
+  for (const integration of user.integrations) {
+    if (isGitIntegration(integration)) {
+      gitIntegrations.push({
+        id: integration.id,
+        repoUrl: integration.config.repoUrl,
+        normalizedRepoUrl: normalizeRepoUrl(integration.config.repoUrl),
+        emails: integration.emails ?? [],
+        status: integration.status,
+        failCount: integration.failCount ?? 0,
+      });
+    }
+  }
+  return {
+    uid: user.account.id,
+    nickname: user.account.nickname,
+    gitEmails: [...gitEmails],
+    gitIntegrations,
+  };
+}
+
+async function buildIndex(): Promise<void> {
+  const index = new Map<string, UserIndexEntry>();
+  const usersDir = path.join(getDataDir(), "users");
+  try {
+    const files = await fs.readdir(usersDir);
+    for (const file of files) {
+      if (!file.endsWith(".json")) continue;
+      const user = await readJson<UserData>(path.join(usersDir, file));
+      if (user) index.set(user.account.id, toIndexEntry(normalizeUserData(user)));
+    }
+  } catch {
+    // users dir does not exist yet — empty index is fine
+  }
+  userIndex = index;
+}
+
+async function ensureIndex(): Promise<Map<string, UserIndexEntry>> {
+  if (userIndex) return userIndex;
+  if (!indexBuildPromise) indexBuildPromise = buildIndex();
+  await indexBuildPromise;
+  indexBuildPromise = null;
+  return userIndex!;
+}
+
+/**
+ * Testing helper: reset the in-memory index. Invoked by tests that swap
+ * POKELOG_DATA_DIR between cases so stale entries from the previous tmp
+ * dir don't leak into the new run.
+ */
+export function _resetUserIndex(): void {
+  userIndex = null;
+  indexBuildPromise = null;
+}
+
 /**
  * Public projection of UserData safe to expose over unauthenticated
  * endpoints (ranking, profile-by-nickname). Excludes the `account`
@@ -54,14 +150,20 @@ export async function getUser(userId: string): Promise<UserData | null> {
 }
 
 export async function saveUser(userData: UserData): Promise<void> {
-  await writeJson(userPath(userData.account.id), normalizeUserData(userData));
+  const normalized = normalizeUserData(userData);
+  await writeJson(userPath(userData.account.id), normalized);
+  // Keep the in-memory index in sync. ensureIndex here so the first
+  // saveUser of the process primes the index just like the first read-
+  // only lookup would.
+  const index = await ensureIndex();
+  index.set(normalized.account.id, toIndexEntry(normalized));
 }
 
-// TODO: getAllUsers loads every user file into memory. This does not scale
-// beyond a few hundred users. Callers such as findUserByEmail,
-// searchUsersByIdentity, getUsersForRepoCommit, and isRepoEmailTaken should
-// be migrated to index-based lookups or lazy iteration. For single-user
-// lookups by ID, prefer getUser(id) which reads a single file.
+/**
+ * Loads every user file into memory. Still used by rankings and the admin
+ * dashboard where the full record is needed; for cheap identity/email
+ * lookups prefer the index-backed helpers below.
+ */
 export async function getAllUsers(): Promise<UserData[]> {
   const usersDir = path.join(getDataDir(), "users");
   try {
@@ -80,15 +182,23 @@ export async function getAllUsers(): Promise<UserData[]> {
 }
 
 export async function findUserByEmail(email: string): Promise<UserData | null> {
-  const users = await getAllUsers();
-  return users.find((u) => {
-    return u.account.matchings.git?.emails.includes(email);
-  }) || null;
+  const index = await ensureIndex();
+  for (const entry of index.values()) {
+    if (entry.gitEmails.includes(email)) {
+      // Read the full user record from disk — the index only holds a
+      // projection, and callers expect a complete UserData.
+      return getUser(entry.uid);
+    }
+  }
+  return null;
 }
 
 export async function isEmailTaken(email: string): Promise<boolean> {
-  const user = await findUserByEmail(email);
-  return user !== null;
+  const index = await ensureIndex();
+  for (const entry of index.values()) {
+    if (entry.gitEmails.includes(email)) return true;
+  }
+  return false;
 }
 
 export async function searchUsersByIdentity(
@@ -103,34 +213,29 @@ export async function searchUsersByIdentity(
     return [];
   }
 
-  const users = await getAllUsers();
-  const ranked = users
-    .filter((user) => user.account.id !== options.excludeUserId)
-    .map((user) => {
-      const id = user.account.id;
-      const nickname = user.account.nickname;
-      const normalizedId = id.toLowerCase();
-      const normalizedNickname = nickname.toLowerCase();
+  const index = await ensureIndex();
+  const ranked: Array<{ id: string; nickname: string; score: number }> = [];
+  for (const entry of index.values()) {
+    if (entry.uid === options.excludeUserId) continue;
+    const normalizedId = entry.uid.toLowerCase();
+    const normalizedNickname = entry.nickname.toLowerCase();
 
-      let score = -1;
-      if (normalizedId === normalizedQuery) score = 100;
-      else if (normalizedNickname === normalizedQuery) score = 95;
-      else if (normalizedId.startsWith(normalizedQuery)) score = 80;
-      else if (normalizedNickname.startsWith(normalizedQuery)) score = 75;
-      else if (normalizedId.includes(normalizedQuery)) score = 50;
-      else if (normalizedNickname.includes(normalizedQuery)) score = 45;
+    let score = -1;
+    if (normalizedId === normalizedQuery) score = 100;
+    else if (normalizedNickname === normalizedQuery) score = 95;
+    else if (normalizedId.startsWith(normalizedQuery)) score = 80;
+    else if (normalizedNickname.startsWith(normalizedQuery)) score = 75;
+    else if (normalizedId.includes(normalizedQuery)) score = 50;
+    else if (normalizedNickname.includes(normalizedQuery)) score = 45;
 
-      return {
-        id,
-        nickname,
-        score,
-      };
-    })
-    .filter((entry) => entry.score >= 0)
-    .sort((left, right) => (
-      right.score - left.score
-      || left.id.localeCompare(right.id)
-    ));
+    if (score >= 0) {
+      ranked.push({ id: entry.uid, nickname: entry.nickname, score });
+    }
+  }
+  ranked.sort((left, right) => (
+    right.score - left.score
+    || left.id.localeCompare(right.id)
+  ));
 
   return ranked
     .slice(0, Math.max(1, options.limit ?? 10))
@@ -185,18 +290,30 @@ export async function getUsersForRepoCommit(
   authorEmail: string,
 ): Promise<UserData[]> {
   const normalizedRepoUrl = normalizeRepoUrl(repoUrl);
-  const users = await getAllUsers();
-  return users.filter((user) => {
-    const legacyMatch = user.account.matchings.git?.emails.includes(authorEmail) ?? false;
-    for (const integration of user.integrations) {
-      if (!isGitIntegration(integration)) continue;
-      if (normalizeRepoUrl(integration.config.repoUrl) !== normalizedRepoUrl) continue;
+  const index = await ensureIndex();
+  // First pass: identify candidate uids from the index (cheap, in memory).
+  // Second pass: load the full UserData for only the matched uids — we need
+  // to return them to callers (commit-processor reads `user.points`, etc).
+  const matchedIds: string[] = [];
+  for (const entry of index.values()) {
+    const legacyMatch = entry.gitEmails.includes(authorEmail);
+    let integrationMatch = false;
+    for (const integration of entry.gitIntegrations) {
+      if (integration.normalizedRepoUrl !== normalizedRepoUrl) continue;
       if (integration.failCount >= 3 || integration.status === "error") continue;
-      const emails = integration.emails ?? [];
-      if (emails.length === 0 || emails.includes(authorEmail)) return true;
+      if (integration.emails.length === 0 || integration.emails.includes(authorEmail)) {
+        integrationMatch = true;
+        break;
+      }
     }
-    return legacyMatch;
-  });
+    if (integrationMatch || legacyMatch) matchedIds.push(entry.uid);
+  }
+  const users: UserData[] = [];
+  for (const id of matchedIds) {
+    const user = await getUser(id);
+    if (user) users.push(user);
+  }
+  return users;
 }
 
 export async function isRepoEmailTaken(
@@ -206,26 +323,19 @@ export async function isRepoEmailTaken(
   excludeIntegrationId?: string,
 ): Promise<boolean> {
   const normalizedRepoUrl = normalizeRepoUrl(repoUrl);
-  const users = await getAllUsers();
-  return users.some((user) => {
-    if (excludeUserId && user.account.id === excludeUserId) {
-      return user.integrations.some((integration) => {
-        if (!isGitIntegration(integration)) return false;
-        if (excludeIntegrationId && integration.id === excludeIntegrationId) return false;
-        return (
-          normalizeRepoUrl(integration.config.repoUrl) === normalizedRepoUrl &&
-          (integration.emails ?? []).includes(email)
-        );
-      });
+  const index = await ensureIndex();
+  for (const entry of index.values()) {
+    for (const integration of entry.gitIntegrations) {
+      if (integration.normalizedRepoUrl !== normalizedRepoUrl) continue;
+      if (!integration.emails.includes(email)) continue;
+      if (excludeUserId && entry.uid === excludeUserId
+          && excludeIntegrationId && integration.id === excludeIntegrationId) {
+        continue;
+      }
+      return true;
     }
-    return user.integrations.some((integration) => {
-      if (!isGitIntegration(integration)) return false;
-      return (
-        normalizeRepoUrl(integration.config.repoUrl) === normalizedRepoUrl &&
-        (integration.emails ?? []).includes(email)
-      );
-    });
-  });
+  }
+  return false;
 }
 
 export function normalizeRepoUrl(url: string): string {
