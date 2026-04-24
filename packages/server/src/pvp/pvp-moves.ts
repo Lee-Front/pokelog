@@ -7,7 +7,7 @@
  * will migrate existing move handling from pvp-room.ts into this registry.
  */
 import type { MoveData } from "../../../../shared/types.js";
-import type { PvpAction, PvpPlayerState, PvpPokemon, PvpRoomState } from "../../../../shared/pvp-types.js";
+import type { PvpPlayerState, PvpPokemon, PvpRoomState } from "../../../../shared/pvp-types.js";
 import { addVolatile, hasVolatile } from "../game/status-conditions.js";
 import { applyStatChanges } from "../game/battle.js";
 import { getEffectiveTypes } from "../game/pokemon-state.js";
@@ -1185,8 +1185,7 @@ register("shed-tail", {
 register("upper-hand", {
   flags: { contact: true },
   beforeMove: (ctx) => {
-    const roomActions = ctx.room as unknown as { _lastActionA?: PvpAction; _lastActionB?: PvpAction };
-    const oppAction = ctx.attacker === ctx.room.playerA ? roomActions._lastActionB : roomActions._lastActionA;
+    const oppAction = ctx.attacker === ctx.room.playerA ? ctx.room._lastActionB : ctx.room._lastActionA;
     if (!oppAction || oppAction.type !== "fight") {
       return { cancel: true, message: `${ctx.attacker.nickname}의 ${ctx.atkPoke.species}: 어퍼핸드 실패!` };
     }

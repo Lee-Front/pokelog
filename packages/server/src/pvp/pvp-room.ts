@@ -270,8 +270,8 @@ function resolveTurn(room: PvpRoomState, actionA: PvpAction, actionB: PvpAction)
   // ── Expose pending actions on the room so effect hooks can inspect them.
   // Upper Hand (and any future move that branches on opponent intent) reads
   // these to decide whether it should succeed this turn.
-  (room as unknown as { _lastActionA?: PvpAction; _lastActionB?: PvpAction })._lastActionA = actionA;
-  (room as unknown as { _lastActionA?: PvpAction; _lastActionB?: PvpAction })._lastActionB = actionB;
+  room._lastActionA = actionA;
+  room._lastActionB = actionB;
 
   // ── Reset lastDamageTaken at start of each turn ──
   room.playerA.lastDamageTaken = undefined;

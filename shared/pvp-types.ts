@@ -131,6 +131,16 @@ export interface PvpRoomState {
   forcedSwitchNeeded?: { a: boolean; b: boolean };
   pendingSwitchAfterMove?: { a?: boolean; b?: boolean };
   batonPass?: { a?: boolean; b?: boolean };
+  /**
+   * @internal Last-committed per-side actions for this turn, set at the
+   * start of turn resolution and consumed by move effect hooks that
+   * need to peek at the opponent's choice (e.g. Upper Hand, Sucker
+   * Punch, Quick Guard). Not exposed to clients — `PvpClientRoomView`
+   * omits these fields.
+   */
+  _lastActionA?: PvpAction;
+  /** @internal See `_lastActionA`. */
+  _lastActionB?: PvpAction;
 }
 
 // ── 플레이어 액션 ──
