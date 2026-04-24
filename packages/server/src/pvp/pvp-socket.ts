@@ -48,6 +48,12 @@ function startTurnTimer(io: Server, room: PvpRoomState): void {
     if (afterRoom.phase === "finished" && afterRoom.result) {
       await recordMatch(afterRoom.result.winnerId, afterRoom.result.loserId, afterRoom.result.reason);
       emitTurnResult(io, afterRoom);
+      // Invariant: always clearTurnTimer BEFORE deleteRoom so the map
+      // never carries a handle whose room no longer exists. (The timer
+      // that invoked us has already self-cleaned at the top of the
+      // callback, but we repeat it for safety in case the room state
+      // changed to finished via another path while we were awaiting.)
+      clearTurnTimer(afterRoom.roomId);
       deleteRoom(afterRoom.roomId);
     } else {
       emitTurnResult(io, afterRoom);

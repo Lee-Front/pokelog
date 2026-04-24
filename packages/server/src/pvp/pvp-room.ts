@@ -90,6 +90,10 @@ export function getRoom(roomId: string): PvpRoomState | undefined {
 
 export function deleteRoom(roomId: string): void {
   rooms.delete(roomId);
+  // Drop any queued-but-unresolved actions for this room so the map
+  // does not accumulate dead entries across the server's lifetime
+  // (each finished match, forfeit, or timeout leaks otherwise).
+  pendingActions.delete(roomId);
 }
 
 function makePlayer(
