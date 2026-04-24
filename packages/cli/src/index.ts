@@ -38,6 +38,20 @@ import { useItemCommand } from "./commands/use-item.js";
 import { useCommand } from "./commands/use.js";
 import { whereamiCommand } from "./commands/whereami.js";
 import { interactiveMode } from "./interactive.js";
+import { NoServerError } from "./api-client.js";
+
+// Convert NoServerError (thrown from api-client instead of calling
+// process.exit inside a utility) into the previous "print + exit 1"
+// behavior at the process boundary. Other unhandled rejections still
+// surface as errors.
+process.on("unhandledRejection", (reason) => {
+  if (reason instanceof NoServerError) {
+    console.error(reason.message);
+    process.exit(1);
+  }
+  // Preserve Node's default behavior for anything else.
+  throw reason;
+});
 
 if (process.argv.length <= 2) {
   interactiveMode().then(() => process.exit(0));

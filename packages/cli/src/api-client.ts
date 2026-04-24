@@ -1,5 +1,19 @@
 import { getServerUrl, getToken, getAdminKey } from "./config.js";
 
+/**
+ * Thrown when an API request is made without a configured server URL.
+ * Callers generally do not need to handle this; the CLI entrypoint
+ * catches it via a top-level `unhandledRejection` listener, prints the
+ * message, and exits 1. Utility files should NEVER call `process.exit`
+ * directly — that couples request-making to process lifecycle.
+ */
+export class NoServerError extends Error {
+  constructor() {
+    super("서버가 설정되지 않았습니다. pokelog init --server <url> 을 먼저 실행하세요.");
+    this.name = "NoServerError";
+  }
+}
+
 async function request(
   method: string,
   path: string,
@@ -7,8 +21,7 @@ async function request(
 ): Promise<{ ok: boolean; status: number; data: Record<string, unknown> }> {
   const serverUrl = await getServerUrl();
   if (!serverUrl) {
-    console.error("서버가 설정되지 않았습니다. pokelog init --server <url> 을 먼저 실행하세요.");
-    process.exit(1);
+    throw new NoServerError();
   }
 
   const token = await getToken();
