@@ -4,6 +4,7 @@ import type { CommitInfo } from "./git-client.js";
 // Mock all dependencies before importing the module under test
 vi.mock("../storage/user-store.js", () => ({
   getUsersForRepoCommit: vi.fn(),
+  getUser: vi.fn(),
   saveUser: vi.fn(),
 }));
 
@@ -34,7 +35,7 @@ vi.mock("../game/pokemon-factory.js", () => ({
 }));
 
 import { processCommit } from "./commit-processor.js";
-import { getUsersForRepoCommit, saveUser } from "../storage/user-store.js";
+import { getUsersForRepoCommit, getUser, saveUser } from "../storage/user-store.js";
 import { getConfig } from "../storage/config-store.js";
 import { getCommitByteChanges } from "./git-client.js";
 import { calculateReward } from "../game/reward.js";
@@ -42,6 +43,7 @@ import { judgeCombo, getComboMultiplier } from "../game/combo.js";
 import { checkEncounter } from "../game/encounter.js";
 
 const mockGetUsersForRepoCommit = vi.mocked(getUsersForRepoCommit);
+const mockGetUser = vi.mocked(getUser);
 const mockSaveUser = vi.mocked(saveUser);
 const mockGetConfig = vi.mocked(getConfig);
 const mockGetBytes = vi.mocked(getCommitByteChanges);
@@ -142,6 +144,7 @@ describe("commit-processor", () => {
     const config = makeConfig();
 
     mockGetUsersForRepoCommit.mockResolvedValue([user as any]);
+    mockGetUser.mockResolvedValue(user as any);
     mockGetConfig.mockResolvedValue(config as any);
     mockGetBytes.mockResolvedValue(500);
     mockJudgeCombo.mockReturnValue({
@@ -178,6 +181,7 @@ describe("commit-processor", () => {
     ];
 
     mockGetUsersForRepoCommit.mockResolvedValue([user as any]);
+    mockGetUser.mockResolvedValue(user as any);
     mockGetConfig.mockResolvedValue(makeConfig() as any);
     mockGetBytes.mockResolvedValue(100);
     mockJudgeCombo.mockReturnValue({

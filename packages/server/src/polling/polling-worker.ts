@@ -13,6 +13,7 @@ import path from "node:path";
 import fs from "node:fs/promises";
 import { getDataDir } from "../paths.js";
 import { getAllUsers, isGitIntegration, normalizeRepoUrl, saveUser } from "../storage/user-store.js";
+import { withUserLock } from "../storage/user-mutex.js";
 import { pollNotionIntegration } from "../integrations/notion-polling.js";
 import { pollJiraIntegration } from "../integrations/jira-polling.js";
 import { pollSlackIntegration } from "../integrations/slack-polling.js";
@@ -41,6 +42,9 @@ async function ensureBareClone(url: string, authMode?: string, token?: string): 
 }
 
 export async function pollAllRepos(): Promise<void> {
+  // Read config ONCE per cycle — processCommit is called in a tight
+  // loop over every commit in every branch in every repo, and the
+  // config is a plain JSON file we don't want to re-read each time.
   const config = await getConfig();
   const syncState = await getSyncState();
   const users = await getAllUsers();
@@ -84,7 +88,7 @@ export async function pollAllRepos(): Promise<void> {
         const commits = await getNewCommits(repoDir, branch, lastHash);
 
         for (const commit of commits) {
-          await processCommit(commit, repoDir, repo.url);
+          await processCommit(commit, repoDir, repo.url, config);
         }
 
         // Update sync state to latest
@@ -98,37 +102,46 @@ export async function pollAllRepos(): Promise<void> {
     }
   }
 
-  for (const user of users) {
-    for (const integration of user.integrations) {
-      if (!("config" in integration)) continue;
-      if (integration.failCount >= 3 || integration.status === "error") continue;
+  for (const listUser of users) {
+    const userId = listUser.account.id;
+    await withUserLock(userId, async () => {
+      // Re-read inside the lock — the in-memory copy from getAllUsers
+      // may be stale if a concurrent write happened while we were
+      // polling git above.
+      const user = await getUser(userId);
+      if (!user) return;
 
-      try {
-        if (integration.provider === "notion") {
-          await pollNotionIntegration(user, integration, syncState);
-        } else if (integration.provider === "jira") {
-          await pollJiraIntegration(user, integration as JiraIntegration, syncState);
-        } else if (integration.provider === "slack") {
-          await pollSlackIntegration(user, integration as SlackIntegration, syncState);
-        } else {
+      for (const integration of user.integrations) {
+        if (!("config" in integration)) continue;
+        if (integration.failCount >= 3 || integration.status === "error") continue;
+
+        try {
+          if (integration.provider === "notion") {
+            await pollNotionIntegration(user, integration, syncState);
+          } else if (integration.provider === "jira") {
+            await pollJiraIntegration(user, integration as JiraIntegration, syncState);
+          } else if (integration.provider === "slack") {
+            await pollSlackIntegration(user, integration as SlackIntegration, syncState);
+          } else {
+            continue;
+          }
+
+          integration.status = "ok";
+          integration.failCount = 0;
+          integration.lastCheckedAt = new Date().toISOString();
+          delete integration.lastError;
+        } catch (err) {
+          integration.status = "error";
+          integration.failCount += 1;
+          integration.lastCheckedAt = new Date().toISOString();
+          integration.lastError = err instanceof Error ? err.message : `${integration.provider} polling failed`;
+          await saveUser(user);
+          console.error(`Error polling ${integration.provider} integration ${integration.id}:`, err);
           continue;
         }
-
-        integration.status = "ok";
-        integration.failCount = 0;
-        integration.lastCheckedAt = new Date().toISOString();
-        delete integration.lastError;
-      } catch (err) {
-        integration.status = "error";
-        integration.failCount += 1;
-        integration.lastCheckedAt = new Date().toISOString();
-        integration.lastError = err instanceof Error ? err.message : `${integration.provider} polling failed`;
         await saveUser(user);
-        console.error(`Error polling ${integration.provider} integration ${integration.id}:`, err);
-        continue;
       }
-      await saveUser(user);
-    }
+    });
   }
 
   await saveSyncState(syncState);
@@ -136,10 +149,18 @@ export async function pollAllRepos(): Promise<void> {
 
 /** Poll a single user's non-git integrations (Notion/Jira/Slack) on demand. */
 export async function pollUserIntegrations(userId: string): Promise<void> {
+  const preloaded = await getUser(userId);
+  if (!preloaded) return;
+
+  const config = await getConfig();
+  const syncState = await getSyncState();
+
+  // Hold the per-user lock for the entire polling + save flow. Inside
+  // the lock we re-read from disk so we merge on top of any concurrent
+  // writes.
+  await withUserLock(userId, async () => {
   const user = await getUser(userId);
   if (!user) return;
-
-  const syncState = await getSyncState();
   let changed = false;
 
   for (const integration of user.integrations) {
@@ -192,7 +213,7 @@ export async function pollUserIntegrations(userId: string): Promise<void> {
         const lastHash = syncState.repos[git.config.repoUrl][branch] || null;
         const commits = await getNewCommits(repoDir, branch, lastHash);
         for (const commit of commits) {
-          await processCommit(commit, repoDir, git.config.repoUrl);
+          await processCommit(commit, repoDir, git.config.repoUrl, config);
         }
         const latestHash = await getLatestHash(repoDir, branch);
         if (latestHash) {
@@ -205,10 +226,11 @@ export async function pollUserIntegrations(userId: string): Promise<void> {
     }
   }
 
-  if (changed) {
-    await saveUser(user);
-    await saveSyncState(syncState);
-  }
+    if (changed) {
+      await saveUser(user);
+      await saveSyncState(syncState);
+    }
+  });
 }
 
 let pollingInterval: ReturnType<typeof setInterval> | null = null;
