@@ -35,7 +35,7 @@ gameRoutes.get("/status", async (req: AuthRequest, res: Response) => {
       pendingEventCount: pendingCount,
       pendingEvolutionCount: user.pendingEvolutions?.length ?? 0,
       todayLog: todayLogs,
-      region: (() => { try { return getRegion(user.currentRegion ?? "default").name; } catch { return user.currentRegion ?? "default"; } })(),
+      region: resolveRegionName(user.currentRegion),
     });
   } catch (err) {
     console.error("Status error:", err);
@@ -175,10 +175,18 @@ gameRoutes.get("/pokemon/:uid", async (req: AuthRequest, res: Response) => {
       return;
     }
 
-    const activeParty = getPartyPokemon(user);
+    // Evolution preview uses the pokemon's *current* battle context as its
+    // "active party" — if the pokemon is in party, that's the live party;
+    // if it's in storage (not in user.party), storage-bound pokemon don't
+    // have party-based evolution branches available, so we pass just the
+    // pokemon itself. This avoids misleading previews showing e.g. party-
+    // member evolution conditions (shelmet/karrablast trade) for a storage
+    // pokemon that cannot currently satisfy them.
+    const isInParty = user.party.includes(pokemon.uid);
+    const contextParty = isInParty ? getPartyPokemon(user) : [pokemon];
     const evolutionPreview = getEvolutionBranchDiagnostics(pokemon.species, {
       level: pokemon.level,
-      ...buildLevelEvolutionContext(pokemon, activeParty, {
+      ...buildLevelEvolutionContext(pokemon, contextParty, {
         region: user.currentRegion ?? "default",
       }),
     }).map((branch) => ({
@@ -271,6 +279,15 @@ gameRoutes.put("/region", async (req: AuthRequest, res: Response) => {
     res.status(500).json({ error: "Failed to update region." });
   }
 });
+
+function resolveRegionName(userRegion: string | undefined): string {
+  const regionId = userRegion ?? "default";
+  try {
+    return getRegion(regionId).name;
+  } catch {
+    return regionId;
+  }
+}
 
 function getLogSource(entry: Record<string, unknown>): string {
   if (entry.type === "integration_reward") {
