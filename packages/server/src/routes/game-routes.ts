@@ -6,7 +6,7 @@ import { getAllSpecies } from "../game/pokemon-factory.js";
 import { getRegion, getRegionNames, getSpeciesByName } from "../game/data-loader.js";
 import { buildLevelEvolutionContext, getEvolutionBranchDiagnostics } from "../game/growth.js";
 import { findPokemonByUid, getPartyPokemon } from "../game/pokemon-state.js";
-const MAX_PARTY_SIZE = 6;
+import { MAX_PARTY_SIZE } from "../../../../shared/types.js";
 
 export const gameRoutes = Router();
 gameRoutes.use(authMiddleware);

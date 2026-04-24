@@ -4,8 +4,7 @@ import { authMiddleware, type AuthRequest } from "../middleware/auth-middleware.
 import { getUser, saveUser } from "../storage/user-store.js";
 import { withUserLock } from "../storage/user-mutex.js";
 import { createEgg, getEggTierSummaries, hatchEgg } from "../game/egg-gacha.js";
-
-const MAX_PARTY_SIZE = 6;
+import { MAX_PARTY_SIZE } from "../../../../shared/types.js";
 
 export const eggRoutes = Router();
 eggRoutes.use(authMiddleware);

@@ -2,8 +2,7 @@ import { Router } from "express";
 import type { Response } from "express";
 import { authMiddleware, type AuthRequest } from "../middleware/auth-middleware.js";
 import { getUser, saveUser } from "../storage/user-store.js";
-
-const MAX_PARTY_SIZE = 6;
+import { MAX_PARTY_SIZE } from "../../../../shared/types.js";
 
 export const storageRoutes = Router();
 storageRoutes.use(authMiddleware);
