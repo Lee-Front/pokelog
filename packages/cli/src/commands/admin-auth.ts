@@ -14,7 +14,8 @@ export async function ensureAdminKey(): Promise<boolean> {
 
 export async function handleAdminAuthFailure(error: unknown): Promise<boolean> {
   const message = String(error ?? "");
-  if (!message.includes("Invalid admin key")) return false;
+  // Match either the legacy English message or the current Korean one.
+  if (!message.includes("Invalid admin key") && !message.includes("관리자 키가 올바르지 않습니다")) return false;
 
   await clearAdminKey();
   console.log("  저장된 관리자 키가 올바르지 않습니다. 다시 입력하세요.");
