@@ -3,25 +3,13 @@ import crypto from "node:crypto";
 import { getConfig, saveConfig } from "../storage/config-store.js";
 import { getUser, saveUser, getAllUsers } from "../storage/user-store.js";
 import { pollAllRepos } from "../polling/polling-worker.js";
-import { calculateReward } from "../game/reward.js";
-import { judgeCombo, getComboMultiplier } from "../game/combo.js";
 import { selectWildPokemon } from "../game/encounter.js";
 import { createWildPokemon, createPokemon } from "../game/pokemon-factory.js";
 import { getRegion } from "../game/data-loader.js";
 import { createEncounterEvent } from "../game/event-factory.js";
 import { incrementItem } from "../game/inventory-utils.js";
-import {
-  applyLearnedMoves,
-  buildLevelEvolutionContext,
-  checkLevelUp,
-  evolvePokemon,
-  getMatchingEvolutionBranches,
-} from "../game/growth.js";
-import { calculateStatsForLevel } from "../game/pokemon-stats.js";
-import { getPartyPokemon } from "../game/pokemon-state.js";
-import type { ServerConfig } from "../../../../shared/types.js";
+import { applyCommitRewards } from "../game/commit-rewards.js";
 import { INTEGRATION_EVENT_CATALOG } from "../integrations/event-catalog.js";
-import { clearPendingEvolutionForPokemon, queuePendingEvolution } from "../game/pending-evolution.js";
 
 import { adminMiddleware } from "../middleware/admin-middleware.js";
 
@@ -34,11 +22,17 @@ const startTime = Date.now();
 adminRoutes.post("/repo", async (req, res) => {
   try {
     const { url, branches } = req.body;
-    if (!url) return res.status(400).json({ error: "url이 필요합니다" });
+    if (!url) {
+      res.status(400).json({ error: "url이 필요합니다" });
+      return;
+    }
 
     const config = await getConfig();
     const exists = config.polling.repos.some((r) => r.url === url);
-    if (exists) return res.status(409).json({ error: "이미 등록된 repo입니다" });
+    if (exists) {
+      res.status(409).json({ error: "이미 등록된 repo입니다" });
+      return;
+    }
 
     config.polling.repos.push({ url, branches: branches || ["main"] });
     await saveConfig(config);
@@ -93,42 +87,86 @@ adminRoutes.get("/config/integration-events", async (_req, res) => {
   }
 });
 
-const ALLOWED_CONFIG_PATHS = new Set([
-  "polling.intervalMinutes",
-  "rewards.expPerByte",
-  "rewards.pointsPerByte",
-  "rewards.combo.bytesPerMinute",
-  "rewards.combo.maxMultiplier",
-  "rewards.encounter.baseChance",
-  "rewards.encounter.ceilingBytes",
-  "rewards.encounter.timeLimitHours",
-  "meta.serverName",
-  "meta.displayName",
-  "meta.apiVersion",
-  "meta.featureFlags.pvp",
-  "meta.featureFlags.trade",
-  "meta.featureFlags.achievements",
-  "meta.featureFlags.regions",
-]);
+type ConfigValueType = "number" | "string" | "boolean";
+
+// Declared type per allowed config path. Used to reject obviously-wrong
+// values (e.g. flipping a boolean flag to the string "true") before we
+// persist them. Keep in lockstep with ServerConfig in shared/types.ts.
+const CONFIG_SCHEMA: Record<string, ConfigValueType> = {
+  "polling.intervalMinutes": "number",
+  "rewards.expPerByte": "number",
+  "rewards.pointsPerByte": "number",
+  "rewards.combo.bytesPerMinute": "number",
+  "rewards.combo.maxMultiplier": "number",
+  "rewards.encounter.baseChance": "number",
+  "rewards.encounter.ceilingBytes": "number",
+  "rewards.encounter.timeLimitHours": "number",
+  "meta.serverName": "string",
+  "meta.displayName": "string",
+  "meta.apiVersion": "string",
+  "meta.featureFlags.pvp": "boolean",
+  "meta.featureFlags.trade": "boolean",
+  "meta.featureFlags.achievements": "boolean",
+  "meta.featureFlags.regions": "boolean",
+};
+
+const ALLOWED_CONFIG_PATHS = new Set(Object.keys(CONFIG_SCHEMA));
+
+/**
+ * Walk `obj` down a dotted path and set the leaf to `value`. Refuses any
+ * key that could land inside Object.prototype / constructor / __proto__ —
+ * rejecting prototype-pollution attempts even though the allowed-paths
+ * whitelist already prevents them in principle.
+ */
+function setByPath(obj: Record<string, unknown>, path: string, value: unknown): void {
+  const keys = path.split(".");
+  if (keys.some((k) => k === "__proto__" || k === "constructor" || k === "prototype")) {
+    throw new Error("Invalid path");
+  }
+  let target: Record<string, unknown> = obj;
+  for (let i = 0; i < keys.length - 1; i++) {
+    const next = target[keys[i]];
+    if (!next || typeof next !== "object") {
+      // Don't silently create parent objects for admin config — a missing
+      // intermediate means the config shape drifted, which we'd rather
+      // surface than silently fix up.
+      throw new Error(`Invalid path: ${path}`);
+    }
+    target = next as Record<string, unknown>;
+  }
+  target[keys[keys.length - 1]] = value;
+}
 
 // Set config value
 adminRoutes.put("/config", async (req, res) => {
   try {
     const { key, value } = req.body;
-    if (!key) return res.status(400).json({ error: "key가 필요합니다" });
+    if (!key) {
+      res.status(400).json({ error: "key가 필요합니다" });
+      return;
+    }
 
     if (!ALLOWED_CONFIG_PATHS.has(key)) {
-      return res.status(400).json({ error: "허용되지 않는 설정 키입니다" });
+      res.status(400).json({ error: "허용되지 않는 설정 키입니다" });
+      return;
+    }
+
+    const expectedType = CONFIG_SCHEMA[key];
+    if (expectedType && typeof value !== expectedType) {
+      res.status(400).json({
+        error: `Value must be ${expectedType}, got ${typeof value}`,
+      });
+      return;
     }
 
     const config = await getConfig();
-    const keys = key.split(".");
-    let obj: Record<string, unknown> = config as unknown as Record<string, unknown>;
-    for (let i = 0; i < keys.length - 1; i++) {
-      obj = obj[keys[i]] as Record<string, unknown>;
-      if (!obj) return res.status(400).json({ error: `잘못된 경로: ${key}` });
+    try {
+      setByPath(config as unknown as Record<string, unknown>, key, value);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "잘못된 경로";
+      res.status(400).json({ error: message });
+      return;
     }
-    obj[keys[keys.length - 1]] = value;
     await saveConfig(config);
     res.json({ ok: true });
   } catch {
@@ -191,112 +229,42 @@ if (ADMIN_TEST_ENABLED) {
 adminRoutes.post("/test/commit", async (req, res) => {
   try {
     const { userId, bytes } = req.body;
-    if (!userId || !bytes) return res.status(400).json({ error: "userId, bytes 필요" });
+    if (!userId || !bytes) {
+      res.status(400).json({ error: "userId, bytes 필요" });
+      return;
+    }
 
     const user = await getUser(userId);
-    if (!user) return res.status(404).json({ error: "유저 없음" });
+    if (!user) {
+      res.status(404).json({ error: "유저 없음" });
+      return;
+    }
 
     const config = await getConfig();
+    const timestamp = new Date().toISOString();
+    const outcome = applyCommitRewards(user, bytes, config, { timestamp });
 
-    // 콤보 판정
-    const comboResult = judgeCombo(
-      user.combo.lastCommitAt ? user.combo : null,
-      bytes,
-      new Date().toISOString(),
-      config.rewards.combo
-    );
-    user.combo = { count: comboResult.count, lastCommitAt: comboResult.lastCommitAt };
-    const multiplier = getComboMultiplier(user.combo.count, config.rewards.combo);
-
-    // 보상 계산
-    const reward = calculateReward(bytes, multiplier, config.rewards);
-    user.points += reward.points;
-    user.totalExp += reward.exp;
-    const currentRegion = user.currentRegion ?? "default";
-
-    // 파티 경험치 분배
-    if (user.party.length > 0) {
-      const expPerPoke = Math.floor(reward.exp / user.party.length);
-      const partyPokemon = getPartyPokemon(user);
-
-      for (const poke of partyPokemon) {
-        poke.exp += expPerPoke;
-        const result = checkLevelUp(poke);
-        if (result.leveled) {
-          poke.level = result.newLevel;
-          applyLearnedMoves(poke, result.newMoves);
-          const newStats = calculateStatsForLevel(
-            poke.species,
-            result.newLevel,
-            poke.nature,
-            poke.variantId ?? null,
-            poke.ivs,
-          );
-          poke.maxHp = newStats.maxHp;
-          poke.hp = Math.min(poke.hp, poke.maxHp);
-          poke.stats = newStats.stats;
-          const matchingBranches = getMatchingEvolutionBranches(
-            poke.species,
-            {
-              level: result.newLevel,
-              ...buildLevelEvolutionContext(poke, partyPokemon, {
-                now: new Date(),
-                region: currentRegion,
-              }),
-            },
-          );
-          if (matchingBranches.length === 1) {
-            const evolvedBranch = matchingBranches[0];
-            clearPendingEvolutionForPokemon(user, poke.uid);
-            evolvePokemon(poke, evolvedBranch.targetSpecies, evolvedBranch.targetVariantId);
-            if (!user.pokedex.includes(evolvedBranch.targetSpecies)) user.pokedex.push(evolvedBranch.targetSpecies);
-          } else if (matchingBranches.length > 1) {
-            queuePendingEvolution(user, poke, matchingBranches);
-          }
-        }
-      }
-    }
-
-    // 조우 판정
-    const { checkEncounter } = await import("../game/encounter.js");
-    const encounterResult = checkEncounter(
-      user.encounterCeiling.accumulatedBytes,
-      bytes,
-      config.rewards.encounter.baseChance,
-      multiplier,
-      config.rewards.encounter.ceilingBytes
-    );
-    user.encounterCeiling.accumulatedBytes = encounterResult.newCeiling;
-
-    let encounterInfo: { species: string; level: number } | null = null;
-    if (encounterResult.encountered) {
-      const regionData = getRegion(currentRegion);
-      const pick = selectWildPokemon(regionData);
-      const wildPokemon = createWildPokemon(pick.species, pick.level);
-
-      const event = createEncounterEvent(wildPokemon, config.rewards.encounter.timeLimitHours);
-      user.pendingEvents.push(event);
-      encounterInfo = { species: pick.species, level: pick.level };
-    }
-
-    // 로그
+    // 로그 (admin-test 전용 커밋 해시 형태를 그대로 유지)
     user.log.push({
       type: "reward",
       commit: "test-" + crypto.randomUUID().slice(0, 8),
       repo: "test",
       bytes,
-      exp: reward.exp,
-      points: reward.points,
-      comboMultiplier: multiplier,
-      timestamp: new Date().toISOString(),
+      exp: outcome.expAwarded,
+      points: outcome.pointsAwarded,
+      comboMultiplier: outcome.multiplier,
+      timestamp,
     });
     if (user.log.length > 200) user.log = user.log.slice(-200);
 
     await saveUser(user);
     res.json({
-      ok: true, exp: reward.exp, points: reward.points,
-      combo: user.combo.count, multiplier,
-      encounter: encounterInfo,
+      ok: true,
+      exp: outcome.expAwarded,
+      points: outcome.pointsAwarded,
+      combo: outcome.comboCount,
+      multiplier: outcome.multiplier,
+      encounter: outcome.encounter,
     });
   } catch (err) {
     console.error(err);
@@ -308,10 +276,16 @@ adminRoutes.post("/test/commit", async (req, res) => {
 adminRoutes.post("/test/encounter", async (req, res) => {
   try {
     const { userId, species, level } = req.body;
-    if (!userId) return res.status(400).json({ error: "userId 필요" });
+    if (!userId) {
+      res.status(400).json({ error: "userId 필요" });
+      return;
+    }
 
     const user = await getUser(userId);
-    if (!user) return res.status(404).json({ error: "유저 없음" });
+    if (!user) {
+      res.status(404).json({ error: "유저 없음" });
+      return;
+    }
 
     const config = await getConfig();
 
@@ -343,10 +317,16 @@ adminRoutes.post("/test/encounter", async (req, res) => {
 adminRoutes.post("/test/give-points", async (req, res) => {
   try {
     const { userId, amount } = req.body;
-    if (!userId || amount == null) return res.status(400).json({ error: "userId, amount 필요" });
+    if (!userId || amount == null) {
+      res.status(400).json({ error: "userId, amount 필요" });
+      return;
+    }
 
     const user = await getUser(userId);
-    if (!user) return res.status(404).json({ error: "유저 없음" });
+    if (!user) {
+      res.status(404).json({ error: "유저 없음" });
+      return;
+    }
 
     user.points += amount;
     await saveUser(user);
@@ -360,10 +340,16 @@ adminRoutes.post("/test/give-points", async (req, res) => {
 adminRoutes.post("/test/give-item", async (req, res) => {
   try {
     const { userId, item, quantity } = req.body;
-    if (!userId || !item) return res.status(400).json({ error: "userId, item 필요" });
+    if (!userId || !item) {
+      res.status(400).json({ error: "userId, item 필요" });
+      return;
+    }
 
     const user = await getUser(userId);
-    if (!user) return res.status(404).json({ error: "유저 없음" });
+    if (!user) {
+      res.status(404).json({ error: "유저 없음" });
+      return;
+    }
 
     incrementItem(user.inventory, item, quantity || 1);
     await saveUser(user);
@@ -377,10 +363,16 @@ adminRoutes.post("/test/give-item", async (req, res) => {
 adminRoutes.post("/test/give-pokemon", async (req, res) => {
   try {
     const { userId, species, level, hasGigantamaxFactor } = req.body;
-    if (!userId || !species) return res.status(400).json({ error: "userId, species 필요" });
+    if (!userId || !species) {
+      res.status(400).json({ error: "userId, species 필요" });
+      return;
+    }
 
     const user = await getUser(userId);
-    if (!user) return res.status(404).json({ error: "유저 없음" });
+    if (!user) {
+      res.status(404).json({ error: "유저 없음" });
+      return;
+    }
 
     const pokemon = createPokemon(species, level || 5);
     if (typeof hasGigantamaxFactor === "boolean") {
@@ -414,10 +406,16 @@ adminRoutes.post("/test/give-pokemon", async (req, res) => {
 adminRoutes.post("/test/clear-battle", async (req, res) => {
   try {
     const { userId } = req.body;
-    if (!userId) return res.status(400).json({ error: "userId 필요" });
+    if (!userId) {
+      res.status(400).json({ error: "userId 필요" });
+      return;
+    }
 
     const user = await getUser(userId);
-    if (!user) return res.status(404).json({ error: "유저 없음" });
+    if (!user) {
+      res.status(404).json({ error: "유저 없음" });
+      return;
+    }
 
     user.battleState = null;
     await saveUser(user);
