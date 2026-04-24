@@ -111,6 +111,18 @@ export async function pollAllRepos(): Promise<void> {
       const user = await getUser(userId);
       if (!user) return;
 
+      // We collect all integration mutations in memory and persist the
+      // user exactly once at the end. This keeps the polling pass
+      // atomic from a reader's perspective: either all of this cycle's
+      // integration updates are visible, or none are.
+      //
+      // If one provider throws, we still have every prior successful
+      // update AND the failing provider's error counters recorded on
+      // `user`, and we still save — otherwise the failing integration
+      // would be polled again next cycle without its failCount being
+      // bumped, which is the bug mode we're trying to avoid.
+      let changed = false;
+
       for (const integration of user.integrations) {
         if (!("config" in integration)) continue;
         if (integration.failCount >= 3 || integration.status === "error") continue;
@@ -130,15 +142,19 @@ export async function pollAllRepos(): Promise<void> {
           integration.failCount = 0;
           integration.lastCheckedAt = new Date().toISOString();
           delete integration.lastError;
+          changed = true;
         } catch (err) {
           integration.status = "error";
           integration.failCount += 1;
           integration.lastCheckedAt = new Date().toISOString();
           integration.lastError = err instanceof Error ? err.message : `${integration.provider} polling failed`;
-          await saveUser(user);
+          changed = true;
           console.error(`Error polling ${integration.provider} integration ${integration.id}:`, err);
           continue;
         }
+      }
+
+      if (changed) {
         await saveUser(user);
       }
     });
