@@ -65,7 +65,18 @@ export function createApp() {
     const sanitized = name.replace(/[^a-zA-Z0-9-]/g, "");
     const resolved = path.resolve(baseDir, sanitized);
     if (!resolved.startsWith(baseDir + path.sep) && resolved !== baseDir) return null;
-    try { return fs.readFileSync(resolved, "utf-8"); } catch { return null; }
+    try {
+      return fs.readFileSync(resolved, "utf-8");
+    } catch (err) {
+      // Missing-art is the common case (we ship art for only a subset of
+      // pokemon / variants); only log the unexpected failures.
+      const code = (err as NodeJS.ErrnoException).code;
+      if (code !== "ENOENT") {
+        const message = err instanceof Error ? err.message : String(err);
+        console.warn(`[art] failed to read ${resolved}:`, message);
+      }
+      return null;
+    }
   }
 
   // 알 ANSI 아트 API
