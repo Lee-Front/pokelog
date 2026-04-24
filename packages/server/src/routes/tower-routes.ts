@@ -297,9 +297,10 @@ towerRoutes.post("/forfeit", async (req: AuthRequest, res: Response) => {
   });
 });
 
-// Used in tests: pass-through snapshot writer (internal helper for
-// unused exports). Not re-exported in runtime.
-export const _testing = {
+// Test/debug-only pass-through. DO NOT USE from production code.
+// Prefix signals "implementation detail" — gated purely by convention;
+// if ever needed from tests, import as `__INTERNAL_testing`.
+export const __INTERNAL_testing = {
   buildUserPartyFromRun,
   buildAiPvpParty,
   writeSnapshotFromRoom,
