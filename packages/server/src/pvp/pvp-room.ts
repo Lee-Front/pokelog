@@ -14,7 +14,7 @@ import {
   checkMoveForm,
 } from "../game/battle-forms.js";
 import {
-  triggerOnSwitchIn, triggerOnSwitchOut, getAttackMultiplier, getDefenseMultiplier,
+  triggerOnSwitchIn, getAttackMultiplier, getDefenseMultiplier,
   getMoveModifiers, canReceiveStatus, getEffectiveSpeed,
   triggerOpponentStatDrop, triggerContactHit, triggerItemLoss, triggerFaint,
   isStatDropPrevented, hasCritPrevention, getDefenseWithMoveMultiplier,
@@ -35,9 +35,10 @@ import {
 } from "./pvp-moves.js";
 import {
   POWDER_MOVES, HAZARD_MOVES, TERRAIN_NAMES,
-  isGrounded, effectiveHeldItem, applyHazardDamage,
+  isGrounded, effectiveHeldItem,
 } from "./pvp-field-effects.js";
 import { applyEndOfTurnEffects } from "./pvp-end-of-turn.js";
+import { applySwitch } from "./pvp-switch.js";
 import type {
   PvpRoomState, PvpPlayerState, PvpPokemon,
   PvpClientRoomView, PvpRoomConfig, PvpAction,
@@ -513,87 +514,6 @@ function resolveTurn(room: PvpRoomState, actionA: PvpAction, actionB: PvpAction)
   }
   room.turn += 1;
   room.turnDeadline = Date.now() + DEFAULT_CONFIG.turnTimeoutMs;
-}
-
-function applySwitch(room: PvpRoomState, player: PvpPlayerState, index: number): void {
-  if (index < 0 || index >= player.party.length) return;
-  if (player.party[index].hp <= 0) return;
-
-  // ── Ability: onSwitchOut for old pokemon ──
-  const oldPoke = player.party[player.activeIndex];
-  if (oldPoke.hp > 0) {
-    triggerOnSwitchOut({ player, pokemon: oldPoke });
-  }
-
-  // ── Transform: restore original species/stats/moves on switch out ──
-  if (player.preTransformState) {
-    oldPoke.species = player.preTransformState.species;
-    oldPoke.variantId = player.preTransformState.variantId ?? null;
-    oldPoke.stats = player.preTransformState.stats;
-    oldPoke.moves = player.preTransformState.moves;
-    oldPoke.abilityId = player.preTransformState.abilityId ?? null;
-    player.preTransformState = undefined;
-  }
-
-  // Reset toxic counter on the pokemon being switched out
-  if (oldPoke.toxicCounter) oldPoke.toxicCounter = undefined;
-
-  // Reset choice lock on switch
-  player.lockedMoveId = undefined;
-
-  // Reset trapping on switch
-  player.trapped = false;
-
-  // Reset new mechanic state on switch
-  player.substitute = undefined;
-  player.chargingMove = undefined;
-  player.disabledMoveId = undefined;
-  player.encoreMoveId = undefined;
-  player.lastMoveUsed = undefined;
-  player.lastDamageTaken = undefined;
-  player.trapDamageBoost = false;
-  player.metronomeCount = 0;
-  player.movesUsed = [];
-  player.wasHitThisTurn = false;
-  // Paradox boost does NOT persist across switches (canon behavior).
-  player.paradoxBoost = undefined;
-
-  player.activeIndex = index;
-
-  // ── Baton Pass: keep stat stages and volatiles ──
-  const side = room.playerA === player ? "a" : "b";
-  const isBaton = room.batonPass?.[side];
-  if (!isBaton) {
-    player.statStages = defaultStatStages();
-    player.volatiles = [];
-  } else {
-    // Baton Pass: KEEP stat stages and volatiles, clear the flag
-    if (room.batonPass) delete room.batonPass[side];
-  }
-  player.battleForm = undefined;
-
-  // Mega form persists when switching back in
-  const poke = player.party[index];
-  if (poke.megaForm && player.transformationUsed && player.transformationType === "mega") {
-    player.battleForm = poke.megaForm.variantId;
-  }
-
-  // ── Fake Out: mark that a switch-in happened this turn. At end of turn,
-  // this promotes to justSwitchedIn=true, which Fake Out checks on the NEXT turn.
-  player.switchedInThisTurn = true;
-
-  room.log.push(`${player.nickname}: ${player.party[index].species}(으)로 교체!`);
-
-  // ── Ability: onSwitchIn for new pokemon ──
-  const opponent = player === room.playerA ? room.playerB : room.playerA;
-  triggerOnSwitchIn({ room, player, opponent, pokemon: poke });
-  // ── Paradox: re-check if weather/terrain was just changed by the new lead ──
-  tryActivateParadoxOnFieldChange(room);
-
-  // ── Entry hazard damage on switch-in ──
-  if (poke.hp > 0) {
-    applyHazardDamage(room, player, poke);
-  }
 }
 
 function executeFight(
