@@ -37,6 +37,36 @@ describe("judgeCombo", () => {
     const result = judgeCombo(prev, 50, "2026-03-23T12:00:00Z", config);
     expect(result.count).toBe(2);
   });
+
+  it("resets combo when previous commit is more than 90 days ago", () => {
+    const prev: UserCombo = { count: 5, lastCommitAt: "2025-01-01T00:00:00Z" };
+    // ~1 year later, plenty of bytes (density would otherwise be huge due to
+    // the span, but the stale-reset rule takes precedence)
+    const result = judgeCombo(prev, 1_000_000_000, "2026-03-23T12:00:00Z", config);
+    expect(result.count).toBe(1);
+    expect(result.lastCommitAt).toBe("2026-03-23T12:00:00Z");
+  });
+
+  it("treats malformed lastCommitAt as a fresh combo", () => {
+    const prev: UserCombo = { count: 4, lastCommitAt: "not-a-real-timestamp" };
+    const result = judgeCombo(prev, 500, "2026-03-23T12:00:00Z", config);
+    expect(result.count).toBe(1);
+    expect(result.lastCommitAt).toBe("2026-03-23T12:00:00Z");
+  });
+
+  it("treats malformed currentTime as a fresh combo", () => {
+    const prev: UserCombo = { count: 3, lastCommitAt: "2026-03-23T12:00:00Z" };
+    const result = judgeCombo(prev, 500, "garbage-date", config);
+    expect(result.count).toBe(1);
+  });
+
+  it("resets when clock is very far in the past (negative large gap)", () => {
+    const prev: UserCombo = { count: 5, lastCommitAt: "2027-01-01T00:00:00Z" };
+    // currentTime is ~1 year before prev → negative minutes far beyond
+    // the stale threshold → reset.
+    const result = judgeCombo(prev, 500, "2025-01-01T00:00:00Z", config);
+    expect(result.count).toBe(1);
+  });
 });
 
 describe("getComboMultiplier", () => {
