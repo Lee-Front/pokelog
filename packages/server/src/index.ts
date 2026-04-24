@@ -14,7 +14,38 @@ async function main() {
   const config = await getConfig();
   const app = createApp();
   const httpServer = createServer(app);
-  const io = new SocketServer(httpServer, { cors: { origin: "*" } });
+
+  // Socket.IO CORS policy.
+  //
+  // In production we refuse to allow "*" by default — cross-origin PvP
+  // sockets carry an auth token and should only be hit from known
+  // origins. Operators declare allowed origins via
+  // POKELOG_SOCKET_CORS_ORIGINS (comma-separated).
+  //
+  // In development (NODE_ENV !== "production"), we fall back to "*" so
+  // local CLIs, tests, and dev front-ends don't need extra config.
+  const allowedOrigins = (process.env.POKELOG_SOCKET_CORS_ORIGINS ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const isProduction = process.env.NODE_ENV === "production";
+  if (isProduction && allowedOrigins.length === 0) {
+    console.warn(
+      "WARNING: running in production mode with no POKELOG_SOCKET_CORS_ORIGINS set. " +
+      "Socket.IO CORS is locked down (no origins allowed). Set " +
+      "POKELOG_SOCKET_CORS_ORIGINS to a comma-separated list of trusted origins.",
+    );
+  }
+
+  const corsOrigin: string[] | boolean | string =
+    allowedOrigins.length > 0
+      ? allowedOrigins
+      : (isProduction ? false : "*");
+
+  const io = new SocketServer(httpServer, {
+    cors: { origin: corsOrigin },
+  });
 
   if (config.meta.featureFlags.pvp !== false) {
     setupPvpSocket(io);

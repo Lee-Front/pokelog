@@ -175,6 +175,17 @@ adminRoutes.post("/polling/run", async (_req, res) => {
 });
 
 // ========== 테스트/디버그 명령어 ==========
+//
+// These endpoints let an operator mint points, items, or pokemon — they
+// exist purely for local development and QA. We disable them by default
+// in production. An operator who really needs them on a live deploy can
+// opt-in with POKELOG_ENABLE_ADMIN_TEST=1 (still gated behind the admin
+// key via adminMiddleware).
+const ADMIN_TEST_ENABLED =
+  process.env.NODE_ENV !== "production"
+  || process.env.POKELOG_ENABLE_ADMIN_TEST === "1";
+
+if (ADMIN_TEST_ENABLED) {
 
 // 가짜 커밋 이벤트 발생 — 해당 유저에게 바이트 기반 보상 지급
 adminRoutes.post("/test/commit", async (req, res) => {
@@ -415,3 +426,5 @@ adminRoutes.post("/test/clear-battle", async (req, res) => {
     res.status(500).json({ error: "서버 오류" });
   }
 });
+
+} // end if (ADMIN_TEST_ENABLED)

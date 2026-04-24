@@ -29,7 +29,10 @@ export function createApp() {
     res.json(config.meta);
   });
 
-  // 기술 데이터 - 슬림 카탈로그 (CLI가 기술 정보 표시에 사용, 인증 불필요)
+  // Intentionally public: move catalog is read-only game data. The CLI
+  // consults these endpoints before a user is logged in (e.g. to render
+  // move info in registration/help flows), and the data contains no
+  // user-specific content.
   app.get("/api/moves/catalog", (_req, res) => {
     const moves = getMoves();
     const slim = moves.map((m) => ({
