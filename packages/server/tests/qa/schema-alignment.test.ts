@@ -244,7 +244,7 @@ describe("QA: Schema Alignment", () => {
 
       const userData: UserData = {
         account: {
-          id: "test-user-b4",
+          id: "testuserb4",
           password: "pw",
           nickname: "tester",
           createdAt: "2023-01-01T00:00:00Z",
@@ -269,7 +269,7 @@ describe("QA: Schema Alignment", () => {
       };
 
       await userStoreModule.saveUser(userData);
-      const loaded = await userStoreModule.getUser("test-user-b4");
+      const loaded = await userStoreModule.getUser("testuserb4");
       expect(loaded).not.toBeNull();
 
       const normalized = loaded!.pokemon[0];
@@ -340,7 +340,7 @@ describe("QA: Schema Alignment", () => {
       // so getUser's normalization is what we test.
       const minimalUserJson = {
         account: {
-          id: "test-user-b5",
+          id: "testuserb5",
           password: "pw",
           nickname: "tester",
           createdAt: "2023-01-01T00:00:00Z",
@@ -364,10 +364,10 @@ describe("QA: Schema Alignment", () => {
         integrations: [],
       };
 
-      const userFilePath = path.join(tmpDir, "users", "test-user-b5.json");
+      const userFilePath = path.join(tmpDir, "users", "testuserb5.json");
       fs.writeFileSync(userFilePath, JSON.stringify(minimalUserJson));
 
-      const loaded = await userStoreModule.getUser("test-user-b5");
+      const loaded = await userStoreModule.getUser("testuserb5");
       expect(loaded).not.toBeNull();
 
       // currentRegion defaults to "default"

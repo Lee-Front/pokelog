@@ -140,12 +140,34 @@ export function toPublicUser(user: UserData): PublicUser {
   };
 }
 
+/**
+ * Defense-in-depth: userIds appear as JSON file names on disk, so any
+ * caller passing a tainted id (a path traversal attempt, a null byte,
+ * empty string, etc.) must not be able to escape `users/`. Registration
+ * already validates the id, but we re-validate at the storage boundary
+ * because `getUser` is reachable from multiple call sites (login,
+ * socket auth, polling, admin) and a single missed validation upstream
+ * would otherwise read or overwrite arbitrary files.
+ */
+const USER_ID_PATTERN = /^[a-zA-Z0-9]+$/;
+
 function userPath(userId: string): string {
+  if (typeof userId !== "string" || !USER_ID_PATTERN.test(userId)) {
+    throw new Error(`invalid userId: ${String(userId)}`);
+  }
   return path.join(getDataDir(), "users", `${userId}.json`);
 }
 
 export async function getUser(userId: string): Promise<UserData | null> {
-  const user = await readJson<UserData>(userPath(userId));
+  let resolvedPath: string;
+  try {
+    resolvedPath = userPath(userId);
+  } catch {
+    // Treat invalid userIds as "not found" so callers (login, socket
+    // auth, etc.) get a uniform null rather than a thrown error.
+    return null;
+  }
+  const user = await readJson<UserData>(resolvedPath);
   return user ? normalizeUserData(user) : null;
 }
 

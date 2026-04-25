@@ -99,12 +99,12 @@ describe("user index: incremental updates on saveUser", () => {
 describe("user index: searchUsersByIdentity", () => {
   it("returns matches from the index with the expected ranking", async () => {
     await userStoreModule.saveUser(createUser("pikachu", "Sparky"));
-    await userStoreModule.saveUser(createUser("pika-fan", "PikachuLover"));
+    await userStoreModule.saveUser(createUser("pikafan", "PikachuLover"));
 
     const results = await userStoreModule.searchUsersByIdentity("pikachu");
     // Exact id-match ("pikachu") outranks nickname-contains ("PikachuLover").
     expect(results[0]?.id).toBe("pikachu");
-    expect(results.map((r) => r.id)).toContain("pika-fan");
+    expect(results.map((r) => r.id)).toContain("pikafan");
   });
 });
 

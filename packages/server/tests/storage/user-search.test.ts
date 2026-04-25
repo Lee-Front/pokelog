@@ -64,7 +64,7 @@ describe("searchUsersByIdentity", () => {
 
   it("ranks exact matches ahead of partial matches", async () => {
     await userStoreModule.saveUser(createUser("pikachu", "Sparky"));
-    await userStoreModule.saveUser(createUser("pika-fan", "PikachuLover"));
+    await userStoreModule.saveUser(createUser("pikafan", "PikachuLover"));
 
     const results = await userStoreModule.searchUsersByIdentity("pikachu");
 
@@ -72,16 +72,16 @@ describe("searchUsersByIdentity", () => {
   });
 
   it("prefers exact nickname match over exact id match", async () => {
-    // One user's id is "target-query"; a different user's nickname
-    // matches "target-query" exactly. Exact id match scores 100, exact
+    // One user's id is "targetquery"; a different user's nickname
+    // matches "targetquery" exactly. Exact id match scores 100, exact
     // nickname match scores 95 — id wins.
-    await userStoreModule.saveUser(createUser("target-query", "SomeoneElse"));
-    await userStoreModule.saveUser(createUser("other-id", "target-query"));
+    await userStoreModule.saveUser(createUser("targetquery", "SomeoneElse"));
+    await userStoreModule.saveUser(createUser("otherid", "targetquery"));
 
-    const results = await userStoreModule.searchUsersByIdentity("target-query");
+    const results = await userStoreModule.searchUsersByIdentity("targetquery");
 
     // Both should appear, with the exact-id match first.
-    expect(results.map((u) => u.id)).toEqual(["target-query", "other-id"]);
+    expect(results.map((u) => u.id)).toEqual(["targetquery", "otherid"]);
   });
 
   it("prefers exact nickname match over prefix / substring matches", async () => {
@@ -110,7 +110,7 @@ describe("searchUsersByIdentity", () => {
 
   it("ranks prefix match above substring match (fuzzy)", async () => {
     await userStoreModule.saveUser(createUser("prefixmatch", "Someone"));
-    await userStoreModule.saveUser(createUser("has-prefix-inside", "Other"));
+    await userStoreModule.saveUser(createUser("hasprefixinside", "Other"));
 
     const results = await userStoreModule.searchUsersByIdentity("prefix");
     expect(results[0]?.id).toBe("prefixmatch");

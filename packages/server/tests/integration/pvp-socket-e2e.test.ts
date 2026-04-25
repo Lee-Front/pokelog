@@ -61,7 +61,7 @@ describe.sequential("PvP Socket.IO E2E", () => {
     port = (httpServer.address() as AddressInfo).port;
 
     // Create a user with a 3-mon party so ai_battle can spin up a room.
-    const userId = "pvp_e2e_user";
+    const userId = "pvpe2euser";
     const party = [
       createPokemon("pikachu", 50),
       createPokemon("charizard", 50),

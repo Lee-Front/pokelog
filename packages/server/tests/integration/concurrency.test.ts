@@ -89,7 +89,7 @@ describe("Concurrency — file storage behavior", () => {
   }
 
   it("concurrent saveUser on same user can lose updates (known limitation)", async () => {
-    const uid = "race_same_" + randomUUID().slice(0, 8);
+    const uid = "racesame" + randomUUID().replace(/-/g, "").slice(0, 8);
     await saveUserFn(makeBaseUser(uid));
 
     // Two RMW cycles race. Neither locks, neither merges. The final
@@ -122,8 +122,8 @@ describe("Concurrency — file storage behavior", () => {
   });
 
   it("concurrent saveUser on distinct users is safe (independent files)", async () => {
-    const uidA = "race_ind_a_" + randomUUID().slice(0, 6);
-    const uidB = "race_ind_b_" + randomUUID().slice(0, 6);
+    const uidA = "raceinda" + randomUUID().replace(/-/g, "").slice(0, 6);
+    const uidB = "raceindb" + randomUUID().replace(/-/g, "").slice(0, 6);
     await saveUserFn(makeBaseUser(uidA));
     await saveUserFn(makeBaseUser(uidB));
 
@@ -146,7 +146,7 @@ describe("Concurrency — file storage behavior", () => {
   });
 
   it("withUserLock serializes same-user additive writes (no lost updates)", async () => {
-    const uid = "race_lock_" + randomUUID().slice(0, 8);
+    const uid = "racelock" + randomUUID().replace(/-/g, "").slice(0, 8);
     await saveUserFn(makeBaseUser(uid));
 
     // 10 concurrent +10 RMW cycles under the lock must converge to 100.
@@ -168,7 +168,7 @@ describe("Concurrency — file storage behavior", () => {
     // (concurrent rename to same destination → EPERM), but whenever the
     // file IS present on disk it must always be valid JSON — the atomic
     // tmp + rename dance guarantees no partial writes leak through.
-    const uid = "race_atomic_" + randomUUID().slice(0, 6);
+    const uid = "raceatomic" + randomUUID().replace(/-/g, "").slice(0, 6);
     await saveUserFn(makeBaseUser(uid));
     const userFile = path.join(dataDir, "users", `${uid}.json`);
 
