@@ -209,4 +209,43 @@ describe("trade", () => {
 
     expect(cancelled.status).toBe("cancelled");
   });
+
+  it("transfers held items along with the traded pokemon (canon behavior)", async () => {
+    // Use species that don't have a trade-evolution branch so we can
+    // assert on the held item without it being consumed by an evolution.
+    const alicePokemon = factoryModule.createPokemon("pidgey", 25);
+    alicePokemon.heldItem = "leftovers";
+    const bobPokemon = factoryModule.createPokemon("rattata", 25);
+    bobPokemon.heldItem = "lum-berry";
+
+    await userStoreModule.saveUser(createUser("alice", "Alice", alicePokemon));
+    await userStoreModule.saveUser(createUser("bob", "Bob", bobPokemon));
+
+    const trade = await tradeModule.createTradeRequest({
+      requesterUserId: "alice",
+      responderUserId: "bob",
+      requesterPokemonUid: alicePokemon.uid,
+      responderPokemonUid: bobPokemon.uid,
+    });
+
+    await tradeModule.acceptTradeRequest("bob", trade.id);
+
+    const aliceAfter = await userStoreModule.getUser("alice");
+    const bobAfter = await userStoreModule.getUser("bob");
+
+    // Alice now holds bob's pokemon — and that pokemon still carries
+    // bob's lum-berry. The pokemon's identity is preserved across the
+    // swap (held item not stripped).
+    expect(aliceAfter?.pokemon[0]?.species).toBe("rattata");
+    expect(aliceAfter?.pokemon[0]?.heldItem).toBe("lum-berry");
+    expect(bobAfter?.pokemon[0]?.species).toBe("pidgey");
+    expect(bobAfter?.pokemon[0]?.heldItem).toBe("leftovers");
+
+    // The items left with the pokemon — neither user's inventory was
+    // credited.
+    expect(aliceAfter?.inventory.leftovers ?? 0).toBe(0);
+    expect(aliceAfter?.inventory["lum-berry"] ?? 0).toBe(0);
+    expect(bobAfter?.inventory.leftovers ?? 0).toBe(0);
+    expect(bobAfter?.inventory["lum-berry"] ?? 0).toBe(0);
+  });
 });
