@@ -1,5 +1,19 @@
 [
   {
+    "id": "ability-capsule",
+    "name": "특성캡슐",
+    "category": "vitamins",
+    "cost": 10000,
+    "shortEffect": ""
+  },
+  {
+    "id": "ability-patch",
+    "name": "특성패치",
+    "category": "vitamins",
+    "cost": 20,
+    "shortEffect": ""
+  },
+  {
     "id": "ability-shield",
     "name": "Ability Shield",
     "category": "held-items",
@@ -38,6 +52,20 @@
     "id": "adamant-crystal",
     "name": "Adamant Crystal",
     "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "adamant-mint",
+    "name": "고집민트",
+    "category": "nature-mints",
+    "cost": 20,
+    "shortEffect": ""
+  },
+  {
+    "id": "adamant-orb",
+    "name": "금강옥",
+    "category": "species-specific",
     "cost": 0,
     "shortEffect": ""
   },
@@ -84,6 +112,13 @@
     "shortEffect": ""
   },
   {
+    "id": "aloraichium-z--held",
+    "name": "알로라이Z",
+    "category": "z-crystals",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "altarianite",
     "name": "파비코리나이트",
     "category": "mega-stones",
@@ -95,6 +130,27 @@
     "name": "전룡나이트",
     "category": "mega-stones",
     "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "amulet-coin",
+    "name": "부적금화",
+    "category": "training",
+    "cost": 10000,
+    "shortEffect": ""
+  },
+  {
+    "id": "antidote",
+    "name": "해독제",
+    "category": "status-cures",
+    "cost": 200,
+    "shortEffect": ""
+  },
+  {
+    "id": "apicot-berry",
+    "name": "규살열매",
+    "category": "in-a-pinch",
+    "cost": 80,
     "shortEffect": ""
   },
   {
@@ -119,6 +175,20 @@
     "shortEffect": ""
   },
   {
+    "id": "armorite-ore",
+    "name": "갑옷광석",
+    "category": "collectibles",
+    "cost": 20,
+    "shortEffect": ""
+  },
+  {
+    "id": "aspear-berry",
+    "name": "배리열매",
+    "category": "medicine",
+    "cost": 80,
+    "shortEffect": ""
+  },
+  {
     "id": "assault-vest",
     "name": "돌격조끼",
     "category": "held-items",
@@ -130,6 +200,20 @@
     "name": "다부니나이트",
     "category": "mega-stones",
     "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "awakening",
+    "name": "잠깨는약",
+    "category": "status-cures",
+    "cost": 200,
+    "shortEffect": ""
+  },
+  {
+    "id": "babiri-berry",
+    "name": "바리비열매",
+    "category": "type-protection",
+    "cost": 80,
     "shortEffect": ""
   },
   {
@@ -196,6 +280,13 @@
     "shortEffect": ""
   },
   {
+    "id": "big-malasada",
+    "name": "큰 말라사다",
+    "category": "status-cures",
+    "cost": 350,
+    "shortEffect": ""
+  },
+  {
     "id": "big-root",
     "name": "큰뿌리",
     "category": "held-items",
@@ -217,6 +308,20 @@
     "shortEffect": ""
   },
   {
+    "id": "black-belt",
+    "name": "검은띠",
+    "category": "type-enhancement",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "black-glasses",
+    "name": "검은안경",
+    "category": "type-enhancement",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
     "id": "black-mane-hair",
     "name": "검은갈기",
     "category": "plot-advancement",
@@ -228,6 +333,13 @@
     "name": "검은진흙",
     "category": "held-items",
     "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "blank-plate",
+    "name": "Blank Plate",
+    "category": "plates",
+    "cost": 0,
     "shortEffect": ""
   },
   {
@@ -259,10 +371,31 @@
     "shortEffect": ""
   },
   {
+    "id": "blue-scarf",
+    "name": "파랑밴드",
+    "category": "scarves",
+    "cost": 100,
+    "shortEffect": ""
+  },
+  {
+    "id": "blue-shard",
+    "name": "파랑조각",
+    "category": "collectibles",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
     "id": "blunder-policy",
     "name": "허탕보험",
     "category": "held-items",
     "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "bold-mint",
+    "name": "대담민트",
+    "category": "nature-mints",
+    "cost": 20,
     "shortEffect": ""
   },
   {
@@ -273,6 +406,13 @@
     "shortEffect": ""
   },
   {
+    "id": "brave-mint",
+    "name": "용감민트",
+    "category": "nature-mints",
+    "cost": 20,
+    "shortEffect": ""
+  },
+  {
     "id": "bright-powder",
     "name": "반짝가루",
     "category": "held-items",
@@ -280,11 +420,60 @@
     "shortEffect": ""
   },
   {
+    "id": "bug-gem",
+    "name": "벌레주얼",
+    "category": "jewels",
+    "cost": 200,
+    "shortEffect": ""
+  },
+  {
+    "id": "bug-memory",
+    "name": "버그메모리",
+    "category": "memories",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "bug-tera-shard",
+    "name": "Bug Tera Shard",
+    "category": "tera-shard",
+    "cost": 500,
+    "shortEffect": ""
+  },
+  {
+    "id": "buginium-z--held",
+    "name": "벌레Z",
+    "category": "z-crystals",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "burn-drive",
+    "name": "블레이즈카세트",
+    "category": "species-specific",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "burn-heal",
+    "name": "화상치료제",
+    "category": "status-cures",
+    "cost": 200,
+    "shortEffect": ""
+  },
+  {
     "id": "calcium",
-    "name": "칼슘",
-    "category": "stat-boosts",
-    "cost": 5000,
-    "shortEffect": "포켓몬의 특수공격 노력치를 10 올린다 (최대 100)."
+    "name": "리보플라빈",
+    "category": "vitamins",
+    "cost": 10000,
+    "shortEffect": ""
+  },
+  {
+    "id": "calm-mint",
+    "name": "차분민트",
+    "category": "nature-mints",
+    "cost": 20,
+    "shortEffect": ""
   },
   {
     "id": "cameruptite",
@@ -302,10 +491,10 @@
   },
   {
     "id": "carbos",
-    "name": "스피더",
-    "category": "stat-boosts",
-    "cost": 5000,
-    "shortEffect": "포켓몬의 스피드 노력치를 10 올린다 (최대 100)."
+    "name": "알칼로이드",
+    "category": "vitamins",
+    "cost": 10000,
+    "shortEffect": ""
   },
   {
     "id": "card-key",
@@ -322,10 +511,24 @@
     "shortEffect": ""
   },
   {
+    "id": "careful-mint",
+    "name": "신중민트",
+    "category": "nature-mints",
+    "cost": 20,
+    "shortEffect": ""
+  },
+  {
     "id": "carrot-seeds",
     "name": "당근씨",
     "category": "plot-advancement",
     "cost": 20,
+    "shortEffect": ""
+  },
+  {
+    "id": "casteliacone",
+    "name": "구름아이스",
+    "category": "status-cures",
+    "cost": 350,
     "shortEffect": ""
   },
   {
@@ -343,6 +546,13 @@
     "shortEffect": ""
   },
   {
+    "id": "charcoal",
+    "name": "목탄",
+    "category": "type-enhancement",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
     "id": "charizardite-x",
     "name": "리자몽나이트X",
     "category": "mega-stones",
@@ -357,9 +567,44 @@
     "shortEffect": ""
   },
   {
+    "id": "charti-berry",
+    "name": "루미열매",
+    "category": "type-protection",
+    "cost": 80,
+    "shortEffect": ""
+  },
+  {
+    "id": "cheri-berry",
+    "name": "버치열매",
+    "category": "medicine",
+    "cost": 80,
+    "shortEffect": ""
+  },
+  {
     "id": "cherish-ball",
     "name": "프레셔스볼",
     "category": "special-balls",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "chesto-berry",
+    "name": "유루열매",
+    "category": "medicine",
+    "cost": 80,
+    "shortEffect": ""
+  },
+  {
+    "id": "chilan-berry",
+    "name": "카리열매",
+    "category": "type-protection",
+    "cost": 80,
+    "shortEffect": ""
+  },
+  {
+    "id": "chill-drive",
+    "name": "프리즈카세트",
+    "category": "species-specific",
     "cost": 0,
     "shortEffect": ""
   },
@@ -368,6 +613,41 @@
     "name": "이빠진포트",
     "category": "evolution",
     "cost": 38000,
+    "shortEffect": ""
+  },
+  {
+    "id": "choice-band",
+    "name": "구애머리띠",
+    "category": "choice",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "choice-scarf",
+    "name": "구애스카프",
+    "category": "choice",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "choice-specs",
+    "name": "구애안경",
+    "category": "choice",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "chople-berry",
+    "name": "로플열매",
+    "category": "type-protection",
+    "cost": 80,
+    "shortEffect": ""
+  },
+  {
+    "id": "cleanse-tag",
+    "name": "순결의부적",
+    "category": "training",
+    "cost": 5000,
     "shortEffect": ""
   },
   {
@@ -385,6 +665,13 @@
     "shortEffect": ""
   },
   {
+    "id": "clever-wing",
+    "name": "정신력날개",
+    "category": "vitamins",
+    "cost": 300,
+    "shortEffect": ""
+  },
+  {
     "id": "clover-sweet",
     "name": "네잎사탕공예",
     "category": "evolution",
@@ -392,10 +679,24 @@
     "shortEffect": ""
   },
   {
+    "id": "coba-berry",
+    "name": "바코열매",
+    "category": "type-protection",
+    "cost": 80,
+    "shortEffect": ""
+  },
+  {
     "id": "coin-case",
     "name": "동전케이스",
     "category": "gameplay",
     "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "colbur-berry",
+    "name": "마코열매",
+    "category": "type-protection",
+    "cost": 80,
     "shortEffect": ""
   },
   {
@@ -441,6 +742,27 @@
     "shortEffect": ""
   },
   {
+    "id": "courage-candy",
+    "name": "마음의사탕",
+    "category": "vitamins",
+    "cost": 20,
+    "shortEffect": ""
+  },
+  {
+    "id": "courage-candy-l",
+    "name": "마음의사탕L",
+    "category": "vitamins",
+    "cost": 20,
+    "shortEffect": ""
+  },
+  {
+    "id": "courage-candy-xl",
+    "name": "마음의사탕XL",
+    "category": "vitamins",
+    "cost": 20,
+    "shortEffect": ""
+  },
+  {
     "id": "covert-cloak",
     "name": "Covert Cloak",
     "category": "held-items",
@@ -462,10 +784,31 @@
     "shortEffect": ""
   },
   {
+    "id": "custap-berry",
+    "name": "애슈열매",
+    "category": "in-a-pinch",
+    "cost": 80,
+    "shortEffect": ""
+  },
+  {
     "id": "damp-rock",
     "name": "축축한바위",
     "category": "held-items",
     "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "dark-gem",
+    "name": "악주얼",
+    "category": "jewels",
+    "cost": 200,
+    "shortEffect": ""
+  },
+  {
+    "id": "dark-memory",
+    "name": "다크메모리",
+    "category": "memories",
+    "cost": 1000,
     "shortEffect": ""
   },
   {
@@ -476,10 +819,45 @@
     "shortEffect": ""
   },
   {
+    "id": "dark-tera-shard",
+    "name": "Dark Tera Shard",
+    "category": "tera-shard",
+    "cost": 500,
+    "shortEffect": ""
+  },
+  {
+    "id": "darkinium-z--held",
+    "name": "악Z",
+    "category": "z-crystals",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "dawn-stone",
     "name": "각성의돌",
     "category": "evolution",
     "cost": 3000,
+    "shortEffect": ""
+  },
+  {
+    "id": "decidium-z--held",
+    "name": "모크나이퍼Z",
+    "category": "z-crystals",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "deep-sea-scale",
+    "name": "심해의비늘",
+    "category": "species-specific",
+    "cost": 2000,
+    "shortEffect": ""
+  },
+  {
+    "id": "deep-sea-tooth",
+    "name": "심해의이빨",
+    "category": "species-specific",
+    "cost": 2000,
     "shortEffect": ""
   },
   {
@@ -546,10 +924,45 @@
     "shortEffect": ""
   },
   {
+    "id": "douse-drive",
+    "name": "아쿠아카세트",
+    "category": "species-specific",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "dowsing-machine",
     "name": "다우징머신",
     "category": "gameplay",
     "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "draco-plate",
+    "name": "용의플레이트",
+    "category": "plates",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "dragon-fang",
+    "name": "용의이빨",
+    "category": "type-enhancement",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "dragon-gem",
+    "name": "드래곤주얼",
+    "category": "jewels",
+    "cost": 200,
+    "shortEffect": ""
+  },
+  {
+    "id": "dragon-memory",
+    "name": "드래곤메모리",
+    "category": "memories",
+    "cost": 1000,
     "shortEffect": ""
   },
   {
@@ -564,6 +977,27 @@
     "name": "드래곤의뼈",
     "category": "plot-advancement",
     "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "dragon-tera-shard",
+    "name": "Dragon Tera Shard",
+    "category": "tera-shard",
+    "cost": 500,
+    "shortEffect": ""
+  },
+  {
+    "id": "dragonium-z--held",
+    "name": "드래곤Z",
+    "category": "z-crystals",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "dread-plate",
+    "name": "공포플레이트",
+    "category": "plates",
+    "cost": 1000,
     "shortEffect": ""
   },
   {
@@ -609,6 +1043,34 @@
     "shortEffect": ""
   },
   {
+    "id": "dynamax-candy",
+    "name": "다이맥스사탕",
+    "category": "vitamins",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "dynite-ore",
+    "name": "맥스광석",
+    "category": "collectibles",
+    "cost": 20,
+    "shortEffect": ""
+  },
+  {
+    "id": "earth-plate",
+    "name": "대지플레이트",
+    "category": "plates",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "eevium-z--held",
+    "name": "이브이Z",
+    "category": "z-crystals",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "eject-button",
     "name": "탈출버튼",
     "category": "held-items",
@@ -630,6 +1092,20 @@
     "shortEffect": ""
   },
   {
+    "id": "electric-gem",
+    "name": "전기주얼",
+    "category": "jewels",
+    "cost": 200,
+    "shortEffect": ""
+  },
+  {
+    "id": "electric-memory",
+    "name": "일렉트릭메모리",
+    "category": "memories",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
     "id": "electric-seed",
     "name": "일렉트릭시드",
     "category": "held-items",
@@ -637,10 +1113,31 @@
     "shortEffect": ""
   },
   {
+    "id": "electric-tera-shard",
+    "name": "Electric Tera Shard",
+    "category": "tera-shard",
+    "cost": 500,
+    "shortEffect": ""
+  },
+  {
+    "id": "electrium-z--held",
+    "name": "전기Z",
+    "category": "z-crystals",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "elevator-key",
     "name": "엘리베이터키",
     "category": "plot-advancement",
     "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "elixir",
+    "name": "PP에이더",
+    "category": "pp-recovery",
+    "cost": 3000,
     "shortEffect": ""
   },
   {
@@ -679,6 +1176,20 @@
     "shortEffect": ""
   },
   {
+    "id": "ether",
+    "name": "PP에이드",
+    "category": "pp-recovery",
+    "cost": 1200,
+    "shortEffect": ""
+  },
+  {
+    "id": "everstone",
+    "name": "변함없는돌",
+    "category": "training",
+    "cost": 3000,
+    "shortEffect": ""
+  },
+  {
     "id": "eviolite",
     "name": "진화의휘석",
     "category": "held-items",
@@ -686,9 +1197,51 @@
     "shortEffect": ""
   },
   {
+    "id": "exp-candy-l",
+    "name": "경험사탕L",
+    "category": "vitamins",
+    "cost": 3000,
+    "shortEffect": ""
+  },
+  {
+    "id": "exp-candy-m",
+    "name": "경험사탕M",
+    "category": "vitamins",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "exp-candy-s",
+    "name": "경험사탕S",
+    "category": "vitamins",
+    "cost": 240,
+    "shortEffect": ""
+  },
+  {
+    "id": "exp-candy-xl",
+    "name": "경험사탕XL",
+    "category": "vitamins",
+    "cost": 10000,
+    "shortEffect": ""
+  },
+  {
+    "id": "exp-candy-xs",
+    "name": "경험사탕XS",
+    "category": "vitamins",
+    "cost": 20,
+    "shortEffect": ""
+  },
+  {
     "id": "exp-charm",
     "name": "경험부적",
     "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "exp-share",
+    "name": "학습장치",
+    "category": "training",
     "cost": 0,
     "shortEffect": ""
   },
@@ -707,6 +1260,34 @@
     "shortEffect": ""
   },
   {
+    "id": "fairium-z--held",
+    "name": "페어리Z",
+    "category": "z-crystals",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "fairy-gem",
+    "name": "페어리주얼",
+    "category": "jewels",
+    "cost": 200,
+    "shortEffect": ""
+  },
+  {
+    "id": "fairy-memory",
+    "name": "페어리메모리",
+    "category": "memories",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "fairy-tera-shard",
+    "name": "Fairy Tera Shard",
+    "category": "tera-shard",
+    "cost": 500,
+    "shortEffect": ""
+  },
+  {
     "id": "fame-checker",
     "name": "Fame Checker",
     "category": "gameplay",
@@ -721,6 +1302,13 @@
     "shortEffect": ""
   },
   {
+    "id": "fast-ball",
+    "name": "스피드볼",
+    "category": "apricorn-balls",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "festival-ticket",
     "name": "페스티켓",
     "category": "gameplay",
@@ -728,10 +1316,66 @@
     "shortEffect": ""
   },
   {
+    "id": "fighting-gem",
+    "name": "격투주얼",
+    "category": "jewels",
+    "cost": 200,
+    "shortEffect": ""
+  },
+  {
+    "id": "fighting-memory",
+    "name": "파이팅메모리",
+    "category": "memories",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "fighting-tera-shard",
+    "name": "Fighting Tera Shard",
+    "category": "tera-shard",
+    "cost": 500,
+    "shortEffect": ""
+  },
+  {
+    "id": "fightinium-z--held",
+    "name": "격투Z",
+    "category": "z-crystals",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "fire-gem",
+    "name": "불꽃주얼",
+    "category": "jewels",
+    "cost": 200,
+    "shortEffect": ""
+  },
+  {
+    "id": "fire-memory",
+    "name": "파이어메모리",
+    "category": "memories",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
     "id": "fire-stone",
     "name": "불꽃의돌",
     "category": "evolution",
     "cost": 3000,
+    "shortEffect": ""
+  },
+  {
+    "id": "fire-tera-shard",
+    "name": "Fire Tera Shard",
+    "category": "tera-shard",
+    "cost": 500,
+    "shortEffect": ""
+  },
+  {
+    "id": "firium-z--held",
+    "name": "불꽃Z",
+    "category": "z-crystals",
+    "cost": 0,
     "shortEffect": ""
   },
   {
@@ -749,6 +1393,27 @@
     "shortEffect": ""
   },
   {
+    "id": "fist-plate",
+    "name": "주먹플레이트",
+    "category": "plates",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "flame-orb",
+    "name": "화염구슬",
+    "category": "bad-held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "flame-plate",
+    "name": "불구슬플레이트",
+    "category": "plates",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
     "id": "float-stone",
     "name": "가벼운돌",
     "category": "held-items",
@@ -760,6 +1425,34 @@
     "name": "꽃사탕공예",
     "category": "evolution",
     "cost": 500,
+    "shortEffect": ""
+  },
+  {
+    "id": "flying-gem",
+    "name": "비행주얼",
+    "category": "jewels",
+    "cost": 200,
+    "shortEffect": ""
+  },
+  {
+    "id": "flying-memory",
+    "name": "플라잉메모리",
+    "category": "memories",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "flying-tera-shard",
+    "name": "Flying Tera Shard",
+    "category": "tera-shard",
+    "cost": 500,
+    "shortEffect": ""
+  },
+  {
+    "id": "flyinium-z--held",
+    "name": "비행Z",
+    "category": "z-crystals",
+    "cost": 0,
     "shortEffect": ""
   },
   {
@@ -791,6 +1484,27 @@
     "shortEffect": ""
   },
   {
+    "id": "friend-ball",
+    "name": "프렌드볼",
+    "category": "apricorn-balls",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "full-heal",
+    "name": "만병통치제",
+    "category": "status-cures",
+    "cost": 400,
+    "shortEffect": ""
+  },
+  {
+    "id": "full-incense",
+    "name": "만복향로",
+    "category": "bad-held-items",
+    "cost": 5000,
+    "shortEffect": ""
+  },
+  {
     "id": "full-restore",
     "name": "회복약",
     "category": "healing",
@@ -805,10 +1519,38 @@
     "shortEffect": ""
   },
   {
+    "id": "galarica-cuff",
+    "name": "가라두구팔찌",
+    "category": "collectibles",
+    "cost": 3000,
+    "shortEffect": ""
+  },
+  {
+    "id": "galarica-twig",
+    "name": "가라두구가지",
+    "category": "collectibles",
+    "cost": 20,
+    "shortEffect": ""
+  },
+  {
+    "id": "galarica-wreath",
+    "name": "가라두구머리장식",
+    "category": "collectibles",
+    "cost": 3000,
+    "shortEffect": ""
+  },
+  {
     "id": "galladite",
     "name": "엘레이드나이트",
     "category": "mega-stones",
     "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "ganlon-berry",
+    "name": "용아열매",
+    "category": "in-a-pinch",
+    "cost": 80,
     "shortEffect": ""
   },
   {
@@ -840,6 +1582,48 @@
     "shortEffect": ""
   },
   {
+    "id": "genius-wing",
+    "name": "지력날개",
+    "category": "vitamins",
+    "cost": 300,
+    "shortEffect": ""
+  },
+  {
+    "id": "gentle-mint",
+    "name": "얌전민트",
+    "category": "nature-mints",
+    "cost": 20,
+    "shortEffect": ""
+  },
+  {
+    "id": "ghost-gem",
+    "name": "고스트주얼",
+    "category": "jewels",
+    "cost": 200,
+    "shortEffect": ""
+  },
+  {
+    "id": "ghost-memory",
+    "name": "고스트메모리",
+    "category": "memories",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "ghost-tera-shard",
+    "name": "Ghost Tera Shard",
+    "category": "tera-shard",
+    "cost": 500,
+    "shortEffect": ""
+  },
+  {
+    "id": "ghostium-z--held",
+    "name": "고스트Z",
+    "category": "z-crystals",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "glalitite",
     "name": "얼음귀신나이트",
     "category": "mega-stones",
@@ -858,6 +1642,27 @@
     "name": "금틀니",
     "category": "plot-advancement",
     "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "golden-nanab-berry",
+    "name": "황금 나나열매",
+    "category": "catching-bonus",
+    "cost": 5000,
+    "shortEffect": ""
+  },
+  {
+    "id": "golden-pinap-berry",
+    "name": "황금 파인열매",
+    "category": "catching-bonus",
+    "cost": 5000,
+    "shortEffect": ""
+  },
+  {
+    "id": "golden-razz-berry",
+    "name": "황금 라즈열매",
+    "category": "catching-bonus",
+    "cost": 5000,
     "shortEffect": ""
   },
   {
@@ -889,6 +1694,34 @@
     "shortEffect": ""
   },
   {
+    "id": "grass-gem",
+    "name": "풀주얼",
+    "category": "jewels",
+    "cost": 200,
+    "shortEffect": ""
+  },
+  {
+    "id": "grass-memory",
+    "name": "그래스메모리",
+    "category": "memories",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "grass-tera-shard",
+    "name": "Grass Tera Shard",
+    "category": "tera-shard",
+    "cost": 500,
+    "shortEffect": ""
+  },
+  {
+    "id": "grassium-z--held",
+    "name": "풀Z",
+    "category": "z-crystals",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "grassy-seed",
     "name": "그래스시드",
     "category": "held-items",
@@ -903,6 +1736,27 @@
     "shortEffect": ""
   },
   {
+    "id": "green-scarf",
+    "name": "초록밴드",
+    "category": "scarves",
+    "cost": 100,
+    "shortEffect": ""
+  },
+  {
+    "id": "green-shard",
+    "name": "초록조각",
+    "category": "collectibles",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "grepa-berry",
+    "name": "또뽀열매",
+    "category": "effort-drop",
+    "cost": 80,
+    "shortEffect": ""
+  },
+  {
     "id": "grip-claw",
     "name": "끈기갈고리손톱",
     "category": "held-items",
@@ -913,6 +1767,41 @@
     "id": "griseous-core",
     "name": "Griseous Core",
     "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "griseous-orb",
+    "name": "백금옥",
+    "category": "species-specific",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "ground-gem",
+    "name": "땅주얼",
+    "category": "jewels",
+    "cost": 200,
+    "shortEffect": ""
+  },
+  {
+    "id": "ground-memory",
+    "name": "그라운드메모리",
+    "category": "memories",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "ground-tera-shard",
+    "name": "Ground Tera Shard",
+    "category": "tera-shard",
+    "cost": 500,
+    "shortEffect": ""
+  },
+  {
+    "id": "groundium-z--held",
+    "name": "땅Z",
+    "category": "z-crystals",
     "cost": 0,
     "shortEffect": ""
   },
@@ -938,6 +1827,27 @@
     "shortEffect": ""
   },
   {
+    "id": "haban-berry",
+    "name": "하반열매",
+    "category": "type-protection",
+    "cost": 80,
+    "shortEffect": ""
+  },
+  {
+    "id": "hard-stone",
+    "name": "딱딱한돌",
+    "category": "type-enhancement",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "hasty-mint",
+    "name": "성급민트",
+    "category": "nature-mints",
+    "cost": 20,
+    "shortEffect": ""
+  },
+  {
     "id": "heal-ball",
     "name": "힐볼",
     "category": "special-balls",
@@ -945,10 +1855,59 @@
     "shortEffect": ""
   },
   {
+    "id": "heal-powder",
+    "name": "만능가루",
+    "category": "status-cures",
+    "cost": 300,
+    "shortEffect": ""
+  },
+  {
+    "id": "health-candy",
+    "name": "기력의사탕",
+    "category": "vitamins",
+    "cost": 20,
+    "shortEffect": ""
+  },
+  {
+    "id": "health-candy-l",
+    "name": "기력의사탕L",
+    "category": "vitamins",
+    "cost": 20,
+    "shortEffect": ""
+  },
+  {
+    "id": "health-candy-xl",
+    "name": "기력의사탕XL",
+    "category": "vitamins",
+    "cost": 20,
+    "shortEffect": ""
+  },
+  {
+    "id": "health-wing",
+    "name": "체력날개",
+    "category": "vitamins",
+    "cost": 300,
+    "shortEffect": ""
+  },
+  {
+    "id": "heart-scale",
+    "name": "하트비늘",
+    "category": "collectibles",
+    "cost": 100,
+    "shortEffect": ""
+  },
+  {
     "id": "heat-rock",
     "name": "뜨거운바위",
     "category": "held-items",
     "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "heavy-ball",
+    "name": "헤비볼",
+    "category": "apricorn-balls",
+    "cost": 0,
     "shortEffect": ""
   },
   {
@@ -973,10 +1932,73 @@
     "shortEffect": ""
   },
   {
+    "id": "hm01",
+    "name": "비전머신01",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "hm02",
+    "name": "비전머신02",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "hm03",
+    "name": "비전머신03",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "hm04",
+    "name": "비전머신04",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "hm05",
+    "name": "비전머신05",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "hm06",
+    "name": "비전머신06",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "hm07",
+    "name": "비전머신07",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "hm08",
+    "name": "HM08",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "holo-caster",
     "name": "홀로캐스터",
     "category": "gameplay",
     "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "hondew-berry",
+    "name": "로매열매",
+    "category": "effort-drop",
+    "cost": 80,
     "shortEffect": ""
   },
   {
@@ -996,15 +2018,36 @@
   {
     "id": "hp-up",
     "name": "맥스업",
-    "category": "stat-boosts",
-    "cost": 5000,
-    "shortEffect": "포켓몬의 HP 노력치를 10 올린다 (최대 100)."
+    "category": "vitamins",
+    "cost": 10000,
+    "shortEffect": ""
   },
   {
     "id": "hyper-potion",
     "name": "고급상처약",
     "category": "healing",
     "cost": 1500,
+    "shortEffect": ""
+  },
+  {
+    "id": "ice-gem",
+    "name": "얼음주얼",
+    "category": "jewels",
+    "cost": 200,
+    "shortEffect": ""
+  },
+  {
+    "id": "ice-heal",
+    "name": "얼음상태치료제",
+    "category": "status-cures",
+    "cost": 200,
+    "shortEffect": ""
+  },
+  {
+    "id": "ice-memory",
+    "name": "아이스메모리",
+    "category": "memories",
+    "cost": 1000,
     "shortEffect": ""
   },
   {
@@ -1015,9 +2058,30 @@
     "shortEffect": ""
   },
   {
+    "id": "ice-tera-shard",
+    "name": "Ice Tera Shard",
+    "category": "tera-shard",
+    "cost": 500,
+    "shortEffect": ""
+  },
+  {
     "id": "iceroot-carrot",
     "name": "차가운당근",
     "category": "plot-advancement",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "icicle-plate",
+    "name": "고드름플레이트",
+    "category": "plates",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "icium-z--held",
+    "name": "얼음Z",
+    "category": "z-crystals",
     "cost": 0,
     "shortEffect": ""
   },
@@ -1029,6 +2093,27 @@
     "shortEffect": ""
   },
   {
+    "id": "impish-mint",
+    "name": "장난꾸러기민트",
+    "category": "nature-mints",
+    "cost": 20,
+    "shortEffect": ""
+  },
+  {
+    "id": "incinium-z--held",
+    "name": "어흥염Z",
+    "category": "z-crystals",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "insect-plate",
+    "name": "비단벌레플레이트",
+    "category": "plates",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
     "id": "intriguing-stone",
     "name": "대단할듯한돌",
     "category": "plot-advancement",
@@ -1037,16 +2122,37 @@
   },
   {
     "id": "iron",
-    "name": "철분",
-    "category": "stat-boosts",
-    "cost": 5000,
-    "shortEffect": "포켓몬의 방어 노력치를 10 올린다 (최대 100)."
+    "name": "사포닌",
+    "category": "vitamins",
+    "cost": 10000,
+    "shortEffect": ""
+  },
+  {
+    "id": "iron-ball",
+    "name": "검은철구",
+    "category": "bad-held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "iron-plate",
+    "name": "강철플레이트",
+    "category": "plates",
+    "cost": 1000,
+    "shortEffect": ""
   },
   {
     "id": "jade-orb",
     "name": "연둣빛구슬",
     "category": "plot-advancement",
     "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "jolly-mint",
+    "name": "명랑민트",
+    "category": "nature-mints",
+    "cost": 20,
     "shortEffect": ""
   },
   {
@@ -1061,6 +2167,27 @@
     "name": "캥카나이트",
     "category": "mega-stones",
     "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "kasib-berry",
+    "name": "수불열매",
+    "category": "type-protection",
+    "cost": 80,
+    "shortEffect": ""
+  },
+  {
+    "id": "kebia-berry",
+    "name": "으름열매",
+    "category": "type-protection",
+    "cost": 80,
+    "shortEffect": ""
+  },
+  {
+    "id": "kelpsy-berry",
+    "name": "시마열매",
+    "category": "effort-drop",
+    "cost": 80,
     "shortEffect": ""
   },
   {
@@ -1113,6 +2240,20 @@
     "shortEffect": ""
   },
   {
+    "id": "lagging-tail",
+    "name": "느림보꼬리",
+    "category": "bad-held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "lansat-berry",
+    "name": "랑사열매",
+    "category": "in-a-pinch",
+    "cost": 80,
+    "shortEffect": ""
+  },
+  {
     "id": "latiasite",
     "name": "라티아스나이트",
     "category": "mega-stones",
@@ -1127,10 +2268,24 @@
     "shortEffect": ""
   },
   {
+    "id": "lava-cookie",
+    "name": "용암전병",
+    "category": "status-cures",
+    "cost": 350,
+    "shortEffect": ""
+  },
+  {
     "id": "lax-incense",
     "name": "무사태평향로",
     "category": "held-items",
     "cost": 5000,
+    "shortEffect": ""
+  },
+  {
+    "id": "lax-mint",
+    "name": "촐랑민트",
+    "category": "nature-mints",
+    "cost": 20,
     "shortEffect": ""
   },
   {
@@ -1145,6 +2300,13 @@
     "name": "먹다남은음식",
     "category": "held-items",
     "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "legend-plate",
+    "name": "Legend Plate",
+    "category": "plates",
+    "cost": 0,
     "shortEffect": ""
   },
   {
@@ -1190,10 +2352,31 @@
     "shortEffect": ""
   },
   {
+    "id": "leppa-berry",
+    "name": "과사열매",
+    "category": "medicine",
+    "cost": 80,
+    "shortEffect": ""
+  },
+  {
     "id": "letter",
     "name": "성호에게줄편지",
     "category": "plot-advancement",
     "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "level-ball",
+    "name": "레벨볼",
+    "category": "apricorn-balls",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "liechi-berry",
+    "name": "치리열매",
+    "category": "in-a-pinch",
+    "cost": 80,
     "shortEffect": ""
   },
   {
@@ -1208,6 +2391,13 @@
     "name": "엘리베이터열쇠",
     "category": "plot-advancement",
     "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "light-ball",
+    "name": "전기구슬",
+    "category": "species-specific",
+    "cost": 1000,
     "shortEffect": ""
   },
   {
@@ -1232,6 +2422,13 @@
     "shortEffect": ""
   },
   {
+    "id": "lonely-mint",
+    "name": "외로움민트",
+    "category": "nature-mints",
+    "cost": 20,
+    "shortEffect": ""
+  },
+  {
     "id": "looker-ticket",
     "name": "핸섬티켓",
     "category": "plot-advancement",
@@ -1253,6 +2450,13 @@
     "shortEffect": ""
   },
   {
+    "id": "love-ball",
+    "name": "러브러브볼",
+    "category": "apricorn-balls",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "love-sweet",
     "name": "하트사탕공예",
     "category": "evolution",
@@ -1267,6 +2471,34 @@
     "shortEffect": ""
   },
   {
+    "id": "luck-incense",
+    "name": "행운의향로",
+    "category": "training",
+    "cost": 11000,
+    "shortEffect": ""
+  },
+  {
+    "id": "lucky-egg",
+    "name": "행복의알",
+    "category": "training",
+    "cost": 10000,
+    "shortEffect": ""
+  },
+  {
+    "id": "lucky-punch",
+    "name": "럭키펀치",
+    "category": "species-specific",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "lum-berry",
+    "name": "리샘열매",
+    "category": "medicine",
+    "cost": 80,
+    "shortEffect": ""
+  },
+  {
     "id": "luminous-moss",
     "name": "빛이끼",
     "category": "held-items",
@@ -1274,9 +2506,30 @@
     "shortEffect": ""
   },
   {
+    "id": "lumiose-galette",
+    "name": "미르갈레트",
+    "category": "status-cures",
+    "cost": 350,
+    "shortEffect": ""
+  },
+  {
+    "id": "lure-ball",
+    "name": "루어볼",
+    "category": "apricorn-balls",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "lustrous-globe",
     "name": "Lustrous Globe",
     "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "lustrous-orb",
+    "name": "백옥",
+    "category": "species-specific",
     "cost": 0,
     "shortEffect": ""
   },
@@ -1299,6 +2552,13 @@
     "name": "기계부품",
     "category": "plot-advancement",
     "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "macho-brace",
+    "name": "교정깁스",
+    "category": "effort-training",
+    "cost": 3000,
     "shortEffect": ""
   },
   {
@@ -1330,6 +2590,13 @@
     "shortEffect": ""
   },
   {
+    "id": "magnet",
+    "name": "자석",
+    "category": "type-enhancement",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
     "id": "makeup-bag",
     "name": "코스메틱파우치",
     "category": "gameplay",
@@ -1358,6 +2625,13 @@
     "shortEffect": ""
   },
   {
+    "id": "marshadium-z--held",
+    "name": "마샤도Z",
+    "category": "z-crystals",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "master-ball",
     "name": "마스터볼",
     "category": "standard-balls",
@@ -1372,6 +2646,27 @@
     "shortEffect": ""
   },
   {
+    "id": "max-elixir",
+    "name": "PP맥스",
+    "category": "pp-recovery",
+    "cost": 4500,
+    "shortEffect": ""
+  },
+  {
+    "id": "max-ether",
+    "name": "PP회복",
+    "category": "pp-recovery",
+    "cost": 2000,
+    "shortEffect": ""
+  },
+  {
+    "id": "max-honey",
+    "name": "다이꿀",
+    "category": "revival",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
     "id": "max-mushrooms",
     "name": "다이버섯",
     "category": "stat-boosts",
@@ -1383,6 +2678,20 @@
     "name": "풀회복약",
     "category": "healing",
     "cost": 2500,
+    "shortEffect": ""
+  },
+  {
+    "id": "max-revive",
+    "name": "기력의덩어리",
+    "category": "revival",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "meadow-plate",
+    "name": "초록플레이트",
+    "category": "plates",
+    "cost": 1000,
     "shortEffect": ""
   },
   {
@@ -1428,6 +2737,20 @@
     "shortEffect": ""
   },
   {
+    "id": "metal-coat",
+    "name": "금속코트",
+    "category": "type-enhancement",
+    "cost": 2000,
+    "shortEffect": ""
+  },
+  {
+    "id": "metal-powder",
+    "name": "금속파우더",
+    "category": "species-specific",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
     "id": "meteorite",
     "name": "운석",
     "category": "plot-advancement",
@@ -1449,6 +2772,13 @@
     "shortEffect": ""
   },
   {
+    "id": "mewnium-z--held",
+    "name": "뮤Z",
+    "category": "z-crystals",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "mewtwonite-x",
     "name": "뮤츠나이트X",
     "category": "mega-stones",
@@ -1460,6 +2790,55 @@
     "name": "뮤츠나이트Y",
     "category": "mega-stones",
     "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "micle-berry",
+    "name": "미클열매",
+    "category": "in-a-pinch",
+    "cost": 80,
+    "shortEffect": ""
+  },
+  {
+    "id": "mighty-candy",
+    "name": "힘의사탕",
+    "category": "vitamins",
+    "cost": 20,
+    "shortEffect": ""
+  },
+  {
+    "id": "mighty-candy-l",
+    "name": "힘의사탕L",
+    "category": "vitamins",
+    "cost": 20,
+    "shortEffect": ""
+  },
+  {
+    "id": "mighty-candy-xl",
+    "name": "힘의사탕XL",
+    "category": "vitamins",
+    "cost": 20,
+    "shortEffect": ""
+  },
+  {
+    "id": "mild-mint",
+    "name": "의젓민트",
+    "category": "nature-mints",
+    "cost": 20,
+    "shortEffect": ""
+  },
+  {
+    "id": "mind-plate",
+    "name": "이상한플레이트",
+    "category": "plates",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "miracle-seed",
+    "name": "기적의씨",
+    "category": "type-enhancement",
+    "cost": 1000,
     "shortEffect": ""
   },
   {
@@ -1477,10 +2856,24 @@
     "shortEffect": ""
   },
   {
+    "id": "modest-mint",
+    "name": "조심민트",
+    "category": "nature-mints",
+    "cost": 20,
+    "shortEffect": ""
+  },
+  {
     "id": "moomoo-milk",
     "name": "튼튼밀크",
     "category": "healing",
     "cost": 600,
+    "shortEffect": ""
+  },
+  {
+    "id": "moon-ball",
+    "name": "문볼",
+    "category": "apricorn-balls",
+    "cost": 0,
     "shortEffect": ""
   },
   {
@@ -1505,6 +2898,13 @@
     "shortEffect": ""
   },
   {
+    "id": "muscle-wing",
+    "name": "근력날개",
+    "category": "vitamins",
+    "cost": 300,
+    "shortEffect": ""
+  },
+  {
     "id": "mystery-egg",
     "name": "이상한알",
     "category": "plot-advancement",
@@ -1512,18 +2912,25 @@
     "shortEffect": ""
   },
   {
-    "id": "n-lunarizer",
-    "name": "N루나라이저",
-    "category": "plot-advancement",
-    "cost": 0,
-    "shortEffect": "네크로즈마를 루나아라와 합체시킨다."
+    "id": "mystic-water",
+    "name": "신비의물방울",
+    "category": "type-enhancement",
+    "cost": 1000,
+    "shortEffect": ""
   },
   {
-    "id": "n-solarizer",
-    "name": "N솔라라이저",
-    "category": "plot-advancement",
-    "cost": 0,
-    "shortEffect": "네크로즈마를 솔가레오와 합체시킨다."
+    "id": "naive-mint",
+    "name": "천진난만민트",
+    "category": "nature-mints",
+    "cost": 20,
+    "shortEffect": ""
+  },
+  {
+    "id": "naughty-mint",
+    "name": "개구쟁이민트",
+    "category": "nature-mints",
+    "cost": 20,
+    "shortEffect": ""
   },
   {
     "id": "nest-ball",
@@ -1540,6 +2947,34 @@
     "shortEffect": ""
   },
   {
+    "id": "never-melt-ice",
+    "name": "녹지않는얼음",
+    "category": "type-enhancement",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "normal-gem",
+    "name": "노말주얼",
+    "category": "jewels",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "normal-tera-shard",
+    "name": "Normal Tera Shard",
+    "category": "tera-shard",
+    "cost": 500,
+    "shortEffect": ""
+  },
+  {
+    "id": "normalium-z--held",
+    "name": "노말Z",
+    "category": "z-crystals",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "oaks-parcel",
     "name": "Oak’s Parcel",
     "category": "plot-advancement",
@@ -1547,10 +2982,31 @@
     "shortEffect": ""
   },
   {
+    "id": "occa-berry",
+    "name": "오카열매",
+    "category": "type-protection",
+    "cost": 80,
+    "shortEffect": ""
+  },
+  {
+    "id": "odd-incense",
+    "name": "괴상한향로",
+    "category": "type-enhancement",
+    "cost": 2000,
+    "shortEffect": ""
+  },
+  {
     "id": "old-charm",
     "name": "고대의부적",
     "category": "plot-advancement",
     "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "old-gateau",
+    "name": "숲의양갱",
+    "category": "status-cures",
+    "cost": 350,
     "shortEffect": ""
   },
   {
@@ -1565,6 +3021,13 @@
     "name": "낡은낚싯대",
     "category": "gameplay",
     "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "oran-berry",
+    "name": "오랭열매",
+    "category": "medicine",
+    "cost": 80,
     "shortEffect": ""
   },
   {
@@ -1593,6 +3056,13 @@
     "name": "친구수첩",
     "category": "gameplay",
     "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "paralyze-heal",
+    "name": "마비치료제",
+    "category": "status-cures",
+    "cost": 200,
     "shortEffect": ""
   },
   {
@@ -1631,10 +3101,52 @@
     "shortEffect": ""
   },
   {
+    "id": "passho-berry",
+    "name": "꼬시개열매",
+    "category": "type-protection",
+    "cost": 80,
+    "shortEffect": ""
+  },
+  {
+    "id": "payapa-berry",
+    "name": "야파열매",
+    "category": "type-protection",
+    "cost": 80,
+    "shortEffect": ""
+  },
+  {
+    "id": "pecha-berry",
+    "name": "복슝열매",
+    "category": "medicine",
+    "cost": 80,
+    "shortEffect": ""
+  },
+  {
     "id": "permit",
     "name": "허가증",
     "category": "gameplay",
     "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "persim-berry",
+    "name": "시몬열매",
+    "category": "medicine",
+    "cost": 80,
+    "shortEffect": ""
+  },
+  {
+    "id": "petaya-berry",
+    "name": "야타비열매",
+    "category": "in-a-pinch",
+    "cost": 80,
+    "shortEffect": ""
+  },
+  {
+    "id": "pewter-crunchies",
+    "name": "회색강정",
+    "category": "status-cures",
+    "cost": 250,
     "shortEffect": ""
   },
   {
@@ -1645,10 +3157,45 @@
     "shortEffect": ""
   },
   {
+    "id": "pikanium-z--held",
+    "name": "피카츄Z",
+    "category": "z-crystals",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "pikashunium-z--held",
+    "name": "지우피카Z",
+    "category": "z-crystals",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "pink-nectar",
+    "name": "연분홍꿀",
+    "category": "species-specific",
+    "cost": 300,
+    "shortEffect": ""
+  },
+  {
+    "id": "pink-scarf",
+    "name": "분홍밴드",
+    "category": "scarves",
+    "cost": 100,
+    "shortEffect": ""
+  },
+  {
     "id": "pinsirite",
     "name": "쁘사이저나이트",
     "category": "mega-stones",
     "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "pixie-plate",
+    "name": "정령플레이트",
+    "category": "plates",
+    "cost": 1000,
     "shortEffect": ""
   },
   {
@@ -1669,6 +3216,41 @@
     "id": "point-card",
     "name": "포인트카드",
     "category": "gameplay",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "poison-barb",
+    "name": "독바늘",
+    "category": "type-enhancement",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "poison-gem",
+    "name": "독주얼",
+    "category": "jewels",
+    "cost": 200,
+    "shortEffect": ""
+  },
+  {
+    "id": "poison-memory",
+    "name": "포이즌메모리",
+    "category": "memories",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "poison-tera-shard",
+    "name": "Poison Tera Shard",
+    "category": "tera-shard",
+    "cost": 500,
+    "shortEffect": ""
+  },
+  {
+    "id": "poisonium-z--held",
+    "name": "독Z",
+    "category": "z-crystals",
     "cost": 0,
     "shortEffect": ""
   },
@@ -1715,6 +3297,13 @@
     "shortEffect": ""
   },
   {
+    "id": "pomeg-berry",
+    "name": "유석열매",
+    "category": "effort-drop",
+    "cost": 80,
+    "shortEffect": ""
+  },
+  {
     "id": "potion",
     "name": "상처약",
     "category": "healing",
@@ -1729,10 +3318,45 @@
     "shortEffect": ""
   },
   {
+    "id": "power-anklet",
+    "name": "파워앵클릿",
+    "category": "effort-training",
+    "cost": 3000,
+    "shortEffect": ""
+  },
+  {
+    "id": "power-band",
+    "name": "파워밴드",
+    "category": "effort-training",
+    "cost": 3000,
+    "shortEffect": ""
+  },
+  {
+    "id": "power-belt",
+    "name": "파워벨트",
+    "category": "effort-training",
+    "cost": 3000,
+    "shortEffect": ""
+  },
+  {
+    "id": "power-bracer",
+    "name": "파워리스트",
+    "category": "effort-training",
+    "cost": 3000,
+    "shortEffect": ""
+  },
+  {
     "id": "power-herb",
     "name": "파워풀허브",
     "category": "held-items",
     "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "power-lens",
+    "name": "파워렌즈",
+    "category": "effort-training",
+    "cost": 3000,
     "shortEffect": ""
   },
   {
@@ -1743,24 +3367,38 @@
     "shortEffect": ""
   },
   {
+    "id": "power-weight",
+    "name": "파워웨이트",
+    "category": "effort-training",
+    "cost": 3000,
+    "shortEffect": ""
+  },
+  {
     "id": "pp-max",
     "name": "포인트맥스",
-    "category": "stat-boosts",
-    "cost": 8000,
-    "shortEffect": "기술의 최대 PP를 최대치까지 올린다."
+    "category": "vitamins",
+    "cost": 10000,
+    "shortEffect": ""
   },
   {
     "id": "pp-up",
     "name": "포인트업",
-    "category": "stat-boosts",
-    "cost": 3000,
-    "shortEffect": "기술의 최대 PP를 약간 올린다 (최대 3회)."
+    "category": "vitamins",
+    "cost": 10000,
+    "shortEffect": ""
   },
   {
     "id": "premier-ball",
     "name": "프레미어볼",
     "category": "special-balls",
     "cost": 20,
+    "shortEffect": ""
+  },
+  {
+    "id": "primarium-z--held",
+    "name": "누리레느Z",
+    "category": "z-crystals",
+    "cost": 0,
     "shortEffect": ""
   },
   {
@@ -1814,16 +3452,44 @@
   },
   {
     "id": "protein",
-    "name": "단백질",
-    "category": "stat-boosts",
-    "cost": 5000,
-    "shortEffect": "포켓몬의 공격 노력치를 10 올린다 (최대 100)."
+    "name": "타우린",
+    "category": "vitamins",
+    "cost": 10000,
+    "shortEffect": ""
+  },
+  {
+    "id": "psychic-gem",
+    "name": "에스퍼주얼",
+    "category": "jewels",
+    "cost": 200,
+    "shortEffect": ""
+  },
+  {
+    "id": "psychic-memory",
+    "name": "사이킥메모리",
+    "category": "memories",
+    "cost": 1000,
+    "shortEffect": ""
   },
   {
     "id": "psychic-seed",
     "name": "사이코시드",
     "category": "held-items",
     "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "psychic-tera-shard",
+    "name": "Psychic Tera Shard",
+    "category": "tera-shard",
+    "cost": 500,
+    "shortEffect": ""
+  },
+  {
+    "id": "psychium-z--held",
+    "name": "에스퍼Z",
+    "category": "z-crystals",
+    "cost": 0,
     "shortEffect": ""
   },
   {
@@ -1834,6 +3500,27 @@
     "shortEffect": ""
   },
   {
+    "id": "pure-incense",
+    "name": "순결의향로",
+    "category": "training",
+    "cost": 6000,
+    "shortEffect": ""
+  },
+  {
+    "id": "purple-nectar",
+    "name": "보라꿀",
+    "category": "species-specific",
+    "cost": 300,
+    "shortEffect": ""
+  },
+  {
+    "id": "qualot-berry",
+    "name": "파비열매",
+    "category": "effort-drop",
+    "cost": 80,
+    "shortEffect": ""
+  },
+  {
     "id": "quick-ball",
     "name": "퀵볼",
     "category": "special-balls",
@@ -1841,10 +3528,45 @@
     "shortEffect": ""
   },
   {
+    "id": "quick-candy",
+    "name": "속도의사탕",
+    "category": "vitamins",
+    "cost": 20,
+    "shortEffect": ""
+  },
+  {
+    "id": "quick-candy-l",
+    "name": "속도의사탕L",
+    "category": "vitamins",
+    "cost": 20,
+    "shortEffect": ""
+  },
+  {
+    "id": "quick-candy-xl",
+    "name": "속도의사탕XL",
+    "category": "vitamins",
+    "cost": 20,
+    "shortEffect": ""
+  },
+  {
     "id": "quick-claw",
     "name": "선제공격손톱",
     "category": "held-items",
     "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "quick-powder",
+    "name": "스피드파우더",
+    "category": "species-specific",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "quiet-mint",
+    "name": "냉정민트",
+    "category": "nature-mints",
+    "cost": 20,
     "shortEffect": ""
   },
   {
@@ -1876,6 +3598,27 @@
     "shortEffect": ""
   },
   {
+    "id": "rare-candy",
+    "name": "이상한사탕",
+    "category": "vitamins",
+    "cost": 10000,
+    "shortEffect": ""
+  },
+  {
+    "id": "rash-mint",
+    "name": "덜렁민트",
+    "category": "nature-mints",
+    "cost": 20,
+    "shortEffect": ""
+  },
+  {
+    "id": "rawst-berry",
+    "name": "복분열매",
+    "category": "medicine",
+    "cost": 80,
+    "shortEffect": ""
+  },
+  {
     "id": "razor-claw",
     "name": "예리한손톱",
     "category": "held-items",
@@ -1904,6 +3647,13 @@
     "shortEffect": ""
   },
   {
+    "id": "red-nectar",
+    "name": "다홍꿀",
+    "category": "species-specific",
+    "cost": 300,
+    "shortEffect": ""
+  },
+  {
     "id": "red-orb",
     "name": "주홍구슬",
     "category": "plot-advancement",
@@ -1918,10 +3668,31 @@
     "shortEffect": ""
   },
   {
+    "id": "red-scarf",
+    "name": "빨강밴드",
+    "category": "scarves",
+    "cost": 100,
+    "shortEffect": ""
+  },
+  {
+    "id": "red-shard",
+    "name": "빨강조각",
+    "category": "collectibles",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
     "id": "reins-of-unity",
     "name": "유대의고삐",
     "category": "plot-advancement",
     "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "relaxed-mint",
+    "name": "무사태평민트",
+    "category": "nature-mints",
+    "cost": 20,
     "shortEffect": ""
   },
   {
@@ -1932,17 +3703,45 @@
     "shortEffect": ""
   },
   {
+    "id": "resist-wing",
+    "name": "저항력날개",
+    "category": "vitamins",
+    "cost": 300,
+    "shortEffect": ""
+  },
+  {
     "id": "reveal-glass",
     "name": "비추는거울",
-    "category": "plot-advancement",
+    "category": "gameplay",
     "cost": 0,
-    "shortEffect": "토네로스, 볼트로스, 랜드로스의 모습을 바꾼다."
+    "shortEffect": ""
+  },
+  {
+    "id": "revival-herb",
+    "name": "부활초",
+    "category": "revival",
+    "cost": 2800,
+    "shortEffect": ""
+  },
+  {
+    "id": "revive",
+    "name": "기력의조각",
+    "category": "revival",
+    "cost": 2000,
+    "shortEffect": ""
   },
   {
     "id": "ribbon-sweet",
     "name": "리본사탕공예",
     "category": "evolution",
     "cost": 500,
+    "shortEffect": ""
+  },
+  {
+    "id": "rindo-berry",
+    "name": "린드열매",
+    "category": "type-protection",
+    "cost": 80,
     "shortEffect": ""
   },
   {
@@ -1981,6 +3780,41 @@
     "shortEffect": ""
   },
   {
+    "id": "rock-gem",
+    "name": "바위주얼",
+    "category": "jewels",
+    "cost": 200,
+    "shortEffect": ""
+  },
+  {
+    "id": "rock-incense",
+    "name": "암석향로",
+    "category": "type-enhancement",
+    "cost": 2000,
+    "shortEffect": ""
+  },
+  {
+    "id": "rock-memory",
+    "name": "락메모리",
+    "category": "memories",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "rock-tera-shard",
+    "name": "Rock Tera Shard",
+    "category": "tera-shard",
+    "cost": 500,
+    "shortEffect": ""
+  },
+  {
+    "id": "rockium-z--held",
+    "name": "바위Z",
+    "category": "z-crystals",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "rocky-helmet",
     "name": "울퉁불퉁멧",
     "category": "held-items",
@@ -1999,6 +3833,20 @@
     "name": "룸서비스",
     "category": "held-items",
     "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "rose-incense",
+    "name": "꽃향로",
+    "category": "type-enhancement",
+    "cost": 2000,
+    "shortEffect": ""
+  },
+  {
+    "id": "roseli-berry",
+    "name": "로셀열매",
+    "category": "type-protection",
+    "cost": 80,
     "shortEffect": ""
   },
   {
@@ -2023,6 +3871,20 @@
     "shortEffect": ""
   },
   {
+    "id": "rusted-shield",
+    "name": "녹슨방패",
+    "category": "species-specific",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "rusted-sword",
+    "name": "녹슨검",
+    "category": "species-specific",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "sablenite",
     "name": "깜까미나이트",
     "category": "mega-stones",
@@ -2034,6 +3896,13 @@
     "name": "향기주머니",
     "category": "evolution",
     "cost": 2000,
+    "shortEffect": ""
+  },
+  {
+    "id": "sacred-ash",
+    "name": "성스러운분말",
+    "category": "revival",
+    "cost": 50000,
     "shortEffect": ""
   },
   {
@@ -2051,6 +3920,13 @@
     "shortEffect": ""
   },
   {
+    "id": "salac-berry",
+    "name": "캄라열매",
+    "category": "in-a-pinch",
+    "cost": 80,
+    "shortEffect": ""
+  },
+  {
     "id": "salamencite",
     "name": "보만다나이트",
     "category": "mega-stones",
@@ -2062,6 +3938,13 @@
     "name": "Sapphire",
     "category": "plot-advancement",
     "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "sassy-mint",
+    "name": "건방민트",
+    "category": "nature-mints",
+    "cost": 20,
     "shortEffect": ""
   },
   {
@@ -2107,6 +3990,13 @@
     "shortEffect": ""
   },
   {
+    "id": "sea-incense",
+    "name": "바닷물향로",
+    "category": "type-enhancement",
+    "cost": 2000,
+    "shortEffect": ""
+  },
+  {
     "id": "seal-case",
     "name": "실상자",
     "category": "gameplay",
@@ -2128,10 +4018,31 @@
     "shortEffect": ""
   },
   {
+    "id": "serious-mint",
+    "name": "성실민트",
+    "category": "nature-mints",
+    "cost": 20,
+    "shortEffect": ""
+  },
+  {
     "id": "shaderoot-carrot",
     "name": "검은당근",
     "category": "plot-advancement",
     "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "shalour-sable",
+    "name": "사라사블레",
+    "category": "status-cures",
+    "cost": 350,
+    "shortEffect": ""
+  },
+  {
+    "id": "sharp-beak",
+    "name": "예리한부리",
+    "category": "type-enhancement",
+    "cost": 1000,
     "shortEffect": ""
   },
   {
@@ -2170,10 +4081,73 @@
     "shortEffect": ""
   },
   {
+    "id": "shoal-salt",
+    "name": "여울소금",
+    "category": "collectibles",
+    "cost": 20,
+    "shortEffect": ""
+  },
+  {
+    "id": "shoal-shell",
+    "name": "여울조개껍질",
+    "category": "collectibles",
+    "cost": 20,
+    "shortEffect": ""
+  },
+  {
+    "id": "shock-drive",
+    "name": "번개카세트",
+    "category": "species-specific",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "shuca-berry",
+    "name": "슈캐열매",
+    "category": "type-protection",
+    "cost": 80,
+    "shortEffect": ""
+  },
+  {
+    "id": "silk-scarf",
+    "name": "실크스카프",
+    "category": "type-enhancement",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
     "id": "silph-scope",
     "name": "실프스코프",
     "category": "plot-advancement",
     "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "silver-nanab-berry",
+    "name": "은 나나열매",
+    "category": "catching-bonus",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "silver-pinap-berry",
+    "name": "은 파인열매",
+    "category": "catching-bonus",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "silver-powder",
+    "name": "은빛가루",
+    "category": "type-enhancement",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "silver-razz-berry",
+    "name": "은 라즈열매",
+    "category": "catching-bonus",
+    "cost": 1000,
     "shortEffect": ""
   },
   {
@@ -2184,10 +4158,45 @@
     "shortEffect": ""
   },
   {
+    "id": "sitrus-berry",
+    "name": "자뭉열매",
+    "category": "medicine",
+    "cost": 80,
+    "shortEffect": ""
+  },
+  {
+    "id": "sky-plate",
+    "name": "푸른하늘플레이트",
+    "category": "plates",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
     "id": "slowbronite",
     "name": "야도란나이트",
     "category": "mega-stones",
     "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "smart-candy",
+    "name": "지식의사탕",
+    "category": "vitamins",
+    "cost": 20,
+    "shortEffect": ""
+  },
+  {
+    "id": "smart-candy-l",
+    "name": "지식의사탕L",
+    "category": "vitamins",
+    "cost": 20,
+    "shortEffect": ""
+  },
+  {
+    "id": "smart-candy-xl",
+    "name": "지식의사탕XL",
+    "category": "vitamins",
+    "cost": 20,
     "shortEffect": ""
   },
   {
@@ -2205,6 +4214,13 @@
     "shortEffect": ""
   },
   {
+    "id": "snorlium-z--held",
+    "name": "잠만보Z",
+    "category": "z-crystals",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "snowball",
     "name": "눈덩이",
     "category": "held-items",
@@ -2216,6 +4232,13 @@
     "name": "미네랄사이다",
     "category": "healing",
     "cost": 300,
+    "shortEffect": ""
+  },
+  {
+    "id": "soft-sand",
+    "name": "부드러운모래",
+    "category": "type-enhancement",
+    "cost": 1000,
     "shortEffect": ""
   },
   {
@@ -2233,10 +4256,45 @@
     "shortEffect": ""
   },
   {
+    "id": "soothe-bell",
+    "name": "평온의방울",
+    "category": "training",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "soul-dew",
+    "name": "마음의물방울",
+    "category": "species-specific",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "sparkling-stone",
     "name": "빛나는돌",
     "category": "plot-advancement",
     "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "spell-tag",
+    "name": "저주의부적",
+    "category": "type-enhancement",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "splash-plate",
+    "name": "물방울플레이트",
+    "category": "plates",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "spooky-plate",
+    "name": "원령플레이트",
+    "category": "plates",
+    "cost": 1000,
     "shortEffect": ""
   },
   {
@@ -2289,10 +4347,66 @@
     "shortEffect": ""
   },
   {
+    "id": "starf-berry",
+    "name": "스타열매",
+    "category": "in-a-pinch",
+    "cost": 80,
+    "shortEffect": ""
+  },
+  {
+    "id": "steel-gem",
+    "name": "강철주얼",
+    "category": "jewels",
+    "cost": 200,
+    "shortEffect": ""
+  },
+  {
+    "id": "steel-memory",
+    "name": "스틸메모리",
+    "category": "memories",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "steel-tera-shard",
+    "name": "Steel Tera Shard",
+    "category": "tera-shard",
+    "cost": 500,
+    "shortEffect": ""
+  },
+  {
+    "id": "steelium-z--held",
+    "name": "강철Z",
+    "category": "z-crystals",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "steelixite",
     "name": "강철톤나이트",
     "category": "mega-stones",
     "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "stick",
+    "name": "대파",
+    "category": "species-specific",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "sticky-barb",
+    "name": "끈적끈적바늘",
+    "category": "bad-held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "stone-plate",
+    "name": "암석플레이트",
+    "category": "plates",
+    "cost": 1000,
     "shortEffect": ""
   },
   {
@@ -2366,6 +4480,34 @@
     "shortEffect": ""
   },
   {
+    "id": "swift-wing",
+    "name": "순발력날개",
+    "category": "vitamins",
+    "cost": 300,
+    "shortEffect": ""
+  },
+  {
+    "id": "tamato-berry",
+    "name": "토망열매",
+    "category": "effort-drop",
+    "cost": 80,
+    "shortEffect": ""
+  },
+  {
+    "id": "tanga-berry",
+    "name": "리체열매",
+    "category": "type-protection",
+    "cost": 80,
+    "shortEffect": ""
+  },
+  {
+    "id": "tapunium-z--held",
+    "name": "카푸Z",
+    "category": "z-crystals",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
     "id": "tart-apple",
     "name": "새콤한사과",
     "category": "evolution",
@@ -2387,143 +4529,17 @@
     "shortEffect": ""
   },
   {
-    "id": "tera-shard-bug",
-    "name": "벌레테라피스",
-    "category": "plot-advancement",
-    "cost": 50,
-    "shortEffect": "50개로 포켓몬의 테라스탈 타입을 벌레로 변경."
-  },
-  {
-    "id": "tera-shard-dark",
-    "name": "악테라피스",
-    "category": "plot-advancement",
-    "cost": 50,
-    "shortEffect": "50개로 포켓몬의 테라스탈 타입을 악으로 변경."
-  },
-  {
-    "id": "tera-shard-dragon",
-    "name": "드래곤테라피스",
-    "category": "plot-advancement",
-    "cost": 50,
-    "shortEffect": "50개로 포켓몬의 테라스탈 타입을 드래곤으로 변경."
-  },
-  {
-    "id": "tera-shard-electric",
-    "name": "전기테라피스",
-    "category": "plot-advancement",
-    "cost": 50,
-    "shortEffect": "50개로 포켓몬의 테라스탈 타입을 전기로 변경."
-  },
-  {
-    "id": "tera-shard-fairy",
-    "name": "페어리테라피스",
-    "category": "plot-advancement",
-    "cost": 50,
-    "shortEffect": "50개로 포켓몬의 테라스탈 타입을 페어리로 변경."
-  },
-  {
-    "id": "tera-shard-fighting",
-    "name": "격투테라피스",
-    "category": "plot-advancement",
-    "cost": 50,
-    "shortEffect": "50개로 포켓몬의 테라스탈 타입을 격투로 변경."
-  },
-  {
-    "id": "tera-shard-fire",
-    "name": "불꽃테라피스",
-    "category": "plot-advancement",
-    "cost": 50,
-    "shortEffect": "50개로 포켓몬의 테라스탈 타입을 불꽃으로 변경."
-  },
-  {
-    "id": "tera-shard-flying",
-    "name": "비행테라피스",
-    "category": "plot-advancement",
-    "cost": 50,
-    "shortEffect": "50개로 포켓몬의 테라스탈 타입을 비행으로 변경."
-  },
-  {
-    "id": "tera-shard-ghost",
-    "name": "고스트테라피스",
-    "category": "plot-advancement",
-    "cost": 50,
-    "shortEffect": "50개로 포켓몬의 테라스탈 타입을 고스트로 변경."
-  },
-  {
-    "id": "tera-shard-grass",
-    "name": "풀테라피스",
-    "category": "plot-advancement",
-    "cost": 50,
-    "shortEffect": "50개로 포켓몬의 테라스탈 타입을 풀로 변경."
-  },
-  {
-    "id": "tera-shard-ground",
-    "name": "땅테라피스",
-    "category": "plot-advancement",
-    "cost": 50,
-    "shortEffect": "50개로 포켓몬의 테라스탈 타입을 땅으로 변경."
-  },
-  {
-    "id": "tera-shard-ice",
-    "name": "얼음테라피스",
-    "category": "plot-advancement",
-    "cost": 50,
-    "shortEffect": "50개로 포켓몬의 테라스탈 타입을 얼음으로 변경."
-  },
-  {
-    "id": "tera-shard-normal",
-    "name": "노말테라피스",
-    "category": "plot-advancement",
-    "cost": 50,
-    "shortEffect": "50개로 포켓몬의 테라스탈 타입을 노말로 변경."
-  },
-  {
-    "id": "tera-shard-poison",
-    "name": "독테라피스",
-    "category": "plot-advancement",
-    "cost": 50,
-    "shortEffect": "50개로 포켓몬의 테라스탈 타입을 독으로 변경."
-  },
-  {
-    "id": "tera-shard-psychic",
-    "name": "에스퍼테라피스",
-    "category": "plot-advancement",
-    "cost": 50,
-    "shortEffect": "50개로 포켓몬의 테라스탈 타입을 에스퍼로 변경."
-  },
-  {
-    "id": "tera-shard-rock",
-    "name": "바위테라피스",
-    "category": "plot-advancement",
-    "cost": 50,
-    "shortEffect": "50개로 포켓몬의 테라스탈 타입을 바위로 변경."
-  },
-  {
-    "id": "tera-shard-steel",
-    "name": "강철테라피스",
-    "category": "plot-advancement",
-    "cost": 50,
-    "shortEffect": "50개로 포켓몬의 테라스탈 타입을 강철로 변경."
-  },
-  {
-    "id": "tera-shard-stellar",
-    "name": "스텔라테라피스",
-    "category": "plot-advancement",
-    "cost": 50,
-    "shortEffect": "50개로 포켓몬의 테라스탈 타입을 스텔라로 변경."
-  },
-  {
-    "id": "tera-shard-water",
-    "name": "물테라피스",
-    "category": "plot-advancement",
-    "cost": 50,
-    "shortEffect": "50개로 포켓몬의 테라스탈 타입을 물로 변경."
-  },
-  {
     "id": "terrain-extender",
     "name": "그라운드코트",
     "category": "held-items",
     "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "thick-club",
+    "name": "굵은뼈",
+    "category": "species-specific",
+    "cost": 1000,
     "shortEffect": ""
   },
   {
@@ -2555,10 +4571,1221 @@
     "shortEffect": ""
   },
   {
+    "id": "timid-mint",
+    "name": "겁쟁이민트",
+    "category": "nature-mints",
+    "cost": 20,
+    "shortEffect": ""
+  },
+  {
     "id": "tm-case",
     "name": "기술머신케이스",
     "category": "gameplay",
     "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm00",
+    "name": "기술머신00",
+    "category": "all-machines",
+    "cost": 10000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm01",
+    "name": "기술머신01",
+    "category": "all-machines",
+    "cost": 40000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm02",
+    "name": "기술머신02",
+    "category": "all-machines",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm03",
+    "name": "기술머신03",
+    "category": "all-machines",
+    "cost": 50000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm04",
+    "name": "기술머신04",
+    "category": "all-machines",
+    "cost": 50000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm05",
+    "name": "기술머신05",
+    "category": "all-machines",
+    "cost": 50000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm06",
+    "name": "기술머신06",
+    "category": "all-machines",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm07",
+    "name": "기술머신07",
+    "category": "all-machines",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm08",
+    "name": "기술머신08",
+    "category": "all-machines",
+    "cost": 50000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm09",
+    "name": "기술머신09",
+    "category": "all-machines",
+    "cost": 50000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm10",
+    "name": "기술머신10",
+    "category": "all-machines",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm100",
+    "name": "기술머신100",
+    "category": "all-machines",
+    "cost": 5000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm101",
+    "name": "TM101",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm102",
+    "name": "TM102",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm103",
+    "name": "TM103",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm104",
+    "name": "TM104",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm105",
+    "name": "TM105",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm106",
+    "name": "TM106",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm107",
+    "name": "TM107",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm108",
+    "name": "TM108",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm109",
+    "name": "TM109",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm11",
+    "name": "기술머신11",
+    "category": "all-machines",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm110",
+    "name": "TM110",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm111",
+    "name": "TM111",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm112",
+    "name": "TM112",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm113",
+    "name": "TM113",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm114",
+    "name": "TM114",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm115",
+    "name": "TM115",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm116",
+    "name": "TM116",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm117",
+    "name": "TM117",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm118",
+    "name": "TM118",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm119",
+    "name": "TM119",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm12",
+    "name": "기술머신12",
+    "category": "all-machines",
+    "cost": 50000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm120",
+    "name": "TM120",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm121",
+    "name": "TM121",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm122",
+    "name": "TM122",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm123",
+    "name": "TM123",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm124",
+    "name": "TM124",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm125",
+    "name": "TM125",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm126",
+    "name": "TM126",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm127",
+    "name": "TM127",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm128",
+    "name": "TM128",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm129",
+    "name": "TM129",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm13",
+    "name": "기술머신13",
+    "category": "all-machines",
+    "cost": 10000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm130",
+    "name": "TM130",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm131",
+    "name": "TM131",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm132",
+    "name": "TM132",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm133",
+    "name": "TM133",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm134",
+    "name": "TM134",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm135",
+    "name": "TM135",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm136",
+    "name": "TM136",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm137",
+    "name": "TM137",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm138",
+    "name": "TM138",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm139",
+    "name": "TM139",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm14",
+    "name": "기술머신14",
+    "category": "all-machines",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm140",
+    "name": "TM140",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm141",
+    "name": "TM141",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm142",
+    "name": "TM142",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm143",
+    "name": "TM143",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm144",
+    "name": "TM144",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm145",
+    "name": "TM145",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm146",
+    "name": "TM146",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm147",
+    "name": "TM147",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm148",
+    "name": "TM148",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm149",
+    "name": "TM149",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm15",
+    "name": "기술머신15",
+    "category": "all-machines",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm150",
+    "name": "TM150",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm151",
+    "name": "TM151",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm152",
+    "name": "TM152",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm153",
+    "name": "TM153",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm154",
+    "name": "TM154",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm155",
+    "name": "TM155",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm156",
+    "name": "TM156",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm157",
+    "name": "TM157",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm158",
+    "name": "TM158",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm159",
+    "name": "TM159",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm16",
+    "name": "기술머신16",
+    "category": "all-machines",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm160",
+    "name": "TM160",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm161",
+    "name": "TM161",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm162",
+    "name": "TM162",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm163",
+    "name": "TM163",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm164",
+    "name": "TM164",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm165",
+    "name": "TM165",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm166",
+    "name": "TM166",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm167",
+    "name": "TM167",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm168",
+    "name": "TM168",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm169",
+    "name": "TM169",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm17",
+    "name": "기술머신17",
+    "category": "all-machines",
+    "cost": 10000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm170",
+    "name": "TM170",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm171",
+    "name": "TM171",
+    "category": "all-machines",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm18",
+    "name": "기술머신18",
+    "category": "all-machines",
+    "cost": 10000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm19",
+    "name": "기술머신19",
+    "category": "all-machines",
+    "cost": 10000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm20",
+    "name": "기술머신20",
+    "category": "all-machines",
+    "cost": 100000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm21",
+    "name": "기술머신21",
+    "category": "all-machines",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm22",
+    "name": "기술머신22",
+    "category": "all-machines",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm23",
+    "name": "기술머신23",
+    "category": "all-machines",
+    "cost": 10000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm24",
+    "name": "기술머신24",
+    "category": "all-machines",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm25",
+    "name": "기술머신25",
+    "category": "all-machines",
+    "cost": 10000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm26",
+    "name": "기술머신26",
+    "category": "all-machines",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm27",
+    "name": "기술머신27",
+    "category": "all-machines",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm28",
+    "name": "기술머신28",
+    "category": "all-machines",
+    "cost": 100000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm29",
+    "name": "기술머신29",
+    "category": "all-machines",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm30",
+    "name": "기술머신30",
+    "category": "all-machines",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm31",
+    "name": "기술머신31",
+    "category": "all-machines",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm32",
+    "name": "기술머신32",
+    "category": "all-machines",
+    "cost": 10000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm33",
+    "name": "기술머신33",
+    "category": "all-machines",
+    "cost": 10000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm34",
+    "name": "기술머신34",
+    "category": "all-machines",
+    "cost": 10000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm35",
+    "name": "기술머신35",
+    "category": "all-machines",
+    "cost": 10000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm36",
+    "name": "기술머신36",
+    "category": "all-machines",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm37",
+    "name": "기술머신37",
+    "category": "all-machines",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm38",
+    "name": "기술머신38",
+    "category": "all-machines",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm39",
+    "name": "기술머신39",
+    "category": "all-machines",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm40",
+    "name": "기술머신40",
+    "category": "all-machines",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm41",
+    "name": "기술머신41",
+    "category": "all-machines",
+    "cost": 10000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm42",
+    "name": "기술머신42",
+    "category": "all-machines",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm43",
+    "name": "기술머신43",
+    "category": "all-machines",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm44",
+    "name": "기술머신44",
+    "category": "all-machines",
+    "cost": 100000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm45",
+    "name": "기술머신45",
+    "category": "all-machines",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm46",
+    "name": "기술머신46",
+    "category": "all-machines",
+    "cost": 30000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm47",
+    "name": "기술머신47",
+    "category": "all-machines",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm48",
+    "name": "기술머신48",
+    "category": "all-machines",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm49",
+    "name": "기술머신49",
+    "category": "all-machines",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm50",
+    "name": "기술머신50",
+    "category": "all-machines",
+    "cost": 10000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm51",
+    "name": "기술머신51",
+    "category": "all-machines",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm52",
+    "name": "기술머신52",
+    "category": "all-machines",
+    "cost": 100000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm53",
+    "name": "기술머신53",
+    "category": "all-machines",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm54",
+    "name": "기술머신54",
+    "category": "all-machines",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm55",
+    "name": "기술머신55",
+    "category": "all-machines",
+    "cost": 10000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm56",
+    "name": "기술머신56",
+    "category": "all-machines",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm57",
+    "name": "기술머신57",
+    "category": "all-machines",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm58",
+    "name": "기술머신58",
+    "category": "all-machines",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm59",
+    "name": "기술머신59",
+    "category": "all-machines",
+    "cost": 100000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm60",
+    "name": "기술머신60",
+    "category": "all-machines",
+    "cost": 30000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm61",
+    "name": "기술머신61",
+    "category": "all-machines",
+    "cost": 30000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm62",
+    "name": "기술머신62",
+    "category": "all-machines",
+    "cost": 30000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm63",
+    "name": "기술머신63",
+    "category": "all-machines",
+    "cost": 50000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm64",
+    "name": "기술머신64",
+    "category": "all-machines",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm65",
+    "name": "기술머신65",
+    "category": "all-machines",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm66",
+    "name": "기술머신66",
+    "category": "all-machines",
+    "cost": 30000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm67",
+    "name": "기술머신67",
+    "category": "all-machines",
+    "cost": 30000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm68",
+    "name": "기술머신68",
+    "category": "all-machines",
+    "cost": 30000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm69",
+    "name": "기술머신69",
+    "category": "all-machines",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm70",
+    "name": "기술머신70",
+    "category": "all-machines",
+    "cost": 50000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm71",
+    "name": "기술머신71",
+    "category": "all-machines",
+    "cost": 50000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm72",
+    "name": "기술머신72",
+    "category": "all-machines",
+    "cost": 50000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm73",
+    "name": "기술머신73",
+    "category": "all-machines",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm74",
+    "name": "기술머신74",
+    "category": "all-machines",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm75",
+    "name": "기술머신75",
+    "category": "all-machines",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm76",
+    "name": "기술머신76",
+    "category": "all-machines",
+    "cost": 10000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm77",
+    "name": "기술머신77",
+    "category": "all-machines",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm78",
+    "name": "기술머신78",
+    "category": "all-machines",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm79",
+    "name": "기술머신79",
+    "category": "all-machines",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm80",
+    "name": "기술머신80",
+    "category": "all-machines",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm81",
+    "name": "기술머신81",
+    "category": "all-machines",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm82",
+    "name": "기술머신82",
+    "category": "all-machines",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm83",
+    "name": "기술머신83",
+    "category": "all-machines",
+    "cost": 100000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm84",
+    "name": "기술머신84",
+    "category": "all-machines",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm85",
+    "name": "기술머신85",
+    "category": "all-machines",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm86",
+    "name": "기술머신86",
+    "category": "all-machines",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm87",
+    "name": "기술머신87",
+    "category": "all-machines",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm88",
+    "name": "기술머신88",
+    "category": "all-machines",
+    "cost": 20000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm89",
+    "name": "기술머신89",
+    "category": "all-machines",
+    "cost": 20000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm90",
+    "name": "기술머신90",
+    "category": "all-machines",
+    "cost": 20000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm91",
+    "name": "기술머신91",
+    "category": "all-machines",
+    "cost": 20000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm92",
+    "name": "기술머신92",
+    "category": "all-machines",
+    "cost": 100000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm93",
+    "name": "기술머신93",
+    "category": "all-machines",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm94",
+    "name": "기술머신94",
+    "category": "all-machines",
+    "cost": 10000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm95",
+    "name": "기술머신95",
+    "category": "all-machines",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm96",
+    "name": "기술머신96",
+    "category": "all-machines",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm97",
+    "name": "기술머신97",
+    "category": "all-machines",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm98",
+    "name": "기술머신98",
+    "category": "all-machines",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tm99",
+    "name": "기술머신99",
+    "category": "all-machines",
+    "cost": 1000,
     "shortEffect": ""
   },
   {
@@ -2569,6 +5796,27 @@
     "shortEffect": ""
   },
   {
+    "id": "tough-candy",
+    "name": "수비의사탕",
+    "category": "vitamins",
+    "cost": 20,
+    "shortEffect": ""
+  },
+  {
+    "id": "tough-candy-l",
+    "name": "수비의사탕L",
+    "category": "vitamins",
+    "cost": 20,
+    "shortEffect": ""
+  },
+  {
+    "id": "tough-candy-xl",
+    "name": "수비의사탕XL",
+    "category": "vitamins",
+    "cost": 20,
+    "shortEffect": ""
+  },
+  {
     "id": "town-map",
     "name": "타운맵",
     "category": "gameplay",
@@ -2576,10 +5824,731 @@
     "shortEffect": ""
   },
   {
+    "id": "toxic-orb",
+    "name": "맹독구슬",
+    "category": "bad-held-items",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "toxic-plate",
+    "name": "맹독플레이트",
+    "category": "plates",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr00",
+    "name": "기술레코드00",
+    "category": "all-machines",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr01",
+    "name": "기술레코드01",
+    "category": "all-machines",
+    "cost": 6000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr02",
+    "name": "기술레코드02",
+    "category": "all-machines",
+    "cost": 10000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr03",
+    "name": "기술레코드03",
+    "category": "all-machines",
+    "cost": 16000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr04",
+    "name": "기술레코드04",
+    "category": "all-machines",
+    "cost": 10000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr05",
+    "name": "기술레코드05",
+    "category": "all-machines",
+    "cost": 10000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr06",
+    "name": "기술레코드06",
+    "category": "all-machines",
+    "cost": 16000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr07",
+    "name": "기술레코드07",
+    "category": "all-machines",
+    "cost": 6000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr08",
+    "name": "기술레코드08",
+    "category": "all-machines",
+    "cost": 10000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr09",
+    "name": "기술레코드09",
+    "category": "all-machines",
+    "cost": 16000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr10",
+    "name": "기술레코드10",
+    "category": "all-machines",
+    "cost": 16000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr11",
+    "name": "기술레코드11",
+    "category": "all-machines",
+    "cost": 10000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr12",
+    "name": "기술레코드12",
+    "category": "all-machines",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr13",
+    "name": "기술레코드13",
+    "category": "all-machines",
+    "cost": 2000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr14",
+    "name": "기술레코드14",
+    "category": "all-machines",
+    "cost": 2000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr15",
+    "name": "기술레코드15",
+    "category": "all-machines",
+    "cost": 16000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr16",
+    "name": "기술레코드16",
+    "category": "all-machines",
+    "cost": 6000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr17",
+    "name": "기술레코드17",
+    "category": "all-machines",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr18",
+    "name": "기술레코드18",
+    "category": "all-machines",
+    "cost": 6000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr19",
+    "name": "기술레코드19",
+    "category": "all-machines",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr20",
+    "name": "기술레코드20",
+    "category": "all-machines",
+    "cost": 6000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr21",
+    "name": "기술레코드21",
+    "category": "all-machines",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr22",
+    "name": "기술레코드22",
+    "category": "all-machines",
+    "cost": 10000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr23",
+    "name": "기술레코드23",
+    "category": "all-machines",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr24",
+    "name": "기술레코드24",
+    "category": "all-machines",
+    "cost": 16000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr25",
+    "name": "기술레코드25",
+    "category": "all-machines",
+    "cost": 6000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr26",
+    "name": "기술레코드26",
+    "category": "all-machines",
+    "cost": 2000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr27",
+    "name": "기술레코드27",
+    "category": "all-machines",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr28",
+    "name": "기술레코드28",
+    "category": "all-machines",
+    "cost": 16000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr29",
+    "name": "기술레코드29",
+    "category": "all-machines",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr30",
+    "name": "기술레코드30",
+    "category": "all-machines",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr31",
+    "name": "기술레코드31",
+    "category": "all-machines",
+    "cost": 10000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr32",
+    "name": "기술레코드32",
+    "category": "all-machines",
+    "cost": 6000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr33",
+    "name": "기술레코드33",
+    "category": "all-machines",
+    "cost": 6000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr34",
+    "name": "기술레코드34",
+    "category": "all-machines",
+    "cost": 6000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr35",
+    "name": "기술레코드35",
+    "category": "all-machines",
+    "cost": 6000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr36",
+    "name": "기술레코드36",
+    "category": "all-machines",
+    "cost": 10000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr37",
+    "name": "기술레코드37",
+    "category": "all-machines",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr38",
+    "name": "기술레코드38",
+    "category": "all-machines",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr39",
+    "name": "기술레코드39",
+    "category": "all-machines",
+    "cost": 16000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr40",
+    "name": "기술레코드40",
+    "category": "all-machines",
+    "cost": 2000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr41",
+    "name": "기술레코드41",
+    "category": "all-machines",
+    "cost": 6000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr42",
+    "name": "기술레코드42",
+    "category": "all-machines",
+    "cost": 10000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr43",
+    "name": "기술레코드43",
+    "category": "all-machines",
+    "cost": 16000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr44",
+    "name": "기술레코드44",
+    "category": "all-machines",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr45",
+    "name": "기술레코드45",
+    "category": "all-machines",
+    "cost": 10000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr46",
+    "name": "기술레코드46",
+    "category": "all-machines",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr47",
+    "name": "기술레코드47",
+    "category": "all-machines",
+    "cost": 6000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr48",
+    "name": "기술레코드48",
+    "category": "all-machines",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr49",
+    "name": "기술레코드49",
+    "category": "all-machines",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr50",
+    "name": "기술레코드50",
+    "category": "all-machines",
+    "cost": 10000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr51",
+    "name": "기술레코드51",
+    "category": "all-machines",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr52",
+    "name": "기술레코드52",
+    "category": "all-machines",
+    "cost": 6000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr53",
+    "name": "기술레코드53",
+    "category": "all-machines",
+    "cost": 16000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr54",
+    "name": "기술레코드54",
+    "category": "all-machines",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr55",
+    "name": "기술레코드55",
+    "category": "all-machines",
+    "cost": 16000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr56",
+    "name": "기술레코드56",
+    "category": "all-machines",
+    "cost": 6000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr57",
+    "name": "기술레코드57",
+    "category": "all-machines",
+    "cost": 6000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr58",
+    "name": "기술레코드58",
+    "category": "all-machines",
+    "cost": 6000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr59",
+    "name": "기술레코드59",
+    "category": "all-machines",
+    "cost": 6000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr60",
+    "name": "기술레코드60",
+    "category": "all-machines",
+    "cost": 6000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr61",
+    "name": "기술레코드61",
+    "category": "all-machines",
+    "cost": 10000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr62",
+    "name": "기술레코드62",
+    "category": "all-machines",
+    "cost": 6000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr63",
+    "name": "기술레코드63",
+    "category": "all-machines",
+    "cost": 6000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr64",
+    "name": "기술레코드64",
+    "category": "all-machines",
+    "cost": 16000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr65",
+    "name": "기술레코드65",
+    "category": "all-machines",
+    "cost": 10000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr66",
+    "name": "기술레코드66",
+    "category": "all-machines",
+    "cost": 16000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr67",
+    "name": "기술레코드67",
+    "category": "all-machines",
+    "cost": 10000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr68",
+    "name": "기술레코드68",
+    "category": "all-machines",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr69",
+    "name": "기술레코드69",
+    "category": "all-machines",
+    "cost": 6000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr70",
+    "name": "기술레코드70",
+    "category": "all-machines",
+    "cost": 10000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr71",
+    "name": "기술레코드71",
+    "category": "all-machines",
+    "cost": 16000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr72",
+    "name": "기술레코드72",
+    "category": "all-machines",
+    "cost": 16000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr73",
+    "name": "기술레코드73",
+    "category": "all-machines",
+    "cost": 16000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr74",
+    "name": "기술레코드74",
+    "category": "all-machines",
+    "cost": 10000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr75",
+    "name": "기술레코드75",
+    "category": "all-machines",
+    "cost": 16000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr76",
+    "name": "기술레코드76",
+    "category": "all-machines",
+    "cost": 6000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr77",
+    "name": "기술레코드77",
+    "category": "all-machines",
+    "cost": 6000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr78",
+    "name": "기술레코드78",
+    "category": "all-machines",
+    "cost": 10000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr79",
+    "name": "기술레코드79",
+    "category": "all-machines",
+    "cost": 6000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr80",
+    "name": "기술레코드80",
+    "category": "all-machines",
+    "cost": 6000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr81",
+    "name": "기술레코드81",
+    "category": "all-machines",
+    "cost": 6000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr82",
+    "name": "기술레코드82",
+    "category": "all-machines",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr83",
+    "name": "기술레코드83",
+    "category": "all-machines",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr84",
+    "name": "기술레코드84",
+    "category": "all-machines",
+    "cost": 6000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr85",
+    "name": "기술레코드85",
+    "category": "all-machines",
+    "cost": 2000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr86",
+    "name": "기술레코드86",
+    "category": "all-machines",
+    "cost": 10000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr87",
+    "name": "기술레코드87",
+    "category": "all-machines",
+    "cost": 6000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr88",
+    "name": "기술레코드88",
+    "category": "all-machines",
+    "cost": 6000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr89",
+    "name": "기술레코드89",
+    "category": "all-machines",
+    "cost": 16000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr90",
+    "name": "기술레코드90",
+    "category": "all-machines",
+    "cost": 10000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr91",
+    "name": "기술레코드91",
+    "category": "all-machines",
+    "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr92",
+    "name": "기술레코드92",
+    "category": "all-machines",
+    "cost": 6000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr93",
+    "name": "기술레코드93",
+    "category": "all-machines",
+    "cost": 10000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr94",
+    "name": "기술레코드94",
+    "category": "all-machines",
+    "cost": 10000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr95",
+    "name": "기술레코드95",
+    "category": "all-machines",
+    "cost": 6000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr96",
+    "name": "기술레코드96",
+    "category": "all-machines",
+    "cost": 10000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr97",
+    "name": "기술레코드97",
+    "category": "all-machines",
+    "cost": 10000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr98",
+    "name": "기술레코드98",
+    "category": "all-machines",
+    "cost": 6000,
+    "shortEffect": ""
+  },
+  {
+    "id": "tr99",
+    "name": "기술레코드99",
+    "category": "all-machines",
+    "cost": 6000,
+    "shortEffect": ""
+  },
+  {
     "id": "tri-pass",
     "name": "Tri-Pass",
     "category": "plot-advancement",
     "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "twisted-spoon",
+    "name": "휘어진스푼",
+    "category": "type-enhancement",
+    "cost": 1000,
     "shortEffect": ""
   },
   {
@@ -2595,13 +6564,6 @@
     "category": "standard-balls",
     "cost": 800,
     "shortEffect": ""
-  },
-  {
-    "id": "ultra-necrozium-z",
-    "name": "울트라네크로z",
-    "category": "z-crystals",
-    "cost": 0,
-    "shortEffect": "네크로즈마의 울트라버스트."
   },
   {
     "id": "unown-report",
@@ -2646,6 +6608,13 @@
     "shortEffect": ""
   },
   {
+    "id": "wacan-berry",
+    "name": "초나열매",
+    "category": "type-protection",
+    "cost": 80,
+    "shortEffect": ""
+  },
+  {
     "id": "wailmer-pail",
     "name": "고래왕자물뿌리개",
     "category": "gameplay",
@@ -2653,10 +6622,45 @@
     "shortEffect": ""
   },
   {
+    "id": "water-gem",
+    "name": "물주얼",
+    "category": "jewels",
+    "cost": 200,
+    "shortEffect": ""
+  },
+  {
+    "id": "water-memory",
+    "name": "워터메모리",
+    "category": "memories",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
     "id": "water-stone",
     "name": "물의돌",
     "category": "evolution",
     "cost": 3000,
+    "shortEffect": ""
+  },
+  {
+    "id": "water-tera-shard",
+    "name": "Water Tera Shard",
+    "category": "tera-shard",
+    "cost": 500,
+    "shortEffect": ""
+  },
+  {
+    "id": "waterium-z--held",
+    "name": "물Z",
+    "category": "z-crystals",
+    "cost": 0,
+    "shortEffect": ""
+  },
+  {
+    "id": "wave-incense",
+    "name": "잔물결향로",
+    "category": "type-enhancement",
+    "cost": 2000,
     "shortEffect": ""
   },
   {
@@ -2699,6 +6703,13 @@
     "name": "박식안경",
     "category": "held-items",
     "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "wishing-piece",
+    "name": "소원의덩어리",
+    "category": "collectibles",
+    "cost": 20,
     "shortEffect": ""
   },
   {
@@ -2772,6 +6783,34 @@
     "shortEffect": ""
   },
   {
+    "id": "yache-berry",
+    "name": "플카열매",
+    "category": "type-protection",
+    "cost": 80,
+    "shortEffect": ""
+  },
+  {
+    "id": "yellow-nectar",
+    "name": "진노랑꿀",
+    "category": "species-specific",
+    "cost": 300,
+    "shortEffect": ""
+  },
+  {
+    "id": "yellow-scarf",
+    "name": "노랑밴드",
+    "category": "scarves",
+    "cost": 100,
+    "shortEffect": ""
+  },
+  {
+    "id": "yellow-shard",
+    "name": "노랑조각",
+    "category": "collectibles",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
     "id": "z-ring",
     "name": "Z링",
     "category": "gameplay",
@@ -2779,11 +6818,18 @@
     "shortEffect": ""
   },
   {
+    "id": "zap-plate",
+    "name": "우뢰플레이트",
+    "category": "plates",
+    "cost": 1000,
+    "shortEffect": ""
+  },
+  {
     "id": "zinc",
-    "name": "아연",
-    "category": "stat-boosts",
-    "cost": 5000,
-    "shortEffect": "포켓몬의 특수방어 노력치를 10 올린다 (최대 100)."
+    "name": "키토산",
+    "category": "vitamins",
+    "cost": 10000,
+    "shortEffect": ""
   },
   {
     "id": "zoom-lens",

@@ -1,16 +1,27 @@
 import { fetchJson } from "./fetch.mjs";
 import { mapWithConcurrency, pickLocalizedFlavorText, pickLocalizedName, projectPath, writeJsonFile } from "./common.mjs";
 
-const INCLUDED_ITEM_CATEGORIES = new Set([
-  "evolution",
-  "healing",
-  "standard-balls",
-  "special-balls",
-  "held-items",
-  "stat-boosts",
-  "mega-stones",
-  "plot-advancement",
-  "gameplay",
+// Excludes categories that are flavor/region-specific clutter. Everything else
+// — TMs, status cures, revives, vitamins, etc. — flows into the dataset so the
+// in-game item registry can decide what to surface.
+const EXCLUDED_ITEM_CATEGORIES = new Set([
+  "dynamax-crystals",   // Sword/Shield Max Raid tickets
+  "tm-materials",       // Gen 9 TM crafting raw materials
+  "unused",             // explicitly unused
+  "all-mail",           // mail items
+  "sandwich-ingredients", "curry-ingredients", "picnic", "baking-only", // cooking
+  "data-cards",         // Gen 9 SV-specific
+  "miracle-shooter",    // Pokemon Pinball
+  "spelunking",         // Legends Arceus specific
+  "event-items",        // one-off event distributions
+  "mulch",              // gardening
+  "apricorn-box",       // container, not a ball
+  "dex-completion",     // single utility (poke-radar, etc.)
+  "flutes",             // RSE specific
+  "species-candies",    // Gen 9 SV LA candies
+  "loot",               // sellable junk
+  "picky-healing",      // Gen 8 odd category
+  "other",
 ]);
 
 export async function syncItems(options = {}) {
@@ -31,7 +42,7 @@ export async function syncItems(options = {}) {
   );
 
   const data = details
-    .filter((item) => INCLUDED_ITEM_CATEGORIES.has(item.category?.name))
+    .filter((item) => !EXCLUDED_ITEM_CATEGORIES.has(item.category?.name ?? "unknown"))
     .map((item) => ({
       id: item.name,
       name: pickLocalizedName(item.names, item.name),
