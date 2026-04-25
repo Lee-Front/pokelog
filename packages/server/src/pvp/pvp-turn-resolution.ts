@@ -1265,7 +1265,16 @@ export function executeFight(
     const baseStatChance = moveData.meta?.statChance ?? 0;
     const graceStatMul = atkPoke.abilityId === "serene-grace" ? 2 : 1;
     const chance = Math.min(100, baseStatChance * graceStatMul);
-    const targetsSelf = moveData.target === "user" || (moveData.category === "status" && baseStatChance === 0);
+    // Stat-change targeting must be driven entirely by the move's `target` field.
+    // Earlier versions used `category === "status" && statChance === 0` as a
+    // self-target heuristic, but that incorrectly classified opponent-targeting
+    // status moves (sand-attack, growl, leer, tail-whip, string-shot,
+    // smokescreen, …) as self-targeting, causing the drops to land on the
+    // attacker. The only target ids that legitimately apply to the user side
+    // are "user", "users-field", and "user-and-allies".
+    const targetsSelf = moveData.target === "user"
+      || moveData.target === "users-field"
+      || moveData.target === "user-and-allies";
 
     if (targetsSelf) {
       // ── Ability: Contrary reverses stat changes ──

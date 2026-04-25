@@ -43,31 +43,22 @@ describe("Scenario 35 — Accuracy / Evasion", () => {
     if (ctx) await stopTestServer(ctx);
   });
 
-  it("growl lowers opponent's attack by 1 stage", () => {
-    // growl: status move with target=selected-pokemon-allies-or-self —
-    // its `targetSelf` heuristic kicks in correctly here because the
-    // move's stat-change object expresses the drop on the opponent
-    // and the implementation's category+chance branch lands on it.
+  it("sand-attack lowers opponent's accuracy by 1 stage", () => {
+    // sand-attack: status move with target=selected-pokemon. The drop must
+    // land on the opponent — the attacker's accuracy stage should remain 0.
     const mock = vi.spyOn(Math, "random").mockReturnValue(0);
     try {
-      const me = makeMon("rattata", ["growl"]);
+      const me = makeMon("rattata", ["sand-attack"]);
       const opp = makeMon("snorlax", ["splash"], { hp: 400, maxHp: 400 });
       const room = createRoom("u1", "A", [me], "u2", "B", [opp], false);
       selectLead(room, "u1", 0);
       selectLead(room, "u2", 0);
 
-      submitAction(room, "u1", { type: "fight", moveId: "growl" });
+      submitAction(room, "u1", { type: "fight", moveId: "sand-attack" });
       submitAction(room, "u2", { type: "fight", moveId: "splash" });
 
-      // Either the attack drop landed on the opponent (the canonical
-      // outcome) or it landed on self (the documented heuristic in
-      // pvp-turn-resolution.ts that treats "category === status &&
-      // statChance === 0" as self-target). We accept either to keep
-      // this test resilient against the heuristic, but at least one
-      // attack stage SHOULD have moved by 1.
-      const total = Math.abs(room.playerB.statStages.attack)
-        + Math.abs(room.playerA.statStages.attack);
-      expect(total).toBeGreaterThanOrEqual(1);
+      expect(room.playerB.statStages.accuracy).toBe(-1);
+      expect(room.playerA.statStages.accuracy).toBe(0);
     } finally {
       mock.mockRestore();
     }

@@ -96,9 +96,7 @@ describe("Scenario 11 — Stat Stages", () => {
   });
 
   it("intimidate drops the opponent's attack stage by -1 on switch-in", () => {
-    // Intimidate is the canonical opponent-attack drop hook in this engine
-    // (status-move stat drops have a quirk where they sometimes apply to
-    // self when their statChance is 0). It fires on lead select.
+    // Intimidate is an ability hook that fires on lead select / switch-in.
     const me = makeMon("gyarados", ["splash"], {
       abilityId: "intimidate",
     });
