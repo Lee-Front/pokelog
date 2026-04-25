@@ -2,6 +2,7 @@ import { Router } from "express";
 import type { Response } from "express";
 import { authMiddleware, type AuthRequest } from "../middleware/auth-middleware.js";
 import { getUser, saveUser } from "../storage/user-store.js";
+import { withUserLock } from "../storage/user-mutex.js";
 import { getAllSpecies } from "../game/pokemon-factory.js";
 import { getRegion, getRegionNames, getSpeciesByName } from "../game/data-loader.js";
 import { buildLevelEvolutionContext, getEvolutionBranchDiagnostics } from "../game/growth.js";
@@ -138,22 +139,33 @@ gameRoutes.put("/party", async (req: AuthRequest, res: Response) => {
       return;
     }
 
-    const user = await getUser(req.userId!);
-    if (!user) {
+    type Outcome =
+      | { kind: "ok"; party: string[] }
+      | { kind: "not_found" }
+      | { kind: "invalid" };
+
+    const outcome = await withUserLock<Outcome>(req.userId!, async () => {
+      const user = await getUser(req.userId!);
+      if (!user) return { kind: "not_found" };
+
+      const allUids = user.pokemon.map((p) => p.uid);
+      const invalid = uids.filter((uid: string) => !allUids.includes(uid));
+      if (invalid.length > 0) return { kind: "invalid" };
+
+      user.party = uids;
+      await saveUser(user);
+      return { kind: "ok", party: uids };
+    });
+
+    if (outcome.kind === "not_found") {
       res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
       return;
     }
-
-    const allUids = user.pokemon.map((p) => p.uid);
-    const invalid = uids.filter((uid: string) => !allUids.includes(uid));
-    if (invalid.length > 0) {
+    if (outcome.kind === "invalid") {
       res.status(400).json({ error: "존재하지 않는 포켓몬이 포함되어 있습니다" });
       return;
     }
-
-    user.party = uids;
-    await saveUser(user);
-    res.json({ party: uids });
+    res.json({ party: outcome.party });
   } catch (err) {
     console.error("Party update error:", err);
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
@@ -261,14 +273,19 @@ gameRoutes.put("/region", async (req: AuthRequest, res: Response) => {
       return;
     }
 
-    const user = await getUser(req.userId!);
-    if (!user) {
+    type Outcome = { kind: "ok" } | { kind: "not_found" };
+    const outcome = await withUserLock<Outcome>(req.userId!, async () => {
+      const user = await getUser(req.userId!);
+      if (!user) return { kind: "not_found" };
+      user.currentRegion = region;
+      await saveUser(user);
+      return { kind: "ok" };
+    });
+
+    if (outcome.kind === "not_found") {
       res.status(404).json({ error: "User not found." });
       return;
     }
-
-    user.currentRegion = region;
-    await saveUser(user);
 
     res.json({
       currentRegion: region,

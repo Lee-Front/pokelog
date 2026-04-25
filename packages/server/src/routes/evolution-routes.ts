@@ -2,6 +2,7 @@ import { Router } from "express";
 import type { Response } from "express";
 import { authMiddleware, type AuthRequest } from "../middleware/auth-middleware.js";
 import { getUser, saveUser } from "../storage/user-store.js";
+import { withUserLock } from "../storage/user-mutex.js";
 import { getSpeciesByName } from "../game/data-loader.js";
 import { resolvePendingEvolutionChoice } from "../game/pending-evolution.js";
 import { applyFormChange, getAvailableForms, getFormChangeRules, hasFormChangeRules } from "../game/form-change.js";
@@ -40,19 +41,38 @@ evolutionRoutes.post("/evolutions/resolve", async (req: AuthRequest, res: Respon
       return;
     }
 
-    const user = await getUser(req.userId!);
-    if (!user) {
+    type Outcome =
+      | { kind: "ok"; result: ReturnType<typeof resolvePendingEvolutionChoice>; remainingPending: unknown }
+      | { kind: "not_found" }
+      | { kind: "game_error"; err: GameRuleError };
+
+    const outcome = await withUserLock<Outcome>(req.userId!, async () => {
+      const user = await getUser(req.userId!);
+      if (!user) return { kind: "not_found" };
+
+      try {
+        const result = resolvePendingEvolutionChoice(user, pendingEvolutionId, branchId);
+        await saveUser(user);
+        return { kind: "ok", result, remainingPending: user.pendingEvolutions ?? [] };
+      } catch (err) {
+        if (err instanceof GameRuleError) return { kind: "game_error", err };
+        throw err;
+      }
+    });
+
+    if (outcome.kind === "not_found") {
       res.status(404).json({ error: "User not found." });
       return;
     }
-
-    const result = resolvePendingEvolutionChoice(user, pendingEvolutionId, branchId);
-    await saveUser(user);
+    if (outcome.kind === "game_error") {
+      res.status(outcome.err.status).json({ error: outcome.err.message });
+      return;
+    }
 
     res.json({
-      message: `${result.pendingEvolution.sourceName} evolved into ${result.pokemon.species}.`,
-      pokemon: result.pokemon,
-      remainingPending: user.pendingEvolutions ?? [],
+      message: `${outcome.result.pendingEvolution.sourceName} evolved into ${outcome.result.pokemon.species}.`,
+      pokemon: outcome.result.pokemon,
+      remainingPending: outcome.remainingPending,
     });
   } catch (err) {
     if (err instanceof GameRuleError) {
@@ -92,38 +112,65 @@ evolutionRoutes.post("/form-change", async (req: AuthRequest, res: Response) => 
       return;
     }
 
-    const user = await getUser(req.userId!);
-    if (!user) {
+    type Outcome =
+      | { kind: "ok"; pokemon: ReturnType<typeof findPokemonByUid>; previousVariantId: string | null | undefined; speciesLabel: string; formLabel: string }
+      | { kind: "not_found" }
+      | { kind: "pokemon_missing" }
+      | { kind: "game_error"; err: GameRuleError };
+
+    const outcome = await withUserLock<Outcome>(req.userId!, async () => {
+      const user = await getUser(req.userId!);
+      if (!user) return { kind: "not_found" };
+
+      const pokemon = findPokemonByUid(user, pokemonUid);
+      if (!pokemon) return { kind: "pokemon_missing" };
+
+      try {
+        const result = applyFormChange(user, pokemonUid, targetFormId ?? null);
+
+        // Recalculate stats with variant override
+        const speciesData = getSpeciesByName(pokemon.species);
+        if (speciesData) {
+          const { maxHp, stats } = buildStats(speciesData, pokemon.level, pokemon.nature, pokemon.variantId, pokemon.ivs);
+          const hpRatio = pokemon.maxHp > 0 ? pokemon.hp / pokemon.maxHp : 1;
+          pokemon.maxHp = maxHp;
+          pokemon.hp = Math.max(1, Math.round(maxHp * hpRatio));
+          pokemon.stats = stats;
+        }
+
+        await saveUser(user);
+
+        const formLabel = pokemon.variantId ?? pokemon.species;
+        return {
+          kind: "ok",
+          pokemon,
+          previousVariantId: result.previousVariantId,
+          speciesLabel: pokemon.species,
+          formLabel,
+        };
+      } catch (err) {
+        if (err instanceof GameRuleError) return { kind: "game_error", err };
+        throw err;
+      }
+    });
+
+    if (outcome.kind === "not_found") {
       res.status(404).json({ error: "User not found." });
       return;
     }
-
-    const pokemon = findPokemonByUid(user, pokemonUid);
-
-    if (!pokemon) {
+    if (outcome.kind === "pokemon_missing") {
       res.status(404).json({ error: "Pokemon not found." });
       return;
     }
-
-    const result = applyFormChange(user, pokemonUid, targetFormId ?? null);
-
-    // Recalculate stats with variant override
-    const speciesData = getSpeciesByName(pokemon.species);
-    if (speciesData) {
-      const { maxHp, stats } = buildStats(speciesData, pokemon.level, pokemon.nature, pokemon.variantId, pokemon.ivs);
-      const hpRatio = pokemon.maxHp > 0 ? pokemon.hp / pokemon.maxHp : 1;
-      pokemon.maxHp = maxHp;
-      pokemon.hp = Math.max(1, Math.round(maxHp * hpRatio));
-      pokemon.stats = stats;
+    if (outcome.kind === "game_error") {
+      res.status(outcome.err.status).json({ error: outcome.err.message });
+      return;
     }
 
-    await saveUser(user);
-
-    const formLabel = pokemon.variantId ?? pokemon.species;
     res.json({
-      message: `${pokemon.species} changed to ${formLabel}.`,
-      pokemon,
-      previousVariantId: result.previousVariantId,
+      message: `${outcome.speciesLabel} changed to ${outcome.formLabel}.`,
+      pokemon: outcome.pokemon,
+      previousVariantId: outcome.previousVariantId,
     });
   } catch (err) {
     if (err instanceof GameRuleError) {
