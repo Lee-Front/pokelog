@@ -33,12 +33,18 @@ shopRoutes.post("/buy", async (req, res) => {
     const { userId } = req as AuthRequest;
     const { item, quantity } = req.body;
 
-    if (!item || !quantity || quantity < 1) {
+    if (typeof item !== "string" || !item || !quantity || quantity < 1) {
       res.status(400).json({ error: "Item and quantity are required." });
       return;
     }
 
     const config = await getConfig();
+    // hasOwnProperty.call so a user-supplied "__proto__" or "constructor"
+    // can't accidentally resolve to an inherited property of the shop map.
+    if (!Object.prototype.hasOwnProperty.call(config.shop.items, item)) {
+      res.status(404).json({ error: "Shop item not found." });
+      return;
+    }
     const shopItem = config.shop.items[item];
     if (!shopItem) {
       res.status(404).json({ error: "Shop item not found." });
@@ -84,13 +90,15 @@ shopRoutes.post("/use", async (req, res) => {
     const { userId } = req as AuthRequest;
     const { item, pokemonUid, moveId } = req.body;
 
-    if (!item || !pokemonUid) {
+    if (typeof item !== "string" || !item || !pokemonUid) {
       res.status(400).json({ error: "Item and pokemonUid are required." });
       return;
     }
 
     const config = await getConfig();
-    const shopItem = config.shop.items[item];
+    const shopItem = Object.prototype.hasOwnProperty.call(config.shop.items, item)
+      ? config.shop.items[item]
+      : undefined;
 
     type UseOutcome =
       | { kind: "ok"; user: Awaited<ReturnType<typeof getUser>>; result: ReturnType<typeof useInventoryItem> }
