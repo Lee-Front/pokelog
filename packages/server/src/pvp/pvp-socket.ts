@@ -82,6 +82,21 @@ export function setupPvpSocket(io: Server): void {
     socket.on("pvp:auth", async (data: { token: string }) => {
       const payload = verifyToken(data.token);
       if (!payload) { socket.emit("pvp:error", { message: "인증 실패" }); return; }
+
+      // Mirror the HTTP auth middleware: if the user has invalidated all
+      // sessions via /api/auth/logout-all, refuse any token whose iat
+      // predates the cutoff. Without this, a leaked socket token would
+      // remain usable indefinitely even after the user logged out.
+      const user = await getUser(payload.userId);
+      if (user?.tokenInvalidatedAt && typeof payload.iat === "number") {
+        const iatMs = payload.iat * 1000;
+        const invalidatedMs = new Date(user.tokenInvalidatedAt).getTime();
+        if (Number.isFinite(invalidatedMs) && iatMs < invalidatedMs) {
+          socket.emit("pvp:error", { message: "토큰이 무효화됨" });
+          return;
+        }
+      }
+
       socketState.set(socket.id, { userId: payload.userId });
       socket.emit("pvp:authenticated");
     });
