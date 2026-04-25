@@ -4,6 +4,7 @@ import { createTradeRecord, getTrades, saveTrades } from "../storage/trade-store
 import { GameRuleError } from "./game-errors.js";
 import { evolvePokemon, resolveTradeEvolution } from "./growth.js";
 import { getDisplaySpeciesName } from "./pokemon-state.js";
+import { adjustFriendship } from "./friendship.js";
 
 type PokemonSlot =
   | { container: "party"; index: number }
@@ -317,6 +318,11 @@ export async function acceptTradeRequest(userId: string, tradeId: string): Promi
 
   const requesterReceived = ensureTradeablePokemon(requester, responderRemoved.pokemon.uid, "Requester").pokemon;
   const responderReceived = ensureTradeablePokemon(responder, requesterRemoved.pokemon.uid, "Responder").pokemon;
+
+  // Trade-received: reset friendship to baseHappiness on both sides.
+  // Canon: a traded pokemon initially distrusts its new trainer.
+  adjustFriendship(requesterReceived, "trade-received");
+  adjustFriendship(responderReceived, "trade-received");
 
   const requesterEvolution = maybeApplyTradeEvolution(requester, requesterReceived, requesterOriginalSpecies);
   const responderEvolution = maybeApplyTradeEvolution(responder, responderReceived, responderOriginalSpecies);

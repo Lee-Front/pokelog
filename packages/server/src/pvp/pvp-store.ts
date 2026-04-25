@@ -5,6 +5,7 @@ import { getDataDir } from "../paths.js";
 import { getUser, saveUser } from "../storage/user-store.js";
 import { withUserLock } from "../storage/user-mutex.js";
 import { calculateElo } from "./pvp-rating.js";
+import { adjustFriendshipBulk } from "../game/friendship.js";
 import type { PvpMatchRecord } from "../../../../shared/pvp-types.js";
 
 function matchHistoryPath(): string {
@@ -51,6 +52,14 @@ export async function recordMatch(
 
     winner.points += 100;
     loser.points += 20;
+
+    // Friendship: +2 to every alive party member of the winner.
+    // Battle copies (PvpPokemon) are mutated during the match but never
+    // persisted; we adjust the OwnedPokemon party records directly.
+    const winnerParty = winner.party
+      .map((uid) => winner.pokemon.find((p) => p.uid === uid))
+      .filter((p): p is NonNullable<typeof p> => p != null);
+    adjustFriendshipBulk(winnerParty, "pvp-win");
 
     winner.pvpStats = wStats;
     loser.pvpStats = lStats;

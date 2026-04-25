@@ -4,6 +4,7 @@ import { getUser, saveUser } from "../storage/user-store.js";
 import { withUserLock } from "../storage/user-mutex.js";
 import { startTower, updateTowerRecord, failTower, grantReward } from "../game/tower.js";
 import { generateTowerParty } from "../game/tower-ai.js";
+import { adjustFriendshipBulk } from "../game/friendship.js";
 import {
   createRoom, selectLead, submitAction, getPlayerView, getRoom, deleteRoom,
 } from "../pvp/pvp-room.js";
@@ -213,6 +214,13 @@ towerRoutes.post("/action", async (req: AuthRequest, res: Response) => {
       const reward = grantReward(user, clearedStage);
       updateTowerRecord(user, clearedStage);
       writeSnapshotFromRoom(run, room.playerA.party);
+      // Friendship: +3 per alive party member on each stage clear.
+      // We apply to the OwnedPokemon (not the battle copies) so it
+      // persists in user storage.
+      const towerParty = run.partyUids
+        .map((uid) => user.pokemon.find((p) => p.uid === uid))
+        .filter((p): p is NonNullable<typeof p> => p != null);
+      adjustFriendshipBulk(towerParty, "tower-clear");
       run.stage += 1;
       run.roomId = undefined;
       deleteRoom(room.roomId);
