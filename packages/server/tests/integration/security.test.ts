@@ -171,4 +171,242 @@ describe("Security review", () => {
     const res = await apiB.get(`/api/user/judge/${uidA}`);
     expect(res.status).toBe(404);
   });
+
+  // ──────────────── Prototype-pollution hardening ────────────────
+
+  it("rejects /api/user/match with __proto__ as app key", async () => {
+    const { token } = await t.registerAndLogin("matchproto", "charmander");
+    const api = t.authed(token);
+    const before = ({} as Record<string, unknown>).polluted;
+
+    const res = await api.post("/api/user/match", {
+      app: "__proto__",
+      identifier: "polluted",
+    });
+    expect(res.status).toBeGreaterThanOrEqual(400);
+    expect(res.status).toBeLessThan(500);
+
+    // Crucial: Object.prototype must NOT have been polluted as a side effect.
+    expect(({} as Record<string, unknown>).polluted).toBe(before);
+  });
+
+  it("rejects /api/user/match with constructor as app key", async () => {
+    const { token } = await t.registerAndLogin("matchctor", "charmander");
+    const api = t.authed(token);
+    const res = await api.post("/api/user/match", {
+      app: "constructor",
+      identifier: "x",
+    });
+    expect(res.status).toBeGreaterThanOrEqual(400);
+    expect(res.status).toBeLessThan(500);
+  });
+
+  it("rejects /api/user/match with unknown app", async () => {
+    const { token } = await t.registerAndLogin("matchunknown", "charmander");
+    const api = t.authed(token);
+    const res = await api.post("/api/user/match", {
+      app: "definitely-not-a-real-app",
+      identifier: "x",
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects shop buy with __proto__ as item key", async () => {
+    const { token } = await t.registerAndLogin("shopproto", "charmander");
+    const api = t.authed(token);
+    const before = ({} as Record<string, unknown>).polluted;
+
+    const res = await api.post("/api/shop/buy", {
+      item: "__proto__",
+      quantity: 1,
+    });
+    expect(res.status).toBeGreaterThanOrEqual(400);
+    expect(res.status).toBeLessThan(500);
+    // No prototype pollution from a tainted shop key.
+    expect(({} as Record<string, unknown>).polluted).toBe(before);
+  });
+
+  // ──────────────── Path traversal in login id ────────────────
+
+  it("rejects login with path traversal in id (returns 401)", async () => {
+    const res = await t.request.post("/api/auth/login").send({
+      id: "../config",
+      password: "x",
+    });
+    // userPath rejects the id → getUser returns null → login returns 401.
+    expect(res.status).toBe(401);
+  });
+
+  it("rejects login with backslash in id", async () => {
+    const res = await t.request.post("/api/auth/login").send({
+      id: "..\\users\\someone",
+      password: "x",
+    });
+    expect(res.status).toBe(401);
+  });
+
+  it("rejects login with null byte in id", async () => {
+    const res = await t.request.post("/api/auth/login").send({
+      id: "alice\u0000",
+      password: "x",
+    });
+    expect(res.status).toBe(401);
+  });
+
+  // ──────────────── Socket.IO honors tokenInvalidatedAt ────────────────
+
+  it("Socket.IO rejects a token issued before logout-all cutoff", async () => {
+    const { issueToken } = await import("../../src/auth/auth.js");
+    const { getUser, saveUser } = await import("../../src/storage/user-store.js");
+
+    const { token: oldToken, userId } = await t.registerAndLogin("sockinvalid", "charmander");
+    void oldToken;
+
+    // Stamp a tokenInvalidatedAt 10 seconds in the future so the
+    // freshly-minted oldToken's iat falls strictly before it.
+    const user = await getUser(userId);
+    if (!user) throw new Error("seed user missing");
+    user.tokenInvalidatedAt = new Date(Date.now() + 10_000).toISOString();
+    await saveUser(user);
+
+    // Re-issue a token with explicit iat predating the cutoff.
+    const staleIat = Math.floor(Date.now() / 1000) - 10;
+    const staleToken = issueToken(userId, staleIat);
+
+    // Boot a Socket.IO server using the same approach as pvp-socket-e2e.
+    const { createServer } = await import("node:http");
+    const { Server: SocketServer } = await import("socket.io");
+    const { io: ioClient } = await import("socket.io-client");
+    const { setupPvpSocket } = await import("../../src/pvp/pvp-socket.js");
+
+    const httpServer = createServer();
+    const ioServer = new SocketServer(httpServer, { cors: { origin: "*" } });
+    setupPvpSocket(ioServer);
+
+    await new Promise<void>((resolve) => {
+      httpServer.listen(0, "127.0.0.1", () => resolve());
+    });
+    const address = httpServer.address();
+    const port = typeof address === "object" && address ? address.port : 0;
+
+    try {
+      const socket = ioClient(`http://127.0.0.1:${port}`, {
+        autoConnect: false,
+        transports: ["websocket"],
+        forceNew: true,
+      });
+
+      try {
+        await new Promise<void>((resolve, reject) => {
+          const timer = setTimeout(() => reject(new Error("connect timeout")), 5000);
+          socket.once("connect", () => {
+            clearTimeout(timer);
+            resolve();
+          });
+          socket.connect();
+        });
+
+        const errored = new Promise<string>((resolve, reject) => {
+          const timer = setTimeout(() => reject(new Error("expected pvp:error")), 5000);
+          socket.once("pvp:error", (e) => {
+            clearTimeout(timer);
+            resolve((e as { message: string }).message);
+          });
+          socket.once("pvp:authenticated", () => {
+            clearTimeout(timer);
+            reject(new Error("should not authenticate with invalidated token"));
+          });
+        });
+        socket.emit("pvp:auth", { token: staleToken });
+        const msg = await errored;
+        expect(typeof msg).toBe("string");
+        expect(msg.length).toBeGreaterThan(0);
+      } finally {
+        socket.disconnect();
+      }
+    } finally {
+      ioServer.close();
+      await new Promise<void>((resolve) => httpServer.close(() => resolve()));
+    }
+  }, 15000);
+
+  // ──────────────── logout-all returns successor token immediately ────────────────
+
+  it("logout-all returns a usable token without 1+ second mutex hold", async () => {
+    const { token } = await t.registerAndLogin("logoutallfast", "charmander");
+    const api = t.authed(token);
+
+    const start = Date.now();
+    const res = await api.post("/api/auth/logout-all");
+    const elapsed = Date.now() - start;
+
+    expect(res.status).toBe(200);
+    const body = res.body as { ok: boolean; token: string };
+    expect(body.ok).toBe(true);
+    expect(typeof body.token).toBe("string");
+
+    // Old contract waited ~1100ms wall-clock inside the lock. The new
+    // contract issues the successor token via explicit iat without
+    // any sleep, so this should complete in well under a second.
+    expect(elapsed).toBeLessThan(900);
+
+    // The new token must immediately authorize a request.
+    const reauthed = t.authed(body.token);
+    const profile = await reauthed.get("/api/user/profile");
+    expect(profile.status).toBe(200);
+  });
+
+  // ──────────────── SSRF protection ────────────────
+
+  it("rejects integration creation with localhost URL (SSRF guard)", async () => {
+    const { token } = await t.registerAndLogin("ssrfuser", "charmander");
+    const api = t.authed(token);
+
+    const res = await api.post("/api/user/integrations", {
+      provider: "git",
+      label: "evil",
+      config: { repoUrl: "http://localhost:8080/internal", authMode: "public" },
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects integration creation with 127.0.0.1 URL", async () => {
+    const { token } = await t.registerAndLogin("ssrfloop", "charmander");
+    const api = t.authed(token);
+
+    const res = await api.post("/api/user/integrations", {
+      provider: "git",
+      label: "evil",
+      config: { repoUrl: "http://127.0.0.1/internal", authMode: "public" },
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects integration creation with 169.254.169.254 (cloud metadata)", async () => {
+    const { token } = await t.registerAndLogin("ssrfmeta", "charmander");
+    const api = t.authed(token);
+
+    const res = await api.post("/api/user/integrations", {
+      provider: "jira",
+      label: "evil",
+      config: {
+        baseUrl: "http://169.254.169.254/latest/meta-data/",
+        email: "x@example.com",
+        apiToken: "x",
+      },
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects integration creation with private 192.168.x.x range", async () => {
+    const { token } = await t.registerAndLogin("ssrfpriv", "charmander");
+    const api = t.authed(token);
+
+    const res = await api.post("/api/user/integrations", {
+      provider: "git",
+      label: "evil",
+      config: { repoUrl: "http://192.168.1.1/repo", authMode: "public" },
+    });
+    expect(res.status).toBe(400);
+  });
 });
