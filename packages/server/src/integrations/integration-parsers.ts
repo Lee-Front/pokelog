@@ -8,6 +8,53 @@ import type {
 } from "../../../../shared/types.js";
 import { isRepoEmailTaken, normalizeRepoUrl } from "../storage/user-store.js";
 
+/**
+ * SSRF guard: refuse to accept integration endpoints that point at the
+ * loopback interface or RFC1918/link-local ranges. Without this an
+ * attacker who controls the integration body can use our backend (which
+ * sits on the trusted side of any firewall) to scan internal services or
+ * hit cloud-metadata endpoints (169.254.169.254) and exfiltrate IAM
+ * credentials. We accept only http(s); explicit-IP literals in private
+ * ranges are blocked, and DNS-resolved hostnames remain caller-responsibility
+ * (a full TOCTOU-safe SSRF guard requires resolving + binding to specific
+ * IPs, which is out of scope for this fix).
+ */
+export function isPrivateOrLocalUrl(urlString: string): boolean {
+  let url: URL;
+  try {
+    url = new URL(urlString);
+  } catch {
+    return true;
+  }
+  if (url.protocol !== "https:" && url.protocol !== "http:") return true;
+
+  const host = url.hostname.toLowerCase();
+  if (!host) return true;
+
+  // Strip [] from IPv6 literals so we can compare directly.
+  const bareHost = host.startsWith("[") && host.endsWith("]")
+    ? host.slice(1, -1)
+    : host;
+
+  if (bareHost === "localhost" || bareHost === "127.0.0.1" || bareHost === "::1") return true;
+  if (bareHost === "0.0.0.0") return true;
+
+  // IPv4 private/link-local ranges. Use simple regex; this is a coarse
+  // check that complements (not replaces) network-level egress controls.
+  if (/^127\./.test(bareHost)) return true;
+  if (/^10\./.test(bareHost)) return true;
+  if (/^192\.168\./.test(bareHost)) return true;
+  if (/^172\.(1[6-9]|2[0-9]|3[01])\./.test(bareHost)) return true;
+  if (/^169\.254\./.test(bareHost)) return true; // link-local + EC2 metadata
+  if (/^0\./.test(bareHost)) return true;
+
+  // IPv6 unique-local (fc00::/7) and link-local (fe80::/10) prefixes.
+  if (/^f[cd][0-9a-f]{2}:/.test(bareHost)) return true;
+  if (/^fe[89ab][0-9a-f]:/.test(bareHost)) return true;
+
+  return false;
+}
+
 export async function parseIntegrationInput(
   body: Record<string, unknown>,
   userId: string,
@@ -46,6 +93,10 @@ async function parseGitIntegrationInput(
     new URL(repoUrl);
   } catch {
     return { error: "repoUrl 형식이 올바르지 않습니다", status: 400 };
+  }
+
+  if (isPrivateOrLocalUrl(repoUrl)) {
+    return { error: "내부/사설 호스트의 repoUrl은 허용되지 않습니다", status: 400 };
   }
 
   const emails = Array.isArray(body.emails)
@@ -121,6 +172,10 @@ function parseJiraIntegrationInput(
     new URL(baseUrl);
   } catch {
     return { error: "Jira baseUrl 형식이 올바르지 않습니다", status: 400 };
+  }
+
+  if (isPrivateOrLocalUrl(baseUrl)) {
+    return { error: "내부/사설 호스트의 Jira baseUrl은 허용되지 않습니다", status: 400 };
   }
 
   const projectKey = String(config.projectKey ?? "").trim();

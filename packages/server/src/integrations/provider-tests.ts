@@ -9,6 +9,7 @@ import type {
 import { testRepoAccess } from "../polling/git-client.js";
 import { listNotionPages } from "./notion-client.js";
 import { isGitIntegration } from "../storage/user-store.js";
+import { isPrivateOrLocalUrl } from "./integration-parsers.js";
 
 export interface ProviderTestResult {
   ok: boolean;
@@ -55,6 +56,9 @@ function isSlackIntegration(integration: Integration): integration is SlackInteg
 }
 
 async function testGitIntegration(integration: GitIntegration): Promise<ProviderTestResult> {
+  if (isPrivateOrLocalUrl(integration.config.repoUrl)) {
+    return { ok: false, lastError: "내부/사설 호스트의 repoUrl은 허용되지 않습니다" };
+  }
   const result = await testRepoAccess(integration.config.repoUrl, integration.config.authMode, integration.config.token);
   return {
     ok: result.ok,
@@ -103,6 +107,9 @@ async function testNotionIntegration(integration: NotionIntegration): Promise<Pr
 
 async function testJiraIntegration(integration: JiraIntegration): Promise<ProviderTestResult> {
   try {
+    if (isPrivateOrLocalUrl(integration.config.baseUrl)) {
+      return { ok: false, lastError: "내부/사설 호스트의 Jira baseUrl은 허용되지 않습니다" };
+    }
     const auth = Buffer.from(`${integration.config.email}:${integration.config.apiToken}`).toString("base64");
     const baseUrl = integration.config.baseUrl.replace(/\/+$/, "");
     const res = await fetch(`${baseUrl}/rest/api/3/myself`, {
