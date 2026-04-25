@@ -1,22 +1,31 @@
 /**
  * Scenario 45 — Friendship System.
  *
- * The current pokelog implementation initializes friendship from
- * `species.baseHappiness` (default 70) and consults it during evolution
- * checks (e.g. eevee → espeon at friendship ≥ 160 + time:day) — but it
- * does NOT increment friendship on level-up or decrement it on faint.
- * This scenario locks in BOTH:
- *   1. The behaviour that exists (initial value, evolution gating).
- *   2. The behaviour that is ABSENT (no automatic mutation on level/faint).
+ * Friendship is initialized from `species.baseHappiness` (default 70) and
+ * accumulates / decays through gameplay actions:
+ *   - level-up:   +5 per level
+ *   - vitamin:    +5 per use
+ *   - heal-item:  +1 per use
+ *   - pve-win:    +1 to the active pokemon
+ *   - pvp-win:    +2 to every alive party member
+ *   - tower-win:  +3 to every alive party member
+ *   - faint:      -5 (PvE only — PvP/tower fights occur on copies)
+ *   - trade:      reset to baseHappiness on receipt
  *
- * If a future change starts mutating friendship, the "absent" tests are
- * intended to fail, prompting the test author to update them and verify
- * the new mutation rules.
+ * This scenario locks down both the static behaviour (initial value,
+ * evolution gating) and the new dynamic accumulation, including a
+ * full integration check that an Eevee can naturally reach the 160
+ * threshold and evolve into Espeon (day) / Umbreon (night).
  */
 import { describe, it, expect } from "vitest";
 import { createPokemon } from "../../src/game/pokemon-factory.js";
 import { getSpeciesByName, getEvolutions } from "../../src/game/data-loader.js";
-import { getEvolutionBranchDiagnostics, buildLevelEvolutionContext } from "../../src/game/growth.js";
+import {
+  getEvolutionBranchDiagnostics,
+  buildLevelEvolutionContext,
+  resolveEvolution,
+} from "../../src/game/growth.js";
+import { adjustFriendship } from "../../src/game/friendship.js";
 
 describe("Scenario 45 — Friendship System", () => {
   it("new pokemon: initial friendship = species.baseHappiness", () => {
@@ -25,10 +34,7 @@ describe("Scenario 45 — Friendship System", () => {
     expect(pikachu.friendship).toBe(species.baseHappiness ?? 70);
   });
 
-  it("multiple species cover the canonical range 0/35/50/70/90/100/140", () => {
-    // species.json contains baseHappiness values 0, 20, 35, 50, 70, 90, 100, 140.
-    // We assert the data still has at least one example each so the system
-    // is exercised across the full design range.
+  it("multiple species cover the canonical baseHappiness range", () => {
     const observed = new Set<number>();
     const sample = [
       "pikachu", "bulbasaur", "snorlax", "rattata", "magikarp",
@@ -38,14 +44,10 @@ describe("Scenario 45 — Friendship System", () => {
       const s = getSpeciesByName(name);
       if (s?.baseHappiness != null) observed.add(s.baseHappiness);
     }
-    // Sanity: at least some non-default values appear.
     expect(observed.has(70)).toBe(true);
   });
 
   it("eevee → espeon evolution requires friendship ≥ 160 (per data, not the canon 220)", () => {
-    // The brief notes that data uses 160 (mapped from affection) instead of
-    // canon 220. evolution.json:
-    //     eevee-espeon-1 → friendship min: 160
     const evos = getEvolutions();
     const eeveeBranches = evos["eevee"]?.branches ?? [];
     const espeon = eeveeBranches.find((b) => b.targetSpecies === "espeon");
@@ -62,7 +64,6 @@ describe("Scenario 45 — Friendship System", () => {
     const eevee = createPokemon("eevee", 30);
     eevee.friendship = 159;
     const ctx = { ...buildLevelEvolutionContext(eevee, [eevee]), level: 30 };
-    // Force timeOfDay (buildLevelEvolutionContext infers from now()).
     ctx.timeOfDay = "day";
     const diags = getEvolutionBranchDiagnostics("eevee", ctx);
     const espeon = diags.find((d) => d.targetSpecies === "espeon");
@@ -104,23 +105,62 @@ describe("Scenario 45 — Friendship System", () => {
     expect(mewtwo.friendship).toBe(0);
   });
 
-  it("level-up does NOT auto-increment friendship (current implementation)", () => {
-    // Documenting absent behaviour: createPokemon at L5 vs L50 yields the
-    // same friendship value because no level-up hook touches it.
-    const low = createPokemon("pikachu", 5);
-    const high = createPokemon("pikachu", 50);
-    expect(low.friendship).toBe(high.friendship);
+  it("level-up grants +5 friendship per level", () => {
+    const pikachu = createPokemon("pikachu", 5);
+    pikachu.friendship = 70;
+    adjustFriendship(pikachu, "level-up");
+    expect(pikachu.friendship).toBe(75);
   });
 
-  it("friendship is bounded by typical Pokemon range [0, 255] in canon, no enforcement at factory", () => {
-    // The factory simply uses baseHappiness; no clamp/cap is applied. We
-    // assert the initial value is within the canon range, which is true
-    // for every species.json entry (0..140).
+  it("pve-win grants +1 friendship to the active pokemon", () => {
+    const pikachu = createPokemon("pikachu", 5);
+    pikachu.friendship = 70;
+    adjustFriendship(pikachu, "pve-win");
+    expect(pikachu.friendship).toBe(71);
+  });
+
+  it("integration: 90 PvE wins push eevee from 70 → 160 (canon evolution threshold)", () => {
+    const eevee = createPokemon("eevee", 30);
+    // Eevee's canon baseHappiness is 50 in the dataset; force a known
+    // starting value so the arithmetic is deterministic.
+    eevee.friendship = 70;
+
+    for (let i = 0; i < 90; i++) {
+      adjustFriendship(eevee, "pve-win");
+    }
+    expect(eevee.friendship).toBe(160);
+
+    // Confirm espeon (day) is unlocked at this exact threshold.
+    const ctx = { ...buildLevelEvolutionContext(eevee, [eevee]), level: 30 };
+    ctx.timeOfDay = "day";
+    const branch = resolveEvolution("eevee", ctx);
+    expect(branch?.targetSpecies).toBe("espeon");
+  });
+
+  it("integration: night-time eevee with same friendship resolves to umbreon", () => {
+    const eevee = createPokemon("eevee", 30);
+    eevee.friendship = 70;
+    for (let i = 0; i < 90; i++) {
+      adjustFriendship(eevee, "pve-win");
+    }
+    const ctx = { ...buildLevelEvolutionContext(eevee, [eevee]), level: 30 };
+    ctx.timeOfDay = "night";
+    const branch = resolveEvolution("eevee", ctx);
+    expect(branch?.targetSpecies).toBe("umbreon");
+  });
+
+  it("friendship is bounded by canon range [0, 255]", () => {
     const species = ["pikachu", "magikarp", "snorlax", "togepi"];
     for (const s of species) {
       const p = createPokemon(s, 5);
       expect(p.friendship).toBeGreaterThanOrEqual(0);
       expect(p.friendship).toBeLessThanOrEqual(255);
     }
+
+    // Saturate via repeated vitamins — must not exceed 255.
+    const target = createPokemon("pikachu", 5);
+    target.friendship = 0;
+    for (let i = 0; i < 200; i++) adjustFriendship(target, "vitamin");
+    expect(target.friendship).toBe(255);
   });
 });
