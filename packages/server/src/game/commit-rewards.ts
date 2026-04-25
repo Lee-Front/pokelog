@@ -15,6 +15,7 @@ import { getRegion } from "./data-loader.js";
 import { createEncounterEvent } from "./event-factory.js";
 import { clearPendingEvolutionForPokemon, queuePendingEvolution } from "./pending-evolution.js";
 import { getPartyPokemon } from "./pokemon-state.js";
+import { adjustFriendship } from "./friendship.js";
 
 /**
  * Minimal commit metadata needed to apply rewards. Callers that already have
@@ -100,8 +101,16 @@ export function applyCommitRewards(
     for (const pokemon of partyPokemon) {
       if (!pokemon) continue;
       pokemon.exp += expPerPokemon;
+      const previousLevel = pokemon.level;
       const result = checkLevelUp(pokemon);
       if (!result.leveled) continue;
+
+      // Friendship: +5 per level gained (canon level-up boost). A jump
+      // from L5 → L10 grants +25 friendship, not just +5.
+      const levelsGained = result.newLevel - previousLevel;
+      for (let i = 0; i < levelsGained; i++) {
+        adjustFriendship(pokemon, "level-up");
+      }
 
       pokemon.level = result.newLevel;
       applyLearnedMoves(pokemon, result.newMoves);

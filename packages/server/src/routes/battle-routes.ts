@@ -23,6 +23,7 @@ import {
   handleFainted, doWildAttackAndCheck,
   type FaintedResult,
 } from "../game/battle-state.js";
+import { adjustFriendship } from "../game/friendship.js";
 
 export const battleRoutes = Router();
 battleRoutes.use(authMiddleware);
@@ -203,6 +204,7 @@ async function handleFight(
       if (battle.wild.hp <= 0) {
         log.push(`야생 ${battle.wild.species}이(가) 쓰러졌다!`);
         user.pendingEvents = user.pendingEvents.filter((e) => e.id !== battle.eventId);
+        adjustFriendship(myPokemon, "pve-win");
         revertBattleForms(battle, myPokemon);
         user.battleState = null;
         await saveUser(user);
@@ -228,6 +230,7 @@ async function handleFight(
       if (battle.wild.hp <= 0) {
         log.push(`야생 ${battle.wild.species}이(가) 쓰러졌다!`);
         user.pendingEvents = user.pendingEvents.filter((e) => e.id !== battle.eventId);
+        adjustFriendship(myPokemon, "pve-win");
         revertBattleForms(battle, myPokemon);
         user.battleState = null;
         await saveUser(user);
@@ -249,6 +252,7 @@ async function handleFight(
   if (battle.wild.hp <= 0) {
     log.push(`야생 ${battle.wild.species}이(가) 쓰러졌다!`);
     user.pendingEvents = user.pendingEvents.filter((e) => e.id !== battle.eventId);
+    adjustFriendship(myPokemon, "pve-win");
     revertBattleForms(battle, myPokemon);
     user.battleState = null;
     await saveUser(user);
@@ -339,6 +343,7 @@ async function handleItem(
 
   decrementItem(user.inventory, itemId);
   healPokemon(target, shopItem.healAmount);
+  adjustFriendship(target, "heal-item");
   log.push(`${shopItem.name}을(를) 사용했다! HP가 ${shopItem.healAmount} 회복되었다!`);
 
   const wildResult = await doWildAttackAndCheck(user, myPokemon, battle, log);

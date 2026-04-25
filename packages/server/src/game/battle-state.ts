@@ -11,6 +11,7 @@ import {
 import type { BattleState, MoveData, OwnedPokemon, PrimaryStatus, StatStages, UserData, VolatileStatus } from "../../../../shared/types.js";
 import { recordDamageTaken } from "./battle-progress.js";
 import { saveUser } from "../storage/user-store.js";
+import { adjustFriendship } from "./friendship.js";
 
 export function applyBattleFormChange(
   battle: BattleState,
@@ -643,6 +644,9 @@ export async function handleFainted(
 ): Promise<FaintedResult | null> {
   if (pokemon.hp > 0) return null;
   log.push(`${pokemon.species}이(가) 쓰러졌다!`);
+  // PvE faint penalty: -5 friendship per knockout. PvP/tower faints are
+  // applied to battle copies (PvpPokemon) which never reach here.
+  adjustFriendship(pokemon, "faint");
   if (hasAlivePartyMembers(user, pokemon.uid)) {
     await saveUser(user);
     return { fainted: true, gameOver: false, log, battleState: battle, result: "fainted" };

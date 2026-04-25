@@ -5,6 +5,7 @@ import { evolvePokemon, getEvolutionItemUseTarget } from "./growth.js";
 import { decrementItem, healPokemon } from "./inventory-utils.js";
 import { clearPendingEvolutionForPokemon } from "./pending-evolution.js";
 import { getDisplaySpeciesName } from "./pokemon-state.js";
+import { adjustFriendship } from "./friendship.js";
 
 export { GameRuleError as ItemUseError };
 
@@ -127,6 +128,7 @@ export function useInventoryItem(
 
     decrementItem(user.inventory, item);
     healPokemon(pokemon, shopItem.healAmount);
+    adjustFriendship(pokemon, "heal-item");
 
     return {
       kind: "healing",
@@ -139,6 +141,7 @@ export function useInventoryItem(
   if (shopItem?.vitaminStat) {
     const newCount = applyVitamin(pokemon, shopItem.vitaminStat);
     decrementItem(user.inventory, item);
+    adjustFriendship(pokemon, "vitamin");
     return {
       kind: "vitamin",
       item,
