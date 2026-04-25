@@ -59,6 +59,7 @@ describe("Scenario 22 — Edge Cases / Boundary", () => {
   it("/shop/buy with insufficient points → 400", async () => {
     const { token } = await createTestUser({ uid: "edgePoor", initialPoints: 0 });
     const http = new HttpClient(ctx.app, token);
+    // 100 pokeballs @ 100 each = 10000 points — user has 0.
     const res = await http.post("/api/shop/buy", { item: "pokeball", quantity: 100 });
     expect(res.status).toBe(400);
     expect(res.body.error).toMatch(/points/i);
