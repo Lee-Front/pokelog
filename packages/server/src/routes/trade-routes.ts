@@ -2,6 +2,8 @@ import { Router } from "express";
 import type { Response } from "express";
 import { authMiddleware, type AuthRequest } from "../middleware/auth-middleware.js";
 import { getUser } from "../storage/user-store.js";
+import { withUserLock } from "../storage/user-mutex.js";
+import { getTrades } from "../storage/trade-store.js";
 import { GameRuleError } from "../game/game-errors.js";
 import { getDisplaySpeciesName } from "../game/pokemon-state.js";
 import {
@@ -12,6 +14,24 @@ import {
   listTradesForUser,
   rejectTradeRequest,
 } from "../game/trade.js";
+
+/**
+ * Run `fn` with both users locked, taking the locks in lexical order on
+ * the user ids so two concurrent trades that touch the same pair (in
+ * either direction) cannot deadlock. This is the same deterministic
+ * two-lock pattern pvp-store uses for match recording.
+ */
+async function withTwoUserLocks<T>(
+  userIdA: string,
+  userIdB: string,
+  fn: () => Promise<T>,
+): Promise<T> {
+  if (userIdA === userIdB) {
+    return withUserLock(userIdA, fn);
+  }
+  const [first, second] = [userIdA, userIdB].sort();
+  return withUserLock(first, () => withUserLock(second, fn));
+}
 
 export const tradeRoutes = Router();
 tradeRoutes.use(authMiddleware);
@@ -104,12 +124,18 @@ tradeRoutes.post("/trades/request", async (req: AuthRequest, res: Response) => {
       return;
     }
 
-    const trade = await createTradeRequest({
-      requesterUserId: req.userId!,
-      responderUserId: String(targetUserId),
-      requesterPokemonUid: String(myPokemonUid),
-      responderPokemonUid: String(targetPokemonUid),
-    });
+    const responderUserId = String(targetUserId);
+    // Lock both users so the trade-list write and the ownership check
+    // are serialized against any concurrent mutations on either side
+    // (deposit/withdraw, evolution, accept).
+    const trade = await withTwoUserLocks(req.userId!, responderUserId, () => (
+      createTradeRequest({
+        requesterUserId: req.userId!,
+        responderUserId,
+        requesterPokemonUid: String(myPokemonUid),
+        responderPokemonUid: String(targetPokemonUid),
+      })
+    ));
 
     res.status(201).json({ trade: await buildTradeView(req.userId!, trade) });
   } catch (err) {
@@ -125,7 +151,23 @@ tradeRoutes.post("/trades/request", async (req: AuthRequest, res: Response) => {
 
 tradeRoutes.post("/trades/:id/accept", async (req: AuthRequest, res: Response) => {
   try {
-    const result = await acceptTradeRequest(req.userId!, req.params.id);
+    // Resolve the trade record up front so we know the requester id and
+    // can take per-user locks on BOTH participants. Without this, two
+    // concurrent acceptances (or an accept racing with the requester
+    // depositing the offered pokemon) can apply mutations against stale
+    // user snapshots and either lose state or duplicate pokemon.
+    const trades = await getTrades();
+    const trade = trades.find((entry) => entry.id === req.params.id);
+    if (!trade) {
+      res.status(400).json({ error: "Trade request not found." });
+      return;
+    }
+
+    const result = await withTwoUserLocks(
+      trade.requesterUserId,
+      trade.responderUserId,
+      () => acceptTradeRequest(req.userId!, req.params.id),
+    );
     res.json({
       trade: await buildTradeView(req.userId!, result.trade),
       requesterPokemon: result.requesterPokemon,
@@ -146,7 +188,9 @@ tradeRoutes.post("/trades/:id/accept", async (req: AuthRequest, res: Response) =
 
 tradeRoutes.post("/trades/:id/reject", async (req: AuthRequest, res: Response) => {
   try {
-    const trade = await rejectTradeRequest(req.userId!, req.params.id);
+    const trade = await withUserLock(req.userId!, () => (
+      rejectTradeRequest(req.userId!, req.params.id)
+    ));
     res.json({ trade: await buildTradeView(req.userId!, trade) });
   } catch (err) {
     if (err instanceof GameRuleError) {
@@ -161,7 +205,9 @@ tradeRoutes.post("/trades/:id/reject", async (req: AuthRequest, res: Response) =
 
 tradeRoutes.post("/trades/:id/cancel", async (req: AuthRequest, res: Response) => {
   try {
-    const trade = await cancelTradeRequest(req.userId!, req.params.id);
+    const trade = await withUserLock(req.userId!, () => (
+      cancelTradeRequest(req.userId!, req.params.id)
+    ));
     res.json({ trade: await buildTradeView(req.userId!, trade) });
   } catch (err) {
     if (err instanceof GameRuleError) {
