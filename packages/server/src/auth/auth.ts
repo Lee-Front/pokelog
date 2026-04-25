@@ -19,8 +19,22 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
   return bcrypt.compare(password, hash);
 }
 
-export function issueToken(userId: string): string {
-  return jwt.sign({ userId }, getJwtSecret(), { expiresIn: "30d" });
+/**
+ * Mints a JWT for the given user. Optionally accepts an explicit `iat`
+ * (seconds-since-epoch) that overrides jsonwebtoken's auto-stamped value.
+ * Used by logout-all to issue a successor token whose iat is strictly
+ * greater than the just-recorded `tokenInvalidatedAt` cutoff so the new
+ * token doesn't get rejected by the iat-vs-cutoff gate.
+ */
+export function issueToken(userId: string, iat?: number): string {
+  if (iat === undefined) {
+    return jwt.sign({ userId }, getJwtSecret(), { expiresIn: "30d" });
+  }
+  // When supplying iat manually we must also set exp manually because
+  // `expiresIn` and a payload `exp` cannot coexist; we replicate the
+  // 30-day window relative to the supplied iat.
+  const exp = iat + 30 * 24 * 60 * 60;
+  return jwt.sign({ userId, iat, exp }, getJwtSecret());
 }
 
 export interface TokenPayload {

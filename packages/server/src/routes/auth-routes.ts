@@ -90,16 +90,19 @@ authRoutes.post("/logout-all", authMiddleware, async (req: AuthRequest, res: Res
     await withUserLock(userId, async () => {
       const user = await getUser(userId);
       if (!user) return;
-      // Use a cutoff 1 second in the FUTURE of the just-issued
-      // timestamp to guarantee the previous token's iat (whole-second
-      // precision) is strictly less. We then also issue a fresh token
-      // so the caller isn't locked out of their own request.
-      const cutoff = new Date(Date.now() + 1000).toISOString();
+      // Pick a cutoff at the current second; record both the cutoff and
+      // a successor token whose iat is strictly greater than the cutoff
+      // (in seconds). Previous tokens have iat <= cutoffSec - 1 and are
+      // therefore rejected by the auth middleware.
+      const nowMs = Date.now();
+      const cutoff = new Date(nowMs).toISOString();
       user.tokenInvalidatedAt = cutoff;
       await saveUser(user);
-      // Wait until after the cutoff so the new token's iat > cutoff.
-      await new Promise((resolve) => setTimeout(resolve, 1100));
-      newToken = issueToken(userId);
+      // Mint successor token with explicit iat = floor(nowMs/1000) + 1
+      // so it survives the cutoff check immediately, without waiting on
+      // wall-clock time. This eliminates the prior ~1.1s mutex hold.
+      const futureIat = Math.floor(nowMs / 1000) + 1;
+      newToken = issueToken(userId, futureIat);
     });
     if (!newToken) {
       res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
