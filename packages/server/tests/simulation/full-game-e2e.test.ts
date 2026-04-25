@@ -392,25 +392,16 @@ describe("D. 아이템/상점", () => {
     expect(user.inventory["water-stone"]).toBe(1);
   });
 
-  it("D4: tera-shard change — 50 fire shards consumed, teraType updated", () => {
+  it("D4: tera-type change — no shard cost, teraType updated", () => {
     const user = makeUserData();
     const poke = createPokemon("charizard", 50);
     user.pokemon.push(poke);
-    user.inventory["tera-shard-fire"] = 50;
 
-    // Emulate item-routes.ts /change-tera-type core logic:
-    const TERA_SHARD_COST = 50;
+    // Emulate item-routes.ts /change-tera-type core logic (item-free):
     const target = user.pokemon.find((p) => p.uid === poke.uid)!;
-    const shardId = `tera-shard-fire`;
-    const owned = user.inventory[shardId] ?? 0;
-    expect(owned).toBeGreaterThanOrEqual(TERA_SHARD_COST);
-
-    user.inventory[shardId] = owned - TERA_SHARD_COST;
-    if (user.inventory[shardId] <= 0) delete user.inventory[shardId];
     target.teraType = "fire";
 
     expect(target.teraType).toBe("fire");
-    expect(user.inventory["tera-shard-fire"]).toBeUndefined();
   });
 
   it("D5: life-orb held item boosts damage and deals 10% recoil", () => {

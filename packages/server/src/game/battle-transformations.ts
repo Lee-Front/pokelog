@@ -52,19 +52,33 @@ export function getMegaVariantForItem(species: string, heldItem: string): string
   return null;
 }
 
+/**
+ * Default mega variant for a species when no mega-stone heldItem is set.
+ * Charizard / Mewtwo have X and Y forms — we pick the canonical Y form
+ * by default; players who hold a charizardite-x / mewtwonite-x get the X
+ * variant via getMegaVariantForItem instead.
+ */
+export function getDefaultMegaVariant(species: string): string | null {
+  const megaVariants = getVariants().filter(
+    (v) => v.baseSpecies === species && v.category === "mega",
+  );
+  if (megaVariants.length === 0) return null;
+  // Prefer the -y variant if dual; else first listed.
+  const y = megaVariants.find((v) => v.id.endsWith("-mega-y"));
+  if (y) return y.id;
+  return megaVariants[0].id;
+}
+
 // ── Primal reversion ──
 
 /**
  * Check if a pokemon should trigger primal reversion.
- * Returns the primal variant ID or null.
+ * Primal forms are species-gated — Groudon and Kyogre always
+ * qualify, no held orb required.
  */
 export function checkPrimalReversion(pokemon: OwnedPokemon): string | null {
-  if (pokemon.species === "groudon" && pokemon.heldItem === "red-orb") {
-    return "groudon-primal";
-  }
-  if (pokemon.species === "kyogre" && pokemon.heldItem === "blue-orb") {
-    return "kyogre-primal";
-  }
+  if (pokemon.species === "groudon") return "groudon-primal";
+  if (pokemon.species === "kyogre") return "kyogre-primal";
   return null;
 }
 
@@ -72,23 +86,23 @@ export function checkPrimalReversion(pokemon: OwnedPokemon): string | null {
 
 /**
  * Check if mega evolution is available for the given pokemon in the current battle.
+ * Mega forms are species-gated only — no key-stone or mega-stone heldItem
+ * is required. If a matching mega-stone is held, that variant is selected
+ * (Charizard/Mewtwo X/Y); otherwise the default variant for the species.
  */
 export function canMegaEvolve(
   pokemon: OwnedPokemon,
   battle: BattleState,
-  userInventory: Record<string, number>,
+  _userInventory: Record<string, number>,
 ): { ok: boolean; variantId?: string; error?: string } {
-  // Already used a transformation this battle
   if (battle.transformationUsed) {
     return { ok: false, error: "이번 배틀에서 이미 변환을 사용했습니다" };
   }
-
-  // Already transformed
   if (battle.transformationType) {
     return { ok: false, error: "이미 변환 중입니다" };
   }
 
-  // Rayquaza special case: no mega stone needed, needs dragon-ascent
+  // Rayquaza needs dragon-ascent (canon-special signature gate, not an item)
   if (pokemon.species === "rayquaza") {
     const hasDragonAscent = pokemon.moves.some((m) => m.id === "dragon-ascent");
     if (!hasDragonAscent) {
@@ -97,21 +111,13 @@ export function canMegaEvolve(
     return { ok: true, variantId: "rayquaza-mega" };
   }
 
-  // Need a key stone
-  if (!userInventory["key-stone"] || userInventory["key-stone"] <= 0) {
-    return { ok: false, error: "키스톤이 필요합니다" };
-  }
-
-  // Need a mega stone held item
-  if (!pokemon.heldItem) {
-    return { ok: false, error: "메가스톤을 지니고 있지 않습니다" };
-  }
-
-  const variantId = getMegaVariantForItem(pokemon.species, pokemon.heldItem);
+  const fromHeldItem = pokemon.heldItem
+    ? getMegaVariantForItem(pokemon.species, pokemon.heldItem)
+    : null;
+  const variantId = fromHeldItem ?? getDefaultMegaVariant(pokemon.species);
   if (!variantId) {
-    return { ok: false, error: "올바른 메가스톤이 아닙니다" };
+    return { ok: false, error: "메가 진화 가능한 종이 아닙니다" };
   }
-
   return { ok: true, variantId };
 }
 
@@ -119,46 +125,33 @@ export function canMegaEvolve(
 
 /**
  * Check if gigantamax is available for the given pokemon in the current battle.
+ * Gating: gigantamax factor on the pokemon (canon: must be caught with the
+ * factor) plus a registered gmax variant for the species. No dynamax-band
+ * item required.
  */
 export function canGigantamax(
   pokemon: OwnedPokemon,
   battle: BattleState,
-  userInventory: Record<string, number>,
+  _userInventory: Record<string, number>,
 ): { ok: boolean; variantId?: string; error?: string } {
-  // Already used a transformation this battle
   if (battle.transformationUsed) {
     return { ok: false, error: "이번 배틀에서 이미 변환을 사용했습니다" };
   }
-
-  // Already transformed
   if (battle.transformationType) {
     return { ok: false, error: "이미 변환 중입니다" };
   }
-
-  // Need gigantamax factor
   if (!pokemon.hasGigantamaxFactor) {
     return { ok: false, error: "기가맥스 팩터가 없습니다" };
   }
 
-  // Need dynamax band
-  if (!userInventory["dynamax-band"] || userInventory["dynamax-band"] <= 0) {
-    return { ok: false, error: "다이맥스밴드가 필요합니다" };
-  }
-
-  // Find the gmax variant for this species
-  const baseSpecies = pokemon.species;
-  // Handle variant-based gmax (e.g. urshifu-rapid-strike → urshifu-rapid-strike-gmax)
-  const variantPrefix = pokemon.variantId ?? baseSpecies;
+  const variantPrefix = pokemon.variantId ?? pokemon.species;
   const gmaxVariantId = `${variantPrefix}-gmax`;
-
   const variant = getVariants().find(
     (v) => v.id === gmaxVariantId && v.category === "gigantamax",
   );
-
   if (!variant) {
     return { ok: false, error: "기가맥스 폼이 존재하지 않습니다" };
   }
-
   return { ok: true, variantId: gmaxVariantId };
 }
 

@@ -65,14 +65,14 @@ describe("battle-transformations", () => {
       expect(checkPrimalReversion(pokemon)).toBe("kyogre-primal");
     });
 
-    it("returns null for groudon without red-orb", () => {
+    it("primal reversion is species-gated only — groudon qualifies without red-orb", () => {
       const pokemon = makePokemon({ species: "groudon", heldItem: null });
-      expect(checkPrimalReversion(pokemon)).toBeNull();
+      expect(checkPrimalReversion(pokemon)).toBe("groudon-primal");
     });
 
-    it("returns null for groudon with wrong item", () => {
+    it("groudon primal-reverts regardless of held item", () => {
       const pokemon = makePokemon({ species: "groudon", heldItem: "blue-orb" });
-      expect(checkPrimalReversion(pokemon)).toBeNull();
+      expect(checkPrimalReversion(pokemon)).toBe("groudon-primal");
     });
 
     it("returns null for non-primal species", () => {
@@ -108,29 +108,31 @@ describe("battle-transformations", () => {
       expect(result.ok).toBe(false);
     });
 
-    it("returns error without key-stone", () => {
+    it("succeeds without key-stone (item gating removed)", () => {
       const pokemon = makePokemon({ species: "charizard", heldItem: "charizardite-x" });
-      const battle = makeBattle();
-      const inventory = {};
-      const result = canMegaEvolve(pokemon, battle, inventory);
-      expect(result.ok).toBe(false);
-      expect(result.error).toContain("키스톤");
+      const result = canMegaEvolve(pokemon, makeBattle(), {});
+      expect(result.ok).toBe(true);
+      expect(result.variantId).toBe("charizard-mega-x");
     });
 
-    it("returns error with wrong mega stone", () => {
+    it("falls back to default variant for non-matching held item", () => {
+      // venusaurite is not a charizard mega stone — falls through to default
       const pokemon = makePokemon({ species: "charizard", heldItem: "venusaurite" });
-      const battle = makeBattle();
-      const inventory = { "key-stone": 1 };
-      const result = canMegaEvolve(pokemon, battle, inventory);
-      expect(result.ok).toBe(false);
-      expect(result.error).toContain("메가스톤");
+      const result = canMegaEvolve(pokemon, makeBattle(), {});
+      expect(result.ok).toBe(true);
+      expect(result.variantId).toBe("charizard-mega-y"); // default Y form
     });
 
-    it("returns error with no held item", () => {
+    it("uses default mega variant when no mega stone is held", () => {
       const pokemon = makePokemon({ species: "charizard", heldItem: null });
-      const battle = makeBattle();
-      const inventory = { "key-stone": 1 };
-      const result = canMegaEvolve(pokemon, battle, inventory);
+      const result = canMegaEvolve(pokemon, makeBattle(), {});
+      expect(result.ok).toBe(true);
+      expect(result.variantId).toBe("charizard-mega-y");
+    });
+
+    it("rejects species with no mega variant", () => {
+      const pokemon = makePokemon({ species: "pikachu", heldItem: null });
+      const result = canMegaEvolve(pokemon, makeBattle(), {});
       expect(result.ok).toBe(false);
     });
 
@@ -182,16 +184,14 @@ describe("battle-transformations", () => {
       expect(result.error).toContain("팩터");
     });
 
-    it("returns error without dynamax-band", () => {
+    it("succeeds without dynamax-band (item gating removed)", () => {
       const pokemon = makePokemon({
         species: "charizard",
         hasGigantamaxFactor: true,
       });
-      const battle = makeBattle();
-      const inventory = {};
-      const result = canGigantamax(pokemon, battle, inventory);
-      expect(result.ok).toBe(false);
-      expect(result.error).toContain("다이맥스밴드");
+      const result = canGigantamax(pokemon, makeBattle(), {});
+      expect(result.ok).toBe(true);
+      expect(result.variantId).toBe("charizard-gmax");
     });
 
     it("returns error when transformation already used", () => {

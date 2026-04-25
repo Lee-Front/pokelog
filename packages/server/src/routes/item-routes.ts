@@ -131,8 +131,6 @@ itemRoutes.post("/items/unequip", async (req: AuthRequest, res: Response) => {
   }
 });
 
-const TERA_SHARD_COST = 50;
-
 itemRoutes.post("/change-tera-type", async (req: AuthRequest, res: Response) => {
   try {
     const { pokemonUid, teraType } = req.body ?? {};
@@ -154,16 +152,6 @@ itemRoutes.post("/change-tera-type", async (req: AuthRequest, res: Response) => 
         user.storage.find((p) => p.uid === pokemonUid);
       if (!poke) return { kind: "no_pokemon" as const };
 
-      const shardId = `tera-shard-${teraType}`;
-      const owned = user.inventory[shardId] ?? 0;
-      if (owned < TERA_SHARD_COST) {
-        return { kind: "insufficient" as const, shardId };
-      }
-
-      user.inventory[shardId] = owned - TERA_SHARD_COST;
-      if (user.inventory[shardId] <= 0) {
-        delete user.inventory[shardId];
-      }
       poke.teraType = teraType;
       await saveUser(user);
       return { kind: "ok" as const, pokemon: poke, inventory: user.inventory };
@@ -175,12 +163,6 @@ itemRoutes.post("/change-tera-type", async (req: AuthRequest, res: Response) => 
     }
     if (outcome.kind === "no_pokemon") {
       res.status(404).json({ error: "포켓몬을 찾을 수 없습니다" });
-      return;
-    }
-    if (outcome.kind === "insufficient") {
-      res.status(400).json({
-        error: `${outcome.shardId}이(가) ${TERA_SHARD_COST}개 필요합니다`,
-      });
       return;
     }
 

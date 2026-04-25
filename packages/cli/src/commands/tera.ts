@@ -37,8 +37,6 @@ const TERA_TYPES: { id: string; name: string }[] = [
   { id: "fairy", name: "페어리" },
 ];
 
-const SHARD_COST = 50;
-
 async function pickPokemon(uidFromArg?: string): Promise<string | null> {
   if (uidFromArg) return uidFromArg;
 
@@ -68,21 +66,13 @@ export async function teraCommand(pokemonUidArg?: string): Promise<void> {
   const pokemonUid = await pickPokemon(pokemonUidArg);
   if (!pokemonUid) return;
 
-  const [pokeRes, invRes] = await Promise.all([
-    apiGet(`/api/game/pokemon/${pokemonUid}`),
-    apiGet("/api/game/inventory"),
-  ]);
+  const pokeRes = await apiGet(`/api/game/pokemon/${pokemonUid}`);
   if (!pokeRes.ok) {
     console.log(`${RED}오류: ${String(pokeRes.data.error ?? "포켓몬을 불러오지 못했습니다")}${R}`);
     return;
   }
-  if (!invRes.ok) {
-    console.log(`${RED}오류: ${String(invRes.data.error ?? "인벤토리를 불러오지 못했습니다")}${R}`);
-    return;
-  }
 
   const pokemon = pokeRes.data.pokemon as PokemonDetail;
-  const inventory = (invRes.data.inventory as Record<string, number> | undefined) ?? {};
   const currentTera = pokemon.teraType ?? "없음";
 
   console.log(
@@ -90,14 +80,8 @@ export async function teraCommand(pokemonUidArg?: string): Promise<void> {
   );
 
   const choices = TERA_TYPES.map((t) => {
-    const shardId = `tera-shard-${t.id}`;
-    const owned = inventory[shardId] ?? 0;
-    const enough = owned >= SHARD_COST;
-    const marker = enough ? `${GRN}●${R}` : `${DIM}○${R}`;
-    return {
-      name: `${marker} ${t.name.padEnd(6)} ${DIM}(${owned}/${SHARD_COST})${R}`,
-      value: t.id,
-    };
+    const marker = t.id === pokemon.teraType ? `${GRN}●${R}` : `${DIM}○${R}`;
+    return { name: `${marker} ${t.name}`, value: t.id };
   });
 
   const selected = await selectFrame("변경할 테라 타입", [
@@ -105,12 +89,6 @@ export async function teraCommand(pokemonUidArg?: string): Promise<void> {
     { name: "취소", value: "__cancel__" },
   ]);
   if (!selected || selected === "__cancel__") return;
-
-  const shardId = `tera-shard-${selected}`;
-  if ((inventory[shardId] ?? 0) < SHARD_COST) {
-    console.log(`\n  ${RED}${shardId} 이(가) ${SHARD_COST}개 필요합니다${R}`);
-    return;
-  }
 
   const res = await apiPost("/api/game/change-tera-type", {
     pokemonUid,

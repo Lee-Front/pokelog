@@ -331,11 +331,10 @@ describe("battle-transformations API", () => {
     expect(revertedCharizard.hp).toBeLessThanOrEqual(baseMaxHp);
   });
 
-  it("rejects mega without key-stone", async () => {
+  it("mega evolves without a key-stone (item gating removed)", async () => {
     const { token, userId } = await t.registerAndLogin("mega3", "charmander");
     const api = t.authed(token);
 
-    // Give user a charizard
     const give = await t.admin().post("/api/admin/test/give-pokemon", {
       userId,
       species: "charizard",
@@ -344,15 +343,8 @@ describe("battle-transformations API", () => {
     expect(give.status).toBe(200);
     const charizardUid = give.body.pokemon.uid;
 
-    // Give charizardite-x but NO key-stone
-    await t.admin().post("/api/admin/test/give-item", { userId, item: "charizardite-x", quantity: 1 });
-
-    const equip = await api.post("/api/game/items/equip", {
-      item: "charizardite-x",
-      pokemonUid: charizardUid,
-    });
-    expect(equip.status).toBe(200);
-
+    // No key-stone, no mega-stone heldItem — mega evolution still works
+    // because gating is purely species-based now.
     const enc = await t.admin().post("/api/admin/test/encounter", {
       userId,
       species: "rattata",
@@ -375,8 +367,9 @@ describe("battle-transformations API", () => {
       action: "fight",
       data: { moveId, mega: true },
     });
-    expect(fight.status).toBe(400);
-    expect(fight.body.error).toContain("키스톤");
+    expect(fight.status).toBe(200);
+    const log = (fight.body as { log: string[] }).log;
+    expect(log.some((line) => line.includes("메가진화했다"))).toBe(true);
   });
 
   // -------------------------------------------------------------------------

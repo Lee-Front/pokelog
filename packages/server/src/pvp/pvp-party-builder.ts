@@ -1,6 +1,8 @@
 import type { OwnedPokemon } from "../../../../shared/types.js";
 import type { PvpPokemon, PvpTransformForm } from "../../../../shared/pvp-types.js";
-import { getMegaVariantForItem, checkPrimalReversion, applyGmaxHp } from "../game/battle-transformations.js";
+import {
+  getMegaVariantForItem, getDefaultMegaVariant, checkPrimalReversion, applyGmaxHp,
+} from "../game/battle-transformations.js";
 import { buildStatsForPokemon } from "../game/pokemon-stats.js";
 import { getVariants } from "../game/data-loader.js";
 import { getEffectiveTypes } from "../game/pokemon-state.js";
@@ -68,9 +70,13 @@ export function buildPvpPartyFromPokemon(
     });
   }
 
-  const inv = inventory ?? {};
-  const hasKeyStone = (inv["key-stone"] ?? 0) > 0;
-  const hasDynamaxBand = (inv["dynamax-band"] ?? 0) > 0;
+  // Item gates were removed: any user can mega-evolve / dynamax / gigantamax
+  // when their pokemon supports it. The PvpPlayerState fields stay around
+  // (and are always true) so existing transformation code paths remain
+  // happy without a wider refactor.
+  const hasKeyStone = true;
+  const hasDynamaxBand = true;
+  void inventory;
 
   const party = pool.map((p) => {
     const level = Math.min(p.level, levelCap);
@@ -95,7 +101,10 @@ export function buildPvpPartyFromPokemon(
 
     const pokemonForStats = { species: p.species, level, nature: p.nature, variantId: p.variantId, ivs: p.ivs };
 
-    // Mega form pre-computation
+    // Mega form pre-computation. Rayquaza needs Dragon Ascent (canon
+    // signature gate). For all other mega-capable species, the held mega
+    // stone (if any) selects the variant — Charizard/Mewtwo X vs Y —
+    // otherwise getDefaultMegaVariant chooses the canonical Y form.
     if (p.species === "rayquaza") {
       const hasDragonAscent = p.moves.some((m) => m.id === "dragon-ascent");
       if (hasDragonAscent) {
@@ -104,8 +113,9 @@ export function buildPvpPartyFromPokemon(
           base.megaForm = { variantId: "rayquaza-mega", maxHp: megaStats.maxHp, stats: megaStats.stats };
         } catch { /* variant data unavailable */ }
       }
-    } else if (p.heldItem) {
-      const megaVariantId = getMegaVariantForItem(p.species, p.heldItem);
+    } else {
+      const fromItem = p.heldItem ? getMegaVariantForItem(p.species, p.heldItem) : null;
+      const megaVariantId = fromItem ?? getDefaultMegaVariant(p.species);
       if (megaVariantId) {
         try {
           const megaStats = buildStatsForPokemon(pokemonForStats, megaVariantId);
@@ -137,10 +147,10 @@ export function buildPvpPartyFromPokemon(
       } catch { /* variant data unavailable */ }
     }
 
-    // Ultra Burst form
+    // Ultra Burst form (Necrozma Dusk Mane / Dawn Wings). Species-gated
+    // only — no held Z-crystal required.
     const isUltraBurstEligible =
-      (p.species === "necrozma-dusk" || p.species === "necrozma-dawn")
-      && p.heldItem === "ultra-necrozium-z";
+      p.species === "necrozma-dusk" || p.species === "necrozma-dawn";
     if (isUltraBurstEligible) {
       try {
         const ultraStats = buildStatsForPokemon(pokemonForStats, "necrozma-ultra");
