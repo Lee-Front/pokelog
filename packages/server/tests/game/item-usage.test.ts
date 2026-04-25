@@ -2,7 +2,13 @@ import { describe, expect, it } from "vitest";
 import type { ShopItem, UserData } from "../../../../shared/types.js";
 import { createPokemon } from "../../src/game/pokemon-factory.js";
 import { calculateStatsForLevel } from "../../src/game/growth.js";
-import { ItemUseError, useInventoryItem } from "../../src/game/item-usage.js";
+import {
+  ItemUseError,
+  learnPendingMove,
+  resolveTmMoveId,
+  useInventoryItem,
+  useTmOnPokemon,
+} from "../../src/game/item-usage.js";
 
 function createUserData(): UserData {
   return {
@@ -201,5 +207,281 @@ describe("useInventoryItem", () => {
 
     const ppUp: ShopItem = { name: "포인트업", price: 3000, ppBoost: "increment" };
     expect(() => useInventoryItem(user, "pp-up", pokemon.uid, ppUp)).toThrow(ItemUseError);
+  });
+
+  describe("status cure items", () => {
+    it("burn-heal cures burn", () => {
+      const user = createUserData();
+      const pokemon = createPokemon("pikachu", 20);
+      pokemon.statusCondition = "burn";
+
+      user.party = [pokemon.uid];
+      user.pokemon = [pokemon];
+      user.inventory = { "burn-heal": 1 };
+
+      const result = useInventoryItem(user, "burn-heal", pokemon.uid);
+      expect(result.kind).toBe("status-cure");
+      expect(result.curedStatus).toBe("burn");
+      expect(pokemon.statusCondition).toBeNull();
+      expect(user.inventory["burn-heal"]).toBeUndefined();
+    });
+
+    it("antidote cures poison and clears toxic counter", () => {
+      const user = createUserData();
+      const pokemon = createPokemon("pikachu", 20);
+      pokemon.statusCondition = "poison";
+      (pokemon as unknown as { toxicCounter?: number }).toxicCounter = 3;
+
+      user.party = [pokemon.uid];
+      user.pokemon = [pokemon];
+      user.inventory = { antidote: 1 };
+
+      const result = useInventoryItem(user, "antidote", pokemon.uid);
+      expect(result.kind).toBe("status-cure");
+      expect(pokemon.statusCondition).toBeNull();
+      expect((pokemon as unknown as { toxicCounter?: number }).toxicCounter).toBeUndefined();
+      expect(user.inventory.antidote).toBeUndefined();
+    });
+
+    it("awakening clears sleepTurns alongside the status", () => {
+      const user = createUserData();
+      const pokemon = createPokemon("pikachu", 20);
+      pokemon.statusCondition = "sleep";
+      pokemon.sleepTurns = 2;
+
+      user.party = [pokemon.uid];
+      user.pokemon = [pokemon];
+      user.inventory = { awakening: 1 };
+
+      useInventoryItem(user, "awakening", pokemon.uid);
+      expect(pokemon.statusCondition).toBeNull();
+      expect(pokemon.sleepTurns).toBeUndefined();
+    });
+
+    it("rejects burn-heal on a poisoned pokemon (does not consume)", () => {
+      const user = createUserData();
+      const pokemon = createPokemon("pikachu", 20);
+      pokemon.statusCondition = "poison";
+
+      user.party = [pokemon.uid];
+      user.pokemon = [pokemon];
+      user.inventory = { "burn-heal": 1 };
+
+      expect(() => useInventoryItem(user, "burn-heal", pokemon.uid)).toThrow(ItemUseError);
+      expect(pokemon.statusCondition).toBe("poison");
+      expect(user.inventory["burn-heal"]).toBe(1);
+    });
+
+    it("rejects status-cure when pokemon has no status", () => {
+      const user = createUserData();
+      const pokemon = createPokemon("pikachu", 20);
+
+      user.party = [pokemon.uid];
+      user.pokemon = [pokemon];
+      user.inventory = { "burn-heal": 1, "full-heal": 1 };
+
+      expect(() => useInventoryItem(user, "burn-heal", pokemon.uid)).toThrow(ItemUseError);
+      expect(() => useInventoryItem(user, "full-heal", pokemon.uid)).toThrow(ItemUseError);
+    });
+
+    it("full-heal cures any status (sleep)", () => {
+      const user = createUserData();
+      const pokemon = createPokemon("pikachu", 20);
+      pokemon.statusCondition = "sleep";
+      pokemon.sleepTurns = 1;
+
+      user.party = [pokemon.uid];
+      user.pokemon = [pokemon];
+      user.inventory = { "full-heal": 1 };
+
+      const result = useInventoryItem(user, "full-heal", pokemon.uid);
+      expect(result.kind).toBe("status-cure");
+      expect(result.curedStatus).toBe("sleep");
+      expect(pokemon.statusCondition).toBeNull();
+      expect(pokemon.sleepTurns).toBeUndefined();
+    });
+
+    it("full-restore restores HP and cures status", () => {
+      const user = createUserData();
+      const pokemon = createPokemon("pikachu", 20);
+      pokemon.hp = 1;
+      pokemon.statusCondition = "burn";
+
+      user.party = [pokemon.uid];
+      user.pokemon = [pokemon];
+      user.inventory = { "full-restore": 1 };
+
+      const result = useInventoryItem(user, "full-restore", pokemon.uid);
+      expect(result.kind).toBe("status-cure");
+      expect(pokemon.hp).toBe(pokemon.maxHp);
+      expect(pokemon.statusCondition).toBeNull();
+      expect(result.hpRestored).toBe(pokemon.maxHp - 1);
+    });
+
+    it("full-restore rejected when fully healthy with no status", () => {
+      const user = createUserData();
+      const pokemon = createPokemon("pikachu", 20);
+
+      user.party = [pokemon.uid];
+      user.pokemon = [pokemon];
+      user.inventory = { "full-restore": 1 };
+
+      expect(() => useInventoryItem(user, "full-restore", pokemon.uid)).toThrow(ItemUseError);
+      expect(user.inventory["full-restore"]).toBe(1);
+    });
+  });
+
+  describe("resolveTmMoveId", () => {
+    it("strips the tm- prefix", () => {
+      expect(resolveTmMoveId("tm-flamethrower")).toBe("flamethrower");
+    });
+    it("returns null for non-TM ids", () => {
+      expect(resolveTmMoveId("potion")).toBeNull();
+      expect(resolveTmMoveId("tm-")).toBeNull();
+    });
+  });
+
+  describe("useTmOnPokemon", () => {
+    it("teaches a learnable TM move to a pokemon with a free slot", () => {
+      const user = createUserData();
+      const pokemon = createPokemon("charmander", 10);
+      // Trim moves so we have room.
+      pokemon.moves = pokemon.moves.slice(0, 2);
+
+      user.party = [pokemon.uid];
+      user.pokemon = [pokemon];
+      user.inventory = { "tm-attract": 1 };
+
+      const result = useTmOnPokemon(user, pokemon.uid, "tm-attract");
+      expect(result.ok).toBe(true);
+      expect(result.learned).toBe("attract");
+      expect(pokemon.moves.some((m) => m.id === "attract")).toBe(true);
+      expect(user.inventory["tm-attract"]).toBeUndefined();
+    });
+
+    it("rejects a TM whose move isn't in the species learnset", () => {
+      const user = createUserData();
+      const pokemon = createPokemon("charmander", 10);
+
+      user.party = [pokemon.uid];
+      user.pokemon = [pokemon];
+      // not-a-move is definitely not in any learnset
+      user.inventory = { "tm-not-a-move": 1 };
+
+      const result = useTmOnPokemon(user, pokemon.uid, "tm-not-a-move");
+      expect(result.ok).toBe(false);
+      expect(user.inventory["tm-not-a-move"]).toBe(1);
+    });
+
+    it("returns needsForgetMove when pokemon already has 4 moves", () => {
+      const user = createUserData();
+      const pokemon = createPokemon("charmander", 10);
+      pokemon.moves = [
+        { id: "scratch", pp: 35, maxPp: 35 },
+        { id: "growl", pp: 40, maxPp: 40 },
+        { id: "ember", pp: 25, maxPp: 25 },
+        { id: "smokescreen", pp: 20, maxPp: 20 },
+      ];
+
+      user.party = [pokemon.uid];
+      user.pokemon = [pokemon];
+      user.inventory = { "tm-attract": 1 };
+
+      const result = useTmOnPokemon(user, pokemon.uid, "tm-attract");
+      expect(result.ok).toBe(false);
+      expect(result.needsForgetMove).toBe(true);
+      expect(result.currentMoves).toEqual(["scratch", "growl", "ember", "smokescreen"]);
+      // TM not consumed yet — user must confirm.
+      expect(user.inventory["tm-attract"]).toBe(1);
+    });
+
+    it("replaces a chosen move when forgetMoveId is provided", () => {
+      const user = createUserData();
+      const pokemon = createPokemon("charmander", 10);
+      pokemon.moves = [
+        { id: "scratch", pp: 35, maxPp: 35 },
+        { id: "growl", pp: 40, maxPp: 40 },
+        { id: "ember", pp: 25, maxPp: 25 },
+        { id: "smokescreen", pp: 20, maxPp: 20 },
+      ];
+
+      user.party = [pokemon.uid];
+      user.pokemon = [pokemon];
+      user.inventory = { "tm-attract": 1 };
+
+      const result = useTmOnPokemon(user, pokemon.uid, "tm-attract", "growl");
+      expect(result.ok).toBe(true);
+      expect(pokemon.moves.map((m) => m.id)).toEqual(["scratch", "attract", "ember", "smokescreen"]);
+      expect(user.inventory["tm-attract"]).toBeUndefined();
+    });
+
+    it("rejects when the pokemon already knows the move", () => {
+      const user = createUserData();
+      const pokemon = createPokemon("charmander", 10);
+      pokemon.moves = [{ id: "attract", pp: 15, maxPp: 15 }];
+
+      user.party = [pokemon.uid];
+      user.pokemon = [pokemon];
+      user.inventory = { "tm-attract": 1 };
+
+      const result = useTmOnPokemon(user, pokemon.uid, "tm-attract");
+      expect(result.ok).toBe(false);
+      expect(user.inventory["tm-attract"]).toBe(1);
+    });
+  });
+
+  describe("learnPendingMove", () => {
+    it("learns the queued move into a chosen slot", () => {
+      const pokemon = createPokemon("charmander", 10);
+      pokemon.moves = [
+        { id: "scratch", pp: 35, maxPp: 35 },
+        { id: "growl", pp: 40, maxPp: 40 },
+        { id: "ember", pp: 25, maxPp: 25 },
+        { id: "smokescreen", pp: 20, maxPp: 20 },
+      ];
+      pokemon.pendingMoveLearn = "dragon-breath";
+
+      const result = learnPendingMove(pokemon, "growl");
+      expect(result.ok).toBe(true);
+      expect(result.learned).toBe("dragon-breath");
+      expect(result.forgot).toBe("growl");
+      expect(pokemon.moves.map((m) => m.id)).toEqual(["scratch", "dragon-breath", "ember", "smokescreen"]);
+      expect(pokemon.pendingMoveLearn).toBeUndefined();
+    });
+
+    it("declines when forgetMoveId is null", () => {
+      const pokemon = createPokemon("charmander", 10);
+      pokemon.pendingMoveLearn = "dragon-breath";
+      const before = pokemon.moves.map((m) => m.id);
+
+      const result = learnPendingMove(pokemon, null);
+      expect(result.ok).toBe(true);
+      expect(result.learned).toBeUndefined();
+      expect(pokemon.pendingMoveLearn).toBeUndefined();
+      expect(pokemon.moves.map((m) => m.id)).toEqual(before);
+    });
+
+    it("rejects with no pending move", () => {
+      const pokemon = createPokemon("charmander", 10);
+      delete pokemon.pendingMoveLearn;
+
+      const result = learnPendingMove(pokemon, "growl");
+      expect(result.ok).toBe(false);
+    });
+
+    it("auto-adds when a slot has freed up since queueing", () => {
+      const pokemon = createPokemon("charmander", 10);
+      pokemon.moves = [
+        { id: "scratch", pp: 35, maxPp: 35 },
+        { id: "growl", pp: 40, maxPp: 40 },
+      ];
+      pokemon.pendingMoveLearn = "dragon-breath";
+
+      const result = learnPendingMove(pokemon, "growl");
+      expect(result.ok).toBe(true);
+      expect(result.learned).toBe("dragon-breath");
+      expect(pokemon.moves.map((m) => m.id)).toContain("dragon-breath");
+      expect(pokemon.pendingMoveLearn).toBeUndefined();
+    });
   });
 });

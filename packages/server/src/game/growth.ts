@@ -66,27 +66,51 @@ function buildMoveSlot(moveId: string): PokemonMove {
   };
 }
 
+export interface ApplyLearnedMovesResult {
+  /** Move ids that were directly added to `pokemon.moves`. */
+  learned: string[];
+  /**
+   * Move id that could not be auto-added because the move slots were
+   * full. Stored on `pokemon.pendingMoveLearn` so the user can resolve
+   * it via the `learn-pending` route. We only queue ONE pending move at
+   * a time; if multiple new moves are passed in (e.g. multi-level jump)
+   * the first one that doesn't fit wins and subsequent ones are
+   * dropped, matching the canon "first prompt blocks the queue"
+   * behavior.
+   */
+  queued: string | null;
+}
+
 export function applyLearnedMoves(
   pokemon: OwnedPokemon,
   newMoveIds: string[],
   maxMoves: number = 4,
-): string[] {
+): ApplyLearnedMovesResult {
   const learnedMoveIds: string[] = [];
+  let queued: string | null = null;
 
   for (const moveId of newMoveIds) {
     if (pokemon.moves.some((move) => move.id === moveId)) {
       continue;
     }
 
-    pokemon.moves.push(buildMoveSlot(moveId));
-    learnedMoveIds.push(moveId);
+    if (pokemon.moves.length < maxMoves) {
+      pokemon.moves.push(buildMoveSlot(moveId));
+      learnedMoveIds.push(moveId);
+      continue;
+    }
+
+    // Move slots full. Queue the first overflow move on the pokemon
+    // and stop auto-adding — canon won't silently displace existing
+    // moves. If a previous queued move is still pending, leave it
+    // (don't overwrite the user's pending choice).
+    if (!pokemon.pendingMoveLearn && !queued) {
+      pokemon.pendingMoveLearn = moveId;
+      queued = moveId;
+    }
   }
 
-  while (pokemon.moves.length > maxMoves) {
-    pokemon.moves.shift();
-  }
-
-  return learnedMoveIds;
+  return { learned: learnedMoveIds, queued };
 }
 
 function resolveEvolutionAbilityId(species: string, currentAbilityId: string | null | undefined): string | null {

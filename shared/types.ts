@@ -164,6 +164,16 @@ export interface OwnedPokemon {
   ivs?: IndividualValues;
   // ── Gen 9 / Tera ──
   teraType?: string | null;
+  /**
+   * A move id queued to be learned but blocked because the pokemon
+   * already knows {@link MAX_MOVES} moves. The user must explicitly call
+   * the "learn pending move" endpoint and pick a move to forget before
+   * this slot can be filled. Cleared once the user resolves it (or
+   * declines the move). Canon: a level-up move that can't fit prompts
+   * the player to forget another move; we model that prompt as queued
+   * server state rather than blocking commit-rewards mid-flight.
+   */
+  pendingMoveLearn?: string;
   // ── Fusion (Kyurem/Necrozma/Calyrex) ──
   fusedPartnerUid?: string;
   fusedPartnerData?: {

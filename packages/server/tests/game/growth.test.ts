@@ -307,7 +307,7 @@ describe("checkEvolution", () => {
 });
 
 describe("applyLearnedMoves", () => {
-  it("adds newly learned moves and keeps the last four", () => {
+  it("adds the first overflow into the open slot and queues the rest", () => {
     const pokemon = createOwnedPokemon({
       moves: [
         { id: "scratch", pp: 35, maxPp: 35 },
@@ -316,15 +316,91 @@ describe("applyLearnedMoves", () => {
       ],
     });
 
-    const learned = applyLearnedMoves(pokemon, ["smokescreen", "dragon-breath"]);
+    const result = applyLearnedMoves(pokemon, ["smokescreen", "dragon-breath"]);
 
-    expect(learned).toEqual(["smokescreen", "dragon-breath"]);
+    // With 3 moves + 2 new, only the first fits (slot 4) and the
+    // second gets queued for user resolution.
+    expect(result.learned).toEqual(["smokescreen"]);
+    expect(result.queued).toBe("dragon-breath");
     expect(pokemon.moves.map((move) => move.id)).toEqual([
+      "scratch",
       "growl",
       "ember",
       "smokescreen",
-      "dragon-breath",
     ]);
+    expect(pokemon.pendingMoveLearn).toBe("dragon-breath");
+  });
+
+  it("auto-adds when there is room", () => {
+    const pokemon = createOwnedPokemon({
+      moves: [
+        { id: "scratch", pp: 35, maxPp: 35 },
+        { id: "growl", pp: 40, maxPp: 40 },
+        { id: "ember", pp: 25, maxPp: 25 },
+      ],
+    });
+
+    const result = applyLearnedMoves(pokemon, ["smokescreen"]);
+
+    expect(result.learned).toEqual(["smokescreen"]);
+    expect(result.queued).toBeNull();
+    expect(pokemon.moves).toHaveLength(4);
+    expect(pokemon.pendingMoveLearn).toBeUndefined();
+  });
+
+  it("queues a pending move when slots are full instead of shifting the oldest", () => {
+    const pokemon = createOwnedPokemon({
+      moves: [
+        { id: "scratch", pp: 35, maxPp: 35 },
+        { id: "growl", pp: 40, maxPp: 40 },
+        { id: "ember", pp: 25, maxPp: 25 },
+        { id: "smokescreen", pp: 20, maxPp: 20 },
+      ],
+    });
+
+    const result = applyLearnedMoves(pokemon, ["dragon-breath"]);
+
+    expect(result.learned).toEqual([]);
+    expect(result.queued).toBe("dragon-breath");
+    // No auto-shift: original moves all preserved.
+    expect(pokemon.moves.map((move) => move.id)).toEqual([
+      "scratch",
+      "growl",
+      "ember",
+      "smokescreen",
+    ]);
+    expect(pokemon.pendingMoveLearn).toBe("dragon-breath");
+  });
+
+  it("preserves an existing pending move rather than overwriting", () => {
+    const pokemon = createOwnedPokemon({
+      moves: [
+        { id: "scratch", pp: 35, maxPp: 35 },
+        { id: "growl", pp: 40, maxPp: 40 },
+        { id: "ember", pp: 25, maxPp: 25 },
+        { id: "smokescreen", pp: 20, maxPp: 20 },
+      ],
+    });
+    pokemon.pendingMoveLearn = "tackle";
+
+    const result = applyLearnedMoves(pokemon, ["dragon-breath"]);
+
+    expect(result.queued).toBeNull();
+    expect(pokemon.pendingMoveLearn).toBe("tackle");
+  });
+
+  it("does not duplicate a move the pokemon already knows", () => {
+    const pokemon = createOwnedPokemon({
+      moves: [
+        { id: "scratch", pp: 35, maxPp: 35 },
+        { id: "growl", pp: 40, maxPp: 40 },
+      ],
+    });
+
+    const result = applyLearnedMoves(pokemon, ["scratch", "ember"]);
+
+    expect(result.learned).toEqual(["ember"]);
+    expect(pokemon.moves.map((move) => move.id)).toEqual(["scratch", "growl", "ember"]);
   });
 });
 

@@ -1,16 +1,17 @@
-import type { OwnedPokemon, ShopItem, UserData, VitaminStatKey } from "../../../../shared/types.js";
-import { getItems } from "./data-loader.js";
+import type { OwnedPokemon, PokemonMove, PrimaryStatus, ShopItem, UserData, VitaminStatKey } from "../../../../shared/types.js";
+import { getItems, getMoveById, getSpeciesByName } from "./data-loader.js";
 import { GameRuleError } from "./game-errors.js";
 import { evolvePokemon, getEvolutionItemUseTarget } from "./growth.js";
 import { decrementItem, healPokemon } from "./inventory-utils.js";
 import { clearPendingEvolutionForPokemon } from "./pending-evolution.js";
 import { getDisplaySpeciesName } from "./pokemon-state.js";
 import { adjustFriendship } from "./friendship.js";
+import { MAX_MOVES } from "../../../../shared/types.js";
 
 export { GameRuleError as ItemUseError };
 
 export interface ItemUseResult {
-  kind: "healing" | "evolution" | "vitamin" | "pp-boost";
+  kind: "healing" | "evolution" | "vitamin" | "pp-boost" | "status-cure";
   item: string;
   itemName: string;
   pokemon: OwnedPokemon;
@@ -19,6 +20,33 @@ export interface ItemUseResult {
   newVitaminCount?: number;
   moveId?: string;
   newMaxPp?: number;
+  curedStatus?: PrimaryStatus;
+  hpRestored?: number;
+}
+
+/**
+ * Items that cure a single specific status, plus full-heal which clears
+ * any status. PokeAPI item ids are kebab-case (e.g. "burn-heal"); we use
+ * the same canonical ids here so admin-granted items line up with the
+ * upstream catalog. Note: as of 2026-04 these items are NOT shipped in
+ * items.json — they need to be synced from PokeAPI before normal users
+ * can obtain them via shop. Admin grant works today.
+ */
+const STATUS_CURE_MAP: Record<string, PrimaryStatus> = {
+  "burn-heal": "burn",
+  "ice-heal": "freeze",
+  awakening: "sleep",
+  "paralyze-heal": "paralysis",
+  antidote: "poison",
+};
+
+function clearStatusFields(pokemon: OwnedPokemon): void {
+  pokemon.statusCondition = null;
+  pokemon.sleepTurns = undefined;
+  // toxicCounter lives on the PvP runtime pokemon shape; OwnedPokemon does
+  // not declare it, but we clear via cast to keep state consistent if it
+  // was assigned during a tower run snapshot.
+  (pokemon as unknown as { toxicCounter?: number }).toxicCounter = undefined;
 }
 
 export const VITAMIN_MAX_APPLICATIONS = 10;
@@ -121,6 +149,66 @@ export function useInventoryItem(
 
   const itemName = getItemDisplayName(item, shopItem);
 
+  // Single-status cures: only valid when the pokemon has the matching
+  // status. Reject otherwise so we don't silently consume the item.
+  if (Object.prototype.hasOwnProperty.call(STATUS_CURE_MAP, item)) {
+    const cure = STATUS_CURE_MAP[item];
+    if (pokemon.statusCondition !== cure) {
+      throw new GameRuleError(`${getPokemonDisplayName(pokemon)}은(는) 해당 상태이상에 걸려있지 않습니다.`);
+    }
+    clearStatusFields(pokemon);
+    decrementItem(user.inventory, item);
+    return {
+      kind: "status-cure",
+      item,
+      itemName,
+      pokemon,
+      curedStatus: cure,
+    };
+  }
+
+  // Full-heal cures any status (but not HP).
+  if (item === "full-heal") {
+    if (!pokemon.statusCondition) {
+      throw new GameRuleError(`${getPokemonDisplayName(pokemon)}에게 치료할 상태이상이 없습니다.`);
+    }
+    const cured = pokemon.statusCondition;
+    clearStatusFields(pokemon);
+    decrementItem(user.inventory, item);
+    return {
+      kind: "status-cure",
+      item,
+      itemName,
+      pokemon,
+      curedStatus: cured,
+    };
+  }
+
+  // Full-restore heals HP to max AND cures any status. Valid if either
+  // HP is below max or there is a status to cure (so we don't waste the
+  // item on a fully-healthy pokemon).
+  if (item === "full-restore") {
+    const hadStatus = pokemon.statusCondition != null;
+    const wasInjured = pokemon.hp < pokemon.maxHp;
+    if (!hadStatus && !wasInjured) {
+      throw new GameRuleError(`${getPokemonDisplayName(pokemon)}은(는) 회복이 필요하지 않습니다.`);
+    }
+    const cured = pokemon.statusCondition ?? undefined;
+    const hpBefore = pokemon.hp;
+    clearStatusFields(pokemon);
+    pokemon.hp = pokemon.maxHp;
+    decrementItem(user.inventory, item);
+    adjustFriendship(pokemon, "heal-item");
+    return {
+      kind: "status-cure",
+      item,
+      itemName,
+      pokemon,
+      curedStatus: cured,
+      hpRestored: pokemon.hp - hpBefore,
+    };
+  }
+
   if (shopItem?.healAmount) {
     if (pokemon.hp >= pokemon.maxHp) {
       throw new GameRuleError("Pokemon does not need healing.");
@@ -189,4 +277,151 @@ export function useInventoryItem(
     pokemon,
     previousSpecies,
   };
+}
+
+function buildMoveSlot(moveId: string): PokemonMove {
+  const moveData = getMoveById(moveId);
+  const pp = moveData?.pp ?? 10;
+  return { id: moveId, pp, maxPp: pp };
+}
+
+/**
+ * Resolve the move id taught by a TM-style item id. We support the
+ * canonical PokeAPI `tm-{move-id}` shape (e.g. `tm-flamethrower`). Note:
+ * as of 2026-04 items.json does NOT ship TMs — so unless an admin
+ * grants a `tm-*` item, this code path is unreachable for normal users.
+ * Returns `null` if the id doesn't look like a TM.
+ */
+export function resolveTmMoveId(itemId: string): string | null {
+  if (!itemId.startsWith("tm-")) return null;
+  const moveId = itemId.slice(3);
+  if (!moveId) return null;
+  return moveId;
+}
+
+export interface UseTmResult {
+  ok: boolean;
+  /** Set when the call needs the user to pick a move to forget. */
+  needsForgetMove?: boolean;
+  currentMoves?: string[];
+  learned?: string;
+  /** When ok=false, a human-readable Korean error string. */
+  error?: string;
+}
+
+/**
+ * Teach a pokemon a move from a TM. If the pokemon already has 4 moves
+ * and `forgetMoveId` is not provided, we return `needsForgetMove=true`
+ * with the current move ids and DO NOT consume the TM. Once the user
+ * calls again with `forgetMoveId`, we replace that slot.
+ *
+ * On success: TM is decremented (TMs in this game are consumable for
+ * simplicity; canon Gen 5+ TMs are reusable).
+ */
+export function useTmOnPokemon(
+  user: UserData,
+  pokemonUid: string,
+  tmItemId: string,
+  forgetMoveId?: string,
+): UseTmResult {
+  const owned = user.inventory[tmItemId] ?? 0;
+  if (owned <= 0) {
+    return { ok: false, error: "TM이 인벤토리에 없습니다." };
+  }
+
+  const pokemon = user.pokemon.find((p) => p.uid === pokemonUid)
+    ?? user.storage.find((p) => p.uid === pokemonUid);
+  if (!pokemon) {
+    return { ok: false, error: "포켓몬을 찾을 수 없습니다." };
+  }
+
+  const moveId = resolveTmMoveId(tmItemId);
+  if (!moveId) {
+    return { ok: false, error: "유효한 TM이 아닙니다." };
+  }
+
+  const speciesData = getSpeciesByName(pokemon.species);
+  if (!speciesData) {
+    return { ok: false, error: "종족 데이터를 찾을 수 없습니다." };
+  }
+  if (!speciesData.learnset.tm.includes(moveId)) {
+    return { ok: false, error: `${pokemon.species}은(는) 이 기술을 TM으로 배울 수 없습니다.` };
+  }
+
+  if (pokemon.moves.some((m) => m.id === moveId)) {
+    return { ok: false, error: "이미 이 기술을 알고 있습니다." };
+  }
+
+  if (pokemon.moves.length >= MAX_MOVES) {
+    if (!forgetMoveId) {
+      return {
+        ok: false,
+        needsForgetMove: true,
+        currentMoves: pokemon.moves.map((m) => m.id),
+      };
+    }
+    const idx = pokemon.moves.findIndex((m) => m.id === forgetMoveId);
+    if (idx < 0) {
+      return { ok: false, error: "잊을 기술을 알지 못합니다." };
+    }
+    pokemon.moves[idx] = buildMoveSlot(moveId);
+  } else {
+    pokemon.moves.push(buildMoveSlot(moveId));
+  }
+
+  decrementItem(user.inventory, tmItemId);
+  return { ok: true, learned: moveId };
+}
+
+export interface LearnPendingResult {
+  ok: boolean;
+  error?: string;
+  learned?: string;
+  forgot?: string;
+}
+
+/**
+ * Resolve a pending level-up move learn that was queued because the
+ * pokemon already had 4 moves at the time. The user picks a move to
+ * forget; we replace it with the queued move and clear `pendingMoveLearn`.
+ *
+ * If `forgetMoveId` is null/undefined, the user is declining the move —
+ * we just clear the pending state.
+ */
+export function learnPendingMove(
+  pokemon: OwnedPokemon,
+  forgetMoveId: string | null | undefined,
+): LearnPendingResult {
+  const pending = pokemon.pendingMoveLearn;
+  if (!pending) {
+    return { ok: false, error: "대기 중인 기술이 없습니다." };
+  }
+
+  // Decline path: clear pending without learning.
+  if (forgetMoveId == null) {
+    delete pokemon.pendingMoveLearn;
+    return { ok: true };
+  }
+
+  if (pokemon.moves.some((m) => m.id === pending)) {
+    // Edge case: pokemon already learned the move via another path.
+    delete pokemon.pendingMoveLearn;
+    return { ok: false, error: "이미 이 기술을 알고 있습니다." };
+  }
+
+  if (pokemon.moves.length < MAX_MOVES) {
+    // Slot opened up since the move was queued — just add it.
+    pokemon.moves.push(buildMoveSlot(pending));
+    delete pokemon.pendingMoveLearn;
+    return { ok: true, learned: pending };
+  }
+
+  const idx = pokemon.moves.findIndex((m) => m.id === forgetMoveId);
+  if (idx < 0) {
+    return { ok: false, error: "잊을 기술을 알지 못합니다." };
+  }
+
+  pokemon.moves[idx] = buildMoveSlot(pending);
+  delete pokemon.pendingMoveLearn;
+  return { ok: true, learned: pending, forgot: forgetMoveId };
 }
