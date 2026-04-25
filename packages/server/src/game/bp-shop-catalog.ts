@@ -25,10 +25,13 @@ export type BpShopCategory =
 // Battle Frontier price tiers, modeled after canon BP costs.
 //   common = 16 BP   (utility held items, white-herb / mental-herb tier)
 //   mid    = 32 BP   (leftovers, scope-lens, expert-belt tier)
-//   high   = 48 BP   (life-orb, focus-sash, choice items)
+//   high   = 48 BP   (life-orb, focus-sash, choice items, nature mints)
 //   prime  = 64 BP   (eviolite, assault-vest, weakness-policy)
-//   rare   = 100 BP  (mega-stones, ability-capsule)
-//   legend = 200 BP  (ability-patch, sacred items, z-crystals)
+//   rare   = 100 BP  (ability-capsule)
+//   legend = 200 BP  (ability-patch, sacred-ash)
+// Mega evolution / Z-crystals / plates / tera shards are intentionally
+// not surfaced — those mechanics are optional in our game and don't need
+// a purchase path.
 const TIER = {
   common: 16,
   mid: 32,

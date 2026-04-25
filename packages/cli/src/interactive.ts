@@ -20,6 +20,7 @@ import { rankingCommand } from "./commands/ranking.js";
 import { regionCommand } from "./commands/region.js";
 import { serversCommand } from "./commands/servers.js";
 import { shopCommand } from "./commands/shop.js";
+import { bpShopCommand } from "./commands/bp-shop.js";
 import { statusCommand } from "./commands/status.js";
 import { storageCommand } from "./commands/storage.js";
 import { tradeCommand } from "./commands/trade.js";
@@ -79,10 +80,11 @@ const MENU_TREE: MenuNode[] = [
   { label: "가방",   cmd: "inventory", desc: "인벤토리",       auth: true, server: true },
   { label: "회복",   cmd: "heal",      desc: "파티 회복",      auth: true, server: true },
   {
-    label: "상점", desc: "상점 / 뽑기", auth: true, server: true,
+    label: "상점", desc: "상점 / BP / 뽑기", auth: true, server: true,
     children: [
-      { label: "상점", cmd: "shop", desc: "아이템 구매" },
-      { label: "뽑기", cmd: "egg",  desc: "포켓몬 가챠" },
+      { label: "상점",    cmd: "shop",    desc: "아이템 구매" },
+      { label: "BP상점",  cmd: "bp-shop", desc: "Battle Tower BP 교환" },
+      { label: "뽑기",    cmd: "egg",     desc: "포켓몬 가챠" },
     ],
   },
   {
@@ -262,6 +264,7 @@ async function executeCommand(cmd: string): Promise<"continue" | "quit"> {
     case "heal":         await healCommand(); break;
     case "egg":          await eggCommand(); break;
     case "shop":         await shopCommand(); break;
+    case "bp-shop":      await bpShopCommand(); break;
     case "storage":      await storageCommand(); break;
     case "ranking":      await rankingCommand("exp"); break;
     case "ranking-pvp":  await rankingCommand("pvp"); break;

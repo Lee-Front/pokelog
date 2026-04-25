@@ -24,6 +24,7 @@ import { rankingCommand } from "./commands/ranking.js";
 import { regionCommand } from "./commands/region.js";
 import { serversCommand } from "./commands/servers.js";
 import { shopCommand, buyCommand } from "./commands/shop.js";
+import { bpShopCommand, bpBuyCommand } from "./commands/bp-shop.js";
 import { statusCommand } from "./commands/status.js";
 import { storageCommand, withdrawCommand, depositCommand } from "./commands/storage.js";
 import {
@@ -114,6 +115,8 @@ if (process.argv.length <= 2) {
   program.command("fusion").description("fuse/unfuse legendary pokemon").action(fusionCommand);
   program.command("tera [pokemonUid]").description("change a pokemon's Tera type").action(teraCommand);
   program.command("tower").description("battle tower").action(towerCommand);
+  program.command("bp-shop").description("Battle Tower BP shop").action(bpShopCommand);
+  program.command("bp-buy <item> [quantity]").description("buy item with BP").action((item, qty) => bpBuyCommand(item, parseInt(qty || "1", 10)));
   program.command("connect").description("manage integrations").action(connectCommand);
 
   program.command("init").description("[deprecated] use join instead").requiredOption("--server <url>", "server url").action((opts) => joinCommand(opts.server));
