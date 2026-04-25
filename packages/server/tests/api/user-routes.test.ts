@@ -90,4 +90,72 @@ describe("user routes", () => {
     const res = await t.request.get("/api/user/profile");
     expect(res.status).toBe(401);
   });
+
+  describe("PUT /api/game/pokemon/:uid/nickname", () => {
+    it("sets a pokemon nickname when the user owns the pokemon", async () => {
+      const { token } = await t.registerAndLogin("nickowner", "charmander");
+      const api = t.authed(token);
+
+      const profile = await api.get("/api/user/profile");
+      const uid = profile.body.pokemon[0].uid;
+
+      const res = await api.put(`/api/game/pokemon/${uid}/nickname`, { nickname: "샤르" });
+      expect(res.status).toBe(200);
+      expect(res.body.pokemon.nickname).toBe("샤르");
+
+      const after = await api.get(`/api/game/pokemon/${uid}`);
+      expect(after.body.pokemon.nickname).toBe("샤르");
+    });
+
+    it("clears a nickname when null is sent", async () => {
+      const { token } = await t.registerAndLogin("nickclear", "charmander");
+      const api = t.authed(token);
+
+      const profile = await api.get("/api/user/profile");
+      const uid = profile.body.pokemon[0].uid;
+
+      await api.put(`/api/game/pokemon/${uid}/nickname`, { nickname: "Bob" });
+      const cleared = await api.put(`/api/game/pokemon/${uid}/nickname`, { nickname: null });
+      expect(cleared.status).toBe(200);
+      expect(cleared.body.pokemon.nickname).toBeNull();
+    });
+
+    it("rejects nicknames longer than 12 characters", async () => {
+      const { token } = await t.registerAndLogin("nicktoolong", "charmander");
+      const api = t.authed(token);
+
+      const profile = await api.get("/api/user/profile");
+      const uid = profile.body.pokemon[0].uid;
+
+      const res = await api.put(`/api/game/pokemon/${uid}/nickname`, {
+        nickname: "x".repeat(13),
+      });
+      expect(res.status).toBe(400);
+    });
+
+    it("rejects nicknames with disallowed characters", async () => {
+      const { token } = await t.registerAndLogin("nickbad", "charmander");
+      const api = t.authed(token);
+
+      const profile = await api.get("/api/user/profile");
+      const uid = profile.body.pokemon[0].uid;
+
+      const res = await api.put(`/api/game/pokemon/${uid}/nickname`, {
+        nickname: "name<>!",
+      });
+      expect(res.status).toBe(400);
+    });
+
+    it("returns 404 for an unknown pokemon uid", async () => {
+      const { token } = await t.registerAndLogin("nickmissing", "charmander");
+      const api = t.authed(token);
+      const res = await api.put("/api/game/pokemon/no-such-uid/nickname", { nickname: "x" });
+      expect(res.status).toBe(404);
+    });
+
+    it("rejects unauthenticated nickname changes", async () => {
+      const res = await t.request.put("/api/game/pokemon/some-uid/nickname").send({ nickname: "x" });
+      expect(res.status).toBe(401);
+    });
+  });
 });

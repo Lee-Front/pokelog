@@ -172,6 +172,74 @@ gameRoutes.put("/party", async (req: AuthRequest, res: Response) => {
   }
 });
 
+// Nickname validation. Canon enforces a 12-char limit (in Latin scripts);
+// we allow alphanumeric, spaces, basic punctuation, Hangul, and Hiragana/
+// Katakana so Korean and JP-style nicknames work. The character class is
+// intentionally restrictive — we do NOT want zero-width / control / RTL
+// override characters smuggled in via a nickname.
+const NICKNAME_PATTERN = /^[A-Za-z0-9 _\-.\u3131-\u318E\uAC00-\uD7A3\u3040-\u309F\u30A0-\u30FF]+$/;
+const NICKNAME_MAX_LENGTH = 12;
+
+gameRoutes.put("/pokemon/:uid/nickname", async (req: AuthRequest, res: Response) => {
+  try {
+    const raw = req.body?.nickname;
+    if (raw !== null && typeof raw !== "string") {
+      res.status(400).json({ error: "nickname은 문자열이어야 합니다" });
+      return;
+    }
+
+    // Allow null / empty string as "clear nickname". Anything else must
+    // pass the length + character class checks.
+    let nickname: string | null;
+    if (raw === null || raw === "") {
+      nickname = null;
+    } else {
+      const trimmed = raw.trim();
+      if (trimmed.length < 1 || trimmed.length > NICKNAME_MAX_LENGTH) {
+        res.status(400).json({ error: `닉네임은 1자 이상 ${NICKNAME_MAX_LENGTH}자 이하여야 합니다` });
+        return;
+      }
+      if (!NICKNAME_PATTERN.test(trimmed)) {
+        res.status(400).json({ error: "닉네임에 사용할 수 없는 문자가 포함되어 있습니다" });
+        return;
+      }
+      nickname = trimmed;
+    }
+
+    type Outcome =
+      | { kind: "ok"; pokemon: import("../../../../shared/types.js").OwnedPokemon }
+      | { kind: "not_found_user" }
+      | { kind: "not_found_pokemon" };
+
+    const outcome = await withUserLock<Outcome>(req.userId!, async () => {
+      const u = await getUser(req.userId!);
+      if (!u) return { kind: "not_found_user" };
+
+      const pokemon = u.pokemon.find((p) => p.uid === req.params.uid)
+        ?? u.storage.find((p) => p.uid === req.params.uid);
+      if (!pokemon) return { kind: "not_found_pokemon" };
+
+      pokemon.nickname = nickname;
+      await saveUser(u);
+      return { kind: "ok", pokemon };
+    });
+
+    if (outcome.kind === "not_found_user") {
+      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+      return;
+    }
+    if (outcome.kind === "not_found_pokemon") {
+      res.status(404).json({ error: "포켓몬을 찾을 수 없습니다" });
+      return;
+    }
+
+    res.json({ pokemon: outcome.pokemon });
+  } catch (err) {
+    console.error("Pokemon nickname error:", err);
+    res.status(500).json({ error: "서버 오류가 발생했습니다" });
+  }
+});
+
 gameRoutes.get("/pokemon/:uid", async (req: AuthRequest, res: Response) => {
   try {
     const user = await getUser(req.userId!);
