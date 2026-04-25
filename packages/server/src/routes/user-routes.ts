@@ -13,6 +13,7 @@ import { testIntegrationConnection } from "../integrations/provider-tests.js";
 import { pollUserIntegrations } from "../polling/polling-worker.js";
 import { authMiddleware, type AuthRequest } from "../middleware/auth-middleware.js";
 import { getSyncState, saveSyncState } from "../storage/sync-state-store.js";
+import { withUserLock } from "../storage/user-mutex.js";
 import {
   getUser,
   isEmailTaken,
@@ -20,6 +21,16 @@ import {
   searchUsersByIdentity,
   saveUser,
 } from "../storage/user-store.js";
+
+// Apps that can be associated with a user via /api/user/match. Any value
+// outside this set (and especially the JS reserved keys __proto__, constructor,
+// prototype) is rejected so that a tainted body cannot pollute Object.prototype
+// when we use the value as a key into user.account.matchings.
+const ALLOWED_MATCH_APPS = new Set(["git", "notion", "jira", "slack", "github", "gitlab"]);
+
+function hasOwn(target: object, key: string): boolean {
+  return Object.prototype.hasOwnProperty.call(target, key);
+}
 
 export const userRoutes = Router();
 userRoutes.use(authMiddleware);
@@ -68,14 +79,19 @@ userRoutes.put("/nickname", async (req: AuthRequest, res: Response) => {
       return;
     }
 
-    const user = await getUser(req.userId!);
-    if (!user) {
+    type Outcome = { kind: "ok" } | { kind: "not_found" };
+    const outcome = await withUserLock<Outcome>(req.userId!, async () => {
+      const user = await getUser(req.userId!);
+      if (!user) return { kind: "not_found" };
+      user.account.nickname = nickname;
+      await saveUser(user);
+      return { kind: "ok" };
+    });
+
+    if (outcome.kind === "not_found") {
       res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
       return;
     }
-
-    user.account.nickname = nickname;
-    await saveUser(user);
     res.json({ nickname });
   } catch (err) {
     console.error("Nickname error:", err);
@@ -86,39 +102,53 @@ userRoutes.put("/nickname", async (req: AuthRequest, res: Response) => {
 userRoutes.post("/match", async (req: AuthRequest, res: Response) => {
   try {
     const { app, identifier } = req.body;
-    if (!app || !identifier) {
+    if (typeof app !== "string" || typeof identifier !== "string" || !app || !identifier) {
       res.status(400).json({ error: "app과 identifier를 입력해 주세요" });
       return;
     }
-
-    const user = await getUser(req.userId!);
-    if (!user) {
-      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+    if (!ALLOWED_MATCH_APPS.has(app)) {
+      res.status(400).json({ error: "유효하지 않은 app입니다" });
       return;
     }
 
-    if (app === "git") {
-      const taken = await isEmailTaken(identifier);
-      if (taken) {
-        res.status(409).json({ error: "이미 다른 사용자가 등록한 이메일입니다" });
-        return;
+    type Outcome =
+      | { kind: "ok"; matchings: unknown }
+      | { kind: "error"; status: number; message: string };
+
+    const outcome = await withUserLock<Outcome>(req.userId!, async () => {
+      const user = await getUser(req.userId!);
+      if (!user) return { kind: "error", status: 404, message: "사용자를 찾을 수 없습니다" };
+
+      if (app === "git") {
+        const taken = await isEmailTaken(identifier);
+        if (taken) {
+          return { kind: "error", status: 409, message: "이미 다른 사용자가 등록한 이메일입니다" };
+        }
+
+        if (!hasOwn(user.account.matchings, "git") || !user.account.matchings.git) {
+          user.account.matchings.git = { emails: [] };
+        }
+        if (!user.account.matchings.git.emails.includes(identifier)) {
+          user.account.matchings.git.emails.push(identifier);
+        }
+      } else {
+        const existing = hasOwn(user.account.matchings, app)
+          ? (user.account.matchings[app] as Record<string, unknown> | undefined)
+          : undefined;
+        const next = existing && typeof existing === "object" ? { ...existing } : {};
+        next.identifier = identifier;
+        user.account.matchings[app] = next;
       }
 
-      if (!user.account.matchings.git) {
-        user.account.matchings.git = { emails: [] };
-      }
-      if (!user.account.matchings.git.emails.includes(identifier)) {
-        user.account.matchings.git.emails.push(identifier);
-      }
-    } else {
-      if (!user.account.matchings[app]) {
-        user.account.matchings[app] = {};
-      }
-      (user.account.matchings[app] as Record<string, unknown>).identifier = identifier;
+      await saveUser(user);
+      return { kind: "ok", matchings: user.account.matchings };
+    });
+
+    if (outcome.kind === "error") {
+      res.status(outcome.status).json({ error: outcome.message });
+      return;
     }
-
-    await saveUser(user);
-    res.json({ matchings: user.account.matchings });
+    res.json({ matchings: outcome.matchings });
   } catch (err) {
     console.error("Match error:", err);
     res.status(500).json({ error: "match 정보를 저장하지 못했습니다" });
@@ -128,27 +158,40 @@ userRoutes.post("/match", async (req: AuthRequest, res: Response) => {
 userRoutes.delete("/match", async (req: AuthRequest, res: Response) => {
   try {
     const { app, identifier } = req.body;
-    if (!app || !identifier) {
+    if (typeof app !== "string" || typeof identifier !== "string" || !app || !identifier) {
       res.status(400).json({ error: "app과 identifier를 입력해 주세요" });
       return;
     }
-
-    const user = await getUser(req.userId!);
-    if (!user) {
-      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+    if (!ALLOWED_MATCH_APPS.has(app)) {
+      res.status(400).json({ error: "유효하지 않은 app입니다" });
       return;
     }
 
-    if (app === "git" && user.account.matchings.git) {
-      user.account.matchings.git.emails = user.account.matchings.git.emails.filter(
-        (email) => email !== identifier,
-      );
-    } else {
-      delete user.account.matchings[app];
-    }
+    type Outcome =
+      | { kind: "ok"; matchings: unknown }
+      | { kind: "error"; status: number; message: string };
 
-    await saveUser(user);
-    res.json({ matchings: user.account.matchings });
+    const outcome = await withUserLock<Outcome>(req.userId!, async () => {
+      const user = await getUser(req.userId!);
+      if (!user) return { kind: "error", status: 404, message: "사용자를 찾을 수 없습니다" };
+
+      if (app === "git" && hasOwn(user.account.matchings, "git") && user.account.matchings.git) {
+        user.account.matchings.git.emails = user.account.matchings.git.emails.filter(
+          (email) => email !== identifier,
+        );
+      } else if (hasOwn(user.account.matchings, app)) {
+        delete user.account.matchings[app];
+      }
+
+      await saveUser(user);
+      return { kind: "ok", matchings: user.account.matchings };
+    });
+
+    if (outcome.kind === "error") {
+      res.status(outcome.status).json({ error: outcome.message });
+      return;
+    }
+    res.json({ matchings: outcome.matchings });
   } catch (err) {
     console.error("Match delete error:", err);
     res.status(500).json({ error: "match 정보를 삭제하지 못했습니다" });
@@ -175,21 +218,29 @@ userRoutes.get("/integrations", async (req: AuthRequest, res: Response) => {
 
 userRoutes.post("/integrations", async (req: AuthRequest, res: Response) => {
   try {
-    const user = await getUser(req.userId!);
-    if (!user) {
-      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
-      return;
-    }
-
     const parsed = await parseIntegrationInput(req.body, req.userId!);
     if ("error" in parsed) {
       res.status(parsed.status).json({ error: parsed.error });
       return;
     }
 
-    user.integrations.push(parsed.integration);
-    await saveUser(user);
-    res.status(201).json({ integration: parsed.integration });
+    type Outcome =
+      | { kind: "ok"; integration: typeof parsed.integration }
+      | { kind: "not_found" };
+
+    const outcome = await withUserLock<Outcome>(req.userId!, async () => {
+      const user = await getUser(req.userId!);
+      if (!user) return { kind: "not_found" };
+      user.integrations.push(parsed.integration);
+      await saveUser(user);
+      return { kind: "ok", integration: parsed.integration };
+    });
+
+    if (outcome.kind === "not_found") {
+      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+      return;
+    }
+    res.status(201).json({ integration: outcome.integration });
   } catch (err) {
     console.error("Integration create error:", err);
     res.status(500).json({ error: "연동을 생성하지 못했습니다" });
@@ -198,51 +249,64 @@ userRoutes.post("/integrations", async (req: AuthRequest, res: Response) => {
 
 userRoutes.patch("/integrations/:id", async (req: AuthRequest, res: Response) => {
   try {
-    const user = await getUser(req.userId!);
-    if (!user) {
+    type Outcome =
+      | { kind: "ok"; integration: unknown }
+      | { kind: "not_found" }
+      | { kind: "integration_missing" }
+      | { kind: "parse_error"; status: number; error: string };
+
+    const outcome = await withUserLock<Outcome>(req.userId!, async () => {
+      const user = await getUser(req.userId!);
+      if (!user) return { kind: "not_found" };
+
+      const idx = user.integrations.findIndex((integration) => integration.id === req.params.id);
+      if (idx < 0) return { kind: "integration_missing" };
+
+      const current = user.integrations[idx];
+      const parsed = await parseIntegrationInput(
+        {
+          provider: current.provider,
+          label: req.body.label ?? current.label,
+          config: {
+            ...("config" in current ? current.config : {}),
+            ...(typeof req.body.config === "object" && req.body.config ? req.body.config : {}),
+          },
+          emails: req.body.emails ?? (isGitIntegration(current) ? current.emails ?? [] : undefined),
+          status: req.body.status ?? current.status,
+          failCount: current.failCount,
+          addedAt: current.addedAt,
+          lastCheckedAt: current.lastCheckedAt,
+        },
+        req.userId!,
+        current.id,
+      );
+      if ("error" in parsed) return { kind: "parse_error", status: parsed.status, error: parsed.error };
+
+      user.integrations[idx] = {
+        ...parsed.integration,
+        id: current.id,
+        addedAt: current.addedAt,
+        failCount: current.failCount,
+        lastCheckedAt: current.lastCheckedAt,
+        lastError: current.lastError,
+      };
+      await saveUser(user);
+      return { kind: "ok", integration: user.integrations[idx] };
+    });
+
+    if (outcome.kind === "not_found") {
       res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
       return;
     }
-
-    const idx = user.integrations.findIndex((integration) => integration.id === req.params.id);
-    if (idx < 0) {
+    if (outcome.kind === "integration_missing") {
       res.status(404).json({ error: "연동 정보를 찾을 수 없습니다" });
       return;
     }
-
-    const current = user.integrations[idx];
-    const parsed = await parseIntegrationInput(
-      {
-        provider: current.provider,
-        label: req.body.label ?? current.label,
-        config: {
-          ...("config" in current ? current.config : {}),
-          ...(typeof req.body.config === "object" && req.body.config ? req.body.config : {}),
-        },
-        emails: req.body.emails ?? (isGitIntegration(current) ? current.emails ?? [] : undefined),
-        status: req.body.status ?? current.status,
-        failCount: current.failCount,
-        addedAt: current.addedAt,
-        lastCheckedAt: current.lastCheckedAt,
-      },
-      req.userId!,
-      current.id,
-    );
-    if ("error" in parsed) {
-      res.status(parsed.status).json({ error: parsed.error });
+    if (outcome.kind === "parse_error") {
+      res.status(outcome.status).json({ error: outcome.error });
       return;
     }
-
-    user.integrations[idx] = {
-      ...parsed.integration,
-      id: current.id,
-      addedAt: current.addedAt,
-      failCount: current.failCount,
-      lastCheckedAt: current.lastCheckedAt,
-      lastError: current.lastError,
-    };
-    await saveUser(user);
-    res.json({ integration: user.integrations[idx] });
+    res.json({ integration: outcome.integration });
   } catch (err) {
     console.error("Integration update error:", err);
     res.status(500).json({ error: "연동 정보를 수정하지 못했습니다" });
@@ -251,20 +315,33 @@ userRoutes.patch("/integrations/:id", async (req: AuthRequest, res: Response) =>
 
 userRoutes.delete("/integrations/:id", async (req: AuthRequest, res: Response) => {
   try {
-    const user = await getUser(req.userId!);
-    if (!user) {
+    type Outcome =
+      | { kind: "ok" }
+      | { kind: "not_found" }
+      | { kind: "integration_missing" };
+
+    const outcome = await withUserLock<Outcome>(req.userId!, async () => {
+      const user = await getUser(req.userId!);
+      if (!user) return { kind: "not_found" };
+
+      const before = user.integrations.length;
+      user.integrations = user.integrations.filter((integration) => integration.id !== req.params.id);
+      if (user.integrations.length === before) {
+        return { kind: "integration_missing" };
+      }
+
+      await saveUser(user);
+      return { kind: "ok" };
+    });
+
+    if (outcome.kind === "not_found") {
       res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
       return;
     }
-
-    const before = user.integrations.length;
-    user.integrations = user.integrations.filter((integration) => integration.id !== req.params.id);
-    if (user.integrations.length === before) {
+    if (outcome.kind === "integration_missing") {
       res.status(404).json({ error: "연동 정보를 찾을 수 없습니다" });
       return;
     }
-
-    await saveUser(user);
     res.json({ ok: true });
   } catch (err) {
     console.error("Integration delete error:", err);
@@ -274,34 +351,61 @@ userRoutes.delete("/integrations/:id", async (req: AuthRequest, res: Response) =
 
 userRoutes.post("/integrations/:id/test", async (req: AuthRequest, res: Response) => {
   try {
-    const user = await getUser(req.userId!);
-    if (!user) {
+    // Fetch the user once outside the lock so the (potentially slow)
+    // network round-trip in testIntegrationConnection doesn't hold the
+    // user lock. We re-read inside the lock to apply the result.
+    const userSnapshot = await getUser(req.userId!);
+    if (!userSnapshot) {
       res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
       return;
     }
 
-    const integration = user.integrations.find((entry) => entry.id === req.params.id);
-    if (!integration) {
+    const snapshotIntegration = userSnapshot.integrations.find((entry) => entry.id === req.params.id);
+    if (!snapshotIntegration) {
       res.status(404).json({ error: "연동 정보를 찾을 수 없습니다" });
       return;
     }
 
-    const result = await testIntegrationConnection(integration);
-    integration.lastCheckedAt = new Date().toISOString();
-    if (result.ok) {
-      integration.status = "ok";
-      integration.failCount = 0;
-      delete integration.lastError;
-    } else {
-      integration.status = "error";
-      integration.failCount += 1;
-      integration.lastError = result.lastError || "connection test failed";
+    const result = await testIntegrationConnection(snapshotIntegration);
+
+    type Outcome =
+      | { kind: "ok"; integration: unknown }
+      | { kind: "not_found" }
+      | { kind: "integration_missing" };
+
+    const outcome = await withUserLock<Outcome>(req.userId!, async () => {
+      const user = await getUser(req.userId!);
+      if (!user) return { kind: "not_found" };
+      const integration = user.integrations.find((entry) => entry.id === req.params.id);
+      if (!integration) return { kind: "integration_missing" };
+
+      integration.lastCheckedAt = new Date().toISOString();
+      if (result.ok) {
+        integration.status = "ok";
+        integration.failCount = 0;
+        delete integration.lastError;
+      } else {
+        integration.status = "error";
+        integration.failCount += 1;
+        integration.lastError = result.lastError || "connection test failed";
+      }
+
+      await saveUser(user);
+      return { kind: "ok", integration };
+    });
+
+    if (outcome.kind === "not_found") {
+      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+      return;
+    }
+    if (outcome.kind === "integration_missing") {
+      res.status(404).json({ error: "연동 정보를 찾을 수 없습니다" });
+      return;
     }
 
-    await saveUser(user);
     res.json({
       ok: result.ok,
-      integration,
+      integration: outcome.integration,
       warning: result.warning,
       metadata: result.metadata,
     });
@@ -313,46 +417,62 @@ userRoutes.post("/integrations/:id/test", async (req: AuthRequest, res: Response
 
 userRoutes.post("/integrations/:id/sync", async (req: AuthRequest, res: Response) => {
   try {
-    const user = await getUser(req.userId!);
-    if (!user) {
+    type Outcome =
+      | { kind: "ok"; integration: unknown; result: unknown }
+      | { kind: "not_found" }
+      | { kind: "integration_missing" }
+      | { kind: "unsupported" };
+
+    const outcome = await withUserLock<Outcome>(req.userId!, async () => {
+      const user = await getUser(req.userId!);
+      if (!user) return { kind: "not_found" };
+
+      const integration = user.integrations.find((entry) => entry.id === req.params.id);
+      if (!integration) return { kind: "integration_missing" };
+
+      if (!["notion", "jira", "slack"].includes(integration.provider) || !("config" in integration)) {
+        return { kind: "unsupported" };
+      }
+
+      const syncState = await getSyncState();
+      let result: unknown;
+
+      if (integration.provider === "notion") {
+        result = await pollNotionIntegration(user, integration as NotionIntegration, syncState);
+      } else if (integration.provider === "jira") {
+        result = await pollJiraIntegration(user, integration as JiraIntegration, syncState);
+      } else if (integration.provider === "slack") {
+        result = await pollSlackIntegration(user, integration as SlackIntegration, syncState);
+      }
+
+      integration.lastCheckedAt = new Date().toISOString();
+      integration.status = "ok";
+      integration.failCount = 0;
+      delete integration.lastError;
+
+      await saveUser(user);
+      await saveSyncState(syncState);
+
+      return { kind: "ok", integration, result };
+    });
+
+    if (outcome.kind === "not_found") {
       res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
       return;
     }
-
-    const integration = user.integrations.find((entry) => entry.id === req.params.id);
-    if (!integration) {
+    if (outcome.kind === "integration_missing") {
       res.status(404).json({ error: "연동 정보를 찾을 수 없습니다" });
       return;
     }
-
-    if (!["notion", "jira", "slack"].includes(integration.provider) || !("config" in integration)) {
+    if (outcome.kind === "unsupported") {
       res.status(400).json({ error: "수동 sync는 Notion, Jira, Slack 연동만 지원합니다" });
       return;
     }
 
-    const syncState = await getSyncState();
-    let result: unknown;
-
-    if (integration.provider === "notion") {
-      result = await pollNotionIntegration(user, integration as NotionIntegration, syncState);
-    } else if (integration.provider === "jira") {
-      result = await pollJiraIntegration(user, integration as JiraIntegration, syncState);
-    } else if (integration.provider === "slack") {
-      result = await pollSlackIntegration(user, integration as SlackIntegration, syncState);
-    }
-
-    integration.lastCheckedAt = new Date().toISOString();
-    integration.status = "ok";
-    integration.failCount = 0;
-    delete integration.lastError;
-
-    await saveUser(user);
-    await saveSyncState(syncState);
-
     res.json({
       ok: true,
-      integration,
-      result,
+      integration: outcome.integration,
+      result: outcome.result,
     });
   } catch (err) {
     console.error("Integration sync error:", err);
