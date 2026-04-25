@@ -261,9 +261,10 @@ async function battleLoop(initialState: TowerRoomState): Promise<void> {
 
     if (res.data.victory === true) {
       console.log(`\n  ${GRN}${BLD}스테이지 ${res.data.clearedStage} 클리어!${R}`);
-      const reward = res.data.reward as { points: number; items: { id: string; amount: number }[] } | undefined;
+      const reward = res.data.reward as { points: number; bp: number; items: { id: string; amount: number }[] } | undefined;
       if (reward) {
-        console.log(`  ${DIM}보상:${R} +${reward.points}P${reward.items.length > 0 ? ", " + reward.items.map((i) => `${i.id} x${i.amount}`).join(", ") : ""}`);
+        const itemsTxt = reward.items.length > 0 ? ", " + reward.items.map((i) => `${i.id} x${i.amount}`).join(", ") : "";
+        console.log(`  ${DIM}보상:${R} +${reward.points}P, +${reward.bp}BP${itemsTxt}`);
       }
       console.log(`  ${DIM}다음 스테이지로 진행하시겠습니까? (Enter 계속, Esc 중단)${R}`);
       enterRaw();

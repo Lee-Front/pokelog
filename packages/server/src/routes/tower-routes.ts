@@ -5,6 +5,8 @@ import { withUserLock } from "../storage/user-mutex.js";
 import { startTower, updateTowerRecord, failTower, grantReward } from "../game/tower.js";
 import { generateTowerParty } from "../game/tower-ai.js";
 import { adjustFriendshipBulk } from "../game/friendship.js";
+import { getBpShopEntries, findBpShopEntry } from "../game/bp-shop-catalog.js";
+import { incrementItem } from "../game/inventory-utils.js";
 import {
   createRoom, selectLead, submitAction, getPlayerView, getRoom, deleteRoom,
 } from "../pvp/pvp-room.js";
@@ -281,6 +283,55 @@ towerRoutes.post("/continue", async (req: AuthRequest, res: Response) => {
     res.json({
       run,
       roomState: getPlayerView(room, user.account.id),
+    });
+  });
+});
+
+towerRoutes.get("/bp-shop", async (req: AuthRequest, res: Response) => {
+  const user = await getUser(req.userId!);
+  if (!user) {
+    res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+    return;
+  }
+  res.json({ bp: user.bp ?? 0, items: getBpShopEntries() });
+});
+
+towerRoutes.post("/bp-shop/buy", async (req: AuthRequest, res: Response) => {
+  const itemId = typeof req.body?.item === "string" ? req.body.item : null;
+  const quantity = Number.isFinite(req.body?.quantity) ? Math.floor(req.body.quantity) : 1;
+  if (!itemId) {
+    res.status(400).json({ error: "item 을 입력해주세요" });
+    return;
+  }
+  if (quantity < 1) {
+    res.status(400).json({ error: "quantity 는 1 이상이어야 합니다" });
+    return;
+  }
+  const entry = findBpShopEntry(itemId);
+  if (!entry) {
+    res.status(404).json({ error: "BP 상점에 없는 아이템입니다" });
+    return;
+  }
+  const totalCost = entry.bp * quantity;
+
+  await withUserLock(req.userId!, async () => {
+    const user = await getUser(req.userId!);
+    if (!user) {
+      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+      return;
+    }
+    if ((user.bp ?? 0) < totalCost) {
+      res.status(400).json({ error: "BP가 부족합니다" });
+      return;
+    }
+    user.bp = (user.bp ?? 0) - totalCost;
+    if (!user.inventory) user.inventory = {};
+    incrementItem(user.inventory, entry.id, quantity);
+    await saveUser(user);
+    res.json({
+      bp: user.bp,
+      inventory: user.inventory,
+      purchased: { id: entry.id, name: entry.name, quantity, totalCost },
     });
   });
 });

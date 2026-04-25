@@ -4,6 +4,7 @@ import type {
 
 export interface StageReward {
   points: number;
+  bp: number;
   items: Array<{ id: string; amount: number }>;
 }
 
@@ -14,10 +15,11 @@ export interface StartTowerResult {
 }
 
 /**
- * Stage rewards. Stages without explicit entries fall through to a linear
- * points scaling (50 * stage).
+ * Per-stage milestone rewards. Stages without explicit entries fall
+ * through to linear scaling: points = 50 * stage, bp = stage. The
+ * stage-1 entry overrides the formula to bootstrap a runnable economy.
  */
-const STAGE_REWARDS: Record<number, StageReward> = {
+const STAGE_REWARDS: Record<number, Omit<StageReward, "bp"> & { bp?: number }> = {
   1: { points: 100, items: [] },
   5: { points: 500, items: [{ id: "rare-egg", amount: 1 }] },
   10: { points: 2000, items: [{ id: "epic-egg", amount: 1 }] },
@@ -29,7 +31,11 @@ const STAGE_REWARDS: Record<number, StageReward> = {
 export const TOWER_RUN_TTL_MS = 24 * 60 * 60 * 1000;
 
 export function getStageReward(stage: number): StageReward {
-  return STAGE_REWARDS[stage] ?? { points: 50 * stage, items: [] };
+  const base = STAGE_REWARDS[stage];
+  if (base) {
+    return { points: base.points, bp: base.bp ?? stage, items: base.items };
+  }
+  return { points: 50 * stage, bp: stage, items: [] };
 }
 
 export function startTower(user: UserData, partyUids: string[]): StartTowerResult {
@@ -105,6 +111,7 @@ export function failTower(user: UserData): void {
 export function grantReward(user: UserData, stage: number): StageReward {
   const reward = getStageReward(stage);
   user.points = (user.points ?? 0) + reward.points;
+  user.bp = (user.bp ?? 0) + reward.bp;
   if (!user.inventory) user.inventory = {};
   for (const item of reward.items) {
     user.inventory[item.id] = (user.inventory[item.id] ?? 0) + item.amount;

@@ -327,6 +327,8 @@ export interface UserData {
   account: UserAccount;
   currentRegion?: string;
   points: number;
+  /** Battle Points earned from Tower clears, spendable in the BP shop. */
+  bp?: number;
   totalExp: number;
   combo: UserCombo;
   encounterCeiling: EncounterCeiling;

@@ -336,6 +336,26 @@ adminRoutes.post("/test/give-points", async (req, res) => {
   }
 });
 
+adminRoutes.post("/test/give-bp", async (req, res) => {
+  try {
+    const { userId, amount } = req.body;
+    if (!userId || amount == null) {
+      res.status(400).json({ error: "userId, amount 필요" });
+      return;
+    }
+    const user = await getUser(userId);
+    if (!user) {
+      res.status(404).json({ error: "유저 없음" });
+      return;
+    }
+    user.bp = (user.bp ?? 0) + Number(amount);
+    await saveUser(user);
+    res.json({ ok: true, bp: user.bp });
+  } catch {
+    res.status(500).json({ error: "서버 오류" });
+  }
+});
+
 // 아이템 직접 지급
 adminRoutes.post("/test/give-item", async (req, res) => {
   try {

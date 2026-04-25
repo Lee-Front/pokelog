@@ -195,5 +195,18 @@ describe("tower session manager", () => {
       expect(r.points).toBe(100000);
       expect(r.items).toHaveLength(1);
     });
+
+    it("awards BP per stage and accumulates on user", () => {
+      const user = makeUser();
+      const r1 = grantReward(user, 1);
+      expect(r1.bp).toBe(1);
+      expect(user.bp).toBe(1);
+      const r10 = grantReward(user, 10);
+      expect(r10.bp).toBe(10);
+      expect(user.bp).toBe(11);
+      const r50 = grantReward(user, 50);
+      expect(r50.bp).toBe(50);
+      expect(user.bp).toBe(61);
+    });
   });
 });

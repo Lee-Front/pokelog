@@ -213,4 +213,43 @@ describe("tower API flow", () => {
     const cont = await api.post("/api/tower/continue");
     expect(cont.status).toBe(400);
   });
+
+  it("GET /api/tower/bp-shop returns user BP and item list", async () => {
+    const { token } = await t.registerAndLogin("bpshopview");
+    const api = t.authed(token);
+    const res = await api.get("/api/tower/bp-shop");
+    expect(res.status).toBe(200);
+    expect(res.body.bp).toBe(0);
+    expect(Array.isArray(res.body.items)).toBe(true);
+    expect(res.body.items.length).toBeGreaterThan(0);
+    const lifeOrb = res.body.items.find((i: { id: string }) => i.id === "life-orb");
+    expect(lifeOrb).toBeDefined();
+    expect(lifeOrb.bp).toBeGreaterThan(0);
+  });
+
+  it("POST /api/tower/bp-shop/buy rejects when BP is insufficient", async () => {
+    const { token } = await t.registerAndLogin("bpshopno");
+    const api = t.authed(token);
+    const res = await api.post("/api/tower/bp-shop/buy", { item: "life-orb", quantity: 1 });
+    expect(res.status).toBe(400);
+  });
+
+  it("POST /api/tower/bp-shop/buy spends BP and grants the item", async () => {
+    const { token, userId } = await t.registerAndLogin("bpshopbuy");
+    await t.admin().post("/api/admin/test/give-bp", { userId, amount: 200 });
+    const api = t.authed(token);
+    const res = await api.post("/api/tower/bp-shop/buy", { item: "leftovers", quantity: 1 });
+    expect(res.status).toBe(200);
+    expect(res.body.bp).toBeLessThan(200);
+    expect(res.body.inventory.leftovers).toBe(1);
+    expect(res.body.purchased.id).toBe("leftovers");
+  });
+
+  it("POST /api/tower/bp-shop/buy rejects unknown items", async () => {
+    const { token, userId } = await t.registerAndLogin("bpshopreject");
+    await t.admin().post("/api/admin/test/give-bp", { userId, amount: 1000 });
+    const api = t.authed(token);
+    const res = await api.post("/api/tower/bp-shop/buy", { item: "potion", quantity: 1 });
+    expect(res.status).toBe(404);
+  });
 });
