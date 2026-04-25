@@ -55,6 +55,34 @@ async function main() {
     console.log(`pokelog server running on port ${config.server.port}`);
     startPolling();
   });
+
+  // Graceful shutdown: drain in-flight HTTP requests + close the socket
+  // server when the orchestrator sends SIGTERM/SIGINT. Without this the
+  // process drops connections mid-flight on every redeploy.
+  let isShuttingDown = false;
+  function gracefulShutdown(signal: string): void {
+    if (isShuttingDown) return;
+    isShuttingDown = true;
+    console.log(`[shutdown] received ${signal}, draining connections...`);
+
+    io.close(() => console.log("[shutdown] socket.io closed"));
+
+    httpServer.close((err) => {
+      if (err) console.error("[shutdown] error:", err);
+      console.log("[shutdown] http server closed");
+      process.exit(0);
+    });
+
+    // Force exit if connections haven't drained in 10s. .unref() so the
+    // timer itself doesn't hold the event loop open after close finishes.
+    setTimeout(() => {
+      console.error("[shutdown] timeout, forcing exit");
+      process.exit(1);
+    }, 10000).unref();
+  }
+
+  process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+  process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 }
 
 main().catch(console.error);

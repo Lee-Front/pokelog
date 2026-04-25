@@ -23,6 +23,26 @@ export function createApp() {
   const app = express();
   app.use(express.json({ limit: "1mb" }));
 
+  // Operations health probes (unauthenticated). Both endpoints are
+  // intentionally public: load balancers / orchestrators need to hit them
+  // without provisioning credentials, and the responses contain no
+  // user-specific data.
+  app.get("/healthz", (_req, res) => {
+    res.json({
+      status: "ok",
+      uptime: process.uptime(),
+      timestamp: new Date().toISOString(),
+    });
+  });
+
+  app.get("/api/health", (_req, res) => {
+    res.json({
+      status: "ok",
+      version: process.env.npm_package_version ?? "dev",
+      uptime: process.uptime(),
+    });
+  });
+
   // 서버 메타데이터 (인증 불필요)
   app.get("/api/meta", async (_req, res) => {
     const config = await getConfig();
