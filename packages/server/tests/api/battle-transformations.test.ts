@@ -178,7 +178,7 @@ describe("battle-transformations API", () => {
       data: { moveId, mega: true },
     });
     expect(fight.status).toBe(200);
-    expect((fight.body as { battleState?: { playerBattleForm?: string } }).battleState?.playerBattleForm).toBe("charizard-mega-x");
+    expect((fight.body as { battleState?: { playerBattleForm?: string } }).battleState?.playerBattleForm).toBe("charizard-mega-y");
 
     const duringParty = await api.get("/api/game/party");
     const transformedCharizard = (duringParty.body as { party: Array<{ uid: string; stats: { attack: number } }> }).party

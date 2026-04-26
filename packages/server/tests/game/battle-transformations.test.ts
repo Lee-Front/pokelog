@@ -82,13 +82,11 @@ describe("battle-transformations", () => {
   });
 
   describe("canMegaEvolve", () => {
-    it("returns ok for valid mega stone + key-stone", () => {
-      const pokemon = makePokemon({ species: "charizard", heldItem: "charizardite-x" });
-      const battle = makeBattle();
-      const inventory = { "key-stone": 1 };
-      const result = canMegaEvolve(pokemon, battle, inventory);
+    it("returns ok for any species with a mega variant — defaults to Y for charizard", () => {
+      const pokemon = makePokemon({ species: "charizard", heldItem: null });
+      const result = canMegaEvolve(pokemon, makeBattle(), {});
       expect(result.ok).toBe(true);
-      expect(result.variantId).toBe("charizard-mega-x");
+      expect(result.variantId).toBe("charizard-mega-y");
     });
 
     it("returns error when transformation already used", () => {
@@ -108,23 +106,8 @@ describe("battle-transformations", () => {
       expect(result.ok).toBe(false);
     });
 
-    it("succeeds without key-stone (item gating removed)", () => {
+    it("ignores held item — charizardite-x still routes to charizard-mega-y default", () => {
       const pokemon = makePokemon({ species: "charizard", heldItem: "charizardite-x" });
-      const result = canMegaEvolve(pokemon, makeBattle(), {});
-      expect(result.ok).toBe(true);
-      expect(result.variantId).toBe("charizard-mega-x");
-    });
-
-    it("falls back to default variant for non-matching held item", () => {
-      // venusaurite is not a charizard mega stone — falls through to default
-      const pokemon = makePokemon({ species: "charizard", heldItem: "venusaurite" });
-      const result = canMegaEvolve(pokemon, makeBattle(), {});
-      expect(result.ok).toBe(true);
-      expect(result.variantId).toBe("charizard-mega-y"); // default Y form
-    });
-
-    it("uses default mega variant when no mega stone is held", () => {
-      const pokemon = makePokemon({ species: "charizard", heldItem: null });
       const result = canMegaEvolve(pokemon, makeBattle(), {});
       expect(result.ok).toBe(true);
       expect(result.variantId).toBe("charizard-mega-y");
@@ -175,23 +158,17 @@ describe("battle-transformations", () => {
       expect(result.variantId).toBe("charizard-gmax");
     });
 
-    it("returns error without gmax factor", () => {
+    it("succeeds for species with gmax variant even without the factor", () => {
       const pokemon = makePokemon({ species: "charizard" });
-      const battle = makeBattle();
-      const inventory = { "dynamax-band": 1 };
-      const result = canGigantamax(pokemon, battle, inventory);
-      expect(result.ok).toBe(false);
-      expect(result.error).toContain("팩터");
-    });
-
-    it("succeeds without dynamax-band (item gating removed)", () => {
-      const pokemon = makePokemon({
-        species: "charizard",
-        hasGigantamaxFactor: true,
-      });
       const result = canGigantamax(pokemon, makeBattle(), {});
       expect(result.ok).toBe(true);
       expect(result.variantId).toBe("charizard-gmax");
+    });
+
+    it("rejects species with no gmax variant", () => {
+      const pokemon = makePokemon({ species: "rattata" });
+      const result = canGigantamax(pokemon, makeBattle(), {});
+      expect(result.ok).toBe(false);
     });
 
     it("returns error when transformation already used", () => {

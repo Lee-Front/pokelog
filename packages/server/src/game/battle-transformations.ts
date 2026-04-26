@@ -86,9 +86,8 @@ export function checkPrimalReversion(pokemon: OwnedPokemon): string | null {
 
 /**
  * Check if mega evolution is available for the given pokemon in the current battle.
- * Mega forms are species-gated only — no key-stone or mega-stone heldItem
- * is required. If a matching mega-stone is held, that variant is selected
- * (Charizard/Mewtwo X/Y); otherwise the default variant for the species.
+ * Species-gated only — no items or held mega-stone are consulted. For
+ * Charizard/Mewtwo, the default-Y variant is always picked.
  */
 export function canMegaEvolve(
   pokemon: OwnedPokemon,
@@ -111,10 +110,7 @@ export function canMegaEvolve(
     return { ok: true, variantId: "rayquaza-mega" };
   }
 
-  const fromHeldItem = pokemon.heldItem
-    ? getMegaVariantForItem(pokemon.species, pokemon.heldItem)
-    : null;
-  const variantId = fromHeldItem ?? getDefaultMegaVariant(pokemon.species);
+  const variantId = getDefaultMegaVariant(pokemon.species);
   if (!variantId) {
     return { ok: false, error: "메가 진화 가능한 종이 아닙니다" };
   }
@@ -125,9 +121,8 @@ export function canMegaEvolve(
 
 /**
  * Check if gigantamax is available for the given pokemon in the current battle.
- * Gating: gigantamax factor on the pokemon (canon: must be caught with the
- * factor) plus a registered gmax variant for the species. No dynamax-band
- * item required.
+ * Species-gated only — gigantamax factor and dynamax-band are no longer
+ * required. Any pokemon whose variant has a registered gmax form qualifies.
  */
 export function canGigantamax(
   pokemon: OwnedPokemon,
@@ -139,9 +134,6 @@ export function canGigantamax(
   }
   if (battle.transformationType) {
     return { ok: false, error: "이미 변환 중입니다" };
-  }
-  if (!pokemon.hasGigantamaxFactor) {
-    return { ok: false, error: "기가맥스 팩터가 없습니다" };
   }
 
   const variantPrefix = pokemon.variantId ?? pokemon.species;

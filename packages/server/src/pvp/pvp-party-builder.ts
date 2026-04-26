@@ -1,7 +1,7 @@
 import type { OwnedPokemon } from "../../../../shared/types.js";
 import type { PvpPokemon, PvpTransformForm } from "../../../../shared/pvp-types.js";
 import {
-  getMegaVariantForItem, getDefaultMegaVariant, checkPrimalReversion, applyGmaxHp,
+  getDefaultMegaVariant, checkPrimalReversion, applyGmaxHp,
 } from "../game/battle-transformations.js";
 import { buildStatsForPokemon } from "../game/pokemon-stats.js";
 import { getVariants } from "../game/data-loader.js";
@@ -102,9 +102,9 @@ export function buildPvpPartyFromPokemon(
     const pokemonForStats = { species: p.species, level, nature: p.nature, variantId: p.variantId, ivs: p.ivs };
 
     // Mega form pre-computation. Rayquaza needs Dragon Ascent (canon
-    // signature gate). For all other mega-capable species, the held mega
-    // stone (if any) selects the variant — Charizard/Mewtwo X vs Y —
-    // otherwise getDefaultMegaVariant chooses the canonical Y form.
+    // signature gate). For all other mega-capable species, the default
+    // variant (Y for Charizard/Mewtwo) is used — held items don't gate
+    // or select a form.
     if (p.species === "rayquaza") {
       const hasDragonAscent = p.moves.some((m) => m.id === "dragon-ascent");
       if (hasDragonAscent) {
@@ -114,8 +114,7 @@ export function buildPvpPartyFromPokemon(
         } catch { /* variant data unavailable */ }
       }
     } else {
-      const fromItem = p.heldItem ? getMegaVariantForItem(p.species, p.heldItem) : null;
-      const megaVariantId = fromItem ?? getDefaultMegaVariant(p.species);
+      const megaVariantId = getDefaultMegaVariant(p.species);
       if (megaVariantId) {
         try {
           const megaStats = buildStatsForPokemon(pokemonForStats, megaVariantId);
@@ -124,8 +123,10 @@ export function buildPvpPartyFromPokemon(
       }
     }
 
-    // Gmax form pre-computation
-    if (p.hasGigantamaxFactor) {
+    // Gmax form pre-computation. Species-gated only — the gigantamax
+    // factor is no longer required, so any species with a registered
+    // gmax variant qualifies.
+    {
       const variantPrefix = p.variantId ?? p.species;
       const gmaxVariantId = `${variantPrefix}-gmax`;
       const variant = getVariants().find((v) => v.id === gmaxVariantId && v.category === "gigantamax");
