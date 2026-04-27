@@ -44,17 +44,20 @@ simultaneous mutations against the same server, but it is a real bug.
   current behavior: independent users safe, same user can lose updates,
   writes never produce torn JSON files.
 
-## Windows `fs.rename` EPERM under concurrent writes
+## Windows `fs.rename` EPERM under concurrent writes (mitigated)
 
 On Windows, two concurrent `fs.rename(tmp, dest)` calls against the same
 destination can fail with `EPERM` even when both source files exist —
 the OS grants exclusive access to the destination during the rename and
-rejects the second call. This means a burst of concurrent `saveUser`
-calls on the same user can occasionally throw on Windows even before
-hitting the lost-update problem above. Linux and macOS do not exhibit
-this because their `rename(2)` is properly atomic for overwriting an
-existing file.
+rejects the second call. Linux and macOS do not exhibit this because
+their `rename(2)` is properly atomic for overwriting an existing file.
 
-**Mitigation (not implemented):** retry the rename with a short backoff
-inside `writeJson`, or wrap under a per-file mutex (same fix as the
-lost-update problem).
+**Status:** mitigated. `writeJson` now retries the rename with
+exponential backoff (10/20/40/80 ms + jitter, up to 5 attempts) for
+the transient codes `EPERM`, `EBUSY`, and `EACCES`. Permanent failures
+(e.g. `EROFS`, `ENOSPC`) bypass the retry path and bubble up
+immediately. See `tests/storage/json-store.test.ts` for coverage of
+both branches.
+
+The retry alone does not solve the lost-update problem above — that
+still requires a per-user mutex to fix.
