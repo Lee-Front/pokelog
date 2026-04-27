@@ -102,6 +102,12 @@ describe.sequential("PvP Socket.IO E2E", () => {
       await new Promise<void>((resolve) => httpServer.close(() => resolve()));
     }
     try {
+      const { awaitPendingPvpWork } = await import("../../src/pvp/pvp-socket.js");
+      await awaitPendingPvpWork();
+    } catch {
+      // ignore
+    }
+    try {
       fs.rmSync(dataDir, { recursive: true, force: true });
     } catch {
       // ignore

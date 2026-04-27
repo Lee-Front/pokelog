@@ -18,6 +18,23 @@ const socketState = new Map<string, { userId: string; roomId?: string }>();
 // roomId → active turn timeout handle
 const turnTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
+// Tracks in-flight async work spawned by socket events (e.g. disconnect
+// handlers writing match history). Test teardown awaits this set so it
+// can safely tear down the data directory once all writes have flushed.
+const pendingAsyncWork = new Set<Promise<unknown>>();
+
+function trackAsync<T>(promise: Promise<T>): Promise<T> {
+  pendingAsyncWork.add(promise);
+  promise.finally(() => pendingAsyncWork.delete(promise));
+  return promise;
+}
+
+export async function awaitPendingPvpWork(): Promise<void> {
+  while (pendingAsyncWork.size > 0) {
+    await Promise.allSettled(Array.from(pendingAsyncWork));
+  }
+}
+
 function startTurnTimer(io: Server, room: PvpRoomState): void {
   clearTurnTimer(room.roomId);
   const timer = setTimeout(async () => {
@@ -294,26 +311,28 @@ export function setupPvpSocket(io: Server): void {
     });
 
     // ── Disconnect ──
-    socket.on("disconnect", async () => {
-      const state = socketState.get(socket.id);
-      if (state) {
-        dequeueBySocketId(socket.id);
-        if (state.roomId) {
-          const room = getRoom(state.roomId);
-          if (room && room.phase !== "finished") {
-            const opp = room.playerA.userId === state.userId ? room.playerB : room.playerA;
-            room.phase = "finished";
-            room.result = { winnerId: opp.userId, loserId: state.userId, reason: "disconnect" };
-            if (!room.isAiBattle) {
-              await recordMatch(opp.userId, state.userId, "disconnect");
+    socket.on("disconnect", () => {
+      trackAsync((async () => {
+        const state = socketState.get(socket.id);
+        if (state) {
+          dequeueBySocketId(socket.id);
+          if (state.roomId) {
+            const room = getRoom(state.roomId);
+            if (room && room.phase !== "finished") {
+              const opp = room.playerA.userId === state.userId ? room.playerB : room.playerA;
+              room.phase = "finished";
+              room.result = { winnerId: opp.userId, loserId: state.userId, reason: "disconnect" };
+              if (!room.isAiBattle) {
+                await recordMatch(opp.userId, state.userId, "disconnect");
+              }
+              io.to(room.roomId).emit("pvp:opponent_disconnected");
+              clearTurnTimer(state.roomId);
+              deleteRoom(room.roomId);
             }
-            io.to(room.roomId).emit("pvp:opponent_disconnected");
-            clearTurnTimer(state.roomId);
-            deleteRoom(room.roomId);
           }
         }
-      }
-      socketState.delete(socket.id);
+        socketState.delete(socket.id);
+      })());
     });
   });
 }

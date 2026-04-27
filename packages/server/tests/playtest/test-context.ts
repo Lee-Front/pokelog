@@ -106,6 +106,15 @@ export async function stopTestServer(ctx: TestContext): Promise<void> {
   await new Promise<void>((resolve) => {
     ctx.httpServer.close(() => resolve());
   });
+  // Drain any in-flight async work spawned by socket events (disconnect
+  // handlers write match history asynchronously; without this drain the
+  // tmp dir below could be deleted while a write is still in flight).
+  try {
+    const { awaitPendingPvpWork } = await import("../../src/pvp/pvp-socket.js");
+    await awaitPendingPvpWork();
+  } catch {
+    // ignore — module may not be loaded if a scenario didn't use PvP
+  }
   try {
     fs.rmSync(ctx.dataDir, { recursive: true, force: true });
   } catch {
