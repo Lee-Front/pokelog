@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { CommitInfo } from "./git-client.js";
+import type { UserData, ServerConfig } from "../../../../shared/types.js";
 
 // Mock all dependencies before importing the module under test
 vi.mock("../storage/user-store.js", () => ({
@@ -63,7 +64,7 @@ function makeCommit(overrides: Partial<CommitInfo> = {}): CommitInfo {
   };
 }
 
-function makeUser() {
+function makeUser(): UserData {
   return {
     account: {
       id: "user1",
@@ -89,9 +90,16 @@ function makeUser() {
   };
 }
 
-function makeConfig() {
+function makeConfig(): ServerConfig {
   return {
     server: { port: 3000 },
+    meta: {
+      serverId: "test-server",
+      serverName: "Test",
+      displayName: "Test",
+      apiVersion: "1.0",
+      featureFlags: {},
+    },
     polling: { intervalMinutes: 5, repos: [] },
     rewards: {
       expPerByte: 0.5,
@@ -106,6 +114,7 @@ function makeConfig() {
         ceilingBytes: 5000,
         timeLimitHours: 24,
       },
+      integrations: { git: {}, notion: {}, jira: {}, slack: {} },
     },
     shop: { items: {} },
   };
@@ -131,8 +140,8 @@ describe("commit-processor", () => {
 
   it("skips if bytes are 0", async () => {
     const commit = makeCommit();
-    mockGetUsersForRepoCommit.mockResolvedValue([makeUser() as any]);
-    mockGetConfig.mockResolvedValue(makeConfig() as any);
+    mockGetUsersForRepoCommit.mockResolvedValue([makeUser()]);
+    mockGetConfig.mockResolvedValue(makeConfig());
     mockGetBytes.mockResolvedValue(0);
     await processCommit(commit, "/fake/repo", "https://example.com/repo.git");
     expect(mockSaveUser).not.toHaveBeenCalled();
@@ -143,9 +152,9 @@ describe("commit-processor", () => {
     const user = makeUser();
     const config = makeConfig();
 
-    mockGetUsersForRepoCommit.mockResolvedValue([user as any]);
-    mockGetUser.mockResolvedValue(user as any);
-    mockGetConfig.mockResolvedValue(config as any);
+    mockGetUsersForRepoCommit.mockResolvedValue([user]);
+    mockGetUser.mockResolvedValue(user);
+    mockGetConfig.mockResolvedValue(config);
     mockGetBytes.mockResolvedValue(500);
     mockJudgeCombo.mockReturnValue({
       count: 1,
@@ -161,7 +170,7 @@ describe("commit-processor", () => {
     await processCommit(commit, "/fake/repo", "https://example.com/repo.git");
 
     expect(mockSaveUser).toHaveBeenCalledOnce();
-    const savedUser = mockSaveUser.mock.calls[0][0] as any;
+    const savedUser = mockSaveUser.mock.calls[0][0];
     expect(savedUser.points).toBe(160); // 100 + 60
     expect(savedUser.totalExp).toBe(800); // 500 + 300
     expect(savedUser.combo.count).toBe(1);
@@ -173,16 +182,16 @@ describe("commit-processor", () => {
 
   it("distributes EXP to party pokemon", async () => {
     const commit = makeCommit();
-    const user = makeUser() as any;
+    const user = makeUser();
     user.party = ["poke-1", "poke-2"];
     user.pokemon = [
       { uid: "poke-1", exp: 0 },
       { uid: "poke-2", exp: 0 },
-    ];
+    ] as UserData["pokemon"];
 
-    mockGetUsersForRepoCommit.mockResolvedValue([user as any]);
-    mockGetUser.mockResolvedValue(user as any);
-    mockGetConfig.mockResolvedValue(makeConfig() as any);
+    mockGetUsersForRepoCommit.mockResolvedValue([user]);
+    mockGetUser.mockResolvedValue(user);
+    mockGetConfig.mockResolvedValue(makeConfig());
     mockGetBytes.mockResolvedValue(100);
     mockJudgeCombo.mockReturnValue({
       count: 1,
@@ -197,7 +206,7 @@ describe("commit-processor", () => {
 
     await processCommit(commit, "/fake/repo", "https://example.com/repo.git");
 
-    const savedUser = mockSaveUser.mock.calls[0][0] as any;
+    const savedUser = mockSaveUser.mock.calls[0][0];
     expect(savedUser.pokemon[0].exp).toBe(50); // 100 / 2
     expect(savedUser.pokemon[1].exp).toBe(50);
   });

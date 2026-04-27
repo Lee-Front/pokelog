@@ -41,7 +41,7 @@ describe("pvp-ai", () => {
     for (let i = 0; i < 20; i++) {
       const action = chooseAiAction(ai, opp);
       if (action.type === "switch") {
-        expect((action as any).pokemonIndex).not.toBe(1);
+        expect(action.pokemonIndex).not.toBe(1);
       }
     }
   });

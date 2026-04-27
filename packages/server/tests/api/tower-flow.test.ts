@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { setupTestApp, type TestApp } from "./test-helpers.js";
+import type { PvpClientRoomView, PvpAction } from "../../../../shared/pvp-types.js";
 
 async function setupUserWithThreePokemon(t: TestApp, id: string): Promise<{ token: string; userId: string; partyUids: string[] }> {
   const { token, userId } = await t.registerAndLogin(id, "charmander");
@@ -152,15 +153,16 @@ describe("tower API flow", () => {
 
     // Play up to 50 turns using a naive loop; short of victory we should
     // at least confirm the endpoint behaves (no crashes, state shape).
-    let lastState: Record<string, unknown> | undefined = start.body.roomState;
+    let lastState: PvpClientRoomView | undefined = start.body.roomState;
     let victoryFound = false;
     for (let i = 0; i < 50; i++) {
       if (!lastState) break;
-      const my = (lastState.me as any).party[(lastState.me as any).activeIndex];
-      const aliveAlt = (lastState.me as any).party.findIndex(
-        (p: any, idx: number) => p.hp > 0 && idx !== (lastState!.me as any).activeIndex,
+      const me = lastState.me;
+      const my = me.party[me.activeIndex];
+      const aliveAlt = me.party.findIndex(
+        (p, idx) => p.hp > 0 && idx !== me.activeIndex,
       );
-      let action: unknown;
+      let action: PvpAction;
       if (lastState.phase === "forced_switch") {
         if (aliveAlt < 0) break;
         action = { type: "switch", pokemonIndex: aliveAlt };
@@ -169,7 +171,7 @@ describe("tower API flow", () => {
           if (aliveAlt < 0) break;
           action = { type: "switch", pokemonIndex: aliveAlt };
         } else {
-          const move = my.moves.find((m: any) => m.pp > 0) ?? my.moves[0];
+          const move = my.moves.find((m) => m.pp > 0) ?? my.moves[0];
           action = { type: "fight", moveId: move.id };
         }
       } else if (lastState.phase === "finished") {
