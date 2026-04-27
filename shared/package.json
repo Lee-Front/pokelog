@@ -1,0 +1,5 @@
+{
+  "name": "@pokelog/shared",
+  "private": true,
+  "type": "module"
+}
