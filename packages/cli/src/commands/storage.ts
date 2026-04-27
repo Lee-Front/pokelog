@@ -277,6 +277,11 @@ export async function storageCommand() {
     if (key === "\x1b[D") {
       if (panel === "storage") {
         panel = "party";
+        // Move the party cursor to the same visual row as the storage
+        // cursor (relative to the scrolled view) so the two panels feel
+        // like one continuous grid.
+        const visualRow = storageIndex - storageScroll;
+        partyIndex = Math.min(visualRow, Math.max(0, party.length - 1));
       }
       continue;
     }
@@ -284,6 +289,9 @@ export async function storageCommand() {
     if (key === "\x1b[C") {
       if (panel === "party" && storage.length > 0) {
         panel = "storage";
+        // Mirror the party cursor's visual row into the storage view,
+        // clamped so we never point past the last storage entry.
+        storageIndex = Math.min(storageScroll + partyIndex, storage.length - 1);
       }
       continue;
     }
