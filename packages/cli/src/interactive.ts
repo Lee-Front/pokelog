@@ -442,6 +442,10 @@ export async function interactiveMode() {
       }
 
       // 로그인 상태 갱신
+      const wasAuthCommand =
+        selected.cmd === "login"
+        || selected.cmd === "register"
+        || selected.cmd === "logout";
       if (selected.cmd === "login" || selected.cmd === "register") {
         loggedIn = !!(await getToken());
       }
@@ -449,8 +453,12 @@ export async function interactiveMode() {
         loggedIn = false;
       }
 
-      // 메뉴로 돌아올 때 — 루트로 복귀, 전체 새로 그리기
-      menuStack.length = 0;
+      // 명령에서 돌아오면 직전 메뉴 위치를 유지 — 사용자가 Esc로 빠져
+      // 나오면 그 명령을 띄웠던 서브메뉴로 자연스럽게 복귀한다. 단,
+      // 로그인/로그아웃/회원가입은 메뉴 가시성이 바뀌니 루트로 리셋.
+      if (wasAuthCommand || selected.cmd === "join" || selected.cmd === "leave") {
+        menuStack.length = 0;
+      }
       first = true;
       needRefresh = true;
     }
