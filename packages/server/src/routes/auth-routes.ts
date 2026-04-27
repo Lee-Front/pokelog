@@ -108,7 +108,7 @@ authRoutes.post("/logout-all", authMiddleware, async (req: AuthRequest, res: Res
       res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
       return;
     }
-    res.json({ ok: true, token: newToken });
+    res.json({ token: newToken });
   } catch (err) {
     console.error("Logout-all error:", err);
     res.status(500).json({ error: "서버 오류가 발생했습니다" });

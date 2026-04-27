@@ -37,7 +37,7 @@ adminRoutes.post("/repo", async (req, res) => {
 
     config.polling.repos.push({ url, branches: branches || ["main"] });
     await saveConfig(config);
-    res.json({ ok: true, repos: config.polling.repos });
+    res.json({ repos: config.polling.repos });
   } catch (err) {
     res.status(500).json({ error: "서버 오류" });
   }
@@ -60,7 +60,7 @@ adminRoutes.delete("/repo", async (req, res) => {
     const config = await getConfig();
     config.polling.repos = config.polling.repos.filter((r) => r.url !== url);
     await saveConfig(config);
-    res.json({ ok: true, repos: config.polling.repos });
+    res.json({ repos: config.polling.repos });
   } catch {
     res.status(500).json({ error: "서버 오류" });
   }
@@ -169,7 +169,7 @@ adminRoutes.put("/config", async (req, res) => {
       return;
     }
     await saveConfig(config);
-    res.json({ ok: true });
+    res.json({});
   } catch {
     res.status(500).json({ error: "서버 오류" });
   }
@@ -207,7 +207,7 @@ adminRoutes.get("/users", async (_req, res) => {
 adminRoutes.post("/polling/run", async (_req, res) => {
   try {
     await pollAllRepos();
-    res.json({ ok: true, message: "Polling 완료" });
+    res.json({ message: "Polling 완료" });
   } catch (err) {
     res.status(500).json({ error: "Polling 실패" });
   }
@@ -310,7 +310,7 @@ adminRoutes.post("/test/encounter", async (req, res) => {
       user.pendingEvents.push(event);
       await saveUser(user);
 
-      res.json({ ok: true, event: { id: event.id, species: wildSpecies, level: wildLevel, expiresAt: event.expiresAt } });
+      res.json({ event: { id: event.id, species: wildSpecies, level: wildLevel, expiresAt: event.expiresAt } });
     });
   } catch (err) {
     console.error(err);
@@ -336,7 +336,7 @@ adminRoutes.post("/test/give-points", async (req, res) => {
 
       user.points += amount;
       await saveUser(user);
-      res.json({ ok: true, points: user.points });
+      res.json({ points: user.points });
     });
   } catch {
     res.status(500).json({ error: "서버 오류" });
@@ -358,7 +358,7 @@ adminRoutes.post("/test/give-bp", async (req, res) => {
       }
       user.bp = (user.bp ?? 0) + Number(amount);
       await saveUser(user);
-      res.json({ ok: true, bp: user.bp });
+      res.json({ bp: user.bp });
     });
   } catch {
     res.status(500).json({ error: "서버 오류" });
@@ -383,7 +383,7 @@ adminRoutes.post("/test/give-item", async (req, res) => {
 
       incrementItem(user.inventory, item, quantity || 1);
       await saveUser(user);
-      res.json({ ok: true, inventory: user.inventory });
+      res.json({ inventory: user.inventory });
     });
   } catch {
     res.status(500).json({ error: "서버 오류" });
@@ -453,7 +453,7 @@ adminRoutes.post("/test/clear-battle", async (req, res) => {
 
       user.battleState = null;
       await saveUser(user);
-      res.json({ ok: true });
+      res.json({});
     });
   } catch {
     res.status(500).json({ error: "서버 오류" });

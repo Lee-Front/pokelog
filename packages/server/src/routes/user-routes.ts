@@ -342,7 +342,7 @@ userRoutes.delete("/integrations/:id", async (req: AuthRequest, res: Response) =
       res.status(404).json({ error: "연동 정보를 찾을 수 없습니다" });
       return;
     }
-    res.json({ ok: true });
+    res.json({});
   } catch (err) {
     console.error("Integration delete error:", err);
     res.status(500).json({ error: "연동을 삭제하지 못했습니다" });

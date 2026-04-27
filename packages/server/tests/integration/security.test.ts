@@ -341,8 +341,7 @@ describe("Security review", () => {
     const elapsed = Date.now() - start;
 
     expect(res.status).toBe(200);
-    const body = res.body as { ok: boolean; token: string };
-    expect(body.ok).toBe(true);
+    const body = res.body as { token: string };
     expect(typeof body.token).toBe("string");
 
     // Old contract waited ~1100ms wall-clock inside the lock. The new

@@ -39,7 +39,7 @@ describe("admin routes", () => {
       branches: ["main"],
     });
     expect(res.status).toBe(200);
-    expect(res.body.ok).toBe(true);
+    expect(res.body.repos.some((r: { url: string }) => r.url === "https://github.com/test/repo")).toBe(true);
 
     const list = await t.admin().get("/api/admin/repos");
     expect(list.status).toBe(200);
@@ -57,7 +57,7 @@ describe("admin routes", () => {
       .set("x-admin-key", "test-admin-key")
       .send({ url: "https://github.com/test/deleteme" });
     expect(del.status).toBe(200);
-    expect(del.body.ok).toBe(true);
+    expect(del.body.repos.some((r: { url: string }) => r.url === "https://github.com/test/deleteme")).toBe(false);
 
     const list = await t.admin().get("/api/admin/repos");
     expect(list.body.repos.some((r: { url: string }) => r.url === "https://github.com/test/deleteme")).toBe(false);
@@ -71,7 +71,6 @@ describe("admin routes", () => {
       amount: 500,
     });
     expect(res.status).toBe(200);
-    expect(res.body.ok).toBe(true);
     expect(res.body.points).toBe(500);
 
     const status = await t.authed(token).get("/api/game/status");
@@ -88,7 +87,6 @@ describe("admin routes", () => {
       quantity: 3,
     });
     expect(res.status).toBe(200);
-    expect(res.body.ok).toBe(true);
 
     const inv = await t.authed(token).get("/api/game/inventory");
     expect(inv.status).toBe(200);
@@ -105,7 +103,6 @@ describe("admin routes", () => {
       level: 10,
     });
     expect(res.status).toBe(200);
-    expect(res.body.ok).toBe(true);
     expect(res.body.pokemon.species).toBe("pikachu");
 
     const party = await t.authed(token).get("/api/game/party");
