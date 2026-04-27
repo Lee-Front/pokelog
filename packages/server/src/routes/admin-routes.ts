@@ -2,6 +2,7 @@ import { Router } from "express";
 import crypto from "node:crypto";
 import { getConfig, saveConfig } from "../storage/config-store.js";
 import { getUser, saveUser, getAllUsers } from "../storage/user-store.js";
+import { withUserLock } from "../storage/user-mutex.js";
 import { pollAllRepos } from "../polling/polling-worker.js";
 import { selectWildPokemon } from "../game/encounter.js";
 import { createWildPokemon, createPokemon } from "../game/pokemon-factory.js";
@@ -234,37 +235,39 @@ adminRoutes.post("/test/commit", async (req, res) => {
       return;
     }
 
-    const user = await getUser(userId);
-    if (!user) {
-      res.status(404).json({ error: "유저 없음" });
-      return;
-    }
+    await withUserLock(userId, async () => {
+      const user = await getUser(userId);
+      if (!user) {
+        res.status(404).json({ error: "유저 없음" });
+        return;
+      }
 
-    const config = await getConfig();
-    const timestamp = new Date().toISOString();
-    const outcome = applyCommitRewards(user, bytes, config, { timestamp });
+      const config = await getConfig();
+      const timestamp = new Date().toISOString();
+      const outcome = applyCommitRewards(user, bytes, config, { timestamp });
 
-    // 로그 (admin-test 전용 커밋 해시 형태를 그대로 유지)
-    user.log.push({
-      type: "reward",
-      commit: "test-" + crypto.randomUUID().slice(0, 8),
-      repo: "test",
-      bytes,
-      exp: outcome.expAwarded,
-      points: outcome.pointsAwarded,
-      comboMultiplier: outcome.multiplier,
-      timestamp,
-    });
-    if (user.log.length > 200) user.log = user.log.slice(-200);
+      // 로그 (admin-test 전용 커밋 해시 형태를 그대로 유지)
+      user.log.push({
+        type: "reward",
+        commit: "test-" + crypto.randomUUID().slice(0, 8),
+        repo: "test",
+        bytes,
+        exp: outcome.expAwarded,
+        points: outcome.pointsAwarded,
+        comboMultiplier: outcome.multiplier,
+        timestamp,
+      });
+      if (user.log.length > 200) user.log = user.log.slice(-200);
 
-    await saveUser(user);
-    res.json({
-      ok: true,
-      exp: outcome.expAwarded,
-      points: outcome.pointsAwarded,
-      combo: outcome.comboCount,
-      multiplier: outcome.multiplier,
-      encounter: outcome.encounter,
+      await saveUser(user);
+      res.json({
+        ok: true,
+        exp: outcome.expAwarded,
+        points: outcome.pointsAwarded,
+        combo: outcome.comboCount,
+        multiplier: outcome.multiplier,
+        encounter: outcome.encounter,
+      });
     });
   } catch (err) {
     console.error(err);
@@ -281,32 +284,34 @@ adminRoutes.post("/test/encounter", async (req, res) => {
       return;
     }
 
-    const user = await getUser(userId);
-    if (!user) {
-      res.status(404).json({ error: "유저 없음" });
-      return;
-    }
+    await withUserLock(userId, async () => {
+      const user = await getUser(userId);
+      if (!user) {
+        res.status(404).json({ error: "유저 없음" });
+        return;
+      }
 
-    const config = await getConfig();
+      const config = await getConfig();
 
-    // species/level 지정 가능, 미지정 시 랜덤
-    let wildSpecies = species;
-    let wildLevel = level;
-    if (!wildSpecies) {
-      const regionData = getRegion(user.currentRegion ?? "default");
-      const pick = selectWildPokemon(regionData);
-      wildSpecies = pick.species;
-      wildLevel = pick.level;
-    }
-    if (!wildLevel) wildLevel = 5;
+      // species/level 지정 가능, 미지정 시 랜덤
+      let wildSpecies = species;
+      let wildLevel = level;
+      if (!wildSpecies) {
+        const regionData = getRegion(user.currentRegion ?? "default");
+        const pick = selectWildPokemon(regionData);
+        wildSpecies = pick.species;
+        wildLevel = pick.level;
+      }
+      if (!wildLevel) wildLevel = 5;
 
-    const wildPokemon = createWildPokemon(wildSpecies, wildLevel);
+      const wildPokemon = createWildPokemon(wildSpecies, wildLevel);
 
-    const event = createEncounterEvent(wildPokemon, config.rewards.encounter.timeLimitHours);
-    user.pendingEvents.push(event);
-    await saveUser(user);
+      const event = createEncounterEvent(wildPokemon, config.rewards.encounter.timeLimitHours);
+      user.pendingEvents.push(event);
+      await saveUser(user);
 
-    res.json({ ok: true, event: { id: event.id, species: wildSpecies, level: wildLevel, expiresAt: event.expiresAt } });
+      res.json({ ok: true, event: { id: event.id, species: wildSpecies, level: wildLevel, expiresAt: event.expiresAt } });
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "서버 오류" });
@@ -322,15 +327,17 @@ adminRoutes.post("/test/give-points", async (req, res) => {
       return;
     }
 
-    const user = await getUser(userId);
-    if (!user) {
-      res.status(404).json({ error: "유저 없음" });
-      return;
-    }
+    await withUserLock(userId, async () => {
+      const user = await getUser(userId);
+      if (!user) {
+        res.status(404).json({ error: "유저 없음" });
+        return;
+      }
 
-    user.points += amount;
-    await saveUser(user);
-    res.json({ ok: true, points: user.points });
+      user.points += amount;
+      await saveUser(user);
+      res.json({ ok: true, points: user.points });
+    });
   } catch {
     res.status(500).json({ error: "서버 오류" });
   }
@@ -343,14 +350,16 @@ adminRoutes.post("/test/give-bp", async (req, res) => {
       res.status(400).json({ error: "userId, amount 필요" });
       return;
     }
-    const user = await getUser(userId);
-    if (!user) {
-      res.status(404).json({ error: "유저 없음" });
-      return;
-    }
-    user.bp = (user.bp ?? 0) + Number(amount);
-    await saveUser(user);
-    res.json({ ok: true, bp: user.bp });
+    await withUserLock(userId, async () => {
+      const user = await getUser(userId);
+      if (!user) {
+        res.status(404).json({ error: "유저 없음" });
+        return;
+      }
+      user.bp = (user.bp ?? 0) + Number(amount);
+      await saveUser(user);
+      res.json({ ok: true, bp: user.bp });
+    });
   } catch {
     res.status(500).json({ error: "서버 오류" });
   }
@@ -365,15 +374,17 @@ adminRoutes.post("/test/give-item", async (req, res) => {
       return;
     }
 
-    const user = await getUser(userId);
-    if (!user) {
-      res.status(404).json({ error: "유저 없음" });
-      return;
-    }
+    await withUserLock(userId, async () => {
+      const user = await getUser(userId);
+      if (!user) {
+        res.status(404).json({ error: "유저 없음" });
+        return;
+      }
 
-    incrementItem(user.inventory, item, quantity || 1);
-    await saveUser(user);
-    res.json({ ok: true, inventory: user.inventory });
+      incrementItem(user.inventory, item, quantity || 1);
+      await saveUser(user);
+      res.json({ ok: true, inventory: user.inventory });
+    });
   } catch {
     res.status(500).json({ error: "서버 오류" });
   }
@@ -388,33 +399,35 @@ adminRoutes.post("/test/give-pokemon", async (req, res) => {
       return;
     }
 
-    const user = await getUser(userId);
-    if (!user) {
-      res.status(404).json({ error: "유저 없음" });
-      return;
-    }
+    await withUserLock(userId, async () => {
+      const user = await getUser(userId);
+      if (!user) {
+        res.status(404).json({ error: "유저 없음" });
+        return;
+      }
 
-    const pokemon = createPokemon(species, level || 5);
-    if (typeof hasGigantamaxFactor === "boolean") {
-      pokemon.hasGigantamaxFactor = hasGigantamaxFactor;
-    }
-    user.pokemon.push(pokemon);
-    if (user.party.length < 6) {
-      user.party.push(pokemon.uid);
-    } else {
-      user.storage.push(pokemon);
-    }
-    if (!user.pokedex.includes(species)) user.pokedex.push(species);
+      const pokemon = createPokemon(species, level || 5);
+      if (typeof hasGigantamaxFactor === "boolean") {
+        pokemon.hasGigantamaxFactor = hasGigantamaxFactor;
+      }
+      user.pokemon.push(pokemon);
+      if (user.party.length < 6) {
+        user.party.push(pokemon.uid);
+      } else {
+        user.storage.push(pokemon);
+      }
+      if (!user.pokedex.includes(species)) user.pokedex.push(species);
 
-    await saveUser(user);
-    res.json({
-      ok: true,
-      pokemon: {
-        uid: pokemon.uid,
-        species,
-        level: pokemon.level,
-        hasGigantamaxFactor: pokemon.hasGigantamaxFactor ?? false,
-      },
+      await saveUser(user);
+      res.json({
+        ok: true,
+        pokemon: {
+          uid: pokemon.uid,
+          species,
+          level: pokemon.level,
+          hasGigantamaxFactor: pokemon.hasGigantamaxFactor ?? false,
+        },
+      });
     });
   } catch (err) {
     console.error(err);
@@ -431,15 +444,17 @@ adminRoutes.post("/test/clear-battle", async (req, res) => {
       return;
     }
 
-    const user = await getUser(userId);
-    if (!user) {
-      res.status(404).json({ error: "유저 없음" });
-      return;
-    }
+    await withUserLock(userId, async () => {
+      const user = await getUser(userId);
+      if (!user) {
+        res.status(404).json({ error: "유저 없음" });
+        return;
+      }
 
-    user.battleState = null;
-    await saveUser(user);
-    res.json({ ok: true });
+      user.battleState = null;
+      await saveUser(user);
+      res.json({ ok: true });
+    });
   } catch {
     res.status(500).json({ error: "서버 오류" });
   }

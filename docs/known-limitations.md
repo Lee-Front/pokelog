@@ -16,9 +16,9 @@ The server stores each user's state as a single JSON file at
   `fs.rename` to the real path.
 
 The rename is atomic against torn writes, so concurrent writers can never
-produce a partially-written JSON file on disk. However there is **no
-per-user mutex** and no compare-and-swap: a concurrent read-modify-write
-pair on the same user can silently lose one update:
+produce a partially-written JSON file on disk. The underlying storage
+layer still has no compare-and-swap, so naked concurrent
+read-modify-write on the same user file would silently lose one update:
 
 ```
 T1: read  (points = 0)
@@ -27,22 +27,30 @@ T1: write (points = 100)     // T1 wins
 T2: write (points = 200)     // overwrites T1 — 100 is lost
 ```
 
-This affects any endpoint that mutates the same user's state concurrently:
-item usage, party edits, PvP queueing, polling-triggered reward grants,
-etc. In practice it is rare because a single user rarely issues two
-simultaneous mutations against the same server, but it is a real bug.
+**Status: mitigated within a single Node process.** Every mutating
+route now wraps its `getUser → mutate → saveUser` block in
+`withUserLock(userId, ...)` from
+`packages/server/src/storage/user-mutex.ts`. Trade endpoints and other
+two-user mutations take both per-user locks in deterministic order
+(sorted by id, lower first) so two trades involving the same pair
+cannot deadlock AB/BA. With the lock, additive RMW cycles converge
+correctly — see the `withUserLock serializes same-user additive writes`
+case in `concurrency.test.ts`.
 
-**Mitigations (not implemented):**
-
-- Per-user mutex (e.g. `async-mutex` keyed by user id) wrapping every
-  `getUser → mutate → saveUser` call.
-- Move to a database with transactions.
+**Remaining gap — multi-instance deployments.** `withUserLock` is an
+in-process `Map<string, Promise>`; it does NOT serialize writers across
+multiple Node processes (or pods, or replicas). If the server is ever
+horizontally scaled, two replicas hitting the same user file can still
+lose updates. Fixing that requires an external lock service (Redis,
+Postgres advisory lock, etc.) or moving the store to a real database
+with transactions.
 
 **Tests:**
 
 - `packages/server/tests/integration/concurrency.test.ts` — pins the
-  current behavior: independent users safe, same user can lose updates,
-  writes never produce torn JSON files.
+  current behavior: independent users safe, naked same-user RMW (no
+  lock) can lose updates, `withUserLock` makes additive same-user RMW
+  converge, writes never produce torn JSON files.
 
 ## Windows `fs.rename` EPERM under concurrent writes (mitigated)
 
