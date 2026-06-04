@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>ANSI Half-Block Art Editor</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',sans-serif;background:#1a1a2e;color:#e0e0e0;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+header{padding:10px 20px;background:#16213e;border-bottom:1px solid #0f3460;display:flex;align-items:center;gap:16px}
+header h1{font-size:18px;color:#e94560}
+header span{color:#666;font-size:13px}
+.main{display:flex;flex:1;overflow:hidden}
+
+/* ── Sidebar ── */
+.sb{width:200px;padding:12px;background:#16213e;border-right:1px solid #0f3460;overflow-y:auto;display:flex;flex-direction:column;gap:14px;flex-shrink:0}
+.sb h3{font-size:11px;color:#888;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px}
+.btn{display:block;width:100%;padding:7px 10px;background:#0f3460;color:#e0e0e0;border:1px solid #1a1a4e;border-radius:4px;cursor:pointer;font-size:13px;text-align:left;margin-bottom:3px}
+.btn:hover{background:#1a4a80}
+.btn.on{background:#e94560;border-color:#e94560}
+.act{padding:6px 14px;background:#e94560;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:13px}
+.act:hover{background:#d63550}
+.act.sec{background:#0f3460}
+.act.sec:hover{background:#1a4a80}
+
+.cpw{display:flex;align-items:center;gap:6px}
+.cpw input[type=color]{width:40px;height:32px;border:none;border-radius:4px;cursor:pointer;background:none}
+.cpw input[type=text]{flex:1;padding:5px 6px;background:#0a0a1a;border:1px solid #333;border-radius:4px;color:#e0e0e0;font-family:monospace;font-size:13px}
+.rc{display:flex;flex-wrap:wrap;gap:3px}
+.rc div{width:22px;height:22px;border-radius:3px;cursor:pointer;border:2px solid transparent}
+.rc div:hover{border-color:#fff}
+.si{display:flex;gap:6px;align-items:center}
+.si label{font-size:12px;color:#888}
+.si input{width:48px;padding:3px 5px;background:#0a0a1a;border:1px solid #333;border-radius:3px;color:#e0e0e0;font-size:13px;text-align:center}
+.tg{display:flex;align-items:center;gap:6px;font-size:13px;margin-bottom:3px}
+
+/* ── Canvas ── */
+.ca{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.cc{flex:1;overflow:auto;display:flex;align-items:flex-start;justify-content:center;padding:20px}
+#canvas{display:inline-grid;background:#000;border:1px solid #333;cursor:crosshair;user-select:none}
+.px{border:1px solid rgba(255,255,255,0.06)}
+.px:hover{outline:2px solid #e94560;outline-offset:-2px;z-index:1}
+.px.cb{border-bottom-color:rgba(255,255,255,0.18)}
+.no-grid .px{border-color:transparent}
+.no-grid .px.cb{border-bottom-color:transparent}
+.no-charline .px.cb{border-bottom-color:rgba(255,255,255,0.06)}
+.no-grid.no-charline .px.cb{border-bottom-color:transparent}
+
+/* ── Output ── */
+.out{padding:12px 20px;background:#0a0a1a;border-top:1px solid #0f3460;display:flex;gap:16px;max-height:35vh;overflow:hidden;flex-shrink:0}
+.out-sec{flex:1;display:flex;flex-direction:column;gap:6px;min-width:0}
+.out-sec h3{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px}
+#preview{background:#000;padding:8px;font-family:'Cascadia Code','Consolas',monospace;font-size:14px;line-height:1.0;border-radius:4px;white-space:pre;overflow:auto;flex:1}
+#rawOutput{flex:1;background:#000;padding:8px;font-family:monospace;font-size:11px;color:#0f0;border:1px solid #333;border-radius:4px;resize:none;overflow:auto;white-space:pre}
+.out-acts{display:flex;gap:6px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>▀ ANSI Art Editor</h1>
+  <span>Half-Block Terminal Art</span>
+</header>
+
+<div class="main">
+  <div class="sb">
+    <section>
+      <h3>Tool</h3>
+      <button class="btn on" data-tool="paint">Paint (B)</button>
+      <button class="btn" data-tool="erase">Erase (E)</button>
+      <button class="btn" data-tool="pick">Pick (I)</button>
+    </section>
+    <section>
+      <h3>Color</h3>
+      <div class="cpw">
+        <input type="color" id="cPick" value="#e94560">
+        <input type="text" id="cHex" value="#e94560" maxlength="7">
+      </div>
+    </section>
+    <section>
+      <h3>Recent</h3>
+      <div class="rc" id="recent"></div>
+    </section>
+    <section>
+      <h3>Canvas</h3>
+      <div class="si">
+        <label>W</label><input type="number" id="cW" value="20" min="1" max="80">
+        <label>H</label><input type="number" id="cH" value="10" min="1" max="40">
+      </div>
+      <button class="act sec" id="applySize" style="width:100%;margin-top:6px">Apply</button>
+    </section>
+    <section>
+      <h3>Zoom</h3>
+      <div class="si">
+        <input type="range" id="zoom" min="1" max="4" value="2" style="flex:1">
+        <span id="zoomLabel" style="font-size:12px;width:28px;text-align:right">2x</span>
+      </div>
+    </section>
+    <section>
+      <div class="tg"><input type="checkbox" id="showGrid" checked><label for="showGrid">Grid</label></div>
+      <div class="tg"><input type="checkbox" id="showChar" checked><label for="showChar">Char lines</label></div>
+    </section>
+    <section>
+      <button class="act sec" id="clearBtn" style="width:100%">Clear</button>
+    </section>
+    <section>
+      <h3>File</h3>
+      <button class="act" id="dlBtn" style="width:100%;margin-bottom:4px">Download</button>
+      <button class="act sec" id="impBtn" style="width:100%">Import</button>
+      <input type="file" id="impFile" style="display:none">
+    </section>
+  </div>
+
+  <div class="ca">
+    <div class="cc"><div id="canvas"></div></div>
+    <div class="out">
+      <div class="out-sec">
+        <h3>Preview</h3>
+        <div id="preview"></div>
+      </div>
+      <div class="out-sec" style="max-width:360px">
+        <h3>Raw ANSI</h3>
+        <textarea id="rawOutput" readonly></textarea>
+        <div class="out-acts">
+          <button class="act sec" id="copyBtn">Copy</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────
+let W = 20, H = 10;
+let px = [];        // px[y][x] = null | {r,g,b}
+let tool = 'paint';
+let color = {r:233,g:69,b:96};
+let recent = [];
+let down = false;
+let lastPx = null;  // {x,y} for drag interpolation
+let zoomLevel = 2;
+
+const $ = s => document.getElementById(s);
+const hex2rgb = h => { const m = h.match(/^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i); return m ? {r:+('0x'+m[1]),g:+('0x'+m[2]),b:+('0x'+m[3])} : null; };
+const rgb2hex = c => '#'+[c.r,c.g,c.b].map(v=>v.toString(16).padStart(2,'0')).join('');
+const rgb2css = c => c ? `rgb(${c.r},${c.g},${c.b})` : '';
+
+// ── Pixels ─────────────────────────────────────────
+function initPx() {
+  px = [];
+  for (let y = 0; y < H * 2; y++) {
+    px[y] = [];
+    for (let x = 0; x < W; x++) px[y][x] = null;
+  }
+}
+
+// ── Grid ───────────────────────────────────────────
+function buildGrid() {
+  const el = $('canvas');
+  const pw = 12 * zoomLevel, ph = 12 * zoomLevel;
+  el.innerHTML = '';
+  el.style.gridTemplateColumns = `repeat(${W}, ${pw}px)`;
+  el.style.gridTemplateRows = `repeat(${H*2}, ${ph}px)`;
+
+  for (let y = 0; y < H * 2; y++) {
+    for (let x = 0; x < W; x++) {
+      const d = document.createElement('div');
+      d.className = 'px' + (y % 2 === 1 ? ' cb' : '');
+      d.dataset.x = x; d.dataset.y = y;
+      d.style.width = pw + 'px'; d.style.height = ph + 'px';
+      const c = px[y]?.[x];
+      if (c) d.style.background = rgb2css(c);
+      el.appendChild(d);
+    }
+  }
+  syncGrid();
+}
+
+function updPx(x, y) {
+  const d = $('canvas').children[y * W + x];
+  if (d) d.style.background = px[y][x] ? rgb2css(px[y][x]) : '';
+}
+
+function syncGrid() {
+  const el = $('canvas');
+  el.classList.toggle('no-grid', !$('showGrid').checked);
+  el.classList.toggle('no-charline', !$('showChar').checked);
+}
+
+// ── Mouse ──────────────────────────────────────────
+function applyAt(x, y) {
+  if (tool === 'paint') {
+    px[y][x] = {...color};
+    updPx(x, y);
+  } else if (tool === 'erase') {
+    px[y][x] = null;
+    updPx(x, y);
+  }
+}
+
+function lineTo(x0, y0, x1, y1) {
+  // Bresenham line between two points
+  const dx = Math.abs(x1-x0), dy = Math.abs(y1-y0);
+  const sx = x0<x1?1:-1, sy = y0<y1?1:-1;
+  let err = dx-dy;
+  while (true) {
+    applyAt(x0, y0);
+    if (x0===x1 && y0===y1) break;
+    const e2 = 2*err;
+    if (e2 > -dy) { err -= dy; x0 += sx; }
+    if (e2 < dx) { err += dx; y0 += sy; }
+  }
+}
+
+function act(x, y) {
+  if (tool === 'pick') {
+    const c = px[y][x];
+    if (c) { color = {...c}; $('cPick').value = rgb2hex(c); $('cHex').value = rgb2hex(c); addRecent(c); }
+    setTool('paint');
+  } else if (lastPx) {
+    lineTo(lastPx.x, lastPx.y, x, y);
+  } else {
+    applyAt(x, y);
+  }
+  if (tool === 'paint') addRecent(color);
+  lastPx = {x, y};
+  schedPreview();
+}
+
+$('canvas').addEventListener('mousedown', e => {
+  if (e.target.classList.contains('px')) {
+    e.preventDefault();
+    const x = +e.target.dataset.x, y = +e.target.dataset.y;
+    if (e.button === 2) { /* right click = pick color */
+      const c = px[y][x];
+      if (c) { color = {...c}; $('cPick').value = rgb2hex(c); $('cHex').value = rgb2hex(c); addRecent(c); }
+    } else {
+      down = true;
+      lastPx = null;
+      act(x, y);
+    }
+  }
+});
+$('canvas').addEventListener('contextmenu', e => e.preventDefault());
+document.addEventListener('mousemove', e => {
+  if (!down) return;
+  const t = e.target;
+  if (t.classList?.contains('px')) act(+t.dataset.x, +t.dataset.y);
+});
+document.addEventListener('mouseup', () => { down = false; lastPx = null; updatePreview(); });
+
+// ── Tools ──────────────────────────────────────────
+function setTool(t) {
+  tool = t;
+  document.querySelectorAll('.btn[data-tool]').forEach(b => b.classList.toggle('on', b.dataset.tool === t));
+}
+document.querySelectorAll('.btn[data-tool]').forEach(b => b.addEventListener('click', () => setTool(b.dataset.tool)));
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if (e.key === 'b' || e.key === 'B') setTool('paint');
+  if (e.key === 'e' || e.key === 'E') setTool('erase');
+  if (e.key === 'i' || e.key === 'I') setTool('pick');
+});
+
+// ── Color ──────────────────────────────────────────
+function addRecent(c) {
+  const h = rgb2hex(c);
+  recent = recent.filter(x => x !== h);
+  recent.unshift(h);
+  if (recent.length > 18) recent.pop();
+  renderRecent();
+}
+function renderRecent() {
+  const el = $('recent'); el.innerHTML = '';
+  for (const h of recent) {
+    const d = document.createElement('div');
+    d.style.background = h;
+    d.addEventListener('click', () => { const c = hex2rgb(h); if(c){color=c; $('cPick').value=h; $('cHex').value=h;} });
+    el.appendChild(d);
+  }
+}
+$('cPick').addEventListener('input', e => { const c = hex2rgb(e.target.value); if(c){color=c; $('cHex').value=e.target.value; addRecent(c);} });
+$('cHex').addEventListener('change', e => { const c = hex2rgb(e.target.value); if(c){color=c; $('cPick').value=e.target.value; addRecent(c);} });
+
+// ── Size ───────────────────────────────────────────
+$('applySize').addEventListener('click', () => {
+  const nw = Math.max(1, Math.min(80, +$('cW').value));
+  const nh = Math.max(1, Math.min(40, +$('cH').value));
+  const old = px;
+  W = nw; H = nh;
+  initPx();
+  for (let y = 0; y < Math.min(old.length, H*2); y++)
+    for (let x = 0; x < Math.min(old[y]?.length||0, W); x++)
+      px[y][x] = old[y][x];
+  buildGrid(); schedPreview();
+});
+
+// ── Zoom ───────────────────────────────────────────
+$('zoom').addEventListener('input', e => {
+  zoomLevel = +e.target.value;
+  $('zoomLabel').textContent = zoomLevel + 'x';
+  buildGrid();
+});
+
+// ── Grid toggles ───────────────────────────────────
+$('showGrid').addEventListener('change', syncGrid);
+$('showChar').addEventListener('change', syncGrid);
+
+// ── Clear ──────────────────────────────────────────
+$('clearBtn').addEventListener('click', () => { if(confirm('Clear canvas?')){initPx(); buildGrid(); schedPreview();} });
+
+// ── ANSI Export ────────────────────────────────────
+function genEsc(E) {
+  const RST = E+'[0m';
+  const lines = [];
+  for (let cy = 0; cy < H; cy++) {
+    let ln = '';
+    for (let x = 0; x < W; x++) {
+      const t = px[cy*2][x], b = px[cy*2+1][x];
+      if (!t && !b) {
+        ln += RST+' ';
+      } else if (t && !b) {
+        ln += RST+E+`[38;2;${t.r};${t.g};${t.b}m\u2580`;
+      } else if (!t && b) {
+        ln += RST+E+`[38;2;${b.r};${b.g};${b.b}m\u2584`;
+      } else {
+        ln += E+`[38;2;${t.r};${t.g};${t.b}m`+E+`[48;2;${b.r};${b.g};${b.b}m\u2580`;
+      }
+    }
+    ln += RST;
+    lines.push(ln);
+  }
+  return lines.join('\n');
+}
+function genAnsi() { return genEsc('\x1b'); }
+function genReadable() { return genEsc('\\e'); }
+
+
+// ── Preview ────────────────────────────────────────
+let previewTimer = null;
+function schedPreview() {
+  if (previewTimer) cancelAnimationFrame(previewTimer);
+  previewTimer = requestAnimationFrame(() => { previewTimer = null; try { updatePreview(); } catch(e) { console.error(e); } });
+}
+
+function updatePreview() {
+  const el = $('preview'); el.innerHTML = '';
+  for (let cy = 0; cy < H; cy++) {
+    for (let x = 0; x < W; x++) {
+      const t = px[cy*2][x], b = px[cy*2+1][x];
+      const s = document.createElement('span');
+      if (!t && !b) { s.textContent = ' '; }
+      else if (t && !b) { s.textContent = '\u2580'; s.style.color = rgb2css(t); }
+      else if (!t && b) { s.textContent = '\u2584'; s.style.color = rgb2css(b); }
+      else { s.textContent = '\u2580'; s.style.color = rgb2css(t); s.style.backgroundColor = rgb2css(b); }
+      el.appendChild(s);
+    }
+    if (cy < H - 1) el.appendChild(document.createTextNode('\n'));
+  }
+  $('rawOutput').value = genReadable();
+}
+
+// ── Download ───────────────────────────────────────
+$('dlBtn').addEventListener('click', () => {
+  const name = prompt('Filename:', 'art') || 'art';
+  const blob = new Blob([genAnsi()], {type:'application/octet-stream'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+// ── Copy ───────────────────────────────────────────
+$('copyBtn').addEventListener('click', () => {
+  navigator.clipboard.writeText(genReadable()).then(() => {
+    $('copyBtn').textContent = 'Copied!';
+    setTimeout(() => $('copyBtn').textContent = 'Copy', 1500);
+  }).catch(() => {
+    $('rawOutput').select();
+    document.execCommand('copy');
+  });
+});
+
+// ── Import ─────────────────────────────────────────
+$('impBtn').addEventListener('click', () => $('impFile').click());
+$('impFile').addEventListener('change', e => {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = () => { parseAnsi(r.result); };
+  r.readAsText(f);
+  e.target.value = '';
+});
+
+function parseAnsi(text) {
+  const lines = text.replace(/\r/g, '').split('\n');
+  const parsed = lines.map(parseLine);
+  const mw = Math.max(...parsed.map(p => p.length), 1);
+  const mh = parsed.length;
+  if (mh === 0) return;
+
+  W = mw; H = mh;
+  $('cW').value = W; $('cH').value = H;
+  initPx();
+
+  for (let cy = 0; cy < H; cy++) {
+    const row = parsed[cy] || [];
+    for (let x = 0; x < row.length; x++) {
+      px[cy*2][x] = row[x].t;
+      px[cy*2+1][x] = row[x].b;
+    }
+  }
+  buildGrid(); schedPreview();
+}
+
+function parseLine(line) {
+  const res = [];
+  let fg = null, bg = null, i = 0;
+  while (i < line.length) {
+    const isEsc = (line.charCodeAt(i) === 0x1b && line[i+1] === '[');
+    const isReadableEsc = (line[i] === '\\' && line[i+1] === 'e' && line[i+2] === '[');
+    if (isEsc || isReadableEsc) {
+      const pStart = isEsc ? i + 2 : i + 3;
+      let j = pStart;
+      while (j < line.length && line[j] !== 'm') j++;
+      const p = line.substring(pStart, j);
+      if (p === '0') { fg = null; bg = null; }
+      else {
+        const a = p.split(';');
+        if (a[0]==='38'&&a[1]==='2'&&a.length>=5) fg = {r:+a[2],g:+a[3],b:+a[4]};
+        else if (a[0]==='48'&&a[1]==='2'&&a.length>=5) bg = {r:+a[2],g:+a[3],b:+a[4]};
+      }
+      i = j + 1;
+    } else {
+      const ch = line[i];
+      if (ch === '\u2580') res.push({t: fg?{...fg}:null, b: bg?{...bg}:null});
+      else if (ch === '\u2584') res.push({t: bg?{...bg}:null, b: fg?{...fg}:null});
+      else if (ch === ' ') res.push({t: bg?{...bg}:null, b: bg?{...bg}:null});
+      else if (ch === '\u2588') res.push({t: fg?{...fg}:null, b: fg?{...fg}:null});
+      i++;
+    }
+  }
+  return res;
+}
+
+// ── Init ───────────────────────────────────────────
+initPx(); buildGrid(); updatePreview();
+</script>
+</body>
+</html>
