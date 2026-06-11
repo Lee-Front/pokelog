@@ -8,6 +8,9 @@ import { equipHeldItem, unequipHeldItem } from "../game/held-item-usage.js";
 import { buildInventoryCatalogEntry } from "../game/inventory-catalog.js";
 import { GameRuleError } from "../game/game-errors.js";
 import { getPartyPokemon } from "../game/pokemon-state.js";
+import { childLogger } from "../logger.js";
+const log = childLogger("item-routes");
+
 
 export const itemRoutes = Router();
 itemRoutes.use(authMiddleware);
@@ -30,7 +33,7 @@ itemRoutes.get("/inventory", async (req: AuthRequest, res: Response) => {
 
     res.json({ inventory: user.inventory, catalog });
   } catch (err) {
-    console.error("Inventory error:", err);
+    log.error({ err }, "Inventory error");
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
   }
 });
@@ -64,7 +67,7 @@ itemRoutes.post("/items/equip", async (req: AuthRequest, res: Response) => {
       return;
     }
 
-    console.error("Equip held item error:", err);
+    log.error({ err }, "Equip held item error");
     res.status(500).json({ error: "Failed to equip item." });
   }
 });
@@ -97,7 +100,7 @@ itemRoutes.post("/items/unequip", async (req: AuthRequest, res: Response) => {
       return;
     }
 
-    console.error("Unequip held item error:", err);
+    log.error({ err }, "Unequip held item error");
     res.status(500).json({ error: "Failed to unequip item." });
   }
 });
@@ -119,7 +122,7 @@ itemRoutes.post("/heal", async (req: AuthRequest, res: Response) => {
     await saveUser(user);
     res.json({ healed: partyPokemon.length });
   } catch (err) {
-    console.error("Heal error:", err);
+    log.error({ err }, "Heal error");
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
   }
 });

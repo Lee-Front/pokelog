@@ -6,6 +6,9 @@ import { getAllSpecies } from "../game/pokemon-factory.js";
 import { getRegion, getRegionNames, getSpeciesByName } from "../game/data-loader.js";
 import { buildLevelEvolutionContext, getEvolutionBranchDiagnostics } from "../game/growth.js";
 import { findPokemonByUid, getPartyPokemon } from "../game/pokemon-state.js";
+import { childLogger } from "../logger.js";
+const log = childLogger("game-routes");
+
 const MAX_PARTY_SIZE = 6;
 
 export const gameRoutes = Router();
@@ -38,7 +41,7 @@ gameRoutes.get("/status", async (req: AuthRequest, res: Response) => {
       region: (() => { try { return getRegion(user.currentRegion ?? "default").name; } catch { return user.currentRegion ?? "default"; } })(),
     });
   } catch (err) {
-    console.error("Status error:", err);
+    log.error({ err }, "Status error");
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
   }
 });
@@ -64,7 +67,7 @@ gameRoutes.get("/events", async (req: AuthRequest, res: Response) => {
 
     res.json({ events: activeEvents });
   } catch (err) {
-    console.error("Events error:", err);
+    log.error({ err }, "Events error");
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
   }
 });
@@ -103,7 +106,7 @@ gameRoutes.get("/history", async (req: AuthRequest, res: Response) => {
 
     res.json({ totals, recent });
   } catch (err) {
-    console.error("History error:", err);
+    log.error({ err }, "History error");
     res.status(500).json({ error: "이력을 불러오지 못했습니다" });
   }
 });
@@ -120,7 +123,7 @@ gameRoutes.get("/party", async (req: AuthRequest, res: Response) => {
 
     res.json({ party: partyPokemon });
   } catch (err) {
-    console.error("Party error:", err);
+    log.error({ err }, "Party error");
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
   }
 });
@@ -155,7 +158,7 @@ gameRoutes.put("/party", async (req: AuthRequest, res: Response) => {
     await saveUser(user);
     res.json({ party: uids });
   } catch (err) {
-    console.error("Party update error:", err);
+    log.error({ err }, "Party update error");
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
   }
 });
@@ -188,7 +191,7 @@ gameRoutes.get("/pokemon/:uid", async (req: AuthRequest, res: Response) => {
 
     res.json({ pokemon, evolutionPreview });
   } catch (err) {
-    console.error("Pokemon detail error:", err);
+    log.error({ err }, "Pokemon detail error");
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
   }
 });
@@ -212,7 +215,7 @@ gameRoutes.get("/pokedex", async (req: AuthRequest, res: Response) => {
       allSpecies: getAllSpecies(),
     });
   } catch (err) {
-    console.error("Pokedex error:", err);
+    log.error({ err }, "Pokedex error");
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
   }
 });
@@ -236,7 +239,7 @@ gameRoutes.get("/regions", async (req: AuthRequest, res: Response) => {
       }),
     });
   } catch (err) {
-    console.error("Region list error:", err);
+    log.error({ err }, "Region list error");
     res.status(500).json({ error: "Failed to load regions." });
   }
 });
@@ -267,7 +270,7 @@ gameRoutes.put("/region", async (req: AuthRequest, res: Response) => {
       regionName: getRegion(region).name,
     });
   } catch (err) {
-    console.error("Region update error:", err);
+    log.error({ err }, "Region update error");
     res.status(500).json({ error: "Failed to update region." });
   }
 });

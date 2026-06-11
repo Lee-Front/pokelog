@@ -19,7 +19,7 @@ The current sync pipeline has been executed and generated the following tracked 
 
 - `data/pokemon/species.json`: 905 species
 - `data/pokemon/evolution.json`: 905 evolution entries
-- `data/moves/moves.json`: 937 moves (Z-move variants and shadow moves filtered)
+- `data/moves/moves.json`: 915 moves (Z-move variants and shadow moves filtered)
 - `data/abilities/abilities.json`: 371 abilities
 - `data/natures/natures.json`: 25 natures
 - `data/items/items.json`: 143 items
@@ -211,6 +211,7 @@ Current rules:
 - `common` eggs cost `120P`, hatch level `1-6`, and bias toward easier-capture non-baby base species
 - `rare` eggs cost `450P`, hatch level `5-12`, and bias toward baby species or harder-to-catch non-legendary base species
 - `legend` eggs cost `3200P`, hatch level `15-25`, and only roll legendary or mythical base-stage species
+- egg-eligible regional variants ride the egg pool of their base species: a variant only appears in a tier when its base species qualifies for that tier (so `diglett-alola` can hatch from a common egg, but the line-evolved `dugtrio-alola` never can). Variant entries carry `25%` of the base species weight, keeping the standard form dominant. Hatched variant Pokemon retain their `variantId`.
 
 This replaced the older sample hardcoded pools.
 Current balancing is still heuristic, but the tier gap is now intentionally wide enough to make `legend` eggs a long-term point sink instead of a cheap shortcut.
@@ -295,7 +296,7 @@ Critical hit system:
 - 26 moves have critRate > 0
 
 G-Max exclusive moves:
-- 32 G-Max moves added to moves.json (total 969 moves)
+- 32 G-Max moves added to moves.json (915 moves total after Z-move/shadow filtering)
 - Auto-substituted when Gigantamaxed pokemon uses matching-type damaging move
 - Mapping in `data/pokemon/gmax-moves.json`
 

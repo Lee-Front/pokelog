@@ -12,6 +12,9 @@ import {
   listTradesForUser,
   rejectTradeRequest,
 } from "../game/trade.js";
+import { childLogger } from "../logger.js";
+
+const log = childLogger("trade-routes");
 
 export const tradeRoutes = Router();
 tradeRoutes.use(authMiddleware);
@@ -76,7 +79,7 @@ tradeRoutes.get("/trades", async (req: AuthRequest, res: Response) => {
     const views = await Promise.all(trades.map((trade) => buildTradeView(user.account.id, trade)));
     res.json({ trades: views });
   } catch (err) {
-    console.error("Trade list error:", err);
+    log.error({ err }, "Trade list error");
     res.status(500).json({ error: "Failed to load trades." });
   }
 });
@@ -91,7 +94,7 @@ tradeRoutes.get("/trades/candidates/:userId", async (req: AuthRequest, res: Resp
       return;
     }
 
-    console.error("Trade candidates error:", err);
+    log.error({ err }, "Trade candidates error");
     res.status(500).json({ error: "Failed to load trade candidates." });
   }
 });
@@ -118,7 +121,7 @@ tradeRoutes.post("/trades/request", async (req: AuthRequest, res: Response) => {
       return;
     }
 
-    console.error("Trade request error:", err);
+    log.error({ err }, "Trade request error");
     res.status(500).json({ error: "Failed to create trade request." });
   }
 });
@@ -139,7 +142,7 @@ tradeRoutes.post("/trades/:id/accept", async (req: AuthRequest, res: Response) =
       return;
     }
 
-    console.error("Trade accept error:", err);
+    log.error({ err }, "Trade accept error");
     res.status(500).json({ error: "Failed to accept trade request." });
   }
 });
@@ -154,7 +157,7 @@ tradeRoutes.post("/trades/:id/reject", async (req: AuthRequest, res: Response) =
       return;
     }
 
-    console.error("Trade reject error:", err);
+    log.error({ err }, "Trade reject error");
     res.status(500).json({ error: "Failed to reject trade request." });
   }
 });
@@ -169,7 +172,7 @@ tradeRoutes.post("/trades/:id/cancel", async (req: AuthRequest, res: Response) =
       return;
     }
 
-    console.error("Trade cancel error:", err);
+    log.error({ err }, "Trade cancel error");
     res.status(500).json({ error: "Failed to cancel trade request." });
   }
 });

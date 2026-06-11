@@ -5,6 +5,9 @@ import { getUser, saveUser } from "../storage/user-store.js";
 import { pollUserIntegrations } from "../polling/polling-worker.js";
 import { createPokemon } from "../game/pokemon-factory.js";
 import type { UserData } from "../../../../shared/types.js";
+import { childLogger } from "../logger.js";
+const log = childLogger("auth-routes");
+
 
 export const authRoutes = Router();
 
@@ -68,7 +71,7 @@ authRoutes.post("/register", async (req: Request, res: Response) => {
     const token = issueToken(id);
     res.status(201).json({ token });
   } catch (err) {
-    console.error("Register error:", err);
+    log.error({ err }, "Register error");
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
   }
 });
@@ -98,9 +101,9 @@ authRoutes.post("/login", async (req: Request, res: Response) => {
     res.json({ token });
 
     // trigger polling in background on login
-    pollUserIntegrations(id).catch((e) => console.error("Login-triggered poll error:", e));
+    pollUserIntegrations(id).catch((e) => log.error({ err: e }, "Login-triggered poll error"));
   } catch (err) {
-    console.error("Login error:", err);
+    log.error({ err }, "Login error");
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
   }
 });

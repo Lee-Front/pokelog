@@ -30,6 +30,10 @@ export interface GitIntegration extends IntegrationBase {
     repoUrl: string;
     authMode?: "public" | "token";
     token?: string;
+    /** Path to a private CA bundle (PEM) for self-hosted GitLab over HTTPS. */
+    caCertPath?: string;
+    /** Disable TLS verification entirely. Last resort for self-signed certs. */
+    insecureSkipTls?: boolean;
   };
   emails?: string[];
 }
@@ -320,7 +324,15 @@ export interface ServerMeta {
 }
 
 export interface ServerConfig {
-  server: { port: number };
+  server: {
+    port: number;
+    /**
+     * Allowed browser origins for CORS (e.g. "https://portal.corp.example").
+     * Empty/unset disables CORS entirely (no headers emitted) — same-origin and
+     * non-browser clients such as the CLI are unaffected.
+     */
+    corsAllowedOrigins?: string[];
+  };
   meta: ServerMeta;
   polling: {
     intervalMinutes: number;

@@ -210,11 +210,13 @@ The project already uses pending choice flow when multiple branches match.
 
 Battle-only transformations belong in battle runtime, not permanent Pokemon identity.
 
-The route layer still needs more decomposition, but the direction is already clear:
+The route layer has now been decomposed into the intended layers:
 
-- route/controller layer
-- battle engine/state mutation layer
-- shared Pokemon identity/stat helpers
+- route/controller layer (`packages/server/src/routes/battle-routes.ts`)
+- battle engine/state mutation layer (`packages/server/src/game/battle-state.ts`: `executePlayerAttack`, `resolvePreAttack`, `determineBattleTurnOrder`, `applyEndOfTurnBattle`) on top of the pure formulas in `battle.ts`
+- shared Pokemon identity/stat helpers (`pokemon-state.ts`, `pokemon-stats.ts`)
+
+Turn order now factors move `priority` first, then speed (paralysis halving and stat-stage multipliers applied before comparison), with a coin flip on ties. The wild move is pre-selected each turn so its priority is known before order resolution.
 
 ## Current Architectural Debt
 
@@ -223,9 +225,10 @@ It is runtime consolidation.
 
 Most important remaining work:
 
-1. Split the oversized battle route into engine/state layers.
-2. Keep all typing/stat resolution on the shared `pokemon-state` and `pokemon-stats` modules.
-3. Keep held-item, evolution-context, and form-state rules moving toward shared services instead of route-local logic.
+1. Keep all typing/stat resolution on the shared `pokemon-state` and `pokemon-stats` modules.
+2. Keep held-item, evolution-context, and form-state rules moving toward shared services instead of route-local logic.
+
+The earlier top priority — splitting the oversized battle route into engine/state layers — is now done: `battle-state.ts` holds the engine/state mutation layer and `battle-routes.ts` is a thin controller over it.
 
 ## Project Decision Summary
 

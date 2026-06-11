@@ -101,6 +101,29 @@ export function findTradeById(trades: TradeView[], tradeId: string): TradeView |
   return trades.find((t) => t.id === tradeId);
 }
 
+export interface TradeEvolution {
+  evolved: boolean;
+  fromSpecies: string;
+  toSpecies: string;
+}
+
+/**
+ * 트레이드 수락 응답의 진화 결과를 사람이 읽을 수 있는 문구로 변환.
+ * 수락자(responder) 관점의 진화를 먼저 보여준다.
+ */
+export function describeTradeEvolutions(
+  responderEvolution: TradeEvolution | undefined,
+  requesterEvolution: TradeEvolution | undefined,
+): string[] {
+  const lines: string[] = [];
+  for (const evolution of [responderEvolution, requesterEvolution]) {
+    if (evolution?.evolved) {
+      lines.push(`${evolution.fromSpecies} evolved into ${evolution.toSpecies}!`);
+    }
+  }
+  return lines;
+}
+
 export function parseTradeChoice(choice: string): { type: "trade" | "resolved" | "new" | "back"; id?: string } {
   if (choice === "__new__") return { type: "new" };
   if (choice === "__back__" || !choice) return { type: "back" };

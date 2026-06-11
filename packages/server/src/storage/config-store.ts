@@ -49,7 +49,7 @@ const DEFAULT_HELD_EVOLUTION_SHOP_ITEMS = {
 } satisfies ServerConfig["shop"]["items"];
 
 export const DEFAULT_CONFIG: ServerConfig = {
-  server: { port: 3000 },
+  server: { port: 3000, corsAllowedOrigins: [] },
   meta: {
     serverId: "default",
     serverName: "local",
@@ -67,12 +67,15 @@ export const DEFAULT_CONFIG: ServerConfig = {
     repos: [],
   },
   rewards: {
-    expPerByte: 0.5,
-    pointsPerByte: 0.1,
+    // Conservative launch defaults (~1/10 of the original byte rate, gentler
+    // combo curve). Operators raise these over time via PUT /api/admin/config
+    // as real-user feedback comes in.
+    expPerByte: 0.05,
+    pointsPerByte: 0.01,
     combo: {
       bytesPerMinute: 10,
-      multipliers: [1, 1.2, 1.5, 2.0, 3.0],
-      maxMultiplier: 3.0,
+      multipliers: [1, 1.2, 1.5],
+      maxMultiplier: 1.5,
     },
     encounter: {
       baseChance: 0.3,
@@ -106,6 +109,10 @@ export async function getConfig(): Promise<ServerConfig> {
   return {
     ...DEFAULT_CONFIG,
     ...config,
+    server: {
+      ...DEFAULT_CONFIG.server,
+      ...config.server,
+    },
     meta: {
       ...DEFAULT_CONFIG.meta,
       ...config.meta,

@@ -1,6 +1,10 @@
 # PokeLog 잔여 작업 이어받기 구현 플랜
 
-**Status:** Phase 0-2 (Tasks 1-10) completed. Phase 3-5 (Tasks 11-20) not started.
+**Status:** Phase 0-3 and Phase 5 (Tasks 1-14, 18-20) completed. Phase 4 (Tasks 15-17) handled separately under the Trade UX track.
+
+> **Phase 3 note (2026-06-11):** Tasks 11-12 and the encounter half of Task 13 were already implemented in code before this pass (`scripts/pokeapi/variants.mjs`, `--only variants` sync step, `isEggEligible` = regional, region encounter pools carrying variant slugs, `resolveSpeciesOrVariant`-based factory). The remaining gap closed in this pass was the egg system: egg-eligible regional variants are now added to the egg gacha pool of their base species (`packages/server/src/game/egg-gacha.ts`), with tests in `egg-gacha.test.ts`.
+
+> **Phase 5 note (2026-06-11):** Tasks 18-19 were already implemented in code (`determineTurnOrder`/`determineBattleTurnOrder` accept move priority and battle-routes pre-selects the wild move to pass its priority; `scripts/pokeapi/moves.mjs` filters `--` Z-move variants and `pp===0` shadow moves), with priority turn-order tests already present in `battle.test.ts` and `battle-state.test.ts`. The gap closed in this pass: the filter had never been applied to the committed `data/moves/moves.json` (still 969 unfiltered entries), so the same predicate was applied to regenerate it to 915 moves (removed 36 Z-move variants + 18 shadow moves; verified no species learnset referenced any removed move). Task 20 docs updated here.
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
@@ -495,17 +499,17 @@ feat: extend WildPokemon with nature, gender, ability
 
 regional variant의 타입/스탯을 PokeAPI에서 가져와 `variants.json`에 채움.
 
-- [ ] **Step 1: variants.mjs 작성**
+- [x] **Step 1: variants.mjs 작성**
 
 PokeAPI의 `/pokemon/{variant-slug}` 엔드포인트에서 타입, baseStats를 가져와 기존 variants.json의 `typing`, `baseStatsOverride`에 채움.
 
-- [ ] **Step 2: sync-pokeapi.mjs에 variants 단계 추가**
+- [x] **Step 2: sync-pokeapi.mjs에 variants 단계 추가**
 
 ```bash
 npm run sync:pokeapi -- --only variants
 ```
 
-- [ ] **Step 3: 커밋**
+- [x] **Step 3: 커밋**
 
 ```
 feat: add PokeAPI variant override sync for regional forms
@@ -518,7 +522,7 @@ feat: add PokeAPI variant override sync for regional forms
 **Files:**
 - Modify: `scripts/generate-pokemon-variants.mjs:63-65`
 
-- [ ] **Step 1: kind 기반 판정으로 변경**
+- [x] **Step 1: kind 기반 판정으로 변경**
 
 ```javascript
 function isEggEligible(kind) {
@@ -526,7 +530,7 @@ function isEggEligible(kind) {
 }
 ```
 
-- [ ] **Step 2: 재생성, 커밋**
+- [x] **Step 2: 재생성, 커밋**
 
 ```bash
 node scripts/generate-pokemon-variants.mjs
@@ -546,9 +550,9 @@ fix: enable egg eligibility for regional variants
 
 해당 리전의 encounters에 regional variant를 추가. 예: `alola.json`에 `vulpix-alola` 추가.
 
-- [ ] **Step 1: 리전 파일에 variant 엔트리 추가**
-- [ ] **Step 2: data-loader의 normalizeRegionData에서 variant 참조 처리**
-- [ ] **Step 3: 커밋**
+- [x] **Step 1: 리전 파일에 variant 엔트리 추가**
+- [x] **Step 2: data-loader의 normalizeRegionData에서 variant 참조 처리**
+- [x] **Step 3: 커밋**
 
 ```
 feat: add regional variants to encounter pools
@@ -558,9 +562,9 @@ feat: add regional variants to encounter pools
 
 ### Task 14: Phase 2-3 문서 갱신
 
-- [ ] **Step 1: pokemon-variant-model.md 업데이트**
-- [ ] **Step 2: pokemon-pokeapi-sync-status.md 업데이트**
-- [ ] **Step 3: 커밋**
+- [x] **Step 1: pokemon-variant-model.md 업데이트**
+- [x] **Step 2: pokemon-pokeapi-sync-status.md 업데이트**
+- [x] **Step 3: 커밋**
 
 ```
 docs: update variant model and sync status with Phase 2-3 completion
@@ -657,7 +661,7 @@ docs: update trade system doc with interactive UI completion
 - Modify: `packages/server/src/game/battle.ts:75-79`
 - Modify: `packages/server/src/routes/battle-routes.ts:161`
 
-- [ ] **Step 1: determineTurnOrder에 priority 추가**
+- [x] **Step 1: determineTurnOrder에 priority 추가**
 
 ```typescript
 export function determineTurnOrder(
@@ -674,11 +678,11 @@ export function determineTurnOrder(
 }
 ```
 
-- [ ] **Step 2: battle-routes.ts에서 move priority 전달**
+- [x] **Step 2: battle-routes.ts에서 move priority 전달**
 
 fight 액션 시 선택한 무브의 priority를 `determineTurnOrder`에 전달.
 
-- [ ] **Step 3: 테스트 업데이트, 커밋**
+- [x] **Step 3: 테스트 업데이트, 커밋**
 
 ```
 feat: add move priority to battle turn order
@@ -691,11 +695,11 @@ feat: add move priority to battle turn order
 **Files:**
 - Modify: `scripts/pokeapi/moves.mjs`
 
-- [ ] **Step 1: sync 시 필터 추가**
+- [x] **Step 1: sync 시 필터 추가**
 
 `id`에 `--`가 포함된 Z-무브 변형과 `pp === 0`인 섀도무브를 필터링.
 
-- [ ] **Step 2: 재동기화, 커밋**
+- [x] **Step 2: 재동기화, 커밋**
 
 ```bash
 npm run sync:pokeapi -- --only moves
@@ -709,10 +713,10 @@ data: filter Z-move variants and shadow moves from moves.json
 
 ### Task 20: Phase 5 문서 갱신 + 전체 진행상황 업데이트
 
-- [ ] **Step 1: pokemon-pokeapi-sync-status.md 최종 갱신**
-- [ ] **Step 2: pokemon-mechanics-architecture.md 현재 상태 반영**
-- [ ] **Step 3: 본 플랜 문서에 완료 체크 마킹**
-- [ ] **Step 4: 커밋**
+- [x] **Step 1: pokemon-pokeapi-sync-status.md 최종 갱신**
+- [x] **Step 2: pokemon-mechanics-architecture.md 현재 상태 반영**
+- [x] **Step 3: 본 플랜 문서에 완료 체크 마킹**
+- [x] **Step 4: 커밋**
 
 ```
 docs: final documentation update after all phases complete

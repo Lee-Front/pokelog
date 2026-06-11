@@ -20,6 +20,9 @@ import {
   searchUsersByIdentity,
   saveUser,
 } from "../storage/user-store.js";
+import { childLogger } from "../logger.js";
+
+const log = childLogger("user-routes");
 
 export const userRoutes = Router();
 userRoutes.use(authMiddleware);
@@ -35,7 +38,7 @@ userRoutes.get("/profile", async (req: AuthRequest, res: Response) => {
     const { password, ...accountWithoutPassword } = user.account;
     res.json({ ...user, account: accountWithoutPassword });
   } catch (err) {
-    console.error("Profile error:", err);
+    log.error({ err }, "Profile error");
     res.status(500).json({ error: "프로필을 불러오지 못했습니다" });
   }
 });
@@ -55,7 +58,7 @@ userRoutes.get("/search", async (req: AuthRequest, res: Response) => {
     });
     res.json({ users });
   } catch (err) {
-    console.error("User search error:", err);
+    log.error({ err }, "User search error");
     res.status(500).json({ error: "Failed to search users." });
   }
 });
@@ -78,7 +81,7 @@ userRoutes.put("/nickname", async (req: AuthRequest, res: Response) => {
     await saveUser(user);
     res.json({ nickname });
   } catch (err) {
-    console.error("Nickname error:", err);
+    log.error({ err }, "Nickname error");
     res.status(500).json({ error: "닉네임을 변경하지 못했습니다" });
   }
 });
@@ -120,7 +123,7 @@ userRoutes.post("/match", async (req: AuthRequest, res: Response) => {
     await saveUser(user);
     res.json({ matchings: user.account.matchings });
   } catch (err) {
-    console.error("Match error:", err);
+    log.error({ err }, "Match error");
     res.status(500).json({ error: "match 정보를 저장하지 못했습니다" });
   }
 });
@@ -150,7 +153,7 @@ userRoutes.delete("/match", async (req: AuthRequest, res: Response) => {
     await saveUser(user);
     res.json({ matchings: user.account.matchings });
   } catch (err) {
-    console.error("Match delete error:", err);
+    log.error({ err }, "Match delete error");
     res.status(500).json({ error: "match 정보를 삭제하지 못했습니다" });
   }
 });
@@ -166,9 +169,9 @@ userRoutes.get("/integrations", async (req: AuthRequest, res: Response) => {
     res.json({ integrations: user.integrations });
 
     // trigger polling in background when user views integrations
-    pollUserIntegrations(req.userId!).catch((e) => console.error("Integration-view poll error:", e));
+    pollUserIntegrations(req.userId!).catch((e) => log.error({ err: e }, "Integration-view poll error"));
   } catch (err) {
-    console.error("Integration list error:", err);
+    log.error({ err }, "Integration list error");
     res.status(500).json({ error: "연동 목록을 불러오지 못했습니다" });
   }
 });
@@ -191,7 +194,7 @@ userRoutes.post("/integrations", async (req: AuthRequest, res: Response) => {
     await saveUser(user);
     res.status(201).json({ integration: parsed.integration });
   } catch (err) {
-    console.error("Integration create error:", err);
+    log.error({ err }, "Integration create error");
     res.status(500).json({ error: "연동을 생성하지 못했습니다" });
   }
 });
@@ -244,7 +247,7 @@ userRoutes.patch("/integrations/:id", async (req: AuthRequest, res: Response) =>
     await saveUser(user);
     res.json({ integration: user.integrations[idx] });
   } catch (err) {
-    console.error("Integration update error:", err);
+    log.error({ err }, "Integration update error");
     res.status(500).json({ error: "연동 정보를 수정하지 못했습니다" });
   }
 });
@@ -267,7 +270,7 @@ userRoutes.delete("/integrations/:id", async (req: AuthRequest, res: Response) =
     await saveUser(user);
     res.json({ ok: true });
   } catch (err) {
-    console.error("Integration delete error:", err);
+    log.error({ err }, "Integration delete error");
     res.status(500).json({ error: "연동을 삭제하지 못했습니다" });
   }
 });
@@ -306,7 +309,7 @@ userRoutes.post("/integrations/:id/test", async (req: AuthRequest, res: Response
       metadata: result.metadata,
     });
   } catch (err) {
-    console.error("Integration test error:", err);
+    log.error({ err }, "Integration test error");
     res.status(500).json({ error: "연결 테스트에 실패했습니다" });
   }
 });
@@ -355,7 +358,7 @@ userRoutes.post("/integrations/:id/sync", async (req: AuthRequest, res: Response
       result,
     });
   } catch (err) {
-    console.error("Integration sync error:", err);
+    log.error({ err }, "Integration sync error");
     res.status(500).json({ error: "연동 sync 실행 중 오류가 발생했습니다" });
   }
 });

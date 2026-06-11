@@ -24,6 +24,9 @@ import { INTEGRATION_EVENT_CATALOG } from "../integrations/event-catalog.js";
 import { clearPendingEvolutionForPokemon, queuePendingEvolution } from "../game/pending-evolution.js";
 
 import { adminMiddleware } from "../middleware/admin-middleware.js";
+import { childLogger } from "../logger.js";
+
+const log = childLogger("admin-routes");
 
 export const adminRoutes = Router();
 adminRoutes.use(adminMiddleware);
@@ -99,6 +102,7 @@ const ALLOWED_CONFIG_PATHS = new Set([
   "rewards.pointsPerByte",
   "rewards.combo.bytesPerMinute",
   "rewards.combo.maxMultiplier",
+  "rewards.combo.multipliers",
   "rewards.encounter.baseChance",
   "rewards.encounter.ceilingBytes",
   "rewards.encounter.timeLimitHours",
@@ -119,6 +123,19 @@ adminRoutes.put("/config", async (req, res) => {
 
     if (!ALLOWED_CONFIG_PATHS.has(key)) {
       return res.status(400).json({ error: "허용되지 않는 설정 키입니다" });
+    }
+
+    // The combo curve is indexed into by getComboMultiplier, so a malformed
+    // value would break reward calculation — require a non-empty array of
+    // positive numbers.
+    if (key === "rewards.combo.multipliers") {
+      if (
+        !Array.isArray(value) ||
+        value.length === 0 ||
+        !value.every((m) => typeof m === "number" && Number.isFinite(m) && m > 0)
+      ) {
+        return res.status(400).json({ error: "multipliers는 양수로 이루어진 비어있지 않은 배열이어야 합니다" });
+      }
     }
 
     const config = await getConfig();
@@ -282,7 +299,7 @@ adminRoutes.post("/test/commit", async (req, res) => {
       encounter: encounterInfo,
     });
   } catch (err) {
-    console.error(err);
+    log.error({ err }, "Admin route error");
     res.status(500).json({ error: "서버 오류" });
   }
 });
@@ -317,7 +334,7 @@ adminRoutes.post("/test/encounter", async (req, res) => {
 
     res.json({ ok: true, event: { id: event.id, species: wildSpecies, level: wildLevel, expiresAt: event.expiresAt } });
   } catch (err) {
-    console.error(err);
+    log.error({ err }, "Admin route error");
     res.status(500).json({ error: "서버 오류" });
   }
 });
@@ -388,7 +405,7 @@ adminRoutes.post("/test/give-pokemon", async (req, res) => {
       },
     });
   } catch (err) {
-    console.error(err);
+    log.error({ err }, "Admin route error");
     res.status(500).json({ error: "서버 오류" });
   }
 });

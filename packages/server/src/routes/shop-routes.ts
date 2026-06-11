@@ -6,6 +6,9 @@ import { authMiddleware } from "../middleware/auth-middleware.js";
 import { incrementItem } from "../game/inventory-utils.js";
 import { useInventoryItem } from "../game/item-usage.js";
 import { GameRuleError } from "../game/game-errors.js";
+import { childLogger } from "../logger.js";
+const log = childLogger("shop-routes");
+
 
 export const shopRoutes = Router();
 shopRoutes.use(authMiddleware);
@@ -22,7 +25,7 @@ shopRoutes.get("/", async (req, res) => {
     const config = await getConfig();
     res.json({ items: config.shop.items, points: user.points });
   } catch (err) {
-    console.error("Shop error:", err);
+    log.error({ err }, "Shop error");
     res.status(500).json({ error: "Failed to load shop." });
   }
 });
@@ -67,7 +70,7 @@ shopRoutes.post("/buy", async (req, res) => {
       inventory: user.inventory,
     });
   } catch (err) {
-    console.error("Buy error:", err);
+    log.error({ err }, "Buy error");
     res.status(500).json({ error: "Failed to buy item." });
   }
 });
@@ -116,7 +119,7 @@ shopRoutes.post("/use", async (req, res) => {
       return;
     }
 
-    console.error("Use item error:", err);
+    log.error({ err }, "Use item error");
     res.status(500).json({ error: "Failed to use item." });
   }
 });

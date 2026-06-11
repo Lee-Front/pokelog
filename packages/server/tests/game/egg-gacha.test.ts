@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { clearAllCaches, getEvolutions, getSpeciesByName } from "../../src/game/data-loader.js";
-import { clearEggGachaCache, getEggTierSummaries, hatchEgg } from "../../src/game/egg-gacha.js";
+import { clearAllCaches, getEvolutions, getSpeciesByName, getVariants } from "../../src/game/data-loader.js";
+import { clearEggGachaCache, getEggTierSummaries, hatchEgg, getEggTierPool } from "../../src/game/egg-gacha.js";
+import { resolveSpeciesOrVariant } from "../../src/game/pokemon-state.js";
 
 function getPreEvolutionTargets(): Set<string> {
   const targets = new Set<string>();
@@ -69,5 +70,59 @@ describe("egg-gacha", () => {
     expect(getPreEvolutionTargets().has(result.pokemon.species)).toBe(false);
     expect(Boolean(species!.isLegendary || species!.isMythical)).toBe(true);
     expect(result.pokemon.level).toBe(15);
+  });
+
+  it("includes egg-eligible regional variants in tier pools", () => {
+    const commonPool = getEggTierPool("common");
+    const poolSlugs = new Set(commonPool.map((entry) => entry.species));
+    // a variant whose base species (diglett) is an easy common-tier base stage
+    expect(poolSlugs.has("diglett-alola")).toBe(true);
+  });
+
+  it("excludes variants whose base species is a line-evolved (non-base-stage) form", () => {
+    const allPoolSlugs = new Set(
+      (["common", "rare", "legend"] as const).flatMap((tier) =>
+        getEggTierPool(tier).map((entry) => entry.species),
+      ),
+    );
+    // arcanine evolves from growlithe, so arcanine-hisui must never be an egg candidate
+    expect(allPoolSlugs.has("arcanine-hisui")).toBe(false);
+  });
+
+  it("every variant entry in egg pools resolves to a known base species", () => {
+    const variantIds = new Set(getVariants().map((variant) => variant.id));
+    for (const tier of ["common", "rare", "legend"] as const) {
+      for (const entry of getEggTierPool(tier)) {
+        if (variantIds.has(entry.species)) {
+          const resolved = resolveSpeciesOrVariant(entry.species);
+          expect(resolved.variantId).toBe(entry.species);
+          expect(resolved.speciesData).not.toBeNull();
+        }
+      }
+    }
+  });
+
+  it("hatches a variant egg into a Pokemon carrying the variantId", () => {
+    // force the weighted roll to land on the last pool entry, which is a variant
+    // (variants are appended after base species in buildTierPool)
+    vi.spyOn(Math, "random").mockReturnValue(0.999999);
+
+    const pool = getEggTierPool("common");
+    const lastEntry = pool[pool.length - 1];
+    expect(getVariants().some((variant) => variant.id === lastEntry.species)).toBe(true);
+
+    const result = hatchEgg({ id: "egg-variant", tier: "common", createdAt: new Date().toISOString() });
+    expect(result.pokemon.variantId).toBe(lastEntry.species);
+    const resolved = resolveSpeciesOrVariant(lastEntry.species);
+    expect(result.pokemon.species).toBe(resolved.baseSpecies);
+  });
+
+  it("variants are rarer than their base species in the same egg pool", () => {
+    const pool = getEggTierPool("common");
+    const diglett = pool.find((entry) => entry.species === "diglett");
+    const diglettAlola = pool.find((entry) => entry.species === "diglett-alola");
+    expect(diglett).toBeDefined();
+    expect(diglettAlola).toBeDefined();
+    expect(diglettAlola!.weight).toBeLessThan(diglett!.weight);
   });
 });

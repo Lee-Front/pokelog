@@ -8,6 +8,9 @@ import { applyFormChange, getAvailableForms, getFormChangeRules, hasFormChangeRu
 import { GameRuleError } from "../game/game-errors.js";
 import { buildStats } from "../game/pokemon-stats.js";
 import { findPokemonByUid } from "../game/pokemon-state.js";
+import { childLogger } from "../logger.js";
+const log = childLogger("evolution-routes");
+
 
 export const evolutionRoutes = Router();
 evolutionRoutes.use(authMiddleware);
@@ -27,7 +30,7 @@ evolutionRoutes.get("/evolutions/pending", async (req: AuthRequest, res: Respons
 
     res.json({ pending });
   } catch (err) {
-    console.error("Pending evolutions error:", err);
+    log.error({ err }, "Pending evolutions error");
     res.status(500).json({ error: "Failed to load pending evolutions." });
   }
 });
@@ -60,7 +63,7 @@ evolutionRoutes.post("/evolutions/resolve", async (req: AuthRequest, res: Respon
       return;
     }
 
-    console.error("Resolve evolution error:", err);
+    log.error({ err }, "Resolve evolution error");
     res.status(500).json({ error: "Failed to resolve pending evolution." });
   }
 });
@@ -79,7 +82,7 @@ evolutionRoutes.get("/form-change/rules/:species", async (req: AuthRequest, res:
 
     res.json({ species, rule, forms });
   } catch (err) {
-    console.error("Form change rules error:", err);
+    log.error({ err }, "Form change rules error");
     res.status(500).json({ error: "Failed to load form change rules." });
   }
 });
@@ -131,7 +134,7 @@ evolutionRoutes.post("/form-change", async (req: AuthRequest, res: Response) => 
       return;
     }
 
-    console.error("Form change error:", err);
+    log.error({ err }, "Form change error");
     res.status(500).json({ error: "Failed to change form." });
   }
 });

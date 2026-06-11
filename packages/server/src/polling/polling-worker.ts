@@ -3,12 +3,15 @@ import { getSyncState, saveSyncState } from "../storage/sync-state-store.js";
 import {
   cloneBareRepo,
   fetchRepo,
-  getNewCommits,
+  getNewCommitsAcrossBranches,
   getLatestHash,
   listRemoteBranches,
   resolveRepoUrl,
+  redactUrlCredentials,
+  type GitTlsOptions,
 } from "./git-client.js";
 import { processCommit } from "./commit-processor.js";
+import type { SyncState } from "../../../../shared/types.js";
 import path from "node:path";
 import fs from "node:fs/promises";
 import { getDataDir } from "../paths.js";
@@ -18,6 +21,9 @@ import { pollJiraIntegration } from "../integrations/jira-polling.js";
 import { pollSlackIntegration } from "../integrations/slack-polling.js";
 import type { GitIntegration, JiraIntegration, SlackIntegration, UserData } from "../../../../shared/types.js";
 import { getUser } from "../storage/user-store.js";
+import { childLogger } from "../logger.js";
+const log = childLogger("polling-worker");
+
 
 function getReposDir() {
   return path.join(getDataDir(), "repos");
@@ -29,22 +35,85 @@ function repoLocalDir(url: string): string {
   return path.join(getReposDir(), name + ".git");
 }
 
-async function ensureBareClone(url: string, authMode?: string, token?: string): Promise<string> {
+async function ensureBareClone(
+  url: string,
+  authMode?: string,
+  token?: string,
+  tls?: GitTlsOptions,
+): Promise<string> {
   const dir = repoLocalDir(url);
   try {
     await fs.access(dir);
   } catch {
-    console.log(`Cloning ${url}...`);
-    await cloneBareRepo(url, dir, authMode, token);
+    log.info(`Cloning ${url}...`);
+    await cloneBareRepo(url, dir, authMode, token, tls);
   }
   return dir;
+}
+
+function gitTlsOptions(config: GitIntegration["config"]): GitTlsOptions {
+  if (config.insecureSkipTls) {
+    log.warn(
+      { repoUrl: config.repoUrl },
+      "polling a git repo with insecureSkipTls — TLS verification is disabled; use caCertPath in production",
+    );
+  }
+  return {
+    caCertPath: config.caCertPath,
+    insecureSkipTls: config.insecureSkipTls,
+  };
+}
+
+/**
+ * Process new commits for one repo across all its branches, deduplicated by
+ * commit so a commit shared by several branches is rewarded only once. Updates
+ * syncState per-branch tips in place. Returns the number of commits processed.
+ */
+async function pollRepoCommits(
+  repoDir: string,
+  repoUrl: string,
+  branches: string[],
+  syncState: SyncState,
+): Promise<number> {
+  if (!syncState.repos[repoUrl]) {
+    syncState.repos[repoUrl] = {};
+  }
+  const branchState = syncState.repos[repoUrl];
+
+  // Previously-processed tips (per-branch lastHash) to exclude from this poll.
+  const previousTips = [...new Set(Object.values(branchState).filter(Boolean))];
+
+  // Current tip hash for each branch; skip branches that do not resolve.
+  const currentTips = new Map<string, string>();
+  for (const branch of branches) {
+    const tip = await getLatestHash(repoDir, branch);
+    if (tip) currentTips.set(branch, tip);
+  }
+  if (currentTips.size === 0) return 0;
+
+  const commits = await getNewCommitsAcrossBranches(
+    repoDir,
+    [...currentTips.keys()].map((branch) => `origin/${branch}`),
+    previousTips,
+  );
+
+  for (const commit of commits) {
+    await processCommit(commit, repoDir, repoUrl);
+  }
+
+  // Advance every branch tip so subsequent polls only see newer commits.
+  for (const [branch, tip] of currentTips) {
+    branchState[branch] = tip;
+  }
+
+  return commits.length;
 }
 
 export async function pollAllRepos(): Promise<void> {
   const config = await getConfig();
   const syncState = await getSyncState();
   const users = await getAllUsers();
-  const integrationRepoMap = new Map<string, { authMode?: string; token?: string }>();
+  const integrationRepoMap = new Map<string, { authMode?: string; token?: string; tls?: GitTlsOptions }>();
 
   for (const user of users) {
     for (const integration of user.integrations) {
@@ -56,45 +125,30 @@ export async function pollAllRepos(): Promise<void> {
         integrationRepoMap.set(normalized, {
           authMode: (integration as GitIntegration).config.authMode,
           token: (integration as GitIntegration).config.token,
+          tls: gitTlsOptions((integration as GitIntegration).config),
         });
       }
     }
   }
 
   const reposToPoll = [
-    ...config.polling.repos.map((repo) => ({ url: repo.url, branches: repo.branches, source: "admin" as const, authMode: undefined as string | undefined, token: undefined as string | undefined })),
+    ...config.polling.repos.map((repo) => ({ url: repo.url, branches: repo.branches, source: "admin" as const, authMode: undefined as string | undefined, token: undefined as string | undefined, tls: undefined as GitTlsOptions | undefined })),
     ...[...integrationRepoMap.entries()]
       .filter(([url]) => !config.polling.repos.some((repo) => normalizeRepoUrl(repo.url) === url))
-      .map(([url, auth]) => ({ url, branches: null as string[] | null, source: "integration" as const, authMode: auth.authMode, token: auth.token })),
+      .map(([url, auth]) => ({ url, branches: null as string[] | null, source: "integration" as const, authMode: auth.authMode, token: auth.token, tls: auth.tls })),
   ];
 
   for (const repo of reposToPoll) {
     try {
-      const repoDir = await ensureBareClone(repo.url, repo.authMode, repo.token);
-      await fetchRepo(repoDir);
+      const repoDir = await ensureBareClone(repo.url, repo.authMode, repo.token, repo.tls);
+      await fetchRepo(repoDir, repo.tls);
 
       const branches = repo.branches ?? await listRemoteBranches(repoDir);
-
-      if (!syncState.repos[repo.url]) {
-        syncState.repos[repo.url] = {};
-      }
-
-      for (const branch of branches) {
-        const lastHash = syncState.repos[repo.url][branch] || null;
-        const commits = await getNewCommits(repoDir, branch, lastHash);
-
-        for (const commit of commits) {
-          await processCommit(commit, repoDir, repo.url);
-        }
-
-        // Update sync state to latest
-        const latestHash = await getLatestHash(repoDir, branch);
-        if (latestHash) {
-          syncState.repos[repo.url][branch] = latestHash;
-        }
-      }
+      await pollRepoCommits(repoDir, repo.url, branches, syncState);
     } catch (err) {
-      console.error(`Error polling ${repo.url}:`, err);
+      // Git errors can embed the token-bearing URL; redact before logging.
+      const message = redactUrlCredentials(err instanceof Error ? err.message : String(err));
+      log.error({ err: message }, `Error polling ${repo.url}`);
     }
   }
 
@@ -124,7 +178,7 @@ export async function pollAllRepos(): Promise<void> {
         integration.lastCheckedAt = new Date().toISOString();
         integration.lastError = err instanceof Error ? err.message : `${integration.provider} polling failed`;
         await saveUser(user);
-        console.error(`Error polling ${integration.provider} integration ${integration.id}:`, err);
+        log.error({ err }, `Error polling ${integration.provider} integration ${integration.id}`);
         continue;
       }
       await saveUser(user);
@@ -168,7 +222,7 @@ export async function pollUserIntegrations(userId: string): Promise<void> {
       integration.lastCheckedAt = new Date().toISOString();
       integration.lastError = err instanceof Error ? err.message : `${integration.provider} polling failed`;
       changed = true;
-      console.error(`Error polling ${integration.provider} integration ${integration.id}:`, err);
+      log.error({ err }, `Error polling ${integration.provider} integration ${integration.id}`);
     }
   }
 
@@ -180,28 +234,17 @@ export async function pollUserIntegrations(userId: string): Promise<void> {
 
     try {
       const git = integration as GitIntegration;
-      const repoDir = await ensureBareClone(git.config.repoUrl, git.config.authMode, git.config.token);
-      await fetchRepo(repoDir);
-
-      if (!syncState.repos[git.config.repoUrl]) {
-        syncState.repos[git.config.repoUrl] = {};
-      }
+      const tls = gitTlsOptions(git.config);
+      const repoDir = await ensureBareClone(git.config.repoUrl, git.config.authMode, git.config.token, tls);
+      await fetchRepo(repoDir, tls);
 
       const branches = await listRemoteBranches(repoDir);
-      for (const branch of branches) {
-        const lastHash = syncState.repos[git.config.repoUrl][branch] || null;
-        const commits = await getNewCommits(repoDir, branch, lastHash);
-        for (const commit of commits) {
-          await processCommit(commit, repoDir, git.config.repoUrl);
-        }
-        const latestHash = await getLatestHash(repoDir, branch);
-        if (latestHash) {
-          syncState.repos[git.config.repoUrl][branch] = latestHash;
-        }
-      }
+      await pollRepoCommits(repoDir, git.config.repoUrl, branches, syncState);
       changed = true;
     } catch (err) {
-      console.error(`Error polling repo for user ${userId}:`, err);
+      // Git errors can embed the token-bearing URL; redact before logging.
+      const message = redactUrlCredentials(err instanceof Error ? err.message : String(err));
+      log.error({ err: message }, `Error polling repo for user ${userId}`);
     }
   }
 
@@ -217,15 +260,15 @@ export function startPolling(): void {
   if (pollingInterval) return;
 
   // Poll immediately, then at interval
-  pollAllRepos().catch(console.error);
+  pollAllRepos().catch((err) => log.error({ err }, "Initial poll failed"));
 
   getConfig().then((config) => {
     if (pollingInterval) return;
     const intervalMs = config.polling.intervalMinutes * 60 * 1000;
     pollingInterval = setInterval(() => {
-      pollAllRepos().catch(console.error);
+      pollAllRepos().catch((err) => log.error({ err }, "Scheduled poll failed"));
     }, intervalMs);
-    console.log(`Polling started (every ${config.polling.intervalMinutes} min)`);
+    log.info(`Polling started (every ${config.polling.intervalMinutes} min)`);
   });
 }
 

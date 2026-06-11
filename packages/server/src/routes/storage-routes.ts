@@ -2,6 +2,9 @@ import { Router } from "express";
 import type { Response } from "express";
 import { authMiddleware, type AuthRequest } from "../middleware/auth-middleware.js";
 import { getUser, saveUser } from "../storage/user-store.js";
+import { childLogger } from "../logger.js";
+const log = childLogger("storage-routes");
+
 
 const MAX_PARTY_SIZE = 6;
 
@@ -18,7 +21,7 @@ storageRoutes.get("/storage", async (req: AuthRequest, res: Response) => {
 
     res.json({ storage: user.storage });
   } catch (err) {
-    console.error("Storage error:", err);
+    log.error({ err }, "Storage error");
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
   }
 });
@@ -54,7 +57,7 @@ storageRoutes.post("/storage/withdraw", async (req: AuthRequest, res: Response) 
     await saveUser(user);
     res.json({ message: "포켓몬을 꺼냈습니다", uid: pokemon.uid });
   } catch (err) {
-    console.error("Withdraw error:", err);
+    log.error({ err }, "Withdraw error");
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
   }
 });
@@ -95,7 +98,7 @@ storageRoutes.post("/storage/deposit", async (req: AuthRequest, res: Response) =
     await saveUser(user);
     res.json({ message: "포켓몬을 맡겼습니다", uid: pokemon.uid });
   } catch (err) {
-    console.error("Deposit error:", err);
+    log.error({ err }, "Deposit error");
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
   }
 });

@@ -4,7 +4,9 @@ import {
   formatTradeLine,
   formatTradeItem,
   formatCandidateLine,
+  describeTradeEvolutions,
   type TradeView,
+  type TradeEvolution,
   type TradePokemonCandidate,
 } from "../logic/trade.js";
 import { DIM, GRN, RED, R, YEL } from "../ui/colors.js";
@@ -31,6 +33,7 @@ type TradeCandidatesResponse = {
 type TradeActionResult = {
   ok: boolean;
   message: string;
+  evolutions?: string[];
 };
 
 async function requestTrade(
@@ -38,10 +41,11 @@ async function requestTrade(
   myPokemonUid?: string,
   targetPokemonUid?: string,
 ): Promise<TradeActionResult> {
-  const targetUserId = await resolveTargetUserId(targetUserQuery);
-  if (!targetUserId) {
-    return { ok: false, message: "Trade target not selected." };
+  const target = await resolveTargetUserId(targetUserQuery);
+  if (!target.ok) {
+    return { ok: false, message: target.error };
   }
+  const targetUserId = target.userId;
 
   const candidatesResponse = await apiGet(`/api/game/trades/candidates/${encodeURIComponent(targetUserId)}`);
   if (!candidatesResponse.ok) {
@@ -49,28 +53,30 @@ async function requestTrade(
   }
 
   const candidates = candidatesResponse.data as TradeCandidatesResponse;
-  const resolvedMyPokemonUid = await chooseTradePokemon(
+  const mine = await chooseTradePokemon(
+    "Your Pokemon",
     `Choose your Pokemon for ${candidates.responder.nickname}`,
     candidates.requester.pokemon,
     myPokemonUid,
   );
-  if (!resolvedMyPokemonUid) {
-    return { ok: false, message: "Your Pokemon was not selected." };
+  if (!mine.ok) {
+    return { ok: false, message: mine.error };
   }
 
-  const resolvedTargetPokemonUid = await chooseTradePokemon(
+  const theirs = await chooseTradePokemon(
+    "Target Pokemon",
     `Choose ${candidates.responder.nickname}'s Pokemon to request`,
     candidates.responder.pokemon,
     targetPokemonUid,
   );
-  if (!resolvedTargetPokemonUid) {
-    return { ok: false, message: "Target Pokemon was not selected." };
+  if (!theirs.ok) {
+    return { ok: false, message: theirs.error };
   }
 
   const response = await apiPost("/api/game/trades/request", {
     targetUserId,
-    myPokemonUid: resolvedMyPokemonUid,
-    targetPokemonUid: resolvedTargetPokemonUid,
+    myPokemonUid: mine.uid,
+    targetPokemonUid: theirs.uid,
   });
 
   if (!response.ok) {
@@ -88,7 +94,11 @@ async function acceptTrade(tradeId: string): Promise<TradeActionResult> {
   }
 
   const trade = response.data.trade as TradeView;
-  return { ok: true, message: `Trade accepted: ${formatTradeLine(trade)}` };
+  const evolutions = describeTradeEvolutions(
+    response.data.responderEvolution as TradeEvolution | undefined,
+    response.data.requesterEvolution as TradeEvolution | undefined,
+  );
+  return { ok: true, message: `Trade accepted: ${formatTradeLine(trade)}`, evolutions };
 }
 
 async function rejectTrade(tradeId: string): Promise<TradeActionResult> {
@@ -208,6 +218,13 @@ export async function tradeCommand() {
             return state;
           }
           const result = await acceptTrade(tradeId);
+          if (result.ok && result.evolutions && result.evolutions.length > 0) {
+            await selectFrame(`${GRN}Trade complete!${R}`, [
+              ...result.evolutions.map((line) => separator(`  ${GRN}${line}${R}`)),
+              separator(" "),
+              { name: "Continue", value: "__ok__" },
+            ]);
+          }
           return { message: { tone: result.ok ? "success" : "error", text: result.message } };
         }
 
@@ -221,6 +238,8 @@ export async function tradeCommand() {
       },
     });
   } catch (error) {
+    // runMenuLoop이 예외로 빠져나오면 커서가 숨겨진 상태로 남을 수 있으므로 복원
+    process.stdout.write("\x1b[?25h");
     console.error(`Error: ${String(error instanceof Error ? error.message : "Failed to load trades")}`);
   }
 }
@@ -243,26 +262,26 @@ export async function tradeSearchCommand(query: string) {
   }
 }
 
-async function resolveTargetUserId(query: string): Promise<string | null> {
+type ResolveResult<T> = { ok: true } & T | { ok: false; error: string };
+
+async function resolveTargetUserId(query: string): Promise<ResolveResult<{ userId: string }>> {
   const response = await apiGet(`/api/user/search?q=${encodeURIComponent(query)}`);
   if (!response.ok) {
-    console.error(`Error: ${response.data.error}`);
-    return null;
+    return { ok: false, error: String(response.data.error) };
   }
 
   const users = (response.data.users ?? []) as TradeUserSearchResult[];
   if (users.length === 0) {
-    console.log("No matching users.");
-    return null;
+    return { ok: false, error: "No matching users." };
   }
 
   if (users.length === 1) {
-    return users[0].id;
+    return { ok: true, userId: users[0].id };
   }
 
   const exact = users.find((user) => user.id === query);
   if (exact) {
-    return exact.id;
+    return { ok: true, userId: exact.id };
   }
 
   const selected = await selectFrame(
@@ -277,33 +296,32 @@ async function resolveTargetUserId(query: string): Promise<string | null> {
   );
 
   if (!selected || selected === "__cancel__") {
-    return null;
+    return { ok: false, error: "Trade target not selected." };
   }
 
-  return selected;
+  return { ok: true, userId: selected };
 }
 
 async function chooseTradePokemon(
+  sideLabel: string,
   message: string,
   candidates: TradePokemonCandidate[],
   requestedUid?: string,
-): Promise<string | null> {
+): Promise<ResolveResult<{ uid: string }>> {
   if (candidates.length === 0) {
-    console.log("No tradeable Pokemon available.");
-    return null;
+    return { ok: false, error: `${sideLabel}: no tradeable Pokemon available.` };
   }
 
   if (requestedUid) {
     const exact = candidates.find((candidate) => candidate.uid === requestedUid);
     if (!exact) {
-      console.log(`Pokemon not found or not tradeable: ${requestedUid}`);
-      return null;
+      return { ok: false, error: `${sideLabel} not found or not tradeable: ${requestedUid}` };
     }
-    return exact.uid;
+    return { ok: true, uid: exact.uid };
   }
 
   if (candidates.length === 1) {
-    return candidates[0].uid;
+    return { ok: true, uid: candidates[0].uid };
   }
 
   const selected = await selectFrame(
@@ -318,10 +336,10 @@ async function chooseTradePokemon(
   );
 
   if (!selected || selected === "__cancel__") {
-    return null;
+    return { ok: false, error: `${sideLabel} was not selected.` };
   }
 
-  return selected;
+  return { ok: true, uid: selected };
 }
 
 export async function tradeRequestCommand(

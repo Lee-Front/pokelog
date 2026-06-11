@@ -7,6 +7,7 @@ import {
   getTradeActions,
   findTradeById,
   parseTradeChoice,
+  describeTradeEvolutions,
   type TradeView,
   type TradePokemonCandidate,
 } from "../../src/logic/trade.js";
@@ -178,5 +179,38 @@ describe("parseTradeChoice", () => {
 
   it("treats empty string as back", () => {
     expect(parseTradeChoice("")).toEqual({ type: "back" });
+  });
+});
+
+describe("describeTradeEvolutions", () => {
+  it("returns no lines when nothing evolved", () => {
+    const lines = describeTradeEvolutions(
+      { evolved: false, fromSpecies: "kadabra", toSpecies: "kadabra" },
+      { evolved: false, fromSpecies: "machoke", toSpecies: "machoke" },
+    );
+    expect(lines).toEqual([]);
+  });
+
+  it("describes the responder evolution before the requester evolution", () => {
+    const lines = describeTradeEvolutions(
+      { evolved: true, fromSpecies: "kadabra", toSpecies: "alakazam" },
+      { evolved: true, fromSpecies: "machoke", toSpecies: "machamp" },
+    );
+    expect(lines).toEqual([
+      "kadabra evolved into alakazam!",
+      "machoke evolved into machamp!",
+    ]);
+  });
+
+  it("includes only the side that evolved", () => {
+    const lines = describeTradeEvolutions(
+      { evolved: true, fromSpecies: "onix", toSpecies: "steelix" },
+      undefined,
+    );
+    expect(lines).toEqual(["onix evolved into steelix!"]);
+  });
+
+  it("handles both sides being undefined", () => {
+    expect(describeTradeEvolutions(undefined, undefined)).toEqual([]);
   });
 });

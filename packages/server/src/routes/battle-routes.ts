@@ -22,6 +22,9 @@ import {
   handleFainted, doWildAttackAndCheck,
   type FaintedResult,
 } from "../game/battle-state.js";
+import { childLogger } from "../logger.js";
+
+const log = childLogger("battle-routes");
 
 export const battleRoutes = Router();
 battleRoutes.use(authMiddleware);
@@ -95,7 +98,7 @@ battleRoutes.post("/start", async (req, res) => {
     await saveUser(user);
     res.json({ battleState });
   } catch (err) {
-    console.error("Battle start error:", err);
+    log.error({ err }, "Battle start error");
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
   }
 });
@@ -434,7 +437,7 @@ battleRoutes.post("/action", async (req, res) => {
       default:       res.status(400).json({ error: "유효하지 않은 행동입니다" });
     }
   } catch (err) {
-    console.error("Battle action error:", err);
+    log.error({ err }, "Battle action error");
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
   }
 });
@@ -450,7 +453,7 @@ battleRoutes.get("/state", async (req, res) => {
 
     res.json({ battleState: user.battleState });
   } catch (err) {
-    console.error("Battle state error:", err);
+    log.error({ err }, "Battle state error");
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
   }
 });

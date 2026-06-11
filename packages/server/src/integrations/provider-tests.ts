@@ -9,6 +9,9 @@ import type {
 import { testRepoAccess } from "../polling/git-client.js";
 import { listNotionPages } from "./notion-client.js";
 import { isGitIntegration } from "../storage/user-store.js";
+import { childLogger } from "../logger.js";
+
+const log = childLogger("provider-tests");
 
 export interface ProviderTestResult {
   ok: boolean;
@@ -55,13 +58,35 @@ function isSlackIntegration(integration: Integration): integration is SlackInteg
 }
 
 async function testGitIntegration(integration: GitIntegration): Promise<ProviderTestResult> {
-  const result = await testRepoAccess(integration.config.repoUrl, integration.config.authMode, integration.config.token);
+  if (integration.config.insecureSkipTls) {
+    log.warn(
+      { integrationId: integration.id },
+      "git integration has insecureSkipTls enabled — TLS verification is disabled; use caCertPath in production",
+    );
+  }
+
+  const result = await testRepoAccess(
+    integration.config.repoUrl,
+    integration.config.authMode,
+    integration.config.token,
+    {
+      caCertPath: integration.config.caCertPath,
+      insecureSkipTls: integration.config.insecureSkipTls,
+    },
+  );
+
+  const warnings: string[] = [];
+  if ((integration.emails ?? []).length === 0) {
+    warnings.push("이 저장소의 모든 작성자 커밋이 집계됩니다.");
+  }
+  if (integration.config.insecureSkipTls) {
+    warnings.push("TLS 검증이 비활성화되어 있습니다(insecureSkipTls). 프로덕션에서는 caCertPath를 사용하세요.");
+  }
+
   return {
     ok: result.ok,
     lastError: result.error,
-    warning: (integration.emails ?? []).length === 0
-      ? "이 저장소의 모든 작성자 커밋이 집계됩니다."
-      : undefined,
+    warning: warnings.length > 0 ? warnings.join(" ") : undefined,
     metadata: { branches: result.branches },
   };
 }

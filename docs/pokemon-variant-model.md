@@ -32,8 +32,10 @@ The variant layer is no longer just reserved data.
 Current runtime behavior:
 
 - regional variant encounters instantiate `variantId`
+- regional variant eggs instantiate `variantId` (egg-eligible variants are added to the egg gacha pool of their base species)
 - wild Pokemon preserve `variantId`, nature, gender, ability, and shiny state
 - captured Pokemon preserve `variantId`
+- hatched Pokemon preserve `variantId`
 - item-based form changes can update `variantId`
 - battle transformations use temporary `battleForm`
 - effective typing now resolves through the variant layer
@@ -85,7 +87,7 @@ Current policy remains:
 - `battle-form` variants are never normal encounter entries
 - `battle-form` variants are never normal egg entries
 - regional variants are normal encounter candidates in their home-region pools
-- regional variants are egg-eligible
+- regional variants are egg-eligible, but only enter an egg tier when their base species is itself a base-stage member of that tier; variant egg weight is scaled to 25% of the base species weight so the standard form stays dominant
 - permanent-form variants remain opt-in and mechanic-driven
 
 ## What Changed From The Older Plan

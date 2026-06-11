@@ -175,6 +175,10 @@ export async function setupTestApp() {
         const req = client.post(url);
         return body ? req.send(body) : req.send();
       },
+      put: (url: string, body?: Record<string, unknown>) => {
+        const req = client.put(url);
+        return body ? req.send(body) : req.send();
+      },
       delete: (url: string, body?: Record<string, unknown>) => {
         const req = client.delete(url);
         return body ? req.send(body) : req.send();

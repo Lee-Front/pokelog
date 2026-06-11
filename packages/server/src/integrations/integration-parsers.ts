@@ -59,6 +59,9 @@ async function parseGitIntegrationInput(
     }
   }
 
+  const caCertPath = typeof config.caCertPath === "string" ? config.caCertPath.trim() : "";
+  const insecureSkipTls = config.insecureSkipTls === true;
+
   const normalizedRepoUrl = normalizeRepoUrl(repoUrl);
   const integration: GitIntegration = {
     id: existingId ?? crypto.randomUUID(),
@@ -68,6 +71,8 @@ async function parseGitIntegrationInput(
       repoUrl: normalizedRepoUrl,
       authMode: String(config.authMode ?? "public") as "public" | "token",
       token: typeof config.token === "string" ? config.token : undefined,
+      ...(caCertPath ? { caCertPath } : {}),
+      ...(insecureSkipTls ? { insecureSkipTls: true } : {}),
     },
     emails,
     status: String(body.status ?? "untested") as GitIntegration["status"],

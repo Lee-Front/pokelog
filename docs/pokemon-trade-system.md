@@ -1,6 +1,6 @@
 # Pokemon Trade System
 
-Updated: 2026-04-14
+Updated: 2026-06-11
 
 ## Purpose
 
@@ -77,6 +77,8 @@ Interactive behavior:
 - pending trades can be selected from the trade list
 - action prompts use the shared frame renderer
 - new trade requests can resolve target user and Pokemon candidates interactively
+- target/candidate resolution failures surface as framed status messages instead of raw console output, so the single-frame redraw is never broken
+- when an accepted trade triggers a trade evolution, the CLI shows a framed "Trade complete!" screen listing each `from -> to` evolution before returning to the trade menu
 
 ## Targeting Rule
 
@@ -130,6 +132,7 @@ Current implementation:
 
 - Pokemon detail diagnostics still mark trade evolution as deferred because another user is required
 - actual trade acceptance resolves trade-trigger branches directly
+- the accept route returns `requesterEvolution` and `responderEvolution` results, and the CLI surfaces them to the accepting player as a framed completion screen
 
 Supported families:
 
@@ -165,8 +168,12 @@ Current code already has an interactive framed trade menu, archived resolved tra
 Still missing:
 
 - richer negotiation than single-Pokemon-for-single-Pokemon
-- fully unified framed subflows for every deeper trade prompt
 - broader integration of trade flow into other full-screen controllers
+
+Recently closed:
+
+- deeper trade prompts (target/candidate resolution) now stay inside the framed runtime instead of dropping to raw console output
+- trade-trigger evolution results are now shown to the accepting player in the CLI
 
 ## Next Work
 

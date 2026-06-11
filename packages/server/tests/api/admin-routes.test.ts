@@ -114,4 +114,47 @@ describe("admin routes", () => {
     expect(pikachu).toBeDefined();
     expect(pikachu.level).toBe(10);
   });
+
+  it("ships conservative reward defaults (DEFAULT_CONFIG)", async () => {
+    // Asserted against DEFAULT_CONFIG directly; the test harness writes its own
+    // config.json so the live /config merges test overrides on top.
+    const { DEFAULT_CONFIG } = await import("../../src/storage/config-store.js");
+    expect(DEFAULT_CONFIG.rewards.pointsPerByte).toBe(0.01);
+    expect(DEFAULT_CONFIG.rewards.expPerByte).toBe(0.05);
+    expect(DEFAULT_CONFIG.rewards.combo.maxMultiplier).toBe(1.5);
+    expect(DEFAULT_CONFIG.rewards.combo.multipliers).toEqual([1, 1.2, 1.5]);
+  });
+
+  it("allows runtime tuning of the combo multipliers curve", async () => {
+    const res = await t.admin().put("/api/admin/config", {
+      key: "rewards.combo.multipliers",
+      value: [1, 1.3, 1.8, 2.5],
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+
+    const config = await t.admin().get("/api/admin/config");
+    expect(config.body.rewards.combo.multipliers).toEqual([1, 1.3, 1.8, 2.5]);
+  });
+
+  it("rejects a malformed combo multipliers value", async () => {
+    for (const bad of [[], "nope", [1, -2], [1, "x"], [1, 0]]) {
+      const res = await t.admin().put("/api/admin/config", {
+        key: "rewards.combo.multipliers",
+        value: bad as unknown,
+      });
+      expect(res.status).toBe(400);
+    }
+  });
+
+  it("allows runtime tuning of pointsPerByte and maxMultiplier", async () => {
+    const a = await t.admin().put("/api/admin/config", { key: "rewards.pointsPerByte", value: 0.02 });
+    expect(a.status).toBe(200);
+    const b = await t.admin().put("/api/admin/config", { key: "rewards.combo.maxMultiplier", value: 2.0 });
+    expect(b.status).toBe(200);
+
+    const config = await t.admin().get("/api/admin/config");
+    expect(config.body.rewards.pointsPerByte).toBe(0.02);
+    expect(config.body.rewards.combo.maxMultiplier).toBe(2.0);
+  });
 });

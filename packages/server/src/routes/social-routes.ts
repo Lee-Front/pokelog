@@ -1,5 +1,8 @@
 import { Router } from "express";
 import { getAllUsers } from "../storage/user-store.js";
+import { childLogger } from "../logger.js";
+const log = childLogger("social-routes");
+
 
 export const socialRoutes = Router();
 
@@ -35,7 +38,7 @@ socialRoutes.get("/ranking", async (req, res) => {
 
     res.json({ ranking: ranked });
   } catch (err) {
-    console.error("Ranking error:", err);
+    log.error({ err }, "Ranking error");
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
   }
 });
@@ -61,7 +64,7 @@ socialRoutes.get("/profile/:nickname", async (req, res) => {
       topLevel: user.pokemon.reduce((max, p) => Math.max(max, p.level), 0),
     });
   } catch (err) {
-    console.error("Public profile error:", err);
+    log.error({ err }, "Public profile error");
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
   }
 });

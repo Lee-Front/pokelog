@@ -8,6 +8,8 @@ import {
   getNewCommits,
   getCommitByteChanges,
   getLatestHash,
+  resolveRepoUrl,
+  testRepoAccess,
 } from "./git-client.js";
 
 const exec = promisify(execFile);
@@ -102,4 +104,33 @@ describe("git-client", () => {
     const hash = await getLatestHash(repoDir, "nonexistent-branch");
     expect(hash).toBeNull();
   });
+});
+
+describe("resolveRepoUrl — port preservation (complements git-client-security.test)", () => {
+  it("preserves a non-default port and path when injecting credentials", () => {
+    // On-prem GitLab often runs on a custom HTTPS port; the injected userinfo
+    // must not disturb host:port/path.
+    const url = resolveRepoUrl(
+      "https://gitlab.internal.corp:8443/team/repo.git",
+      "token",
+      "secret-token",
+    );
+    expect(url).toBe(
+      "https://oauth2:secret-token@gitlab.internal.corp:8443/team/repo.git",
+    );
+  });
+});
+
+describe("testRepoAccess — token never leaks through the real error path", () => {
+  it("redacts the token from the error returned for an unreachable host", async () => {
+    // Pure redactUrlCredentials is unit-tested elsewhere; this exercises the
+    // full testRepoAccess -> runGit -> error path against a real git failure.
+    const result = await testRepoAccess(
+      "https://gitlab.invalid.localhost.test/group/project.git",
+      "token",
+      "glpat-MUSTNOTLEAK",
+    );
+    expect(result.ok).toBe(false);
+    expect(result.error ?? "").not.toContain("glpat-MUSTNOTLEAK");
+  }, 30000);
 });

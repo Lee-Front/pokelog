@@ -3,6 +3,9 @@ import type { Response } from "express";
 import { authMiddleware, type AuthRequest } from "../middleware/auth-middleware.js";
 import { getUser, saveUser } from "../storage/user-store.js";
 import { createEgg, getEggTierSummaries, hatchEgg } from "../game/egg-gacha.js";
+import { childLogger } from "../logger.js";
+const log = childLogger("egg-routes");
+
 
 const MAX_PARTY_SIZE = 6;
 
@@ -23,7 +26,7 @@ eggRoutes.get("/eggs", async (req: AuthRequest, res: Response) => {
       eggs: user.eggs,
     });
   } catch (err) {
-    console.error("Egg overview error:", err);
+    log.error({ err }, "Egg overview error");
     res.status(500).json({ error: "알 정보를 불러오지 못했습니다" });
   }
 });
@@ -59,7 +62,7 @@ eggRoutes.post("/eggs/buy", async (req: AuthRequest, res: Response) => {
       remainingPoints: user.points,
     });
   } catch (err) {
-    console.error("Egg buy error:", err);
+    log.error({ err }, "Egg buy error");
     res.status(500).json({ error: "알 구매 중 오류가 발생했습니다" });
   }
 });
@@ -107,7 +110,7 @@ eggRoutes.post("/eggs/hatch", async (req: AuthRequest, res: Response) => {
       destination,
     });
   } catch (err) {
-    console.error("Egg hatch error:", err);
+    log.error({ err }, "Egg hatch error");
     res.status(500).json({ error: "알 부화 중 오류가 발생했습니다" });
   }
 });
@@ -158,7 +161,7 @@ eggRoutes.post("/eggs/pull", async (req: AuthRequest, res: Response) => {
       remainingPoints: user.points,
     });
   } catch (err) {
-    console.error("Egg pull error:", err);
+    log.error({ err }, "Egg pull error");
     res.status(500).json({ error: "뽑기 중 오류가 발생했습니다" });
   }
 });
