@@ -4,6 +4,7 @@ import { fetchArt, fetchBallArt, renderHpBar, sideBySide, stripAnsi } from "../u
 import { redraw, clearScreen } from "../ui/screen.js";
 import { enterRaw, waitKey } from "../ui/raw-mode.js";
 import { visualWidth, padRight, artToLines, mergeSideBySide } from "../ui/text.js";
+import { pushBattleOutcome, type BattleResult } from "../logic/battle.js";
 
 // ── stdin 유틸 ──────────────────────────────────────────────────
 function sleep(ms: number): Promise<void> {
@@ -90,7 +91,7 @@ async function playBallThrowAnimation(
   }
 
   const result = await catchResultPromise;
-  const r = result.data as { result?: string; battleOver?: boolean };
+  const r = result.data as { result?: string };
 
   if (r.result === "caught") {
     draw(tintArt(padded, "\x1b[32m"));
@@ -129,18 +130,6 @@ const BALL_ART_KEY: Record<string, string> = {
 };
 
 type Move = { id: string; name?: string; pp: number; maxPp: number };
-
-interface BattleResult {
-  battleOver: boolean;
-  result?: string;
-  log?: string[];
-  caught?: boolean;
-  missed?: boolean;
-  effectiveness?: number;
-  message?: string;
-  rewards?: { exp: number; points: number };
-  [key: string]: unknown;
-}
 
 type PartyMon = { uid: string; species: string; level: number; hp: number; maxHp: number };
 
@@ -625,10 +614,7 @@ export async function encounterCommand(
           const r = runRes.data as BattleResult;
           if (r.message) battleLog.push(r.message);
           if (Array.isArray(r.log)) for (const m of r.log as string[]) battleLog.push(m);
-          if (r.battleOver) {
-            battleOver = true;
-            battleLog.push("도망쳤다!");
-          }
+          if (pushBattleOutcome(r, battleLog)) battleOver = true;
           // 파티 HP 갱신
           await refreshPartyHp();
           stateStale = true;
@@ -669,12 +655,7 @@ export async function encounterCommand(
         const r   = res.data as BattleResult;
         if (r.message) battleLog.push(r.message);
         if (Array.isArray(r.log)) for (const m of r.log as string[]) battleLog.push(m);
-        if (r.battleOver) {
-          battleOver = true;
-          if (r.result === "victory") battleLog.push(`${GRN}전투 승리!${R}`);
-          else if (r.result === "defeat") battleLog.push(`${RED}전투 패배...${R}`);
-        }
-        if (r.rewards) battleLog.push(`보상: EXP +${r.rewards.exp}, ${r.rewards.points}P`);
+        if (pushBattleOutcome(r, battleLog)) battleOver = true;
 
         await refreshPartyHp();
         stateStale = true;
@@ -724,14 +705,7 @@ export async function encounterCommand(
           const r = catchResult.data as BattleResult;
           if (r.message) battleLog.push(r.message);
           if (Array.isArray(r.log)) for (const m of r.log as string[]) battleLog.push(m);
-          if (r.caught) battleLog.push(`${YEL}포획 성공!${R}`);
-          if (r.battleOver) {
-            battleOver = true;
-            if (r.result === "caught") battleLog.push(`${YEL}포켓몬을 잡았다!${R}`);
-            else if (r.result === "victory") battleLog.push(`${GRN}전투 승리!${R}`);
-            else if (r.result === "defeat")  battleLog.push(`${RED}전투 패배...${R}`);
-          }
-          if (r.rewards) battleLog.push(`보상: EXP +${r.rewards.exp}, ${r.rewards.points}P`);
+          if (pushBattleOutcome(r, battleLog)) battleOver = true;
 
           await refreshPartyHp();
           inventory[itemKey] = Math.max(0, (inventory[itemKey] ?? 1) - 1);
@@ -748,12 +722,7 @@ export async function encounterCommand(
           const r = res.data as BattleResult;
           if (r.message) battleLog.push(r.message);
           if (Array.isArray(r.log)) for (const m of r.log as string[]) battleLog.push(m);
-          if (r.battleOver) {
-            battleOver = true;
-            if (r.result === "victory") battleLog.push(`${GRN}전투 승리!${R}`);
-            else if (r.result === "defeat") battleLog.push(`${RED}전투 패배...${R}`);
-          }
-          if (r.rewards) battleLog.push(`보상: EXP +${r.rewards.exp}, ${r.rewards.points}P`);
+          if (pushBattleOutcome(r, battleLog)) battleOver = true;
 
           await refreshPartyHp();
           inventory[itemKey] = Math.max(0, (inventory[itemKey] ?? 1) - 1);
@@ -800,11 +769,7 @@ export async function encounterCommand(
         const r = res.data as BattleResult;
         if (r.message) battleLog.push(r.message);
         if (Array.isArray(r.log)) for (const m of r.log as string[]) battleLog.push(m);
-        if (r.battleOver) {
-          battleOver = true;
-          if (r.result === "victory") battleLog.push(`${GRN}전투 승리!${R}`);
-          else if (r.result === "defeat") battleLog.push(`${RED}전투 패배...${R}`);
-        }
+        if (pushBattleOutcome(r, battleLog)) battleOver = true;
 
         await refreshPartyHp();
         partyForced     = false;

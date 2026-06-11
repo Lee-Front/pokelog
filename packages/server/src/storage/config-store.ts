@@ -98,6 +98,29 @@ export const DEFAULT_CONFIG: ServerConfig = {
       ...DEFAULT_HELD_EVOLUTION_SHOP_ITEMS,
     },
   },
+  // Conservative wild-battle reward defaults (match the cautious points/combo
+  // launch tuning). Operators raise these via PUT /api/admin/config over time.
+  // Drop-table and battleShop item ids are real data/items/items.json ids.
+  battle: {
+    expMultiplier: 1.0,
+    moneyPerLevel: 2,
+    moneyBase: 3,
+    dropTable: [
+      { item: "potion", chance: 0.08, min: 1, max: 1 },
+      { item: "super-potion", chance: 0.03, min: 1, max: 1 },
+      { item: "poke-ball", chance: 0.05, min: 1, max: 1 },
+      { item: "great-ball", chance: 0.015, min: 1, max: 1 },
+    ],
+  },
+  battleShop: {
+    items: {
+      "super-potion": { name: "Super Potion", price: 30, healAmount: 50 },
+      "hyper-potion": { name: "Hyper Potion", price: 60, healAmount: 120 },
+      "great-ball": { name: "Great Ball", price: 25, catchBonus: 0.2 },
+      "ultra-ball": { name: "Ultra Ball", price: 70, catchBonus: 0.35 },
+      "fire-stone": { name: "Fire Stone", price: 200 },
+    },
+  },
 };
 
 export async function getConfig(): Promise<ServerConfig> {
@@ -145,6 +168,19 @@ export async function getConfig(): Promise<ServerConfig> {
       items: {
         ...DEFAULT_CONFIG.shop.items,
         ...config.shop?.items,
+      },
+    },
+    battle: {
+      ...DEFAULT_CONFIG.battle,
+      ...config.battle,
+      dropTable: config.battle?.dropTable ?? DEFAULT_CONFIG.battle.dropTable,
+    },
+    battleShop: {
+      ...DEFAULT_CONFIG.battleShop,
+      ...config.battleShop,
+      items: {
+        ...DEFAULT_CONFIG.battleShop.items,
+        ...config.battleShop?.items,
       },
     },
   };

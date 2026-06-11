@@ -10,6 +10,7 @@ import { getMoveById } from "../game/data-loader.js";
 import type { BattleState, MoveData, OwnedPokemon, UserData } from "../../../../shared/types.js";
 import { decrementItem, healPokemon } from "../game/inventory-utils.js";
 import { recordMoveUsage } from "../game/move-usage.js";
+import { grantBattleRewards } from "../game/battle-rewards.js";
 import { checkTurnForm } from "../game/battle-forms.js";
 import {
   checkPrimalReversion, canMegaEvolve, canGigantamax,
@@ -31,6 +32,36 @@ battleRoutes.use(authMiddleware);
 
 function sendFaintedResponse(res: Response, result: FaintedResult): void {
   res.json({ log: result.log, battleState: result.battleState, result: result.result });
+}
+
+/**
+ * Finalize a wild-battle win: clear the encounter/battle state, grant rewards to
+ * the winning Pokemon and the user, persist, and respond with the reward
+ * summary. Called from each win exit in handleFight.
+ */
+async function finishWin(
+  user: UserData, winner: OwnedPokemon, battle: BattleState, log: string[], res: Response,
+): Promise<void> {
+  log.push(`야생 ${battle.wild.species}이(가) 쓰러졌다!`);
+  const config = await getConfig();
+  const wild = { species: battle.wild.species, level: battle.wild.level };
+
+  user.pendingEvents = user.pendingEvents.filter((e) => e.id !== battle.eventId);
+  revertBattleForms(battle, winner);
+  user.battleState = null;
+
+  const rewards = grantBattleRewards(user, winner, wild, config.battle);
+
+  if (rewards.exp > 0) log.push(`${winner.species}은(는) ${rewards.exp} 경험치를 얻었다!`);
+  if (rewards.leveledUp) log.push(`${winner.species}은(는) 레벨 ${rewards.newLevel}이(가) 되었다!`);
+  if (rewards.evolvedInto) log.push(`${winner.species}(으)로 진화했다!`);
+  if (rewards.battleMoney > 0) log.push(`배틀머니 ${rewards.battleMoney}을(를) 획득했다!`);
+  for (const drop of rewards.droppedItems) {
+    log.push(`${drop.item} ${drop.qty}개를 주웠다!`);
+  }
+
+  await saveUser(user);
+  res.json({ log, battleState: null, result: "win", rewards });
 }
 
 battleRoutes.post("/start", async (req, res) => {
@@ -201,12 +232,7 @@ async function handleFight(
       recordMoveUsage(myPokemon, selectedMove.id);
       const attackResult = executePlayerAttack(battle, myPokemon, selectedMoveData, selectedMove, log);
       if (battle.wild.hp <= 0) {
-        log.push(`야생 ${battle.wild.species}이(가) 쓰러졌다!`);
-        user.pendingEvents = user.pendingEvents.filter((e) => e.id !== battle.eventId);
-        revertBattleForms(battle, myPokemon);
-        user.battleState = null;
-        await saveUser(user);
-        res.json({ log, battleState: null, result: "win" });
+        await finishWin(user, myPokemon, battle, log, res);
         return;
       }
       if (attackResult.flinchCaused) {
@@ -226,12 +252,7 @@ async function handleFight(
       recordMoveUsage(myPokemon, selectedMove.id);
       executePlayerAttack(battle, myPokemon, selectedMoveData, selectedMove, log);
       if (battle.wild.hp <= 0) {
-        log.push(`야생 ${battle.wild.species}이(가) 쓰러졌다!`);
-        user.pendingEvents = user.pendingEvents.filter((e) => e.id !== battle.eventId);
-        revertBattleForms(battle, myPokemon);
-        user.battleState = null;
-        await saveUser(user);
-        res.json({ log, battleState: null, result: "win" });
+        await finishWin(user, myPokemon, battle, log, res);
         return;
       }
     }
@@ -247,12 +268,7 @@ async function handleFight(
     if (faintResult) { sendFaintedResponse(res, faintResult); return; }
   }
   if (battle.wild.hp <= 0) {
-    log.push(`야생 ${battle.wild.species}이(가) 쓰러졌다!`);
-    user.pendingEvents = user.pendingEvents.filter((e) => e.id !== battle.eventId);
-    revertBattleForms(battle, myPokemon);
-    user.battleState = null;
-    await saveUser(user);
-    res.json({ log, battleState: null, result: "win" });
+    await finishWin(user, myPokemon, battle, log, res);
     return;
   }
 

@@ -239,6 +239,25 @@ export interface BattleState {
   playerPreTransformMaxHp?: number;
 }
 
+export interface BattleDroppedItem {
+  item: string;
+  qty: number;
+}
+
+/**
+ * Rewards granted on a wild-battle win. Attached as `rewards` on the battle
+ * action response when `result === "win"`. Consumed by the CLI and web client
+ * to show the post-battle reward summary.
+ */
+export interface BattleRewards {
+  exp: number;
+  battleMoney: number;
+  droppedItems: BattleDroppedItem[];
+  leveledUp?: boolean;
+  newLevel?: number;
+  evolvedInto?: string | null;
+}
+
 export interface LogEntry {
   type: string;
   timestamp: string;
@@ -249,6 +268,10 @@ export interface UserData {
   account: UserAccount;
   currentRegion?: string;
   points: number;
+  // Battle-shop currency, earned from winning wild battles. Kept separate from
+  // `points` (commit-earned). Lives at the top level for now; the planned
+  // UserData split (#7) will move it into the GameProgress sub-type.
+  battleMoney: number;
   totalExp: number;
   combo: UserCombo;
   encounterCeiling: EncounterCeiling;
@@ -289,6 +312,23 @@ export interface ShopItem {
   catchBonus?: number;
   healAmount?: number;
   guaranteedCatch?: boolean;
+}
+
+export interface BattleDropEntry {
+  item: string;
+  chance: number;
+  min?: number;
+  max?: number;
+}
+
+export interface BattleRewardConfig {
+  // EXP = floor(baseExpYield * wildLevel / 7) * expMultiplier (main-series yield)
+  expMultiplier: number;
+  // battleMoney = floor(wildLevel * moneyPerLevel) + moneyBase
+  moneyPerLevel: number;
+  moneyBase: number;
+  // Single weighted roll across the table; total chance < 1 means "no drop".
+  dropTable: BattleDropEntry[];
 }
 
 export interface IntegrationRewardRule {
@@ -346,6 +386,10 @@ export interface ServerConfig {
     integrations: IntegrationRewardRules;
   };
   shop: {
+    items: Record<string, ShopItem>;
+  };
+  battle: BattleRewardConfig;
+  battleShop: {
     items: Record<string, ShopItem>;
   };
 }

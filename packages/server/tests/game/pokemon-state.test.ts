@@ -22,6 +22,7 @@ function makeUser(overrides: Partial<UserData> = {}): UserData {
   return {
     account: { id: "test", username: "tester", createdAt: "2026-01-01" },
     points: 0,
+    battleMoney: 0,
     totalExp: 0,
     combo: { current: 0, maxMultiplier: 1, lastCommitAt: null },
     encounterCeiling: { current: 100, lastResetDate: "2026-01-01" },

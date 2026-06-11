@@ -173,6 +173,7 @@ function normalizeUserData(user: UserData): UserData {
   return {
     ...user,
     currentRegion: user.currentRegion ?? "default",
+    battleMoney: user.battleMoney ?? 0,
     pokemon: Array.isArray(user.pokemon) ? user.pokemon.map(normalizeOwnedPokemon) : [],
     storage: Array.isArray(user.storage) ? user.storage.map(normalizeOwnedPokemon) : [],
     eggs: Array.isArray(user.eggs) ? user.eggs : [],

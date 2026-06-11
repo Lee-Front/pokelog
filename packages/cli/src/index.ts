@@ -19,6 +19,7 @@ import { rankingCommand } from "./commands/ranking.js";
 import { regionCommand } from "./commands/region.js";
 import { serversCommand } from "./commands/servers.js";
 import { shopCommand, buyCommand } from "./commands/shop.js";
+import { battleShopCommand, battleBuyCommand } from "./commands/battle-shop.js";
 import { statusCommand } from "./commands/status.js";
 import { storageCommand, withdrawCommand, depositCommand } from "./commands/storage.js";
 import {
@@ -87,6 +88,8 @@ if (process.argv.length <= 2) {
 
   program.command("shop").description("shop").action(shopCommand);
   program.command("buy <item> [quantity]").description("buy item").action((item, qty) => buyCommand(item, parseInt(qty || "1", 10)));
+  program.command("battle-shop").description("battle money shop").action(battleShopCommand);
+  program.command("battle-buy <item> [quantity]").description("buy item with battle money").action((item, qty) => battleBuyCommand(item, parseInt(qty || "1", 10)));
   program.command("use-item <item> <pokemonUid>").description("use item").action(useItemCommand);
 
   program.command("ranking").description("show ranking").option("--by <criteria>", "ranking field", "exp").action((opts) => rankingCommand(opts.by));

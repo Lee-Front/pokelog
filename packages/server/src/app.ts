@@ -13,6 +13,7 @@ import { evolutionRoutes } from "./routes/evolution-routes.js";
 import { itemRoutes } from "./routes/item-routes.js";
 import { storageRoutes } from "./routes/storage-routes.js";
 import { shopRoutes } from "./routes/shop-routes.js";
+import { battleShopRoutes } from "./routes/battle-shop-routes.js";
 import { battleRoutes } from "./routes/battle-routes.js";
 import { socialRoutes } from "./routes/social-routes.js";
 import { adminRoutes } from "./routes/admin-routes.js";
@@ -89,6 +90,7 @@ export function createApp() {
     app.use(`${prefix}/game`, itemRoutes);
     app.use(`${prefix}/game`, storageRoutes);
     app.use(`${prefix}/shop`, gameRateLimiter, shopRoutes);
+    app.use(`${prefix}/battle-shop`, gameRateLimiter, battleShopRoutes);
     app.use(`${prefix}/battle`, gameRateLimiter, battleRoutes);
     app.use(`${prefix}/social`, gameRateLimiter, socialRoutes);
     app.use(`${prefix}/admin`, adminRoutes);

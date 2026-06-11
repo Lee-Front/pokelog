@@ -24,6 +24,7 @@ function createUser(id: string, nickname: string, pokemon: OwnedPokemon): UserDa
     },
     currentRegion: "default",
     points: 0,
+    battleMoney: 0,
     totalExp: 0,
     combo: { count: 0, lastCommitAt: null },
     encounterCeiling: { accumulatedBytes: 0 },

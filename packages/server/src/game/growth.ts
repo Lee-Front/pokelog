@@ -26,6 +26,73 @@ export function getExpForLevel(level: number): number {
   return level ** 3;
 }
 
+export interface ApplyExpResult {
+  leveled: boolean;
+  newLevel: number;
+  learnedMoves: string[];
+  /** Single matching evolution branch that was applied immediately. */
+  evolvedBranch: EvolutionBranch | null;
+  /** Multiple matching branches that require a pending player choice. */
+  pendingBranches: EvolutionBranch[];
+}
+
+/**
+ * Apply EXP to a single Pokemon and resolve all downstream growth effects:
+ * level-up, learned moves, stat recalculation, and evolution branch matching.
+ * Mutates `pokemon` in place. Evolution side effects that touch the owning user
+ * (pokedex updates, queuing a pending-evolution choice) are returned to the
+ * caller rather than applied here, so this stays free of user/storage deps.
+ *
+ * Shared by the commit reward path and the battle reward path.
+ */
+export function applyExpToPokemon(
+  pokemon: OwnedPokemon,
+  exp: number,
+  context: { party: OwnedPokemon[]; now?: Date; region?: string },
+): ApplyExpResult {
+  const result: ApplyExpResult = {
+    leveled: false,
+    newLevel: pokemon.level,
+    learnedMoves: [],
+    evolvedBranch: null,
+    pendingBranches: [],
+  };
+
+  if (exp <= 0) return result;
+
+  pokemon.exp += exp;
+  const levelUp = checkLevelUp(pokemon);
+  if (!levelUp.leveled) return result;
+
+  pokemon.level = levelUp.newLevel;
+  result.leveled = true;
+  result.newLevel = levelUp.newLevel;
+  result.learnedMoves = applyLearnedMoves(pokemon, levelUp.newMoves);
+
+  const newStats = calculateStatsForLevel(pokemon.species, levelUp.newLevel, pokemon.nature);
+  pokemon.maxHp = newStats.maxHp;
+  pokemon.hp = Math.min(pokemon.hp, pokemon.maxHp);
+  pokemon.stats = newStats.stats;
+
+  const matchingBranches = getMatchingEvolutionBranches(pokemon.species, {
+    level: levelUp.newLevel,
+    ...buildLevelEvolutionContext(pokemon, context.party, {
+      now: context.now,
+      region: context.region,
+    }),
+  });
+
+  if (matchingBranches.length === 1) {
+    const branch = matchingBranches[0];
+    evolvePokemon(pokemon, branch.targetSpecies, branch.targetVariantId);
+    result.evolvedBranch = branch;
+  } else if (matchingBranches.length > 1) {
+    result.pendingBranches = matchingBranches;
+  }
+
+  return result;
+}
+
 export function checkLevelUp(pokemon: OwnedPokemon): {
   leveled: boolean;
   newLevel: number;

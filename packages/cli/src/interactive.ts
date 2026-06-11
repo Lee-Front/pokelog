@@ -16,6 +16,7 @@ import { rankingCommand } from "./commands/ranking.js";
 import { regionCommand } from "./commands/region.js";
 import { serversCommand } from "./commands/servers.js";
 import { shopCommand } from "./commands/shop.js";
+import { battleShopCommand } from "./commands/battle-shop.js";
 import { statusCommand } from "./commands/status.js";
 import { storageCommand } from "./commands/storage.js";
 import { tradeCommand } from "./commands/trade.js";
@@ -67,6 +68,7 @@ const MENU_TREE: MenuNode[] = [
     label: "상점", desc: "상점 / 뽑기", auth: true, server: true,
     children: [
       { label: "상점", cmd: "shop", desc: "아이템 구매" },
+      { label: "배틀 상점", cmd: "battle-shop", desc: "배틀머니로 구매" },
       { label: "뽑기", cmd: "egg",  desc: "포켓몬 가챠" },
     ],
   },
@@ -241,6 +243,7 @@ async function executeCommand(cmd: string): Promise<"continue" | "quit"> {
     case "heal":       await healCommand(); break;
     case "egg":        await eggCommand(); break;
     case "shop":       await shopCommand(); break;
+    case "battle-shop": await battleShopCommand(); break;
     case "storage":    await storageCommand(); break;
     case "ranking":    await rankingCommand("exp"); break;
     case "history":    await historyCommand(); break;
