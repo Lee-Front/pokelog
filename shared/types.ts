@@ -654,3 +654,25 @@ export const MAX_PARTY_SIZE = 6;
 export const MAX_MOVES = 4;
 export const MAX_LOG_ENTRIES = 200;
 export const MAX_LEVEL = 100;
+
+// === System Activity Log ===
+// 모든 사용자의 시스템 활동을 영속 기록(JSONL)해 운영자가 에러 원인을 추적한다.
+// type은 문자열로 확장 가능 — 전투/포인트 외에도 점진적으로 늘릴 수 있다.
+export type EventLogType =
+  | "battle_start"
+  | "battle_end"
+  | "point_gain"
+  | (string & {});
+
+export interface EventLogEntry {
+  /** 랜덤 식별자 (조회 결과의 안정적 key) */
+  id: string;
+  /** 기록 시각 (ISO 8601) */
+  timestamp: string;
+  /** 이벤트 종류 */
+  type: EventLogType;
+  /** 대상 사용자 계정 id (시스템 이벤트면 생략) */
+  userId?: string;
+  /** 이벤트별 상세 — 자유 형식 JSON */
+  detail?: Record<string, unknown>;
+}

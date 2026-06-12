@@ -23,14 +23,38 @@ import {
   handleFainted, doWildAttackAndCheck,
   type FaintedResult,
 } from "../game/battle-state.js";
+import { appendEvent } from "../storage/event-log.js";
 import { childLogger } from "../logger.js";
 
 const log = childLogger("battle-routes");
 
+/** 시스템 활동 로그: 전투 종료 기록 (result + 야생 종/레벨 + 턴 수). */
+function logBattleEnd(
+  userId: string,
+  battle: BattleState,
+  result: "win" | "lose" | "caught" | "run",
+): void {
+  // 로깅 실패가 전투 응답을 막지 않도록 await하지 않고 띄운다(appendEvent가 내부에서 흡수).
+  void appendEvent({
+    type: "battle_end",
+    userId,
+    detail: {
+      result,
+      wildSpecies: battle.wild.species,
+      wildLevel: battle.wild.level,
+      turns: battle.turn,
+    },
+  });
+}
+
 export const battleRoutes = Router();
 battleRoutes.use(authMiddleware);
 
-function sendFaintedResponse(res: Response, result: FaintedResult): void {
+function sendFaintedResponse(
+  res: Response, result: FaintedResult, userId: string, battle: BattleState,
+): void {
+  // "lose"만 전투 종료 — "fainted"는 강제 교체로 전투가 계속된다.
+  if (result.result === "lose") logBattleEnd(userId, battle, "lose");
   res.json({ log: result.log, battleState: result.battleState, result: result.result });
 }
 
@@ -61,6 +85,7 @@ async function finishWin(
   }
 
   await saveUser(user);
+  logBattleEnd(user.account.id, battle, "win");
   res.json({ log, battleState: null, result: "win", rewards });
 }
 
@@ -127,6 +152,18 @@ battleRoutes.post("/start", async (req, res) => {
 
     user.battleState = battleState;
     await saveUser(user);
+    void appendEvent({
+      type: "battle_start",
+      userId: user.account.id,
+      detail: {
+        eventId,
+        wildSpecies: battleState.wild.species,
+        wildLevel: battleState.wild.level,
+        myPokemonUid: pokemonUid,
+        mySpecies: pokemon.species,
+        myLevel: pokemon.level,
+      },
+    });
     res.json({ battleState });
   } catch (err) {
     log.error({ err }, "Battle start error");
@@ -209,7 +246,7 @@ async function handleFight(
     myPokemon.hp = Math.max(0, myPokemon.hp - preAttack.selfDamage);
     log.push(`${myPokemon.species}이(가) ${preAttack.selfDamage} 데미지를 받았다!`);
     const faintResult = await handleFainted(user, myPokemon, battle, log);
-    if (faintResult) { sendFaintedResponse(res, faintResult); return; }
+    if (faintResult) { sendFaintedResponse(res, faintResult, user.account.id, battle); return; }
   }
 
   // Determine turn order (paralysis speed halving + stat stages applied inside)
@@ -239,15 +276,15 @@ async function handleFight(
         log.push(`야생 ${battle.wild.species}은(는) 풀이 죽어 움직이지 못했다!`);
       } else {
         const wildResult = await doWildAttackAndCheck(user, myPokemon, battle, log, wildChosenMove ?? undefined);
-        if (wildResult) { sendFaintedResponse(res, wildResult); return; }
+        if (wildResult) { sendFaintedResponse(res, wildResult, user.account.id, battle); return; }
       }
     } else {
       const wildResult = await doWildAttackAndCheck(user, myPokemon, battle, log, wildChosenMove ?? undefined);
-      if (wildResult) { sendFaintedResponse(res, wildResult); return; }
+      if (wildResult) { sendFaintedResponse(res, wildResult, user.account.id, battle); return; }
     }
   } else {
     const wildResult = await doWildAttackAndCheck(user, myPokemon, battle, log, wildChosenMove ?? undefined);
-    if (wildResult) { sendFaintedResponse(res, wildResult); return; }
+    if (wildResult) { sendFaintedResponse(res, wildResult, user.account.id, battle); return; }
     if (playerCanAct) {
       recordMoveUsage(myPokemon, selectedMove.id);
       executePlayerAttack(battle, myPokemon, selectedMoveData, selectedMove, log);
@@ -265,7 +302,7 @@ async function handleFight(
   // Check if end-of-turn damage KO'd anyone
   if (myPokemon.hp <= 0) {
     const faintResult = await handleFainted(user, myPokemon, battle, log);
-    if (faintResult) { sendFaintedResponse(res, faintResult); return; }
+    if (faintResult) { sendFaintedResponse(res, faintResult, user.account.id, battle); return; }
   }
   if (battle.wild.hp <= 0) {
     await finishWin(user, myPokemon, battle, log, res);
@@ -316,13 +353,14 @@ async function handleCatch(
     revertBattleForms(battle, myPokemon);
     user.battleState = null;
     await saveUser(user);
+    logBattleEnd(user.account.id, battle, "caught");
     res.json({ log, battleState: null, result: "caught", pokemon: newPokemon });
     return;
   }
 
   log.push("잡지 못했다...");
   const wildResult = await doWildAttackAndCheck(user, myPokemon, battle, log);
-  if (wildResult) { sendFaintedResponse(res, wildResult); return; }
+  if (wildResult) { sendFaintedResponse(res, wildResult, user.account.id, battle); return; }
 
   await saveUser(user);
   res.json({ log, battleState: battle, result: "continue" });
@@ -357,7 +395,7 @@ async function handleItem(
   log.push(`${shopItem.name}을(를) 사용했다! HP가 ${shopItem.healAmount} 회복되었다!`);
 
   const wildResult = await doWildAttackAndCheck(user, myPokemon, battle, log);
-  if (wildResult) { sendFaintedResponse(res, wildResult); return; }
+  if (wildResult) { sendFaintedResponse(res, wildResult, user.account.id, battle); return; }
 
   await saveUser(user);
   res.json({ log, battleState: battle, result: "continue" });
@@ -404,7 +442,7 @@ async function handleSwitch(
 
   if (!forced) {
     const wildResult = await doWildAttackAndCheck(user, newPokemon, battle, log);
-    if (wildResult) { sendFaintedResponse(res, wildResult); return; }
+    if (wildResult) { sendFaintedResponse(res, wildResult, user.account.id, battle); return; }
   }
 
   await saveUser(user);
@@ -419,6 +457,7 @@ async function handleRun(
   revertBattleForms(battle, myPokemon);
   user.battleState = null;
   await saveUser(user);
+  logBattleEnd(user.account.id, battle, "run");
   res.json({ log, battleState: null, result: "run" });
 }
 

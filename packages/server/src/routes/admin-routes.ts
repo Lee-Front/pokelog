@@ -23,6 +23,7 @@ import type { ServerConfig } from "../../../../shared/types.js";
 import { INTEGRATION_EVENT_CATALOG } from "../integrations/event-catalog.js";
 import { clearPendingEvolutionForPokemon, queuePendingEvolution } from "../game/pending-evolution.js";
 
+import { query as queryEventLog } from "../storage/event-log.js";
 import { adminMiddleware } from "../middleware/admin-middleware.js";
 import { childLogger } from "../logger.js";
 
@@ -178,6 +179,26 @@ adminRoutes.get("/users", async (_req, res) => {
       users.map((u) => ({ id: u.account.id, nickname: u.account.nickname }))
     );
   } catch {
+    res.status(500).json({ error: "서버 오류" });
+  }
+});
+
+// 시스템 활동 로그 조회 — 필터(userId/type/since/until) + 페이지네이션(limit/offset).
+// 최신순 반환. query()에 위임하고 limit은 모듈에서 상한이 걸린다.
+adminRoutes.get("/event-log", async (req, res) => {
+  try {
+    const { userId, type, since, until, limit, offset } = req.query;
+    const result = await queryEventLog({
+      userId: typeof userId === "string" && userId ? userId : undefined,
+      type: typeof type === "string" && type ? type : undefined,
+      since: typeof since === "string" && since ? since : undefined,
+      until: typeof until === "string" && until ? until : undefined,
+      limit: typeof limit === "string" ? Number(limit) : undefined,
+      offset: typeof offset === "string" ? Number(offset) : undefined,
+    });
+    res.json(result);
+  } catch (err) {
+    log.error({ err }, "Admin event-log query error");
     res.status(500).json({ error: "서버 오류" });
   }
 });

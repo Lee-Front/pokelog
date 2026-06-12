@@ -18,6 +18,7 @@ import { getRegion } from "../game/data-loader.js";
 import { createEncounterEvent } from "../game/event-factory.js";
 import { clearPendingEvolutionForPokemon, queuePendingEvolution } from "../game/pending-evolution.js";
 import { getPartyPokemon } from "../game/pokemon-state.js";
+import { appendEvent } from "../storage/event-log.js";
 
 export async function processCommit(
   commit: CommitInfo,
@@ -134,6 +135,21 @@ export async function processCommit(
     if (user.log.length > 200) {
       user.log = user.log.slice(-200);
     }
+
+    // 시스템 활동 로그: 포인트 획득 기록 (운영자 추적용)
+    await appendEvent({
+      type: "point_gain",
+      userId: user.account.id,
+      detail: {
+        repo: repoUrl,
+        commit: commit.hash,
+        bytes,
+        points: reward.points,
+        exp: reward.exp,
+        combo: user.combo.count,
+        comboMultiplier: multiplier,
+      },
+    });
 
     // Remove expired events
     const now = Date.now();
