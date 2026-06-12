@@ -3,6 +3,13 @@
 작성: 2026-06-12. 이 문서 하나로 새 세션이 맥락 없이 이어갈 수 있도록 작성됨.
 **새 세션 시작 시 이 문서를 먼저 읽고, 아래 "다음 할 일"부터 진행한다.**
 
+> **갱신(2026-06-12 저녁, 최신)**: 웹 2차 개편 완료·전부 커밋됨.
+> - pokelog `2950c9a`: POST /game/wild/search(포인트 야생 탐색, searchCost 기본 100·admin 키 추가) + /game/events에 searchCost·points 동봉 + 알 ANSI 아트 5종 복원(data/colorscripts/small/egg — master쪽 6e05e5c에서) + CLI legend 알 파일명 정정. 서버 691 테스트 그린.
+> - portal `9e13ff0`: 웹 전면 개편 — 회원가입(가입 즉시 연동), 메뉴 라우트 분리(/pokelog/{party,wild,pokedex,shop,bag,eggs,storage,trades,ranking,history}), CLI 정합(컬렉션·진화 메뉴 제거→파티 통합, 조우→야생, 박스→보관함), 캔버스 픽셀 아트(종횡비 수정), 도감 allSpecies 객체 파싱 버그 수정, 야생 포인트 탐색 버튼, 트레이드 신청(유저검색→1:1 선택), i18n(ko/en 토글, 종905/아이템194/기술807 — scripts/generate-pokelog-i18n.mjs로 재생성), PointsBar(우상단 고정 P/BM).
+> - portal `303f4e3`: /pokelog/admin 관리 메뉴(상태 카드 + 설정 17키: 보상배율/야생조우/시스템, 관리자 세션 전용).
+> - portal `847f398`: CLI 패리티 8건 — 파티 회복, 포켓몬 상세 모달(스탯/기술/진화 미리보기/폼체인지), 이력 메뉴, 야생 지역 이동, 내 현황 보강(콤보/지역/오늘 적립), 닉네임 변경, 랭킹→공개 프로필, 레거시 매칭. 포털 pokelog 테스트 221 그린.
+> - dev DB에 pokelog_links 테이블 직접 생성됨(0021 SQL — db:push 시 충돌 없음). CLI 전용으로 남긴 것: join/servers/use/leave/whereami(다중 서버), connect(연동 관리).
+>
 > **갱신(2026-06-12 마지막)**: #15 웹 풀게임 **전체 완료·QA 통과**(컬렉션/파티/도감/배틀/보상 + 상점/배틀머니상점/가방 + 에그가챠/진화/박스/트레이드 + ANSI 아트). 프록시 14종, pokelog 테스트 146 그린. **pokelog는 전부 커밋됨**(e218eaf, f0baad6, a65ae05) — pokelog 워킹트리 클린. **포털(company-portal)은 미커밋**(워킹트리에 web-portal-dev 작업 + 사용자 assistant 작업 섞여 있음, 파일 단위 분리됨). 미구현은 트레이드 "신청(request)"뿐(UI 안내로 대체, 필요시 프록시 2개+UI로 추가).
 > **다음 세션 할 일**: ① 포털의 pokelog 파일만 선별 커밋(사용자 assistant/embeddable 작업 제외) ② (사용자) 빌드블로커(assistant 함수명·sharp / embeddable 마이그레이션) 정리 + pokelog_links DB 마이그레이션 → 포털 next build/재배포 ③ 시각검증은 사용자 호스트(아래 §5 기동법). #15 추가 기능 원하면 트레이드 신청 등.
 
