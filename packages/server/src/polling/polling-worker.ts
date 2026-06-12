@@ -5,6 +5,7 @@ import {
   fetchRepo,
   getNewCommitsAcrossBranches,
   getLatestHash,
+  listAuthorEmails,
   listRemoteBranches,
   resolveRepoUrl,
   redactUrlCredentials,
@@ -49,6 +50,28 @@ async function ensureBareClone(
     await cloneBareRepo(url, dir, authMode, token, tls);
   }
   return dir;
+}
+
+/** Max author emails returned to the integration form. */
+const MAX_AUTHOR_EMAILS = 100;
+
+/**
+ * Clone (or reuse) a bare mirror of `url` and return its distinct commit author
+ * emails with counts, capped at MAX_AUTHOR_EMAILS. Powers the integration form's
+ * "load emails" step so users select which of their emails to attribute commits
+ * to instead of typing them blindly. Reuses ensureBareClone, so a repo already
+ * being polled is not re-cloned.
+ */
+export async function getRepoAuthorEmails(
+  url: string,
+  authMode?: string,
+  token?: string,
+  tls?: GitTlsOptions,
+): Promise<{ email: string; count: number }[]> {
+  const repoDir = await ensureBareClone(url, authMode, token, tls);
+  await fetchRepo(repoDir, tls);
+  const emails = await listAuthorEmails(repoDir);
+  return emails.slice(0, MAX_AUTHOR_EMAILS);
 }
 
 function gitTlsOptions(config: GitIntegration["config"]): GitTlsOptions {

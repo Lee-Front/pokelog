@@ -316,6 +316,27 @@ export async function getCommitByteChanges(
   }
 }
 
+/**
+ * List distinct author emails across all branches with their commit counts,
+ * ordered by count descending. Used to populate the integration form so users
+ * pick which of their own emails to attribute commits to (rather than typing
+ * them blindly). Routes through runGit so a token-bearing URL can never leak.
+ */
+export async function listAuthorEmails(
+  repoDir: string,
+): Promise<{ email: string; count: number }[]> {
+  const { stdout } = await runGit(["log", "--all", "--format=%ae"], { cwd: repoDir });
+  const counts = new Map<string, number>();
+  for (const line of stdout.split("\n")) {
+    const email = line.trim();
+    if (!email) continue;
+    counts.set(email, (counts.get(email) ?? 0) + 1);
+  }
+  return [...counts.entries()]
+    .map(([email, count]) => ({ email, count }))
+    .sort((a, b) => b.count - a.count);
+}
+
 /** Get the latest commit hash on a branch */
 export async function getLatestHash(
   repoDir: string,

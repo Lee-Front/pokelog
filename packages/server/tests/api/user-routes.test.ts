@@ -1,5 +1,13 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+import fs from "node:fs/promises";
+import path from "node:path";
+import os from "node:os";
+import { pathToFileURL } from "node:url";
 import { setupTestApp, type TestApp } from "./test-helpers.js";
+
+const exec = promisify(execFile);
 
 describe("user routes", () => {
   let t: TestApp;
@@ -89,5 +97,120 @@ describe("user routes", () => {
   it("rejects unauthenticated requests", async () => {
     const res = await t.request.get("/api/user/profile");
     expect(res.status).toBe(401);
+  });
+});
+
+describe("integration repo-authors & emails", () => {
+  let t: TestApp;
+  let repoUrl: string;
+  let localRepo: string;
+
+  beforeAll(async () => {
+    t = await setupTestApp();
+
+    // A real local repo, cloned over file:// so no network is needed. Two
+    // commits from alice, one from bob — exercises count aggregation/sort.
+    localRepo = path.join(os.tmpdir(), `pokelog-authors-${Date.now()}`);
+    await fs.mkdir(localRepo, { recursive: true });
+    await exec("git", ["init", "--initial-branch=main"], { cwd: localRepo });
+    await exec("git", ["config", "user.name", "Alice"], { cwd: localRepo });
+    await exec("git", ["config", "user.email", "alice@example.com"], { cwd: localRepo });
+    await fs.writeFile(path.join(localRepo, "a.txt"), "a\n");
+    await exec("git", ["add", "."], { cwd: localRepo });
+    await exec("git", ["commit", "-m", "c1"], { cwd: localRepo });
+    await fs.writeFile(path.join(localRepo, "a.txt"), "aa\n");
+    await exec("git", ["add", "."], { cwd: localRepo });
+    await exec("git", ["commit", "-m", "c2"], { cwd: localRepo });
+    await exec("git", ["config", "user.email", "bob@example.com"], { cwd: localRepo });
+    await fs.writeFile(path.join(localRepo, "b.txt"), "b\n");
+    await exec("git", ["add", "."], { cwd: localRepo });
+    await exec("git", ["commit", "-m", "c3"], { cwd: localRepo });
+
+    repoUrl = pathToFileURL(localRepo).href;
+  });
+
+  afterAll(async () => {
+    t?.cleanup();
+    await fs.rm(localRepo, { recursive: true, force: true });
+  });
+
+  it("POST /integrations/repo-authors with body config returns sorted emails", async () => {
+    const { token } = await t.registerAndLogin("repoauthors", "charmander");
+    const api = t.authed(token);
+
+    const res = await api.post("/api/user/integrations/repo-authors", {
+      provider: "git",
+      config: { repoUrl },
+    });
+    expect(res.status).toBe(200);
+    const emails = res.body.emails as { email: string; count: number }[];
+    expect(emails[0]).toEqual({ email: "alice@example.com", count: 2 });
+    expect(emails).toContainEqual({ email: "bob@example.com", count: 1 });
+  }, 30000);
+
+  it("POST /integrations/repo-authors with {id} reuses stored config", async () => {
+    const { token } = await t.registerAndLogin("repoauthorsid", "charmander");
+    const api = t.authed(token);
+
+    const created = await api.post("/api/user/integrations", {
+      provider: "git",
+      config: { repoUrl },
+    });
+    expect(created.status).toBe(201);
+    const id = created.body.integration.id as string;
+
+    const res = await api.post("/api/user/integrations/repo-authors", { id });
+    expect(res.status).toBe(200);
+    expect((res.body.emails as unknown[]).length).toBeGreaterThanOrEqual(2);
+  }, 30000);
+
+  it("POST /integrations/repo-authors 404 for unknown id", async () => {
+    const { token } = await t.registerAndLogin("repoauthors404", "charmander");
+    const api = t.authed(token);
+
+    const res = await api.post("/api/user/integrations/repo-authors", { id: "nope" });
+    expect(res.status).toBe(404);
+  });
+
+  it("POST /integrations/repo-authors 400 on missing repoUrl", async () => {
+    const { token } = await t.registerAndLogin("repoauthorsbad", "charmander");
+    const api = t.authed(token);
+
+    const res = await api.post("/api/user/integrations/repo-authors", {
+      provider: "git",
+      config: {},
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it("PATCH /integrations/:id/emails updates only emails", async () => {
+    const { token } = await t.registerAndLogin("emailsedit", "charmander");
+    const api = t.authed(token);
+
+    const created = await api.post("/api/user/integrations", {
+      provider: "git",
+      config: { repoUrl },
+      emails: ["alice@example.com"],
+    });
+    const id = created.body.integration.id as string;
+    const before = created.body.integration.config.repoUrl as string;
+
+    const res = await t.request
+      .patch(`/api/user/integrations/${id}/emails`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ emails: ["bob@example.com"] });
+    expect(res.status).toBe(200);
+    expect(res.body.integration.emails).toEqual(["bob@example.com"]);
+    // repoUrl (and all non-email fields) must be untouched
+    expect(res.body.integration.config.repoUrl).toBe(before);
+  });
+
+  it("PATCH /integrations/:id/emails 404 for unknown id", async () => {
+    const { token } = await t.registerAndLogin("emailsedit404", "charmander");
+    const res = await t.request
+      .patch("/api/user/integrations/nope/emails")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ emails: [] });
+    expect(res.status).toBe(404);
   });
 });

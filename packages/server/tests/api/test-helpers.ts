@@ -123,6 +123,7 @@ export async function setupTestApp() {
       get: (url: string) => createRequestBuilder("GET", url, defaultHeaders),
       post: (url: string) => createRequestBuilder("POST", url, defaultHeaders),
       put: (url: string) => createRequestBuilder("PUT", url, defaultHeaders),
+      patch: (url: string) => createRequestBuilder("PATCH", url, defaultHeaders),
       delete: (url: string) => createRequestBuilder("DELETE", url, defaultHeaders),
     };
   }

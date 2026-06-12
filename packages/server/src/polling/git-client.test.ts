@@ -8,6 +8,7 @@ import {
   getNewCommits,
   getCommitByteChanges,
   getLatestHash,
+  listAuthorEmails,
   resolveRepoUrl,
   testRepoAccess,
 } from "./git-client.js";
@@ -103,6 +104,23 @@ describe("git-client", () => {
   it("getLatestHash returns null for nonexistent branch", async () => {
     const hash = await getLatestHash(repoDir, "nonexistent-branch");
     expect(hash).toBeNull();
+  });
+
+  it("listAuthorEmails aggregates counts and sorts descending", async () => {
+    // Two commits authored by test@example.com already exist; add one from a
+    // second author so we can assert ordering by count.
+    await exec("git", ["config", "user.email", "other@example.com"], { cwd: repoDir });
+    await exec("git", ["config", "user.name", "Other User"], { cwd: repoDir });
+    const file2 = path.join(repoDir, "second.txt");
+    await fs.writeFile(file2, "from other\n");
+    await exec("git", ["add", "second.txt"], { cwd: repoDir });
+    await exec("git", ["commit", "-m", "other author commit"], { cwd: repoDir });
+
+    const emails = await listAuthorEmails(repoDir);
+    expect(emails[0]).toEqual({ email: "test@example.com", count: 2 });
+    expect(emails).toContainEqual({ email: "other@example.com", count: 1 });
+    // restore the original author for any later-added tests sharing this repo
+    await exec("git", ["config", "user.email", "test@example.com"], { cwd: repoDir });
   });
 });
 

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import type { Response } from "express";
 import type {
+  GitIntegration,
   NotionIntegration,
   JiraIntegration,
   SlackIntegration,
@@ -10,13 +11,15 @@ import { pollNotionIntegration } from "../integrations/notion-polling.js";
 import { pollJiraIntegration } from "../integrations/jira-polling.js";
 import { pollSlackIntegration } from "../integrations/slack-polling.js";
 import { testIntegrationConnection } from "../integrations/provider-tests.js";
-import { pollUserIntegrations } from "../polling/polling-worker.js";
+import { pollUserIntegrations, getRepoAuthorEmails } from "../polling/polling-worker.js";
+import { redactUrlCredentials } from "../polling/git-client.js";
 import { authMiddleware, type AuthRequest } from "../middleware/auth-middleware.js";
 import { getSyncState, saveSyncState } from "../storage/sync-state-store.js";
 import {
   getUser,
   isEmailTaken,
   isGitIntegration,
+  isRepoEmailTaken,
   searchUsersByIdentity,
   saveUser,
 } from "../storage/user-store.js";
@@ -176,6 +179,62 @@ userRoutes.get("/integrations", async (req: AuthRequest, res: Response) => {
   }
 });
 
+// Clone a repo and return its commit author emails so the form can offer them
+// as checkboxes. Either {id} (reuse a saved integration's stored config/token,
+// no token re-entry) or {provider, config} (validated, not saved). Git errors
+// can embed the token-bearing URL, so every message is redacted before it
+// leaves the server.
+userRoutes.post("/integrations/repo-authors", async (req: AuthRequest, res: Response) => {
+  try {
+    const user = await getUser(req.userId!);
+    if (!user) {
+      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+      return;
+    }
+
+    let config: GitIntegration["config"];
+    if (typeof req.body.id === "string" && req.body.id) {
+      const existing = user.integrations.find((entry) => entry.id === req.body.id);
+      if (!existing || !isGitIntegration(existing)) {
+        res.status(404).json({ error: "연동 정보를 찾을 수 없습니다" });
+        return;
+      }
+      config = existing.config;
+    } else {
+      const parsed = await parseIntegrationInput(req.body, req.userId!);
+      if ("error" in parsed) {
+        res.status(parsed.status).json({ error: parsed.error });
+        return;
+      }
+      if (!isGitIntegration(parsed.integration)) {
+        res.status(400).json({ error: "git 계열 연동만 author 이메일을 조회할 수 있습니다" });
+        return;
+      }
+      config = parsed.integration.config;
+    }
+
+    if (!config.repoUrl?.trim()) {
+      res.status(400).json({ error: "repoUrl을 입력해 주세요" });
+      return;
+    }
+
+    try {
+      const emails = await getRepoAuthorEmails(config.repoUrl, config.authMode, config.token, {
+        caCertPath: config.caCertPath,
+        insecureSkipTls: config.insecureSkipTls,
+      });
+      res.json({ emails });
+    } catch (err) {
+      const message = redactUrlCredentials(err instanceof Error ? err.message : "레포 접근에 실패했습니다");
+      log.error({ err: message }, "repo-authors clone error");
+      res.status(502).json({ error: message });
+    }
+  } catch (err) {
+    log.error({ err }, "repo-authors error");
+    res.status(500).json({ error: "author 이메일을 불러오지 못했습니다" });
+  }
+});
+
 userRoutes.post("/integrations", async (req: AuthRequest, res: Response) => {
   try {
     const user = await getUser(req.userId!);
@@ -249,6 +308,51 @@ userRoutes.patch("/integrations/:id", async (req: AuthRequest, res: Response) =>
   } catch (err) {
     log.error({ err }, "Integration update error");
     res.status(500).json({ error: "연동 정보를 수정하지 못했습니다" });
+  }
+});
+
+// Update only the attributed emails on a git integration, leaving every other
+// field (repoUrl/token/status/...) untouched. Used by the form's "edit emails"
+// flow after the user re-picks from the author checkboxes.
+userRoutes.patch("/integrations/:id/emails", async (req: AuthRequest, res: Response) => {
+  try {
+    const user = await getUser(req.userId!);
+    if (!user) {
+      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+      return;
+    }
+
+    const idx = user.integrations.findIndex((entry) => entry.id === req.params.id);
+    if (idx < 0) {
+      res.status(404).json({ error: "연동 정보를 찾을 수 없습니다" });
+      return;
+    }
+    const current = user.integrations[idx];
+    if (!isGitIntegration(current)) {
+      res.status(400).json({ error: "git 계열 연동만 이메일을 수정할 수 있습니다" });
+      return;
+    }
+
+    if (!Array.isArray(req.body.emails)) {
+      res.status(400).json({ error: "emails 배열을 입력해 주세요" });
+      return;
+    }
+    const emails = req.body.emails.map((email: unknown) => String(email).trim()).filter(Boolean);
+
+    for (const email of emails) {
+      const taken = await isRepoEmailTaken(current.config.repoUrl, email, req.userId!, current.id);
+      if (taken) {
+        res.status(409).json({ error: `이미 다른 사용자가 등록한 repo/email 조합입니다: ${email}` });
+        return;
+      }
+    }
+
+    current.emails = emails;
+    await saveUser(user);
+    res.json({ integration: current });
+  } catch (err) {
+    log.error({ err }, "Integration emails update error");
+    res.status(500).json({ error: "이메일을 수정하지 못했습니다" });
   }
 });
 
