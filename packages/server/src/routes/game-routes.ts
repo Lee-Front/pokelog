@@ -69,14 +69,49 @@ gameRoutes.get("/events", async (req: AuthRequest, res: Response) => {
     }
 
     const config = await getConfig();
+    // 응답 시점에 종족 속성(types)을 덧붙인다 — 저장 데이터(WildPokemon)에는 없고,
+    // 웹의 속성 필터에만 쓰이므로 마이그레이션 없이 종족 데이터에서 계산한다.
+    const eventsWithTypes = activeEvents.map((e) => ({
+      ...e,
+      pokemon: {
+        ...e.pokemon,
+        types: getSpeciesByName(e.pokemon.species)?.types ?? [],
+      },
+    }));
     res.json({
-      events: activeEvents,
+      events: eventsWithTypes,
       // 웹/CLI가 "포인트로 탐색" UI를 그릴 수 있도록 비용과 잔액을 함께 내려준다.
       searchCost: config.rewards.encounter.searchCost,
       points: user.points,
     });
   } catch (err) {
     log.error({ err }, "Events error");
+    res.status(500).json({ error: "서버 오류가 발생했습니다" });
+  }
+});
+
+// 야생 조우 이벤트 삭제(dismiss) — 사용자가 관심 없는 야생을 목록에서 치운다.
+// battle-routes의 pendingEvents 정리 패턴과 동일하게 id로 걸러낸다.
+gameRoutes.delete("/events/:id", async (req: AuthRequest, res: Response) => {
+  try {
+    const user = await getUser(req.userId!);
+    if (!user) {
+      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+      return;
+    }
+
+    const { id } = req.params;
+    const before = user.pendingEvents.length;
+    user.pendingEvents = user.pendingEvents.filter((e) => e.id !== id);
+    if (user.pendingEvents.length === before) {
+      res.status(404).json({ error: "이벤트를 찾을 수 없습니다" });
+      return;
+    }
+
+    await saveUser(user);
+    res.json({ ok: true });
+  } catch (err) {
+    log.error({ err }, "Event delete error");
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
   }
 });
