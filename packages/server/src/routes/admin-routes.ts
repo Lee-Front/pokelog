@@ -106,6 +106,7 @@ const ALLOWED_CONFIG_PATHS = new Set([
   "rewards.encounter.baseChance",
   "rewards.encounter.ceilingBytes",
   "rewards.encounter.timeLimitHours",
+  "rewards.encounter.searchCost",
   "meta.serverName",
   "meta.displayName",
   "meta.apiVersion",

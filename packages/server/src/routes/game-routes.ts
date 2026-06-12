@@ -2,7 +2,10 @@ import { Router } from "express";
 import type { Response } from "express";
 import { authMiddleware, type AuthRequest } from "../middleware/auth-middleware.js";
 import { getUser, saveUser } from "../storage/user-store.js";
-import { getAllSpecies } from "../game/pokemon-factory.js";
+import { getConfig } from "../storage/config-store.js";
+import { getAllSpecies, createWildPokemon } from "../game/pokemon-factory.js";
+import { selectWildPokemon } from "../game/encounter.js";
+import { createEncounterEvent } from "../game/event-factory.js";
 import { getRegion, getRegionNames, getSpeciesByName } from "../game/data-loader.js";
 import { buildLevelEvolutionContext, getEvolutionBranchDiagnostics } from "../game/growth.js";
 import { findPokemonByUid, getPartyPokemon } from "../game/pokemon-state.js";
@@ -65,9 +68,47 @@ gameRoutes.get("/events", async (req: AuthRequest, res: Response) => {
       await saveUser(user);
     }
 
-    res.json({ events: activeEvents });
+    const config = await getConfig();
+    res.json({
+      events: activeEvents,
+      // 웹/CLI가 "포인트로 탐색" UI를 그릴 수 있도록 비용과 잔액을 함께 내려준다.
+      searchCost: config.rewards.encounter.searchCost,
+      points: user.points,
+    });
   } catch (err) {
     log.error({ err }, "Events error");
+    res.status(500).json({ error: "서버 오류가 발생했습니다" });
+  }
+});
+
+// 포인트를 소비해 현재 지역에서 야생 포켓몬을 즉시 탐색(조우 생성)한다.
+gameRoutes.post("/wild/search", async (req: AuthRequest, res: Response) => {
+  try {
+    const user = await getUser(req.userId!);
+    if (!user) {
+      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+      return;
+    }
+
+    const config = await getConfig();
+    const cost = config.rewards.encounter.searchCost;
+    if (user.points < cost) {
+      res.status(400).json({ error: `포인트가 부족합니다 (필요: ${cost}P)` });
+      return;
+    }
+
+    const regionData = getRegion(user.currentRegion ?? "default");
+    const pick = selectWildPokemon(regionData);
+    const wildPokemon = createWildPokemon(pick.species, pick.level);
+    const event = createEncounterEvent(wildPokemon, config.rewards.encounter.timeLimitHours);
+
+    user.points -= cost;
+    user.pendingEvents.push(event);
+    await saveUser(user);
+
+    res.status(201).json({ event, cost, remainingPoints: user.points });
+  } catch (err) {
+    log.error({ err }, "Wild search error");
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
   }
 });

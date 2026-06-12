@@ -81,6 +81,8 @@ export const DEFAULT_CONFIG: ServerConfig = {
       baseChance: 0.3,
       ceilingBytes: 5000,
       timeLimitHours: 168,
+      // 포인트 소비 야생 탐색 비용. 알 가챠 common(120P)보다 약간 싸게 시작.
+      searchCost: 100,
     },
     integrations: DEFAULT_INTEGRATION_REWARD_RULES,
   },

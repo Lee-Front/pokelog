@@ -21,7 +21,8 @@ function sleep(ms: number): Promise<void> {
 const EGG_ART_MAP: Record<string, string> = {
   common: "commonEgg",
   rare: "rareEgg",
-  legend: "legendEgg",
+  // 아트 파일명은 LegendaryEgg (legendEgg 아님 — data/colorscripts/small/egg 참고)
+  legend: "LegendaryEgg",
 };
 
 // ── 뽑기 연출 ───────────────────────────────────────────────────

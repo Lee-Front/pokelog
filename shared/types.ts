@@ -304,6 +304,8 @@ export interface EncounterConfig {
   baseChance: number;
   ceilingBytes: number;
   timeLimitHours: number;
+  /** 포인트를 소비해 야생 조우를 즉시 발생시키는 비용 */
+  searchCost: number;
 }
 
 export interface ShopItem {
