@@ -4,7 +4,7 @@ import { authMiddleware, type AuthRequest } from "../middleware/auth-middleware.
 import { getUser, saveUser } from "../storage/user-store.js";
 import { getConfig } from "../storage/config-store.js";
 import { getAllSpecies, createWildPokemon } from "../game/pokemon-factory.js";
-import { selectWildPokemon } from "../game/encounter.js";
+import { selectWildPokemon, scaleWildLevel } from "../game/encounter.js";
 import { createEncounterEvent } from "../game/event-factory.js";
 import { getRegion, getRegionNames, getSpeciesByName } from "../game/data-loader.js";
 import { buildLevelEvolutionContext, getEvolutionBranchDiagnostics } from "../game/growth.js";
@@ -99,7 +99,9 @@ gameRoutes.post("/wild/search", async (req: AuthRequest, res: Response) => {
 
     const regionData = getRegion(user.currentRegion ?? "default");
     const pick = selectWildPokemon(regionData);
-    const wildPokemon = createWildPokemon(pick.species, pick.level);
+    const partyLevels = getPartyPokemon(user).map((p) => p.level);
+    const wildLevel = scaleWildLevel(pick.level, partyLevels, pick.minLevel);
+    const wildPokemon = createWildPokemon(pick.species, wildLevel);
     const event = createEncounterEvent(wildPokemon, config.rewards.encounter.timeLimitHours);
 
     user.points -= cost;

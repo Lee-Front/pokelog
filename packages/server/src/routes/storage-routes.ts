@@ -102,3 +102,43 @@ storageRoutes.post("/storage/deposit", async (req: AuthRequest, res: Response) =
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
   }
 });
+
+// 포켓몬 풀어주기: 파티/보관함에서 영구 제거. 파티 마지막 1마리는 전멸 방지를 위해 금지.
+storageRoutes.post("/pokemon/:uid/release", async (req: AuthRequest, res: Response) => {
+  try {
+    const { uid } = req.params;
+
+    const user = await getUser(req.userId!);
+    if (!user) {
+      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+      return;
+    }
+
+    const inParty = user.party.includes(uid);
+    const partyIndex = user.pokemon.findIndex((p) => p.uid === uid);
+    const storageIndex = user.storage.findIndex((p) => p.uid === uid);
+
+    if (partyIndex === -1 && storageIndex === -1) {
+      res.status(404).json({ error: "포켓몬을 찾을 수 없습니다" });
+      return;
+    }
+
+    // 파티의 유일한 1마리는 풀어줄 수 없다(전멸 방지). 보관함이거나 파티에 2마리+ 일 때만 허용.
+    if (inParty && user.party.length <= 1) {
+      res.status(400).json({ error: "마지막 포켓몬은 풀어줄 수 없습니다" });
+      return;
+    }
+
+    if (partyIndex !== -1) {
+      user.pokemon.splice(partyIndex, 1);
+      user.party = user.party.filter((u) => u !== uid);
+    } else {
+      user.storage.splice(storageIndex, 1);
+    }
+    await saveUser(user);
+    res.json({ ok: true });
+  } catch (err) {
+    log.error({ err }, "Release error");
+    res.status(500).json({ error: "서버 오류가 발생했습니다" });
+  }
+});
