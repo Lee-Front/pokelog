@@ -406,8 +406,8 @@ describe("User Journey E2E", () => {
   });
 
   // ---------- Scenario 8: Egg Lifecycle ----------
-  // Give points, buy a common egg, verify it appears in egg list,
-  // hatch it, verify new pokemon added to party/storage and pokedex updated.
+  // Give points, buy a common egg (now hatches immediately — storage abolished),
+  // verify a new pokemon is returned and added to party/storage with pokedex updated.
   it("Scenario 8: Egg Lifecycle", async () => {
     const { token, userId } = await t.registerAndLogin("egghatcher", "charmander");
     const api = t.authed(token);
@@ -424,39 +424,24 @@ describe("User Journey E2E", () => {
     expect(commonTier).toBeDefined();
     expect(commonTier.cost).toBe(120);
 
-    // Buy a common egg
+    // Buy a common egg — immediate hatch (no stored egg)
     const buyEgg = await api.post("/api/game/eggs/buy", { tier: "common" });
     expect(buyEgg.status).toBe(200);
-    expect(buyEgg.body.egg).toBeDefined();
     expect(buyEgg.body.egg.tier).toBe("common");
     expect(buyEgg.body.cost).toBe(120);
     expect(buyEgg.body.remainingPoints).toBe(5000 - 120);
-    const eggId = buyEgg.body.egg.id;
+    expect(buyEgg.body.pokemon).toBeDefined();
+    expect(typeof buyEgg.body.pokemon.species).toBe("string");
+    expect(buyEgg.body.pokemon.level).toBeGreaterThanOrEqual(1);
+    expect(["party", "storage"]).toContain(buyEgg.body.destination);
+    expect(typeof buyEgg.body.toBox).toBe("boolean");
+    const hatchedSpecies = buyEgg.body.pokemon.species;
 
-    // Verify egg appears in egg list
-    const eggs = await api.get("/api/game/eggs");
-    const myEgg = eggs.body.eggs.find((e: { id: string }) => e.id === eggId);
-    expect(myEgg).toBeDefined();
-
-    // Record pokedex before hatch
-    const pokedexBefore = await api.get("/api/game/pokedex");
-    const seenBefore = new Set(pokedexBefore.body.seen);
-
-    // Hatch the egg
-    const hatch = await api.post("/api/game/eggs/hatch", { eggId });
-    expect(hatch.status).toBe(200);
-    expect(hatch.body.pokemon).toBeDefined();
-    expect(typeof hatch.body.pokemon.species).toBe("string");
-    expect(hatch.body.pokemon.level).toBeGreaterThanOrEqual(1);
-    expect(["party", "storage"]).toContain(hatch.body.destination);
-    const hatchedSpecies = hatch.body.pokemon.species;
-
-    // Verify egg removed from list
+    // No egg should be stored (storage abolished)
     const eggsAfter = await api.get("/api/game/eggs");
-    const removedEgg = eggsAfter.body.eggs.find((e: { id: string }) => e.id === eggId);
-    expect(removedEgg).toBeUndefined();
+    expect(eggsAfter.body.eggs).toHaveLength(0);
 
-    // Verify pokedex updated if it was a new species
+    // Verify pokedex updated for the hatched species
     const pokedexAfter = await api.get("/api/game/pokedex");
     expect(pokedexAfter.body.seen).toContain(hatchedSpecies);
   });

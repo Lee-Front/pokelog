@@ -4,10 +4,31 @@ import { authMiddleware, type AuthRequest } from "../middleware/auth-middleware.
 import { getUser, saveUser } from "../storage/user-store.js";
 import { createEgg, getEggTierSummaries, hatchEgg } from "../game/egg-gacha.js";
 import { childLogger } from "../logger.js";
+import type { OwnedPokemon, UserData } from "../../../../shared/types.js";
 const log = childLogger("egg-routes");
 
 
 const MAX_PARTY_SIZE = 6;
+
+// 부화한 포켓몬을 파티에 넣되, 파티가 꽉 차면 보관함으로 보낸다.
+// 도감 등록도 함께 처리하고, 어디로 갔는지 반환한다.
+function placeHatched(user: UserData, pokemon: OwnedPokemon): "party" | "storage" {
+  user.pokemon.push(pokemon);
+  let destination: "party" | "storage";
+  if (user.party.length < MAX_PARTY_SIZE) {
+    user.party.push(pokemon.uid);
+    destination = "party";
+  } else {
+    user.storage.push(pokemon);
+    destination = "storage";
+  }
+
+  if (!user.pokedex.includes(pokemon.species)) {
+    user.pokedex.push(pokemon.species);
+  }
+
+  return destination;
+}
 
 export const eggRoutes = Router();
 eggRoutes.use(authMiddleware);
@@ -31,6 +52,7 @@ eggRoutes.get("/eggs", async (req: AuthRequest, res: Response) => {
   }
 });
 
+// 알 구매는 보관 없이 즉시 부화한다(pull과 동일). 보관 알 폐지.
 eggRoutes.post("/eggs/buy", async (req: AuthRequest, res: Response) => {
   try {
     const user = await getUser(req.userId!);
@@ -53,11 +75,16 @@ eggRoutes.post("/eggs/buy", async (req: AuthRequest, res: Response) => {
 
     const egg = createEgg(tierInfo.tier);
     user.points -= tierInfo.cost;
-    user.eggs.push(egg);
+
+    const { pokemon, label } = hatchEgg(egg);
+    const destination = placeHatched(user, pokemon);
 
     await saveUser(user);
     res.json({
-      egg,
+      egg: { id: egg.id, tier: egg.tier, label },
+      pokemon,
+      destination,
+      toBox: destination === "storage",
       cost: tierInfo.cost,
       remainingPoints: user.points,
     });
@@ -89,29 +116,49 @@ eggRoutes.post("/eggs/hatch", async (req: AuthRequest, res: Response) => {
 
     const [egg] = user.eggs.splice(eggIndex, 1);
     const { pokemon, label } = hatchEgg(egg);
-
-    let destination: "party" | "storage" = "storage";
-    if (user.party.length < MAX_PARTY_SIZE) {
-      user.pokemon.push(pokemon);
-      user.party.push(pokemon.uid);
-      destination = "party";
-    } else {
-      user.storage.push(pokemon);
-    }
-
-    if (!user.pokedex.includes(pokemon.species)) {
-      user.pokedex.push(pokemon.species);
-    }
+    const destination = placeHatched(user, pokemon);
 
     await saveUser(user);
     res.json({
       egg: { id: egg.id, tier: egg.tier, label },
       pokemon,
       destination,
+      toBox: destination === "storage",
     });
   } catch (err) {
     log.error({ err }, "Egg hatch error");
     res.status(500).json({ error: "알 부화 중 오류가 발생했습니다" });
+  }
+});
+
+// 남은 보관 알을 한 번에 정리(즉시부화 전환에 따른 일괄 부화). 보관 알이 없으면 빈 결과.
+eggRoutes.post("/eggs/hatch-all", async (req: AuthRequest, res: Response) => {
+  try {
+    const user = await getUser(req.userId!);
+    if (!user) {
+      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+      return;
+    }
+
+    const eggs = user.eggs.splice(0, user.eggs.length);
+    const hatched = eggs.map((egg) => {
+      const { pokemon, label } = hatchEgg(egg);
+      const destination = placeHatched(user, pokemon);
+      return {
+        egg: { id: egg.id, tier: egg.tier, label },
+        pokemon,
+        destination,
+        toBox: destination === "storage",
+      };
+    });
+
+    if (hatched.length > 0) {
+      await saveUser(user);
+    }
+    res.json({ hatched, count: hatched.length });
+  } catch (err) {
+    log.error({ err }, "Egg hatch-all error");
+    res.status(500).json({ error: "알 일괄 부화 중 오류가 발생했습니다" });
   }
 });
 
@@ -139,24 +186,13 @@ eggRoutes.post("/eggs/pull", async (req: AuthRequest, res: Response) => {
     user.points -= tierInfo.cost;
 
     const { pokemon } = hatchEgg(egg);
-
-    let destination: "party" | "storage" = "storage";
-    if (user.party.length < MAX_PARTY_SIZE) {
-      user.pokemon.push(pokemon);
-      user.party.push(pokemon.uid);
-      destination = "party";
-    } else {
-      user.storage.push(pokemon);
-    }
-
-    if (!user.pokedex.includes(pokemon.species)) {
-      user.pokedex.push(pokemon.species);
-    }
+    const destination = placeHatched(user, pokemon);
 
     await saveUser(user);
     res.json({
       pokemon,
       destination,
+      toBox: destination === "storage",
       cost: tierInfo.cost,
       remainingPoints: user.points,
     });
