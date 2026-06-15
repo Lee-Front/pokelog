@@ -16,6 +16,7 @@ import { redactUrlCredentials } from "../polling/git-client.js";
 import { authMiddleware, type AuthRequest } from "../middleware/auth-middleware.js";
 import { getSyncState, saveSyncState } from "../storage/sync-state-store.js";
 import {
+  getAllUsers,
   getUser,
   isEmailTaken,
   isGitIntegration,
@@ -63,6 +64,79 @@ userRoutes.get("/search", async (req: AuthRequest, res: Response) => {
   } catch (err) {
     log.error({ err }, "User search error");
     res.status(500).json({ error: "Failed to search users." });
+  }
+});
+
+// 상대 선택용 전체 유저 목록. /search(질의 필수)와 달리 질의 없이도 둘러볼 수 있게
+// 전체를 페이지네이션해 내려준다(본인 제외). q가 있으면 id/nickname 부분일치로 좁힌다.
+// level은 파티(없으면 보유 포켓몬 전체) 중 최고 레벨 — 없으면 생략한다.
+//
+// 마운트가 `${prefix}/user`이므로 라우터 내부 상대경로 `/list`는 `/api/v1/user/list`로 노출된다.
+
+type UserListEntry = { id: string; nickname: string; level?: number };
+
+// 목록에 쓸 최소 유저 형태(전체 UserData에 의존하지 않게 인라인으로 좁힌다).
+type ListableUser = {
+  account: { id: string; nickname: string };
+  party?: string[];
+  pokemon?: { uid: string; level: number }[];
+};
+
+// 파티(있으면 party uid에 해당하는 개체, 없으면 보유 전체) 중 최고 레벨. 없으면 undefined.
+export function topPartyLevel(user: ListableUser): number | undefined {
+  const owned = user.pokemon ?? [];
+  if (owned.length === 0) return undefined;
+  const partyUids = user.party ?? [];
+  const pool = partyUids.length > 0 ? owned.filter((p) => partyUids.includes(p.uid)) : owned;
+  const levels = (pool.length > 0 ? pool : owned).map((p) => p.level);
+  return levels.length > 0 ? Math.max(...levels) : undefined;
+}
+
+// 본인 제외 + (선택) q 부분일치 필터 후 nickname/id 정렬, limit/offset 페이지네이션.
+// 순수 함수로 분리해 라우트 핸들러와 무관하게 단위 테스트한다.
+export function buildUserList(
+  users: ListableUser[],
+  excludeUserId: string,
+  opts: { q?: string; limit?: number; offset?: number } = {},
+): { users: UserListEntry[]; total: number } {
+  const q = (opts.q ?? "").trim().toLowerCase();
+  const matched = users
+    .filter((u) => u.account.id !== excludeUserId)
+    .filter((u) => {
+      if (!q) return true;
+      return (
+        u.account.id.toLowerCase().includes(q) ||
+        u.account.nickname.toLowerCase().includes(q)
+      );
+    })
+    .sort((a, b) =>
+      a.account.nickname.localeCompare(b.account.nickname) || a.account.id.localeCompare(b.account.id),
+    );
+
+  const total = matched.length;
+  const offset = Math.max(0, opts.offset ?? 0);
+  const limit = Math.max(1, Math.min(100, opts.limit ?? 50));
+  const page = matched.slice(offset, offset + limit).map((u) => {
+    const level = topPartyLevel(u);
+    const entry: UserListEntry = { id: u.account.id, nickname: u.account.nickname };
+    if (level !== undefined) entry.level = level;
+    return entry;
+  });
+  return { users: page, total };
+}
+
+userRoutes.get("/list", async (req: AuthRequest, res: Response) => {
+  try {
+    const q = String(req.query.q ?? "");
+    const limit = Number.isFinite(Number(req.query.limit)) ? Number(req.query.limit) : undefined;
+    const offset = Number.isFinite(Number(req.query.offset)) ? Number(req.query.offset) : undefined;
+
+    const all = await getAllUsers();
+    const result = buildUserList(all, req.userId!, { q, limit, offset });
+    res.json(result);
+  } catch (err) {
+    log.error({ err }, "User list error");
+    res.status(500).json({ error: "유저 목록을 불러오지 못했습니다" });
   }
 });
 
