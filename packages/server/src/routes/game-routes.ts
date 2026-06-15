@@ -9,6 +9,7 @@ import { createEncounterEvent } from "../game/event-factory.js";
 import { getRegion, getRegionNames, getSpeciesByName } from "../game/data-loader.js";
 import { buildLevelEvolutionContext, getEvolutionBranchDiagnostics } from "../game/growth.js";
 import { findPokemonByUid, getPartyPokemon } from "../game/pokemon-state.js";
+import { getAnnouncements } from "../storage/announcement-store.js";
 import { childLogger } from "../logger.js";
 const log = childLogger("game-routes");
 
@@ -350,6 +351,46 @@ gameRoutes.put("/region", async (req: AuthRequest, res: Response) => {
   } catch (err) {
     log.error({ err }, "Region update error");
     res.status(500).json({ error: "Failed to update region." });
+  }
+});
+
+// 현재 활성(active)이면서 이 유저가 아직 닫지(dismiss) 않은 공지 목록.
+gameRoutes.get("/announcements/active", async (req: AuthRequest, res: Response) => {
+  try {
+    const user = await getUser(req.userId!);
+    if (!user) {
+      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+      return;
+    }
+
+    const dismissed = new Set(user.dismissedAnnouncementIds ?? []);
+    const active = (await getAnnouncements()).filter((a) => a.active && !dismissed.has(a.id));
+    res.json({ announcements: active });
+  } catch (err) {
+    log.error({ err }, "Active announcements error");
+    res.status(500).json({ error: "서버 오류가 발생했습니다" });
+  }
+});
+
+// 공지 닫기 — 유저 데이터에 dismiss 기록(중복 추가 안 함). 존재하지 않는 id도 멱등 허용.
+gameRoutes.post("/announcements/:id/dismiss", async (req: AuthRequest, res: Response) => {
+  try {
+    const user = await getUser(req.userId!);
+    if (!user) {
+      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+      return;
+    }
+
+    const dismissed = user.dismissedAnnouncementIds ?? [];
+    if (!dismissed.includes(req.params.id)) {
+      dismissed.push(req.params.id);
+      user.dismissedAnnouncementIds = dismissed;
+      await saveUser(user);
+    }
+    res.json({ ok: true });
+  } catch (err) {
+    log.error({ err }, "Dismiss announcement error");
+    res.status(500).json({ error: "서버 오류가 발생했습니다" });
   }
 });
 

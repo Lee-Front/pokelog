@@ -180,6 +180,10 @@ export async function setupTestApp() {
         const req = client.put(url);
         return body ? req.send(body) : req.send();
       },
+      patch: (url: string, body?: Record<string, unknown>) => {
+        const req = client.patch(url);
+        return body ? req.send(body) : req.send();
+      },
       delete: (url: string, body?: Record<string, unknown>) => {
         const req = client.delete(url);
         return body ? req.send(body) : req.send();

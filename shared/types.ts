@@ -302,6 +302,10 @@ export interface UserData {
   storage: OwnedPokemon[];
   log: LogEntry[];
   integrations: Integration[];
+  // 운영자 공지 중 이 유저가 닫은(dismiss) 공지 id 목록. /game/announcements/active가
+  // active이면서 여기 없는 공지만 내려준다. 게임 초기화(reset-game) 시에도 보존하지 않고
+  // 비운다(공지는 진행 데이터가 아니라 표시 상태일 뿐).
+  dismissedAnnouncementIds?: string[];
 }
 
 // === Config ===
@@ -891,6 +895,19 @@ export interface PvpRankingEntry {
   wins: number;
   losses: number;
   draws: number;
+}
+
+// === Announcements (운영자 공지/팝업) ===
+// 운영자가 만들어 유저에게 노출하는 공지. pokelog-data/announcements.json에 배열로 영속.
+// active=true인 공지만 유저에게 노출되며, 유저가 닫으면 UserData.dismissedAnnouncementIds에
+// 기록되어 다시 뜨지 않는다.
+export interface Announcement {
+  id: string;
+  title: string;
+  body: string;
+  /** 노출 여부. 운영자가 토글(PATCH)하거나 삭제(DELETE)로 내린다. */
+  active: boolean;
+  createdAt: string;
 }
 
 // === System Activity Log ===

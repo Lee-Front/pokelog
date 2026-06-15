@@ -2,6 +2,15 @@ import { Router } from "express";
 import crypto from "node:crypto";
 import { getConfig, saveConfig } from "../storage/config-store.js";
 import { getUser, saveUser, getAllUsers } from "../storage/user-store.js";
+import { withLock } from "../storage/pvp-store.js";
+import { resetGameData } from "../game/game-reset.js";
+import { getSpeciesByName } from "../game/data-loader.js";
+import {
+  getAnnouncements,
+  createAnnouncement,
+  setAnnouncementActive,
+  deleteAnnouncement,
+} from "../storage/announcement-store.js";
 import { pollAllRepos, recomputeUserSerialized } from "../polling/polling-worker.js";
 import { calculateReward } from "../game/reward.js";
 import { judgeCombo, getComboMultiplier } from "../game/combo.js";
@@ -33,6 +42,14 @@ export const adminRoutes = Router();
 adminRoutes.use(adminMiddleware);
 
 const startTime = Date.now();
+
+// 지급 가능한 아이템인지 — 인벤토리/상점 네임스페이스(config.shop/battleShop의 키)
+// 기준으로 검증한다. items.json(getItemById)은 별도 카탈로그 id 체계(예: "poke-ball")라
+// 인벤토리 키("pokeball")와 다르므로 쓰지 않는다.
+async function isGrantableItem(itemId: string): Promise<boolean> {
+  const config = await getConfig();
+  return itemId in config.shop.items || itemId in config.battleShop.items;
+}
 
 // Add repo
 adminRoutes.post("/repo", async (req, res) => {
@@ -280,6 +297,309 @@ adminRoutes.get("/users", async (_req, res) => {
       }))
     );
   } catch {
+    res.status(500).json({ error: "서버 오류" });
+  }
+});
+
+// ========== 운영(어드민) 유저 도구 ==========
+
+// 유저 전체 스냅샷 — 운영자가 한 유저의 계정·재화·보유물·연동을 한눈에 본다.
+// 파티/연동은 요약(민감정보 토큰은 내리지 않음), 보관함/도감/인벤토리는 개수·맵.
+adminRoutes.get("/users/:id", async (req, res) => {
+  try {
+    const user = await getUser(req.params.id);
+    if (!user) return res.status(404).json({ error: "유저 없음" });
+
+    res.json({
+      account: { id: user.account.id, nickname: user.account.nickname, createdAt: user.account.createdAt },
+      points: user.points,
+      totalExp: user.totalExp,
+      battleMoney: user.battleMoney,
+      currentRegion: user.currentRegion ?? "default",
+      party: user.party
+        .map((uid) => user.pokemon.find((p) => p.uid === uid))
+        .filter((p): p is NonNullable<typeof p> => Boolean(p))
+        .map((p) => ({ uid: p.uid, species: p.species, level: p.level, shiny: p.isShiny ?? false })),
+      pokemonCount: user.pokemon.length,
+      storageCount: user.storage.length,
+      eggCount: user.eggs.length,
+      pokedexCount: user.pokedex.length,
+      inventory: user.inventory,
+      // 연동은 종류·라벨·상태·이메일만(토큰 등 비밀은 제외).
+      integrations: user.integrations.map((i) => ({
+        provider: i.provider,
+        label: i.label,
+        status: i.status,
+        emails: "emails" in i ? (i.emails ?? []) : [],
+      })),
+      encounterCeiling: user.encounterCeiling,
+      battleState: user.battleState ? { eventId: user.battleState.eventId, turn: user.battleState.turn } : null,
+    });
+  } catch (err) {
+    log.error({ err }, "Admin user snapshot error");
+    res.status(500).json({ error: "서버 오류" });
+  }
+});
+
+// 재화 조정 — points/totalExp/battleMoney 각각 set 또는 add(한 필드당 하나만).
+// 결과가 음수면 0으로 클램프. 잔액 하락이 의도된 운영 작업이므로 "admin-adjust"로 저장.
+adminRoutes.post("/users/:id/adjust", async (req, res) => {
+  try {
+    const user = await getUser(req.params.id);
+    if (!user) return res.status(404).json({ error: "유저 없음" });
+
+    const fields = [
+      { name: "Points", target: "points" },
+      { name: "TotalExp", target: "totalExp" },
+      { name: "BattleMoney", target: "battleMoney" },
+    ] as const;
+
+    for (const { name, target } of fields) {
+      const setVal = req.body[`set${name}`];
+      const addVal = req.body[`add${name}`];
+      if (setVal != null && addVal != null) {
+        return res.status(400).json({ error: `set${name}와 add${name}는 동시에 줄 수 없습니다` });
+      }
+      if (setVal != null) {
+        if (typeof setVal !== "number" || !Number.isFinite(setVal)) {
+          return res.status(400).json({ error: `set${name}는 숫자여야 합니다` });
+        }
+        user[target] = Math.max(0, setVal);
+      } else if (addVal != null) {
+        if (typeof addVal !== "number" || !Number.isFinite(addVal)) {
+          return res.status(400).json({ error: `add${name}는 숫자여야 합니다` });
+        }
+        user[target] = Math.max(0, user[target] + addVal);
+      }
+    }
+
+    await saveUser(user, "admin-adjust");
+    res.json({ ok: true, points: user.points, totalExp: user.totalExp, battleMoney: user.battleMoney });
+  } catch (err) {
+    log.error({ err }, "Admin adjust error");
+    res.status(500).json({ error: "서버 오류" });
+  }
+});
+
+// 아이템 지급(정식) — 존재하는 item id 검증. 수량 미지정 시 1.
+adminRoutes.post("/users/:id/give-item", async (req, res) => {
+  try {
+    const { item, qty } = req.body;
+    if (!item) return res.status(400).json({ error: "item 필요" });
+    if (!(await isGrantableItem(item))) return res.status(400).json({ error: "존재하지 않는 아이템입니다" });
+    const quantity = qty ?? 1;
+    if (typeof quantity !== "number" || !Number.isFinite(quantity) || quantity <= 0) {
+      return res.status(400).json({ error: "qty는 양수여야 합니다" });
+    }
+
+    const user = await getUser(req.params.id);
+    if (!user) return res.status(404).json({ error: "유저 없음" });
+
+    incrementItem(user.inventory, item, quantity);
+    await saveUser(user);
+    res.json({ ok: true, inventory: user.inventory });
+  } catch (err) {
+    log.error({ err }, "Admin give-item error");
+    res.status(500).json({ error: "서버 오류" });
+  }
+});
+
+// 포켓몬 지급(정식) — 존재하는 species 검증. 파티 여유 있으면 파티에, 아니면 보관함.
+adminRoutes.post("/users/:id/give-pokemon", async (req, res) => {
+  try {
+    const { species, level, shiny } = req.body;
+    if (!species) return res.status(400).json({ error: "species 필요" });
+    if (!getSpeciesByName(species)) return res.status(400).json({ error: "존재하지 않는 포켓몬입니다" });
+
+    const user = await getUser(req.params.id);
+    if (!user) return res.status(404).json({ error: "유저 없음" });
+
+    const pokemon = createPokemon(species, level ?? 5);
+    if (typeof shiny === "boolean") pokemon.isShiny = shiny;
+    user.pokemon.push(pokemon);
+    if (user.party.length < 6) user.party.push(pokemon.uid);
+    else user.storage.push(pokemon);
+    if (!user.pokedex.includes(pokemon.species)) user.pokedex.push(pokemon.species);
+
+    await saveUser(user);
+    res.json({
+      ok: true,
+      pokemon: { uid: pokemon.uid, species: pokemon.species, level: pokemon.level, shiny: pokemon.isShiny ?? false },
+    });
+  } catch (err) {
+    log.error({ err }, "Admin give-pokemon error");
+    res.status(500).json({ error: "서버 오류" });
+  }
+});
+
+// 게임 데이터 초기화(개별) — 계정·연동 보존. 리셋/보존 필드는 resetGameData 주석 참조.
+adminRoutes.post("/users/:id/reset-game", async (req, res) => {
+  try {
+    const user = await getUser(req.params.id);
+    if (!user) return res.status(404).json({ error: "유저 없음" });
+
+    resetGameData(user);
+    await saveUser(user, "admin-adjust");
+    res.json({ ok: true });
+  } catch (err) {
+    log.error({ err }, "Admin reset-game error");
+    res.status(500).json({ error: "서버 오류" });
+  }
+});
+
+// ========== 일괄 작업 ==========
+
+// 보상 일괄 지급 — 전체(또는 filter 조건) 유저에게 포인트/아이템/포켓몬 지급.
+// filter.minPoints/maxPoints는 현재 포인트 기준(포함). 각 유저 저장은 'user:<id>'
+// 락으로 직렬화해 폴링 등 다른 쓰기와의 경합을 피한다. 처리/실패 수를 반환.
+adminRoutes.post("/broadcast/reward", async (req, res) => {
+  try {
+    const { points, items, pokemon, filter } = req.body ?? {};
+
+    // 입력 검증 — 존재하지 않는 item/species가 하나라도 있으면 시작 전에 400.
+    if (points != null && (typeof points !== "number" || !Number.isFinite(points))) {
+      return res.status(400).json({ error: "points는 숫자여야 합니다" });
+    }
+    if (items && typeof items === "object") {
+      for (const id of Object.keys(items)) {
+        if (!(await isGrantableItem(id))) return res.status(400).json({ error: `존재하지 않는 아이템: ${id}` });
+      }
+    }
+    if (Array.isArray(pokemon)) {
+      for (const p of pokemon) {
+        if (!p?.species || !getSpeciesByName(p.species)) {
+          return res.status(400).json({ error: `존재하지 않는 포켓몬: ${p?.species}` });
+        }
+      }
+    }
+
+    const minPoints = filter?.minPoints;
+    const maxPoints = filter?.maxPoints;
+    const all = await getAllUsers();
+    const targets = all.filter((u) => {
+      if (typeof minPoints === "number" && u.points < minPoints) return false;
+      if (typeof maxPoints === "number" && u.points > maxPoints) return false;
+      return true;
+    });
+
+    let processed = 0;
+    const failed: string[] = [];
+    for (const summary of targets) {
+      const id = summary.account.id;
+      try {
+        await withLock(`user:${id}`, async () => {
+          // 락 안에서 최신 유저를 다시 읽어 stale-save 덮어쓰기를 피한다.
+          const user = await getUser(id);
+          if (!user) return;
+          if (typeof points === "number") user.points = Math.max(0, user.points + points);
+          if (items && typeof items === "object") {
+            for (const [item, qty] of Object.entries(items as Record<string, number>)) {
+              if (typeof qty === "number" && qty > 0) incrementItem(user.inventory, item, qty);
+            }
+          }
+          if (Array.isArray(pokemon)) {
+            for (const p of pokemon) {
+              const mon = createPokemon(p.species, p.level ?? 5);
+              if (typeof p.shiny === "boolean") mon.isShiny = p.shiny;
+              user.pokemon.push(mon);
+              if (user.party.length < 6) user.party.push(mon.uid);
+              else user.storage.push(mon);
+              if (!user.pokedex.includes(mon.species)) user.pokedex.push(mon.species);
+            }
+          }
+          // 포인트가 줄 수도(음수 points 지급) 있으므로 admin-adjust로 저장.
+          await saveUser(user, "admin-adjust");
+        });
+        processed++;
+      } catch (err) {
+        log.error({ err, userId: id }, "Broadcast reward failed for user");
+        failed.push(id);
+      }
+    }
+
+    res.json({ ok: true, matched: targets.length, processed, failed });
+  } catch (err) {
+    log.error({ err }, "Admin broadcast reward error");
+    res.status(500).json({ error: "서버 오류" });
+  }
+});
+
+// 전체 게임 초기화(오픈베타 와이프) — 계정·연동 보존. 파괴적이므로 confirm 가드 필수.
+adminRoutes.post("/reset-all-game", async (req, res) => {
+  try {
+    if (req.body?.confirm !== "RESET-ALL") {
+      return res.status(400).json({ error: 'confirm 필드가 "RESET-ALL"이어야 합니다' });
+    }
+
+    const all = await getAllUsers();
+    let processed = 0;
+    const failed: string[] = [];
+    for (const summary of all) {
+      const id = summary.account.id;
+      try {
+        await withLock(`user:${id}`, async () => {
+          const user = await getUser(id);
+          if (!user) return;
+          resetGameData(user);
+          await saveUser(user, "admin-adjust");
+        });
+        processed++;
+      } catch (err) {
+        log.error({ err, userId: id }, "Reset-all failed for user");
+        failed.push(id);
+      }
+    }
+
+    res.json({ ok: true, total: all.length, processed, failed });
+  } catch (err) {
+    log.error({ err }, "Admin reset-all error");
+    res.status(500).json({ error: "서버 오류" });
+  }
+});
+
+// ========== 공지 ==========
+
+adminRoutes.get("/announcements", async (_req, res) => {
+  try {
+    res.json({ announcements: await getAnnouncements() });
+  } catch (err) {
+    log.error({ err }, "Admin announcements list error");
+    res.status(500).json({ error: "서버 오류" });
+  }
+});
+
+adminRoutes.post("/announcements", async (req, res) => {
+  try {
+    const { title, body } = req.body ?? {};
+    if (!title || !body) return res.status(400).json({ error: "title, body 필요" });
+    const announcement = await createAnnouncement(String(title), String(body));
+    res.status(201).json({ announcement });
+  } catch (err) {
+    log.error({ err }, "Admin announcement create error");
+    res.status(500).json({ error: "서버 오류" });
+  }
+});
+
+adminRoutes.patch("/announcements/:id", async (req, res) => {
+  try {
+    const { active } = req.body ?? {};
+    if (typeof active !== "boolean") return res.status(400).json({ error: "active(boolean) 필요" });
+    const announcement = await setAnnouncementActive(req.params.id, active);
+    if (!announcement) return res.status(404).json({ error: "공지 없음" });
+    res.json({ announcement });
+  } catch (err) {
+    log.error({ err }, "Admin announcement patch error");
+    res.status(500).json({ error: "서버 오류" });
+  }
+});
+
+adminRoutes.delete("/announcements/:id", async (req, res) => {
+  try {
+    const removed = await deleteAnnouncement(req.params.id);
+    if (!removed) return res.status(404).json({ error: "공지 없음" });
+    res.json({ ok: true });
+  } catch (err) {
+    log.error({ err }, "Admin announcement delete error");
     res.status(500).json({ error: "서버 오류" });
   }
 });
