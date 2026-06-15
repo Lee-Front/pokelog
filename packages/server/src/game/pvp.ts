@@ -14,7 +14,7 @@ import type {
   PvpQueueEntry, PvpResultKind, PvpSide, ServerConfig, UserData,
 } from "../../../../shared/types.js";
 import { getUser } from "../storage/user-store.js";
-import { getPartyPokemon } from "./pokemon-state.js";
+import { getPartyPokemon, findPokemonByUid } from "./pokemon-state.js";
 import { GameRuleError } from "./game-errors.js";
 import {
   getMatch, newMatchId, saveMatch, updateMatch, listMatchesForUser,
@@ -110,9 +110,11 @@ function asEngineSide(side: PvpSide): EngineSide {
 
 /**
  * A가 B에게 도전 생성 → pending 매치. 합의형 내기: challenger가 자기 stake(challengerStake)를
- * 이 시점에 락하고(빈 stake도 유효), 상대에게 요구할 자산(demand)을 매치에 저장한다. demand는
- * 수락 시점에 opponent가 충족(차감)한다 — 이 시점엔 검증/차감하지 않는다(상대 자산이므로).
- * challengerStake 비고 demand 빈 것 = 친선전(에스크로 빈 채 락, 정산 no-op).
+ * 이 시점에 락하고(빈 stake도 유효), 상대에게 요구할 자산(demand)을 매치에 저장한다. demand의
+ * points/items는 수락 시점에 opponent가 충족(차감)하며, 포켓몬은 challenger가 이 시점에 상대의
+ * 실제 보유 목록에서 특정 개체(uid)를 직접 골라 요구한다 — 그 uid들이 정말 상대 소유인지 여기서
+ * 검증한다(존재·소유). 차감은 하지 않음(수락 시 lockStake). challengerStake 비고 demand 빈 것 =
+ * 친선전(에스크로 빈 채 락, 정산 no-op).
  */
 export async function createChallenge(input: {
   challengerUserId: string;
@@ -153,13 +155,21 @@ export async function createChallenge(input: {
     expiresAt: new Date(now.getTime() + CHALLENGE_EXPIRY_MINUTES * 60_000).toISOString(),
   };
 
+  // 상대에게 요구할 자산(demand)을 정규화. 포켓몬 demand는 challenger가 상대의 실제 보유 목록에서
+  // 고른 특정 uid이므로, 그 uid들이 정말 상대(opponent) 소유인지 이 시점에 검증한다(차감은 수락 시).
+  const demand = normalizeDemand(input.demand);
+  for (const uid of demand.pokemonUids) {
+    if (!findPokemonByUid(opponent, uid)) {
+      throw new GameRuleError("상대가 보유하지 않은 포켓몬을 요구할 수 없습니다.");
+    }
+  }
+
   // challenger stake를 명세·검증·락(빈 stake면 빈 에스크로가 락된다 — 친선).
   const spec = normalizeStakeSpec(input.challengerStake);
   const escrow = await lockStake(match, "challenger", spec);
   match.stakes.challengerStake = spec;
   match.stakes.challengerEscrow = escrow;
-  // 상대에게 요구할 자산(demand)을 매치에 저장(수락 시 충족·차감). 빈 demand면 요구 없음.
-  match.stakes.demand = normalizeDemand(input.demand);
+  match.stakes.demand = demand;
 
   await saveMatch(match);
   return match;
@@ -167,14 +177,14 @@ export async function createChallenge(input: {
 
 /**
  * B가 도전 수락 → 상대 팀 스냅샷 후 active 전환. 합의형: challenger가 건 demand를 충족한다.
- * points/items는 demand대로 보유 시 자동 차감, 포켓몬은 opponent가 고른 pokemonUids로 충족
- * (길이 === demand.pokemonCount). 충족분을 opponentEscrow에 락한다. 보유 부족·수 불일치·안전규칙
- * 위반이면 아무것도 차감하지 않고 거부(원자성 — lockStake가 변경 전 전부 검증). demand 빈 것 = 친선.
+ * points/items는 demand대로 보유 시 자동 차감, 포켓몬은 challenger가 도전 생성 시 지정한
+ * demand.pokemonUids 그대로(opponent는 고르지 않음 — 이미 지정됨). 그 포켓몬이 여전히 상대
+ * 소유인지·안전규칙 위반 여부는 lockStake가 락 직전에 재검증한다. 충족분을 opponentEscrow에 락한다.
+ * 보유 부족·소유 변동·안전규칙 위반이면 아무것도 차감하지 않고 거부(원자성). demand 빈 것 = 친선.
  */
 export async function acceptChallenge(
   userId: string,
   matchId: string,
-  pokemonUids?: string[],
 ): Promise<PvpMatch> {
   const opponentUser = await getUser(userId);
   if (!opponentUser) throw new GameRuleError("사용자를 찾을 수 없습니다.");
@@ -194,9 +204,9 @@ export async function acceptChallenge(
     match.opponent.team = buildTeam(opponentUser, match.mode);
 
     // 팀 스냅샷이 정해진 뒤 demand를 충족하는 opponent stake를 만들어 락(전투 팀 겹침 검사 위해 team 먼저).
-    // demand의 points/items는 그대로 요구, 포켓몬은 opponent가 고른 uid로 충족(수 일치 검증).
+    // demand의 points/items·포켓몬(challenger가 지정) 그대로 — lockStake가 소유·안전규칙 재검증·락.
     const demand = normalizeDemand(match.stakes.demand);
-    const spec = buildOpponentStakeFromDemand(demand, pokemonUids ?? []);
+    const spec = buildOpponentStakeFromDemand(demand);
     const escrow = await lockStake(match, "opponent", spec);
     match.stakes.opponentEscrow = escrow;
 
@@ -211,6 +221,31 @@ export async function acceptChallenge(
     throw new GameRuleError("도전이 만료되었습니다.");
   }
   return result;
+}
+
+/**
+ * 도전 생성용 — 한 유저의 보유 포켓몬 목록(party + storage). challenger가 상대의 특정 포켓몬을
+ * 골라 demand하기 위한 가벼운 표현만 노출한다(uid·종·레벨·이로치·닉네임). 정렬: 레벨 내림차순.
+ */
+export async function listUserPokemonForChallenge(userId: string): Promise<Array<{
+  uid: string;
+  species: string;
+  level: number;
+  shiny: boolean;
+  nickname: string | null;
+}>> {
+  const user = await getUser(userId);
+  if (!user) throw new GameRuleError("사용자를 찾을 수 없습니다.", 404);
+  const all = [...user.pokemon, ...user.storage];
+  return all
+    .map((p) => ({
+      uid: p.uid,
+      species: p.species,
+      level: p.level,
+      shiny: p.isShiny === true,
+      nickname: p.nickname ?? null,
+    }))
+    .sort((a, b) => b.level - a.level);
 }
 
 /** B가 도전 거절. */

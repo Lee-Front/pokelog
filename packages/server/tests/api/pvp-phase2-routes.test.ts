@@ -115,7 +115,7 @@ describe("PvP Phase 2 routes", () => {
     const bToken = await seed("db", 500);
     const created = await t.authed(aToken).post("/api/pvp/challenges", {
       opponentUserId: "db", mode: "single",
-      demand: { points: 150, items: {}, pokemonCount: 0 },
+      demand: { points: 150, items: {}, pokemonUids: [] },
     });
     expect(created.status).toBe(201);
     expect(created.body.match.stakes.demand.points).toBe(150);
@@ -131,7 +131,7 @@ describe("PvP Phase 2 routes", () => {
     const bToken = await seed("eb", 10);
     const created = await t.authed(aToken).post("/api/pvp/challenges", {
       opponentUserId: "eb", mode: "single",
-      demand: { points: 9999, items: {}, pokemonCount: 0 },
+      demand: { points: 9999, items: {}, pokemonUids: [] },
     });
     expect(created.status).toBe(201);
     const accepted = await t.authed(bToken).post(`/api/pvp/challenges/${created.body.match.id}/accept`);

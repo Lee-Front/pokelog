@@ -806,19 +806,22 @@ export interface PvpEscrow {
 /**
  * 도전자가 상대에게 요구하는 자산(합의형 내기). 도전 생성 시 challenger가 자기 stake와 함께
  * 지정한다. points/items는 정확한 양/종류를 요구하고(상대가 보유하면 수락 시 자동 차감),
- * 포켓몬은 상대 보유를 알 수 없으므로 마릿수(pokemonCount)만 요구한다 — 어떤 개체를 낼지는
- * 수락하는 상대가 직접 고른다. 전 필드 0/빈이면 요구 없음(친선 또는 일방 stake).
+ * 포켓몬은 도전 생성 시 challenger가 **상대의 실제 보유 목록에서 특정 개체(uid)**를 직접 골라
+ * 요구한다 — 상대는 수락 시 지정된 그 포켓몬을 내놓는 데 동의할 뿐(고르지 않음). pokemonUids는
+ * 상대(opponent) 소유여야 하며, 수락 시점에도 여전히 상대 소유인지 재확인 후 락한다.
+ * 전 필드 0/빈이면 요구 없음(친선 또는 일방 stake).
  */
 export interface PvpDemand {
   points: number;
   items: Record<string, number>;
-  pokemonCount: number;
+  /** 상대(opponent)에게 요구하는 특정 포켓몬 uid 목록. 상대 보유여야 함. */
+  pokemonUids: string[];
 }
 
 /**
  * 스테이크/에스크로 메타. 모든 매치는 단일 에스크로(내기) 경로를 따른다 — 별도 보상모드 없음.
  * 합의형: challenger가 자기 stake(challengerStake)와 상대 요구(demand)를 정하고, opponent는
- * 수락 시 demand를 충족(points/items 자동 차감 + 포켓몬 N마리 직접 선택)해 opponentEscrow를 채운다.
+ * 수락 시 demand를 충족(points/items 자동 차감 + challenger가 지정한 특정 포켓몬 락)해 opponentEscrow를 채운다.
  * challengerStake 비고 demand 빈 것 = 친선전(정산 no-op). settled 플래그로 정산 멱등성 보장.
  */
 export interface PvpStakes {
