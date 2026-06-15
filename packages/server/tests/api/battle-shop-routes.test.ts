@@ -71,4 +71,51 @@ describe("battle shop routes", () => {
     expect(res.body.battleMoney).toBe(100 - 30 * 2);
     expect(res.body.inventory["super-potion"]).toBe(2);
   });
+
+  it("defaults to a single item when quantity is omitted", async () => {
+    const { token, userId } = await t.registerAndLogin("defaultQtyBshopper", "bulbasaur");
+
+    const { getUser, saveUser } = await import("../../src/storage/user-store.js");
+    const user = await getUser(userId);
+    user!.battleMoney = 100;
+    await saveUser(user!);
+
+    const res = await t.authed(token).post("/api/battle-shop/buy", { item: "super-potion" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.battleMoney).toBe(100 - 30);
+    expect(res.body.inventory["super-potion"]).toBe(1);
+  });
+
+  it("rejects a purchase that the user cannot fully afford", async () => {
+    const { token, userId } = await t.registerAndLogin("poorBshopper", "charmander");
+
+    const { getUser, saveUser } = await import("../../src/storage/user-store.js");
+    const user = await getUser(userId);
+    user!.battleMoney = 50; // enough for 1 super-potion (30) but not 2
+    await saveUser(user!);
+
+    const res = await t.authed(token).post("/api/battle-shop/buy", {
+      item: "super-potion",
+      quantity: 2,
+    });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects quantity above the 99 cap", async () => {
+    const { token, userId } = await t.registerAndLogin("capBshopper", "squirtle");
+
+    const { getUser, saveUser } = await import("../../src/storage/user-store.js");
+    const user = await getUser(userId);
+    user!.battleMoney = 1000000;
+    await saveUser(user!);
+
+    const res = await t.authed(token).post("/api/battle-shop/buy", {
+      item: "super-potion",
+      quantity: 100,
+    });
+
+    expect(res.status).toBe(400);
+  });
 });

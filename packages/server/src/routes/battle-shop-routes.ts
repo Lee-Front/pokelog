@@ -33,9 +33,10 @@ battleShopRoutes.post("/buy", async (req, res) => {
     const { userId } = req as AuthRequest;
     const { item, quantity } = req.body;
 
-    const qty = Number(quantity);
-    if (!item || !Number.isInteger(qty) || qty < 1) {
-      res.status(400).json({ error: "Item and a positive integer quantity are required." });
+    // 수량 미지정은 단건(1)으로 호환. 양의 정수, 상한 99.
+    const qty = quantity === undefined ? 1 : Number(quantity);
+    if (!item || !Number.isInteger(qty) || qty < 1 || qty > 99) {
+      res.status(400).json({ error: "Item and a quantity between 1 and 99 are required." });
       return;
     }
 

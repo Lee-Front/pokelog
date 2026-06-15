@@ -35,8 +35,10 @@ shopRoutes.post("/buy", async (req, res) => {
     const { userId } = req as AuthRequest;
     const { item, quantity } = req.body;
 
-    if (!item || !quantity || quantity < 1) {
-      res.status(400).json({ error: "Item and quantity are required." });
+    // 수량 미지정은 단건(1)으로 호환. 양의 정수, 상한 99.
+    const qty = quantity === undefined ? 1 : Number(quantity);
+    if (!item || !Number.isInteger(qty) || qty < 1 || qty > 99) {
+      res.status(400).json({ error: "Item and a quantity between 1 and 99 are required." });
       return;
     }
 
@@ -47,7 +49,7 @@ shopRoutes.post("/buy", async (req, res) => {
       return;
     }
 
-    const totalCost = shopItem.price * quantity;
+    const totalCost = shopItem.price * qty;
 
     const user = await getUser(userId!);
     if (!user) {
@@ -61,11 +63,11 @@ shopRoutes.post("/buy", async (req, res) => {
     }
 
     user.points -= totalCost;
-    incrementItem(user.inventory, item, quantity);
+    incrementItem(user.inventory, item, qty);
     await saveUser(user);
 
     res.json({
-      message: `Purchased ${quantity} ${shopItem.name}.`,
+      message: `Purchased ${qty} ${shopItem.name}.`,
       points: user.points,
       inventory: user.inventory,
     });

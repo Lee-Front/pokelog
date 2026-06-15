@@ -198,4 +198,44 @@ describe("shop + item usage", () => {
     const res = await api.post("/api/shop/buy", { item: "pokeball", quantity: 9999 });
     expect(res.status).toBe(400);
   });
+
+  it("buys multiple of an item, adding the full quantity to inventory", async () => {
+    const { token, userId } = await t.registerAndLogin();
+    const api = t.authed(token);
+
+    await t.admin().post("/api/admin/test/give-points", { userId, amount: 10000 });
+
+    // 신규 유저는 스타터 몬볼을 이미 보유하므로 절대값이 아닌 증가분으로 검증.
+    const before = (await api.get("/api/game/inventory")).body.inventory.pokeball ?? 0;
+
+    const res = await api.post("/api/shop/buy", { item: "pokeball", quantity: 5 });
+    expect(res.status).toBe(200);
+    expect(res.body.inventory.pokeball).toBe(before + 5);
+
+    const inv = await api.get("/api/game/inventory");
+    expect(inv.body.inventory.pokeball).toBe(before + 5);
+  });
+
+  it("defaults to a single item when quantity is omitted", async () => {
+    const { token, userId } = await t.registerAndLogin();
+    const api = t.authed(token);
+
+    await t.admin().post("/api/admin/test/give-points", { userId, amount: 10000 });
+
+    const before = (await api.get("/api/game/inventory")).body.inventory.pokeball ?? 0;
+
+    const res = await api.post("/api/shop/buy", { item: "pokeball" });
+    expect(res.status).toBe(200);
+    expect(res.body.inventory.pokeball).toBe(before + 1);
+  });
+
+  it("rejects quantity above the 99 cap → 400", async () => {
+    const { token, userId } = await t.registerAndLogin();
+    const api = t.authed(token);
+
+    await t.admin().post("/api/admin/test/give-points", { userId, amount: 1000000 });
+
+    const res = await api.post("/api/shop/buy", { item: "pokeball", quantity: 100 });
+    expect(res.status).toBe(400);
+  });
 });
