@@ -114,15 +114,39 @@ describe("calculateDamage", () => {
     expect(result.message).toBe("효과가 없는 것 같다...");
   });
 
-  it("misses when accuracy check fails", () => {
-    // For accuracy 0: Math.random() * 100 is always >= 0, so always misses
-    randomSpy.mockReturnValueOnce(0.5);
+  it("misses when accuracy roll fails (positive accuracy)", () => {
+    // accuracy 70 기술에 roll 80(=0.8*100) → 80 >= 70 이라 빗나감.
+    randomSpy.mockReturnValueOnce(0.8);
 
     const attackerStats: PokemonStats = { attack: 50, defense: 40, speed: 30, spAttack: 40, spDefense: 40 };
     const defenderStats: PokemonStats = { attack: 40, defense: 40, speed: 30, spAttack: 40, spDefense: 40 };
 
     const move: MoveData = {
       id: "test-miss",
+      name: "test",
+      type: "normal",
+      category: "physical",
+      power: 40,
+      accuracy: 70,
+      pp: 10,
+      description: "",
+    };
+
+    const result = calculateDamage(10, attackerStats, defenderStats, move, ["normal"], ["normal"]);
+
+    expect(result.missed).toBe(true);
+    expect(result.damage).toBe(0);
+  });
+
+  it("always hits when accuracy is 0 (본가 '—' 표기 = 필중)", () => {
+    // accuracy 0/null은 필중. 명중 굴림 없이 반드시 명중하고, 이후 난수는 급소·난수보정용.
+    randomSpy.mockReturnValue(0.5);
+
+    const attackerStats: PokemonStats = { attack: 50, defense: 40, speed: 30, spAttack: 40, spDefense: 40 };
+    const defenderStats: PokemonStats = { attack: 40, defense: 40, speed: 30, spAttack: 40, spDefense: 40 };
+
+    const move: MoveData = {
+      id: "test-sureshot",
       name: "test",
       type: "normal",
       category: "physical",
@@ -134,8 +158,8 @@ describe("calculateDamage", () => {
 
     const result = calculateDamage(10, attackerStats, defenderStats, move, ["normal"], ["normal"]);
 
-    expect(result.missed).toBe(true);
-    expect(result.damage).toBe(0);
+    expect(result.missed).toBe(false);
+    expect(result.damage).toBeGreaterThan(0);
   });
 
   it("returns 0 damage for status moves (power 0)", () => {

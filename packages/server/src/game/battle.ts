@@ -47,10 +47,13 @@ export function calculateDamage(
 ): DamageResult {
   const typeChart = getTypeChart();
 
-  // Accuracy check
-  const accuracyRoll = Math.random() * 100;
-  if (accuracyRoll >= move.accuracy) {
-    return { damage: 0, missed: true, effectiveness: 1, message: "공격이 빗나갔다!", critical: false };
+  // Accuracy check. 본가에서 accuracy "—"(0/null)은 "필중"을 뜻한다(Swift·검무 등).
+  // accuracy가 양수일 때만 명중 굴림을 하고, 0 이하면 반드시 명중시킨다.
+  if (move.accuracy > 0) {
+    const accuracyRoll = Math.random() * 100;
+    if (accuracyRoll >= move.accuracy) {
+      return { damage: 0, missed: true, effectiveness: 1, message: "공격이 빗나갔다!", critical: false };
+    }
   }
 
   // Status moves (power 0): skip damage
