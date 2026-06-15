@@ -115,7 +115,44 @@ const ALLOWED_CONFIG_PATHS = new Set([
   "meta.featureFlags.trade",
   "meta.featureFlags.achievements",
   "meta.featureFlags.regions",
+  // 알 가챠 — 티어별 cost/레벨/가중치 + 전역 이로치율.
+  "egg.common.cost",
+  "egg.common.minLevel",
+  "egg.common.maxLevel",
+  "egg.common.weightMultiplier",
+  "egg.rare.cost",
+  "egg.rare.minLevel",
+  "egg.rare.maxLevel",
+  "egg.rare.weightMultiplier",
+  "egg.legend.cost",
+  "egg.legend.minLevel",
+  "egg.legend.maxLevel",
+  "egg.legend.weightMultiplier",
+  "shinyRate",
 ]);
+
+// 알/이로치 설정 검증 — 키 끝부분(leaf)으로 규칙을 고른다. 범위: cost≥0,
+// level 1~100(min≤max는 저장 후 부화 시 rollLevel이 음수 범위를 피하도록 별도 보장),
+// weightMultiplier>0, shinyRate 0~1.
+function validateEggOrShiny(key: string, value: unknown): string | null {
+  const isNum = typeof value === "number" && Number.isFinite(value);
+  if (key === "shinyRate") {
+    return isNum && value >= 0 && value <= 1 ? null : "이로치율은 0~1 사이 숫자여야 합니다";
+  }
+  const leaf = key.split(".").pop();
+  if (leaf === "cost") {
+    return isNum && (value as number) >= 0 ? null : "cost는 0 이상이어야 합니다";
+  }
+  if (leaf === "minLevel" || leaf === "maxLevel") {
+    return isNum && Number.isInteger(value) && (value as number) >= 1 && (value as number) <= 100
+      ? null
+      : "레벨은 1~100 사이 정수여야 합니다";
+  }
+  if (leaf === "weightMultiplier") {
+    return isNum && (value as number) > 0 ? null : "가중치 배수는 0보다 커야 합니다";
+  }
+  return null;
+}
 
 // Set config value
 adminRoutes.put("/config", async (req, res) => {
@@ -140,7 +177,28 @@ adminRoutes.put("/config", async (req, res) => {
       }
     }
 
+    if (key === "shinyRate" || key.startsWith("egg.")) {
+      const eggError = validateEggOrShiny(key, value);
+      if (eggError) return res.status(400).json({ error: eggError });
+    }
+
     const config = await getConfig();
+
+    // 알 레벨은 min ≤ max를 보장해야 rollLevel이 음수 범위로 깨지지 않는다.
+    // 한 쪽만 저장하므로 반대편은 현재 저장값과 비교한다.
+    if (key === "egg.common.minLevel" || key === "egg.rare.minLevel" || key === "egg.legend.minLevel") {
+      const tier = key.split(".")[1] as keyof typeof config.egg;
+      if ((value as number) > config.egg[tier].maxLevel) {
+        return res.status(400).json({ error: "최소 레벨은 최대 레벨보다 클 수 없습니다" });
+      }
+    }
+    if (key === "egg.common.maxLevel" || key === "egg.rare.maxLevel" || key === "egg.legend.maxLevel") {
+      const tier = key.split(".")[1] as keyof typeof config.egg;
+      if ((value as number) < config.egg[tier].minLevel) {
+        return res.status(400).json({ error: "최대 레벨은 최소 레벨보다 작을 수 없습니다" });
+      }
+    }
+
     const keys = key.split(".");
     let obj: Record<string, unknown> = config as unknown as Record<string, unknown>;
     for (let i = 0; i < keys.length - 1; i++) {

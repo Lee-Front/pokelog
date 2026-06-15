@@ -4,6 +4,7 @@ import type { OwnedPokemon, WildPokemon, PokemonMove, SpeciesData } from "../../
 import { resolvePokemonGender } from "./pokemon-gender.js";
 import { buildStats } from "./pokemon-stats.js";
 import { resolveSpeciesOrVariant } from "./pokemon-state.js";
+import { getShinyRate } from "./shiny.js";
 
 function buildMoves(species: SpeciesData, level: number): PokemonMove[] {
   const allMoves = getMoves();
@@ -75,7 +76,7 @@ export function createPokemon(species: string, level: number): OwnedPokemon {
     moveUsageCounts: {},
     damageTakenTotal: 0,
     nature,
-    isShiny: Math.random() < (1 / 4096),
+    isShiny: Math.random() < getShinyRate(),
   };
 }
 
@@ -100,7 +101,7 @@ export function createWildPokemon(species: string, level: number): WildPokemon {
     nature,
     gender: resolvePokemonGender(speciesData.genderRate, Math.random()),
     ability: speciesData.abilities?.normal[0] ?? undefined,
-    isShiny: Math.random() < (1 / 4096),
+    isShiny: Math.random() < getShinyRate(),
   };
 }
 

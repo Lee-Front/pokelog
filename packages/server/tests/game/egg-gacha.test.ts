@@ -26,17 +26,17 @@ afterEach(() => {
 });
 
 describe("egg-gacha", () => {
-  it("builds tier summaries from synced species data", () => {
-    const summaries = getEggTierSummaries();
+  it("builds tier summaries from synced species data", async () => {
+    const summaries = await getEggTierSummaries();
     expect(summaries.map((entry) => entry.tier)).toEqual(["common", "rare", "legend"]);
     expect(summaries.every((entry) => entry.speciesCount > 0)).toBe(true);
     expect(summaries.map((entry) => entry.cost)).toEqual([120, 450, 3200]);
   });
 
-  it("hatches common eggs from easy base-stage species", () => {
+  it("hatches common eggs from easy base-stage species", async () => {
     vi.spyOn(Math, "random").mockReturnValue(0);
 
-    const result = hatchEgg({ id: "egg-common", tier: "common", createdAt: new Date().toISOString() });
+    const result = await hatchEgg({ id: "egg-common", tier: "common", createdAt: new Date().toISOString() });
     const species = getSpeciesByName(result.pokemon.species);
 
     expect(species).toBeDefined();
@@ -47,10 +47,10 @@ describe("egg-gacha", () => {
     expect(result.pokemon.level).toBe(1);
   });
 
-  it("hatches rare eggs from baby or low-capture base-stage species", () => {
+  it("hatches rare eggs from baby or low-capture base-stage species", async () => {
     vi.spyOn(Math, "random").mockReturnValue(0);
 
-    const result = hatchEgg({ id: "egg-rare", tier: "rare", createdAt: new Date().toISOString() });
+    const result = await hatchEgg({ id: "egg-rare", tier: "rare", createdAt: new Date().toISOString() });
     const species = getSpeciesByName(result.pokemon.species);
 
     expect(species).toBeDefined();
@@ -60,10 +60,10 @@ describe("egg-gacha", () => {
     expect(result.pokemon.level).toBe(5);
   });
 
-  it("hatches legend eggs from legendary or mythical base-stage species", () => {
+  it("hatches legend eggs from legendary or mythical base-stage species", async () => {
     vi.spyOn(Math, "random").mockReturnValue(0);
 
-    const result = hatchEgg({ id: "egg-legend", tier: "legend", createdAt: new Date().toISOString() });
+    const result = await hatchEgg({ id: "egg-legend", tier: "legend", createdAt: new Date().toISOString() });
     const species = getSpeciesByName(result.pokemon.species);
 
     expect(species).toBeDefined();
@@ -72,27 +72,26 @@ describe("egg-gacha", () => {
     expect(result.pokemon.level).toBe(15);
   });
 
-  it("includes egg-eligible regional variants in tier pools", () => {
-    const commonPool = getEggTierPool("common");
+  it("includes egg-eligible regional variants in tier pools", async () => {
+    const commonPool = await getEggTierPool("common");
     const poolSlugs = new Set(commonPool.map((entry) => entry.species));
     // a variant whose base species (diglett) is an easy common-tier base stage
     expect(poolSlugs.has("diglett-alola")).toBe(true);
   });
 
-  it("excludes variants whose base species is a line-evolved (non-base-stage) form", () => {
-    const allPoolSlugs = new Set(
-      (["common", "rare", "legend"] as const).flatMap((tier) =>
-        getEggTierPool(tier).map((entry) => entry.species),
-      ),
-    );
+  it("excludes variants whose base species is a line-evolved (non-base-stage) form", async () => {
+    const allPoolSlugs = new Set<string>();
+    for (const tier of ["common", "rare", "legend"] as const) {
+      for (const entry of await getEggTierPool(tier)) allPoolSlugs.add(entry.species);
+    }
     // arcanine evolves from growlithe, so arcanine-hisui must never be an egg candidate
     expect(allPoolSlugs.has("arcanine-hisui")).toBe(false);
   });
 
-  it("every variant entry in egg pools resolves to a known base species", () => {
+  it("every variant entry in egg pools resolves to a known base species", async () => {
     const variantIds = new Set(getVariants().map((variant) => variant.id));
     for (const tier of ["common", "rare", "legend"] as const) {
-      for (const entry of getEggTierPool(tier)) {
+      for (const entry of await getEggTierPool(tier)) {
         if (variantIds.has(entry.species)) {
           const resolved = resolveSpeciesOrVariant(entry.species);
           expect(resolved.variantId).toBe(entry.species);
@@ -102,23 +101,23 @@ describe("egg-gacha", () => {
     }
   });
 
-  it("hatches a variant egg into a Pokemon carrying the variantId", () => {
+  it("hatches a variant egg into a Pokemon carrying the variantId", async () => {
     // force the weighted roll to land on the last pool entry, which is a variant
     // (variants are appended after base species in buildTierPool)
     vi.spyOn(Math, "random").mockReturnValue(0.999999);
 
-    const pool = getEggTierPool("common");
+    const pool = await getEggTierPool("common");
     const lastEntry = pool[pool.length - 1];
     expect(getVariants().some((variant) => variant.id === lastEntry.species)).toBe(true);
 
-    const result = hatchEgg({ id: "egg-variant", tier: "common", createdAt: new Date().toISOString() });
+    const result = await hatchEgg({ id: "egg-variant", tier: "common", createdAt: new Date().toISOString() });
     expect(result.pokemon.variantId).toBe(lastEntry.species);
     const resolved = resolveSpeciesOrVariant(lastEntry.species);
     expect(result.pokemon.species).toBe(resolved.baseSpecies);
   });
 
-  it("variants are rarer than their base species in the same egg pool", () => {
-    const pool = getEggTierPool("common");
+  it("variants are rarer than their base species in the same egg pool", async () => {
+    const pool = await getEggTierPool("common");
     const diglett = pool.find((entry) => entry.species === "diglett");
     const diglettAlola = pool.find((entry) => entry.species === "diglett-alola");
     expect(diglett).toBeDefined();

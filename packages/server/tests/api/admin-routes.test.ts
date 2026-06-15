@@ -191,4 +191,53 @@ describe("admin routes", () => {
     expect(config.body.rewards.pointsPerByte).toBe(0.02);
     expect(config.body.rewards.combo.maxMultiplier).toBe(2.0);
   });
+
+  it("allows runtime tuning of egg tier cost/level/weight and shinyRate", async () => {
+    const edits: Array<[string, unknown]> = [
+      ["egg.common.cost", 200],
+      ["egg.rare.minLevel", 8],
+      ["egg.rare.maxLevel", 20],
+      ["egg.legend.weightMultiplier", 2],
+      ["shinyRate", 0.01],
+    ];
+    for (const [key, value] of edits) {
+      const res = await t.admin().put("/api/admin/config", { key, value });
+      expect(res.status).toBe(200);
+    }
+
+    const config = await t.admin().get("/api/admin/config");
+    expect(config.body.egg.common.cost).toBe(200);
+    expect(config.body.egg.rare.minLevel).toBe(8);
+    expect(config.body.egg.rare.maxLevel).toBe(20);
+    expect(config.body.egg.legend.weightMultiplier).toBe(2);
+    expect(config.body.shinyRate).toBe(0.01);
+  });
+
+  it("rejects out-of-range egg/shiny edits", async () => {
+    const bad: Array<[string, unknown]> = [
+      ["egg.common.cost", -5], // cost < 0
+      ["egg.common.minLevel", 0], // level < 1
+      ["egg.common.maxLevel", 101], // level > 100
+      ["egg.rare.weightMultiplier", 0], // multiplier not > 0
+      ["shinyRate", 2], // shinyRate > 1
+      ["shinyRate", -0.1], // shinyRate < 0
+    ];
+    for (const [key, value] of bad) {
+      const res = await t.admin().put("/api/admin/config", { key, value });
+      expect(res.status).toBe(400);
+    }
+  });
+
+  it("rejects an egg level range where min exceeds max", async () => {
+    // default common is [1,6]; setting min above the stored max must fail
+    const res = await t.admin().put("/api/admin/config", { key: "egg.common.minLevel", value: 50 });
+    expect(res.status).toBe(400);
+  });
+
+  it("ships default egg/shiny config (DEFAULT_CONFIG)", async () => {
+    const { DEFAULT_CONFIG } = await import("../../src/storage/config-store.js");
+    expect(DEFAULT_CONFIG.egg.common).toEqual({ cost: 120, minLevel: 1, maxLevel: 6, weightMultiplier: 1 });
+    expect(DEFAULT_CONFIG.egg.legend.cost).toBe(3200);
+    expect(DEFAULT_CONFIG.shinyRate).toBeCloseTo(1 / 4096);
+  });
 });

@@ -3,6 +3,7 @@ import { readJson, writeJson } from "./json-store.js";
 import type { ServerConfig } from "../../../../shared/types.js";
 import { getDataDir } from "../paths.js";
 import { DEFAULT_INTEGRATION_REWARD_RULES, mergeIntegrationRewardRules } from "../integrations/event-catalog.js";
+import { DEFAULT_SHINY_RATE, refreshShinyRate } from "../game/shiny.js";
 
 function getConfigPath() {
   return path.join(getDataDir(), "config.json");
@@ -123,13 +124,26 @@ export const DEFAULT_CONFIG: ServerConfig = {
       "fire-stone": { name: "Fire Stone", price: 200 },
     },
   },
+  // 알 가챠 기본값 — 기존 egg-gacha.ts 상수와 동일. weightMultiplier=1은 종별 공식
+  // 결과를 그대로 사용(티어 비중 조정 없음). 운영자가 /admin에서 튜닝한다.
+  egg: {
+    common: { cost: 120, minLevel: 1, maxLevel: 6, weightMultiplier: 1 },
+    rare: { cost: 450, minLevel: 5, maxLevel: 12, weightMultiplier: 1 },
+    legend: { cost: 3200, minLevel: 15, maxLevel: 25, weightMultiplier: 1 },
+  },
+  shinyRate: DEFAULT_SHINY_RATE,
 };
 
 export async function getConfig(): Promise<ServerConfig> {
   const config = await readJson<ServerConfig>(getConfigPath());
   if (!config) {
+    refreshShinyRate(DEFAULT_CONFIG.shinyRate);
     return { ...DEFAULT_CONFIG };
   }
+
+  // 이로치 확률은 동기 팩토리(createPokemon)가 동기 getShinyRate()로 읽으므로,
+  // config funnel인 여기서 캐시를 갱신한다. 유효하지 않은 값은 모듈에서 기본값 폴백.
+  refreshShinyRate(config.shinyRate);
 
   return {
     ...DEFAULT_CONFIG,
@@ -185,6 +199,12 @@ export async function getConfig(): Promise<ServerConfig> {
         ...config.battleShop?.items,
       },
     },
+    egg: {
+      common: { ...DEFAULT_CONFIG.egg.common, ...config.egg?.common },
+      rare: { ...DEFAULT_CONFIG.egg.rare, ...config.egg?.rare },
+      legend: { ...DEFAULT_CONFIG.egg.legend, ...config.egg?.legend },
+    },
+    shinyRate: config.shinyRate ?? DEFAULT_CONFIG.shinyRate,
   };
 }
 

@@ -43,7 +43,7 @@ eggRoutes.get("/eggs", async (req: AuthRequest, res: Response) => {
 
     res.json({
       points: user.points,
-      tiers: getEggTierSummaries(),
+      tiers: await getEggTierSummaries(),
       eggs: user.eggs,
     });
   } catch (err) {
@@ -62,7 +62,7 @@ eggRoutes.post("/eggs/buy", async (req: AuthRequest, res: Response) => {
     }
 
     const tier = String(req.body.tier ?? "");
-    const tierInfo = getEggTierSummaries().find((entry) => entry.tier === tier);
+    const tierInfo = (await getEggTierSummaries()).find((entry) => entry.tier === tier);
     if (!tierInfo) {
       res.status(400).json({ error: "올바른 알 티어를 선택해주세요 (common, rare, legend)" });
       return;
@@ -76,7 +76,7 @@ eggRoutes.post("/eggs/buy", async (req: AuthRequest, res: Response) => {
     const egg = createEgg(tierInfo.tier);
     user.points -= tierInfo.cost;
 
-    const { pokemon, label } = hatchEgg(egg);
+    const { pokemon, label } = await hatchEgg(egg);
     const destination = placeHatched(user, pokemon);
 
     await saveUser(user);
@@ -115,7 +115,7 @@ eggRoutes.post("/eggs/hatch", async (req: AuthRequest, res: Response) => {
     }
 
     const [egg] = user.eggs.splice(eggIndex, 1);
-    const { pokemon, label } = hatchEgg(egg);
+    const { pokemon, label } = await hatchEgg(egg);
     const destination = placeHatched(user, pokemon);
 
     await saveUser(user);
@@ -141,16 +141,17 @@ eggRoutes.post("/eggs/hatch-all", async (req: AuthRequest, res: Response) => {
     }
 
     const eggs = user.eggs.splice(0, user.eggs.length);
-    const hatched = eggs.map((egg) => {
-      const { pokemon, label } = hatchEgg(egg);
+    const hatched = [];
+    for (const egg of eggs) {
+      const { pokemon, label } = await hatchEgg(egg);
       const destination = placeHatched(user, pokemon);
-      return {
+      hatched.push({
         egg: { id: egg.id, tier: egg.tier, label },
         pokemon,
         destination,
         toBox: destination === "storage",
-      };
-    });
+      });
+    }
 
     if (hatched.length > 0) {
       await saveUser(user);
@@ -171,7 +172,7 @@ eggRoutes.post("/eggs/pull", async (req: AuthRequest, res: Response) => {
     }
 
     const tier = String(req.body.tier ?? "");
-    const tierInfo = getEggTierSummaries().find((entry) => entry.tier === tier);
+    const tierInfo = (await getEggTierSummaries()).find((entry) => entry.tier === tier);
     if (!tierInfo) {
       res.status(400).json({ error: "올바른 티어를 선택해주세요 (common, rare, legend)" });
       return;
@@ -185,7 +186,7 @@ eggRoutes.post("/eggs/pull", async (req: AuthRequest, res: Response) => {
     const egg = createEgg(tierInfo.tier);
     user.points -= tierInfo.cost;
 
-    const { pokemon } = hatchEgg(egg);
+    const { pokemon } = await hatchEgg(egg);
     const destination = placeHatched(user, pokemon);
 
     await saveUser(user);

@@ -333,6 +333,22 @@ export interface BattleRewardConfig {
   dropTable: BattleDropEntry[];
 }
 
+// 알 가챠 티어별 튜닝 — cost/레벨 범위/등장 비중. 종별 세부 가중치 공식은 코드에
+// 유지되고(getEggWeight), weightMultiplier가 그 결과 전체에 곱해져 티어 풀 비중을 조정한다.
+export interface EggTierConfig {
+  cost: number;
+  minLevel: number;
+  maxLevel: number;
+  // getEggWeight 결과에 곱하는 배수(기본 1). 풀 내부 상대비는 유지하되 티어 비중을 조정.
+  weightMultiplier: number;
+}
+
+export interface EggConfig {
+  common: EggTierConfig;
+  rare: EggTierConfig;
+  legend: EggTierConfig;
+}
+
 export interface IntegrationRewardRule {
   enabled: boolean;
   points: number;
@@ -394,6 +410,9 @@ export interface ServerConfig {
   battleShop: {
     items: Record<string, ShopItem>;
   };
+  egg: EggConfig;
+  // 이로치(shiny) 확률 — 알 부화·야생·스타터 등 createPokemon 공통. 0~1 (기본 1/4096).
+  shinyRate: number;
 }
 
 // === Sync State ===

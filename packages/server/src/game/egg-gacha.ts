@@ -2,44 +2,22 @@ import crypto from "node:crypto";
 import { getEvolutions, getSpecies, getVariants } from "./data-loader.js";
 import { createPokemon } from "./pokemon-factory.js";
 import { resolveSpeciesOrVariant } from "./pokemon-state.js";
-import type { EggTierId, OwnedEgg, OwnedPokemon, SpeciesData } from "../../../../shared/types.js";
+import { getConfig } from "../storage/config-store.js";
+import type { EggConfig, EggTierId, OwnedEgg, OwnedPokemon, SpeciesData } from "../../../../shared/types.js";
 
 interface EggPoolEntry {
   species: string;
   weight: number;
 }
 
-interface EggTierConfig {
-  tier: EggTierId;
-  label: string;
-  cost: number;
-  levelRange: [number, number];
-  pool: () => EggPoolEntry[];
-}
+// 티어별 라벨은 표시 전용 상수(운영 편집 대상 아님). cost·레벨·가중치는 config.egg에서 온다.
+const TIER_LABELS: Record<EggTierId, string> = {
+  common: "Common Egg",
+  rare: "Rare Egg",
+  legend: "Legend Egg",
+};
 
-const EGG_TIER_CONFIGS: EggTierConfig[] = [
-  {
-    tier: "common",
-    label: "Common Egg",
-    cost: 120,
-    levelRange: [1, 6],
-    pool: () => buildTierPool("common"),
-  },
-  {
-    tier: "rare",
-    label: "Rare Egg",
-    cost: 450,
-    levelRange: [5, 12],
-    pool: () => buildTierPool("rare"),
-  },
-  {
-    tier: "legend",
-    label: "Legend Egg",
-    cost: 3200,
-    levelRange: [15, 25],
-    pool: () => buildTierPool("legend"),
-  },
-];
+const EGG_TIER_ORDER: EggTierId[] = ["common", "rare", "legend"];
 
 let eggBaseStageSpecies: Set<string> | null = null;
 
@@ -106,6 +84,12 @@ function getEggWeight(species: SpeciesData, tier: EggTierId): number {
   return species.isMythical ? 1 : 3;
 }
 
+// weightMultiplier(>0, 기본 1)를 종별 공식 결과에 곱해 티어 풀의 전체 가중치를 스케일.
+// 풀 내부 상대비는 그대로 유지된다(같은 배수). 최소 1로 클램프해 0-가중치 항목을 막는다.
+function scaleWeight(weight: number, multiplier: number): number {
+  return Math.max(1, Math.round(weight * multiplier));
+}
+
 // Egg-eligible regional variants ride on the egg pool of their base species:
 // a variant only appears in a tier when its base species qualifies for that
 // tier, so a Diglett-Alola can hatch from a common egg but a (line-evolved)
@@ -113,7 +97,11 @@ function getEggWeight(species: SpeciesData, tier: EggTierId): number {
 // weight is scaled down from the base species' weight.
 const VARIANT_EGG_WEIGHT_RATIO = 0.25;
 
-function getEggEligibleVariantEntries(eligibleBaseSpecies: SpeciesData[], tier: EggTierId): EggPoolEntry[] {
+function getEggEligibleVariantEntries(
+  eligibleBaseSpecies: SpeciesData[],
+  tier: EggTierId,
+  multiplier: number,
+): EggPoolEntry[] {
   const weightByBaseSpecies = new Map(
     eligibleBaseSpecies.map((species) => [species.species, getEggWeight(species, tier)]),
   );
@@ -122,30 +110,30 @@ function getEggEligibleVariantEntries(eligibleBaseSpecies: SpeciesData[], tier: 
     .filter((variant) => variant.eggEligible && weightByBaseSpecies.has(variant.baseSpecies))
     .map((variant) => ({
       species: variant.id,
-      weight: Math.max(1, Math.round(weightByBaseSpecies.get(variant.baseSpecies)! * VARIANT_EGG_WEIGHT_RATIO)),
+      weight: scaleWeight(weightByBaseSpecies.get(variant.baseSpecies)! * VARIANT_EGG_WEIGHT_RATIO, multiplier),
     }));
 }
 
-function buildTierPool(tier: EggTierId): EggPoolEntry[] {
+function buildTierPool(tier: EggTierId, multiplier: number): EggPoolEntry[] {
   const eligibleBaseSpecies = getEggEligibleSpecies(tier);
   const baseEntries = eligibleBaseSpecies.map((species) => ({
     species: species.species,
-    weight: getEggWeight(species, tier),
+    weight: scaleWeight(getEggWeight(species, tier), multiplier),
   }));
 
-  return [...baseEntries, ...getEggEligibleVariantEntries(eligibleBaseSpecies, tier)];
+  return [...baseEntries, ...getEggEligibleVariantEntries(eligibleBaseSpecies, tier, multiplier)];
 }
 
-function getTierConfig(tier: EggTierId): EggTierConfig {
-  const config = EGG_TIER_CONFIGS.find((entry) => entry.tier === tier);
-  if (!config) {
-    throw new Error(`Unknown egg tier: ${tier}`);
-  }
-  return config;
+// config.egg에서 티어 설정을 읽어 폴백 적용. 값이 비정상이면 DEFAULT_CONFIG 머지가
+// 이미 처리하므로 여기선 그대로 사용한다.
+async function getEggConfig(): Promise<EggConfig> {
+  return (await getConfig()).egg;
 }
 
-function getValidPoolEntries(tier: EggTierId): EggPoolEntry[] {
-  return getTierConfig(tier).pool().filter((entry) => Boolean(resolveSpeciesOrVariant(entry.species).speciesData));
+function getValidPoolEntries(tier: EggTierId, multiplier: number): EggPoolEntry[] {
+  return buildTierPool(tier, multiplier).filter((entry) =>
+    Boolean(resolveSpeciesOrVariant(entry.species).speciesData),
+  );
 }
 
 function rollWeightedEntry(entries: EggPoolEntry[]): EggPoolEntry {
@@ -166,20 +154,26 @@ function rollWeightedEntry(entries: EggPoolEntry[]): EggPoolEntry {
   return entries[entries.length - 1];
 }
 
-function rollLevel([minLevel, maxLevel]: [number, number]): number {
+function rollLevel(minLevel: number, maxLevel: number): number {
   return Math.floor(Math.random() * (maxLevel - minLevel + 1)) + minLevel;
 }
 
-export function getEggTierPool(tier: EggTierId): ReadonlyArray<{ species: string; weight: number }> {
-  return getValidPoolEntries(tier);
+export async function getEggTierPool(
+  tier: EggTierId,
+): Promise<ReadonlyArray<{ species: string; weight: number }>> {
+  const egg = await getEggConfig();
+  return getValidPoolEntries(tier, egg[tier].weightMultiplier);
 }
 
-export function getEggTierSummaries(): Array<{ tier: EggTierId; label: string; cost: number; speciesCount: number }> {
-  return EGG_TIER_CONFIGS.map(({ tier, label, cost }) => ({
+export async function getEggTierSummaries(): Promise<
+  Array<{ tier: EggTierId; label: string; cost: number; speciesCount: number }>
+> {
+  const egg = await getEggConfig();
+  return EGG_TIER_ORDER.map((tier) => ({
     tier,
-    label,
-    cost,
-    speciesCount: getValidPoolEntries(tier).length,
+    label: TIER_LABELS[tier],
+    cost: egg[tier].cost,
+    speciesCount: getValidPoolEntries(tier, egg[tier].weightMultiplier).length,
   }));
 }
 
@@ -191,14 +185,15 @@ export function createEgg(tier: EggTierId): OwnedEgg {
   };
 }
 
-export function hatchEgg(egg: OwnedEgg): { pokemon: OwnedPokemon; label: string } {
-  const config = getTierConfig(egg.tier);
-  const entry = rollWeightedEntry(getValidPoolEntries(egg.tier));
-  const level = rollLevel(config.levelRange);
+export async function hatchEgg(egg: OwnedEgg): Promise<{ pokemon: OwnedPokemon; label: string }> {
+  const eggConfig = await getEggConfig();
+  const tierConfig = eggConfig[egg.tier];
+  const entry = rollWeightedEntry(getValidPoolEntries(egg.tier, tierConfig.weightMultiplier));
+  const level = rollLevel(tierConfig.minLevel, tierConfig.maxLevel);
 
   return {
     pokemon: createPokemon(entry.species, level),
-    label: config.label,
+    label: TIER_LABELS[egg.tier],
   };
 }
 
