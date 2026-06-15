@@ -2,6 +2,7 @@ import { Router } from "express";
 import crypto from "node:crypto";
 import { getConfig, saveConfig } from "../storage/config-store.js";
 import { getUser, saveUser, getAllUsers } from "../storage/user-store.js";
+import { hashPassword, issueToken } from "../auth/auth.js";
 import { withLock } from "../storage/pvp-store.js";
 import { resetGameData } from "../game/game-reset.js";
 import { getSpeciesByName } from "../game/data-loader.js";
@@ -28,7 +29,7 @@ import {
 } from "../game/growth.js";
 import { calculateStatsForLevel } from "../game/pokemon-stats.js";
 import { getPartyPokemon } from "../game/pokemon-state.js";
-import type { ServerConfig } from "../../../../shared/types.js";
+import type { ServerConfig, UserData } from "../../../../shared/types.js";
 import { INTEGRATION_EVENT_CATALOG } from "../integrations/event-catalog.js";
 import { clearPendingEvolutionForPokemon, queuePendingEvolution } from "../game/pending-evolution.js";
 
@@ -318,6 +319,84 @@ adminRoutes.get("/users", async (_req, res) => {
       }))
     );
   } catch {
+    res.status(500).json({ error: "서버 오류" });
+  }
+});
+
+// ========== SSO 프로비저닝 (계정 배부) ==========
+
+// 외부 포털(CompanyHub)이 자기 유저에게 PokeLog 계정을 1:1로 배부한다. loginId로
+// 계정이 없으면 랜덤 비밀번호로 생성(register와 동일한 초기 상태)하고, 있으면 멱등하게
+// 처리한다. 어느 경우든 admin 권한으로 JWT를 발급해 반환하므로 포털은 별도 로그인 없이
+// 그 토큰으로 게임 API를 프록시할 수 있다. 비밀번호는 포털에 노출되지 않는다.
+const PROVISION_DEFAULT_STARTER = "bulbasaur";
+// register와 동일한 스타터 화이트리스트 (auth-routes의 VALID_STARTERS와 일치).
+const VALID_STARTERS = ["bulbasaur", "charmander", "squirtle"];
+
+adminRoutes.post("/provision", async (req, res) => {
+  try {
+    const { loginId, nickname, starter } = req.body ?? {};
+
+    if (typeof loginId !== "string" || !loginId.trim()) {
+      return res.status(400).json({ error: "loginId가 필요합니다" });
+    }
+    const id = loginId.trim();
+    // PokeLog 계정 id 규칙(register와 동일) — 영문/숫자만.
+    if (!/^[a-zA-Z0-9]+$/.test(id)) {
+      return res.status(400).json({ error: "loginId는 영문/숫자만 가능합니다" });
+    }
+
+    const existing = await getUser(id);
+    if (existing) {
+      // 멱등 — 이미 배부된 계정. 비밀번호를 모르므로 admin 권한으로 토큰만 재발급한다.
+      const token = issueToken(id);
+      return res.json({ pokelogId: id, token, created: false });
+    }
+
+    // 신규 계정 — register 로직을 재사용해 동일한 초기 상태로 만든다. 비밀번호는
+    // 포털이 쓰지 않으므로 임의 난수로 채운다(로그인은 발급 토큰으로 대체).
+    const resolvedStarter =
+      typeof starter === "string" && VALID_STARTERS.includes(starter)
+        ? starter
+        : PROVISION_DEFAULT_STARTER;
+    const resolvedNickname =
+      typeof nickname === "string" && nickname.trim() ? nickname.trim() : id;
+
+    const hashedPassword = await hashPassword(crypto.randomUUID());
+    const starterPokemon = createPokemon(resolvedStarter, 5);
+
+    const userData: UserData = {
+      account: {
+        id,
+        password: hashedPassword,
+        nickname: resolvedNickname,
+        createdAt: new Date().toISOString(),
+        matchings: {},
+      },
+      currentRegion: "default",
+      points: 0,
+      battleMoney: 0,
+      totalExp: 0,
+      combo: { count: 0, lastCommitAt: null },
+      encounterCeiling: { accumulatedBytes: 0 },
+      party: [starterPokemon.uid],
+      pokemon: [starterPokemon],
+      eggs: [],
+      pokedex: [resolvedStarter],
+      inventory: { pokeball: 5 },
+      pendingEvents: [],
+      pendingEvolutions: [],
+      battleState: null,
+      storage: [],
+      log: [],
+      integrations: [],
+    };
+
+    await saveUser(userData);
+    const token = issueToken(id);
+    res.status(201).json({ pokelogId: id, token, created: true });
+  } catch (err) {
+    log.error({ err }, "Admin provision error");
     res.status(500).json({ error: "서버 오류" });
   }
 });

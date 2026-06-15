@@ -5,6 +5,9 @@ describe("admin routes", () => {
   let t: TestApp;
 
   beforeAll(async () => {
+    // /provision이 issueToken을 호출하므로 워커 프로세스에 JWT 시크릿이 필요하다
+    // (globalSetup의 env는 워커로 전파되지 않음 — 다른 api 테스트와 동일 패턴).
+    process.env.POKELOG_JWT_SECRET ??= "vitest-global-secret";
     t = await setupTestApp();
   });
 
@@ -147,6 +150,73 @@ describe("admin routes", () => {
   it("POST /users/:id/recompute returns 404 for an unknown user", async () => {
     const res = await t.admin().post("/api/admin/users/nope-not-real/recompute");
     expect(res.status).toBe(404);
+  });
+
+  it("POST /provision creates a new PokeLog account and returns a usable token", async () => {
+    const loginId = "ssoNewUser";
+    const res = await t.admin().post("/api/admin/provision", { loginId });
+    expect(res.status).toBe(201);
+    expect(res.body.created).toBe(true);
+    expect(res.body.pokelogId).toBe(loginId);
+    expect(typeof res.body.token).toBe("string");
+
+    // 반환 토큰으로 곧장 게임 API 호출 가능 (별도 로그인 불필요).
+    const status = await t.authed(res.body.token).get("/api/game/status");
+    expect(status.status).toBe(200);
+    expect(status.body.nickname).toBe(loginId); // nickname 기본값 = loginId
+  });
+
+  it("POST /provision is idempotent for an existing account (re-issues token, created:false)", async () => {
+    const loginId = "ssoExisting";
+    const first = await t.admin().post("/api/admin/provision", { loginId });
+    expect(first.status).toBe(201);
+    expect(first.body.created).toBe(true);
+
+    const second = await t.admin().post("/api/admin/provision", { loginId });
+    expect(second.status).toBe(200);
+    expect(second.body.created).toBe(false);
+    expect(second.body.pokelogId).toBe(loginId);
+    expect(typeof second.body.token).toBe("string");
+
+    // 재발급 토큰도 유효해야 한다.
+    const status = await t.authed(second.body.token).get("/api/game/status");
+    expect(status.status).toBe(200);
+  });
+
+  it("POST /provision is idempotent for a self-registered account (no password known)", async () => {
+    // 자가가입한 계정도 admin이 비밀번호 없이 토큰만 재발급할 수 있어야 한다.
+    const { userId } = await t.registerAndLogin("ssoSelfReg", "squirtle");
+    const res = await t.admin().post("/api/admin/provision", { loginId: userId });
+    expect(res.status).toBe(200);
+    expect(res.body.created).toBe(false);
+    expect(res.body.pokelogId).toBe(userId);
+    const status = await t.authed(res.body.token).get("/api/game/status");
+    expect(status.status).toBe(200);
+  });
+
+  it("POST /provision honors an explicit nickname and starter", async () => {
+    const res = await t.admin().post("/api/admin/provision", {
+      loginId: "ssoCustom",
+      nickname: "별명123",
+      starter: "charmander",
+    });
+    expect(res.status).toBe(201);
+    const party = await t.authed(res.body.token).get("/api/game/party");
+    expect(party.body.party.some((p: { species: string }) => p.species === "charmander")).toBe(true);
+    const status = await t.authed(res.body.token).get("/api/game/status");
+    expect(status.body.nickname).toBe("별명123");
+  });
+
+  it("POST /provision rejects requests without an admin key", async () => {
+    const res = await t.request.post("/api/admin/provision").send({ loginId: "ssoNoKey" });
+    expect([403, 503]).toContain(res.status);
+  });
+
+  it("POST /provision rejects a missing or malformed loginId", async () => {
+    const missing = await t.admin().post("/api/admin/provision", {});
+    expect(missing.status).toBe(400);
+    const bad = await t.admin().post("/api/admin/provision", { loginId: "has space!" });
+    expect(bad.status).toBe(400);
   });
 
   it("ships conservative reward defaults (DEFAULT_CONFIG)", async () => {
