@@ -223,6 +223,9 @@ export type BattleWeather = "sun" | "rain" | "hail" | "sandstorm";
 export interface BattleState {
   eventId: string;
   myPokemonUid: string;
+  // 전투 중 한 번이라도 필드에 나온 내 포켓몬 uid 집합(클래식 EXP 분배용). 시작 시 첫
+  // 포켓몬, 교체 때마다 들어온 포켓몬을 추가. 승리 시 이 중 살아있는 개체가 풀 EXP를 받는다.
+  participantUids?: string[];
   turn: number;
   wild: WildPokemon;
   playerStatStages?: StatStages;
@@ -249,6 +252,16 @@ export interface BattleDroppedItem {
  * action response when `result === "win"`. Consumed by the CLI and web client
  * to show the post-battle reward summary.
  */
+// 전투에 참여(필드에 나옴)해 EXP를 받은 포켓몬 1마리의 결과.
+export interface BattlePartyExp {
+  uid: string;
+  species: string;
+  exp: number;
+  leveledUp: boolean;
+  newLevel: number;
+  evolvedInto: string | null;
+}
+
 export interface BattleRewards {
   exp: number;
   battleMoney: number;
@@ -256,6 +269,9 @@ export interface BattleRewards {
   leveledUp?: boolean;
   newLevel?: number;
   evolvedInto?: string | null;
+  // 참여 포켓몬별 EXP 결과(클래식 방식). 참여해 살아있는 개체는 각자 풀 EXP를 받고,
+  // 기절(hp<=0)한 참여자는 제외된다. 단일 포켓몬 전투면 그 한 마리만.
+  partyExp?: BattlePartyExp[];
 }
 
 export interface LogEntry {
@@ -676,6 +692,135 @@ export const MAX_PARTY_SIZE = 6;
 export const MAX_MOVES = 4;
 export const MAX_LOG_ENTRIES = 200;
 export const MAX_LEVEL = 100;
+
+// === User PvP (유저간 전투) ===
+// Phase 1: 친선전(무보상) 실시간 턴제. 베팅/에스크로·랭킹은 Phase 2, 웹 UI는 Phase 3.
+// 매치는 파일 기반 저장소(pokelog-data/pvp/{matchId}.json)에 영속되며 폴링으로 동기화된다.
+
+/** 전투 규모: single=각자 1마리, party=파티 전체(기절 시 교체). */
+export type PvpMode = "single" | "party";
+
+/**
+ * 매치 상태머신:
+ *  pending  — 도전 생성됨, 상대 수락 대기(만료시간 있음). 자동 대기열 페어링은 곧장 active.
+ *  active   — 진행 중. 라운드마다 양측 행동 제출.
+ *  finished — 종료. result로 승패/기권/무효 구분.
+ */
+export type PvpMatchStatus = "pending" | "active" | "finished";
+
+/** 매치 종료 사유. forfeit=기권, expired=수락 만료, declined=거절, voided=무효(상대 이탈 등). */
+export type PvpResultKind = "decided" | "forfeit" | "expired" | "declined" | "voided";
+
+/** 매칭 방식: challenge=지정 도전, queue=자동 대기열 페어링. */
+export type PvpMatchOrigin = "challenge" | "queue";
+
+/** 전투용 포켓몬 스냅샷 — 매치 시작 시 OwnedPokemon에서 복제. 원본과 분리되어 매치 안에서만 변한다. */
+export interface PvpCombatant {
+  /** 원본 OwnedPokemon.uid (참조·표시용; 매치는 스냅샷으로 진행). */
+  uid: string;
+  species: string;
+  variantId?: string | null;
+  nickname: string | null;
+  level: number;
+  hp: number;
+  maxHp: number;
+  stats: PokemonStats;
+  moves: PokemonMove[];
+  statusCondition?: PrimaryStatus | null;
+  sleepTurns?: number;
+  volatile: VolatileStatus[];
+  statStages: StatStages;
+}
+
+/** 한쪽 진영(유저)의 매치 내 상태. */
+export interface PvpSide {
+  userId: string;
+  nickname: string;
+  /** 전투 파티(스냅샷). single 모드면 길이 1. */
+  team: PvpCombatant[];
+  /** 현재 출전 중인 team 인덱스. */
+  activeIndex: number;
+  /** 이번 라운드 제출한 행동. 미제출이면 null. 양측 모두 제출되면 라운드 해결. */
+  pendingAction: PvpAction | null;
+  /** 기권 여부. */
+  forfeited: boolean;
+}
+
+/** 라운드 행동 — 기술 사용 또는 교체. */
+export type PvpAction =
+  | { kind: "move"; moveId: string }
+  | { kind: "switch"; teamIndex: number };
+
+/** 인배틀 채팅 메시지. */
+export interface PvpChatMessage {
+  id: string;
+  userId: string;
+  nickname: string;
+  text: string;
+  at: string;
+}
+
+/**
+ * Phase 2 자리만 비워둔 보상/스테이크 메타. Phase 1(친선전)에서는 항상 friendly이며
+ * 엔진/스토어는 이 필드를 읽지 않는다. (베팅/에스크로·승자독식 로직은 Phase 2.)
+ */
+export interface PvpStakes {
+  rewardMode: "friendly";
+}
+
+export interface PvpMatch {
+  id: string;
+  status: PvpMatchStatus;
+  mode: PvpMode;
+  origin: PvpMatchOrigin;
+  challenger: PvpSide;
+  /** 도전 대상/페어링된 상대. pending(지정 도전)에서는 수락 전이라도 채워진다. */
+  opponent: PvpSide;
+  /** 현재 라운드 번호(1부터). pending이면 0. */
+  round: number;
+  /** 라운드별 해결 로그(메시지 배열). 폴링 클라가 새 라운드 로그를 받아 표시. */
+  roundLogs: PvpRoundLog[];
+  chat: PvpChatMessage[];
+  stakes: PvpStakes;
+  /** 종료 시 채워짐. */
+  result: PvpResult | null;
+  createdAt: string;
+  updatedAt: string;
+  /** pending(지정 도전) 수락 만료 시각. queue/active는 생략. */
+  expiresAt?: string;
+}
+
+/** 라운드 해결 결과 로그. */
+export interface PvpRoundLog {
+  round: number;
+  /** 사람이 읽는 메시지(데미지·상태·교체·기절 등). */
+  messages: string[];
+  /** 라운드 종료 후 양측 활성 포켓몬 HP 스냅샷(클라 표시용). */
+  challengerHp: number;
+  opponentHp: number;
+}
+
+export interface PvpResult {
+  kind: PvpResultKind;
+  /** 승자 userId. 무승부/무효면 null. */
+  winnerUserId: string | null;
+  loserUserId: string | null;
+  finishedAt: string;
+}
+
+/** 자동 대기열 엔트리. */
+export interface PvpQueueEntry {
+  userId: string;
+  nickname: string;
+  mode: PvpMode;
+  /** 전투에 쓸 파티 포켓몬 uid 목록(스냅샷은 페어링 시점에 생성). */
+  teamUids: string[];
+  enqueuedAt: string;
+}
+
+export interface PvpQueueState {
+  entries: PvpQueueEntry[];
+}
 
 // === System Activity Log ===
 // 모든 사용자의 시스템 활동을 영속 기록(JSONL)해 운영자가 에러 원인을 추적한다.

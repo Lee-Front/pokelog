@@ -11,6 +11,7 @@ import type { BattleRewardConfig, OwnedPokemon, UserData } from "../../../../sha
 
 const config: BattleRewardConfig = {
   expMultiplier: 1.0,
+  benchExpShareRatio: 0.5,
   moneyPerLevel: 2,
   moneyBase: 3,
   dropTable: [
@@ -20,7 +21,7 @@ const config: BattleRewardConfig = {
   ],
 };
 
-function makeUser(active: OwnedPokemon): UserData {
+function makePartyUser(members: OwnedPokemon[]): UserData {
   return {
     account: { id: "u", password: "x", nickname: "U", createdAt: new Date().toISOString(), matchings: {} },
     currentRegion: "default",
@@ -29,10 +30,10 @@ function makeUser(active: OwnedPokemon): UserData {
     totalExp: 0,
     combo: { count: 0, lastCommitAt: null },
     encounterCeiling: { accumulatedBytes: 0 },
-    party: [active.uid],
-    pokemon: [active],
+    party: members.map((m) => m.uid),
+    pokemon: [...members],
     eggs: [],
-    pokedex: [active.species],
+    pokedex: members.map((m) => m.species),
     inventory: {},
     pendingEvents: [],
     pendingEvolutions: [],
@@ -41,6 +42,10 @@ function makeUser(active: OwnedPokemon): UserData {
     log: [],
     integrations: [],
   };
+}
+
+function makeUser(active: OwnedPokemon): UserData {
+  return makePartyUser([active]);
 }
 
 beforeEach(() => clearAllCaches());
@@ -104,7 +109,7 @@ describe("grantBattleRewards", () => {
 
     const rewards = grantBattleRewards(
       user,
-      winner,
+      [winner],
       { species: "pidgey", level: 10 },
       config,
       { random: () => 0, now: new Date("2026-01-01T12:00:00Z") }, // roll 0 → potion drop
@@ -126,7 +131,7 @@ describe("grantBattleRewards", () => {
 
     const rewards = grantBattleRewards(
       user,
-      winner,
+      [winner],
       { species: "charizard", level: 50 },
       bigExpConfig,
       { random: () => 0.99, now: new Date("2026-01-01T12:00:00Z") }, // no drop
@@ -137,5 +142,74 @@ describe("grantBattleRewards", () => {
     expect(rewards.newLevel).toBeGreaterThan(3);
     expect(winner.level).toBe(rewards.newLevel);
     expect(rewards.droppedItems).toEqual([]);
+  });
+});
+
+describe("grantBattleRewards participant EXP (classic, gen-6+)", () => {
+  const now = new Date("2026-01-01T12:00:00Z");
+  const wild = { species: "pidgey", level: 10 } as const;
+  // 풀 EXP가 레벨업/진화를 일으키지 않도록 충분히 높은 레벨의 개체를 사용.
+  const opts = { random: () => 0.99, now }; // no drop
+
+  it("gives every living participant the FULL exp (no division)", () => {
+    const p1 = createPokemon("charizard", 40);
+    const p2 = createPokemon("blastoise", 40);
+    const start1 = p1.exp;
+    const start2 = p2.exp;
+    const user = makePartyUser([p1, p2]);
+
+    const rewards = grantBattleRewards(user, [p1, p2], wild, config, opts);
+
+    const fullExp = calculateBattleExp(wild, config);
+    expect(rewards.exp).toBe(fullExp);
+    expect(p1.exp).toBe(start1 + fullExp);
+    expect(p2.exp).toBe(start2 + fullExp); // 분배 없이 둘 다 풀
+
+    expect(rewards.partyExp).toHaveLength(2);
+    expect(rewards.partyExp?.[0]).toMatchObject({ uid: p1.uid, exp: fullExp });
+    expect(rewards.partyExp?.[1]).toMatchObject({ uid: p2.uid, exp: fullExp });
+  });
+
+  it("single-participant battle behaves as before (only that one)", () => {
+    const solo = createPokemon("charizard", 40);
+    const bench = createPokemon("blastoise", 40); // 파티엔 있지만 미참여
+    const startBench = bench.exp;
+    const user = makePartyUser([solo, bench]);
+
+    const rewards = grantBattleRewards(user, [solo], wild, config, opts);
+
+    expect(bench.exp).toBe(startBench); // 미참여 → 0
+    expect(rewards.partyExp).toHaveLength(1);
+    expect(rewards.partyExp?.[0].uid).toBe(solo.uid);
+  });
+
+  it("fainted (hp<=0) participants get no exp and are omitted from partyExp", () => {
+    const alive = createPokemon("charizard", 40);
+    const fainted = createPokemon("blastoise", 40);
+    fainted.hp = 0;
+    const startFainted = fainted.exp;
+    const user = makePartyUser([alive, fainted]);
+
+    const rewards = grantBattleRewards(user, [alive, fainted], wild, config, opts);
+
+    expect(fainted.exp).toBe(startFainted);
+    expect(rewards.partyExp).toHaveLength(1);
+    expect(rewards.partyExp?.[0].uid).toBe(alive.uid);
+  });
+
+  it("propagates level-ups for each participant in partyExp", () => {
+    const p1 = createPokemon("caterpie", 3);
+    const p2 = createPokemon("weedle", 3);
+    const user = makePartyUser([p1, p2]);
+    const bigExpConfig = { ...config, expMultiplier: 1000 };
+
+    const rewards = grantBattleRewards(user, [p1, p2], { species: "charizard", level: 50 }, bigExpConfig, opts);
+
+    for (const p of [p1, p2]) {
+      const entry = rewards.partyExp?.find((e) => e.uid === p.uid);
+      expect(entry?.leveledUp).toBe(true);
+      expect(entry?.newLevel).toBeGreaterThan(3);
+      expect(p.level).toBe(entry?.newLevel);
+    }
   });
 });

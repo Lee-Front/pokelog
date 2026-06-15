@@ -255,6 +255,23 @@ function getSpeciesAliases(): Record<string, string> {
   return speciesAliasCache!;
 }
 
+let reverseSpeciesAliasCache: Record<string, string> | null = null;
+
+/**
+ * 폼 접미사가 붙은 종 id("mimikyu-disguised")를 ANSI 아트 파일이 쓰는 베이스
+ * 이름("mimikyu")으로 되돌린다. alias 맵(짧은→풀)을 시작 시 1회 역인덱싱해 캐시하며,
+ * 매칭되는 베이스 이름이 없으면 입력 종 id를 그대로 반환한다.
+ */
+export function resolveArtName(species: string): string {
+  if (!reverseSpeciesAliasCache) {
+    reverseSpeciesAliasCache = {};
+    for (const [short, full] of Object.entries(getSpeciesAliases())) {
+      reverseSpeciesAliasCache[full] = short;
+    }
+  }
+  return reverseSpeciesAliasCache[species] ?? species;
+}
+
 export function getSpeciesByName(species: string): SpeciesData | undefined {
   const all = getSpecies();
   const exact = all.find((s) => s.species === species);

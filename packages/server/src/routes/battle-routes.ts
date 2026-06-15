@@ -74,11 +74,26 @@ async function finishWin(
   revertBattleForms(battle, winner);
   user.battleState = null;
 
-  const rewards = grantBattleRewards(user, winner, wild, config.battle);
+  // 참여(필드에 나온) 포켓몬 전원을 EXP 대상으로. 현재 출전 중인 winner를 항상 맨 앞에 두고,
+  // participantUids에 기록된 나머지 참여자를 user.pokemon에서 찾아 뒤에 붙인다(중복 제거).
+  const seen = new Set<string>([winner.uid]);
+  const participants: OwnedPokemon[] = [winner];
+  for (const uid of battle.participantUids ?? []) {
+    if (seen.has(uid)) continue;
+    const p = user.pokemon.find((x) => x.uid === uid);
+    if (!p) continue;
+    seen.add(uid);
+    participants.push(p);
+  }
 
-  if (rewards.exp > 0) log.push(`${winner.species}은(는) ${rewards.exp} 경험치를 얻었다!`);
-  if (rewards.leveledUp) log.push(`${winner.species}은(는) 레벨 ${rewards.newLevel}이(가) 되었다!`);
-  if (rewards.evolvedInto) log.push(`${winner.species}(으)로 진화했다!`);
+  const rewards = grantBattleRewards(user, participants, wild, config.battle);
+
+  // 참여 포켓몬별 EXP/레벨업/진화 로그(살아있는 참여자만 rewards.partyExp에 들어온다).
+  for (const member of rewards.partyExp ?? []) {
+    if (member.exp > 0) log.push(`${member.species}은(는) ${member.exp} 경험치를 얻었다!`);
+    if (member.leveledUp) log.push(`${member.species}은(는) 레벨 ${member.newLevel}이(가) 되었다!`);
+    if (member.evolvedInto) log.push(`${member.species}(으)로 진화했다!`);
+  }
   if (rewards.battleMoney > 0) log.push(`배틀머니 ${rewards.battleMoney}을(를) 획득했다!`);
   for (const drop of rewards.droppedItems) {
     log.push(`${drop.item} ${drop.qty}개를 주웠다!`);
@@ -130,6 +145,8 @@ battleRoutes.post("/start", async (req, res) => {
     const battleState: BattleState = {
       eventId,
       myPokemonUid: pokemonUid,
+      // 첫 출전 포켓몬을 참여자로 기록(클래식 EXP 분배용). 교체 시 handleSwitch에서 추가.
+      participantUids: [pokemonUid],
       turn: 0,
       wild: { ...event.pokemon },
       playerStatStages: defaultStatStages(),
@@ -435,6 +452,9 @@ async function handleSwitch(
   battle.playerPreTransformMaxHp = undefined;
 
   battle.myPokemonUid = newUid;
+  // 들어온 포켓몬을 참여자로 기록(중복 제거). 승리 시 살아있는 참여자가 풀 EXP를 받는다.
+  battle.participantUids = battle.participantUids ?? [];
+  if (!battle.participantUids.includes(newUid)) battle.participantUids.push(newUid);
   battle.playerStatStages = defaultStatStages();
   battle.playerVolatile = [];
   battle.playerBattleForm = undefined; // Reset battle form on switch

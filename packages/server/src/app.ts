@@ -4,6 +4,7 @@ import path from "node:path";
 import { projectPath } from "./paths.js";
 import { httpLogger } from "./logger.js";
 import { getConfig } from "./storage/config-store.js";
+import { resolveArtName } from "./game/data-loader.js";
 import { authRoutes } from "./routes/auth-routes.js";
 import { userRoutes } from "./routes/user-routes.js";
 import { gameRoutes } from "./routes/game-routes.js";
@@ -15,6 +16,7 @@ import { storageRoutes } from "./routes/storage-routes.js";
 import { shopRoutes } from "./routes/shop-routes.js";
 import { battleShopRoutes } from "./routes/battle-shop-routes.js";
 import { battleRoutes } from "./routes/battle-routes.js";
+import { pvpRoutes } from "./routes/pvp-routes.js";
 import { socialRoutes } from "./routes/social-routes.js";
 import { adminRoutes } from "./routes/admin-routes.js";
 import { authRateLimiter, gameRateLimiter, publicRateLimiter } from "./middleware/rate-limit-middleware.js";
@@ -74,8 +76,9 @@ export function createApp() {
     });
 
     // 포켓몬 ANSI 아트 API (인증 불필요)
+    // 종 id를 아트 파일명으로 정규화한다(폼 풀 id "mimikyu-disguised" → 베이스 "mimikyu").
     app.get(`${prefix}/art/:species`, (req, res) => {
-      const art = safeReadArt(POKEMON_ART_DIR, req.params.species);
+      const art = safeReadArt(POKEMON_ART_DIR, resolveArtName(req.params.species));
       if (art) res.type("text/plain").send(art);
       else res.status(404).send("");
     });
@@ -92,6 +95,7 @@ export function createApp() {
     app.use(`${prefix}/shop`, gameRateLimiter, shopRoutes);
     app.use(`${prefix}/battle-shop`, gameRateLimiter, battleShopRoutes);
     app.use(`${prefix}/battle`, gameRateLimiter, battleRoutes);
+    app.use(`${prefix}/pvp`, gameRateLimiter, pvpRoutes);
     app.use(`${prefix}/social`, gameRateLimiter, socialRoutes);
     app.use(`${prefix}/admin`, adminRoutes);
   }
