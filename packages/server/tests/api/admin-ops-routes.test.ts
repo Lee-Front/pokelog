@@ -260,6 +260,118 @@ describe("admin ops + announcement routes", () => {
     expect(u?.log.length).toBe(1);
   });
 
+  // ── 개체 포켓몬 편집/삭제 ────────────────────────────────────
+  it("GET /users/:id snapshot includes a full pokemonList (party + storage)", async () => {
+    await ctx.saveUser(makeUser("plist", {
+      party: ["uid1"],
+      pokemon: [{ uid: "uid1", species: "pikachu", nickname: "Sparky", level: 10, hp: 30, maxHp: 30, isShiny: true } as any],
+      storage: [{ uid: "uid2", species: "eevee", nickname: null, level: 7, hp: 22, maxHp: 22 } as any],
+    }));
+    const res = await api(ctx, "GET", "/api/admin/users/plist", { admin: true });
+    expect(res.status).toBe(200);
+    expect(res.body.pokemonList).toHaveLength(2);
+    const party = res.body.pokemonList.find((p: any) => p.uid === "uid1");
+    expect(party).toMatchObject({ species: "pikachu", nickname: "Sparky", shiny: true, inParty: true });
+    const boxed = res.body.pokemonList.find((p: any) => p.uid === "uid2");
+    expect(boxed).toMatchObject({ species: "eevee", nickname: null, inParty: false });
+  });
+
+  it("PATCH /users/:id/pokemon/:uid edits nickname/shiny and recalculates stats on level change", async () => {
+    await ctx.saveUser(makeUser("edit", {
+      party: ["m1"],
+      pokemon: [{ uid: "m1", species: "pikachu", nickname: null, level: 5, exp: 0, hp: 20, maxHp: 20, stats: {}, moves: [] } as any],
+    }));
+
+    const res = await api(ctx, "PATCH", "/api/admin/users/edit/pokemon/m1", {
+      admin: true, body: { nickname: "  Bolt  ", level: 50, shiny: true },
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.pokemon).toMatchObject({ nickname: "Bolt", level: 50, shiny: true });
+
+    const u = await ctx.getUser("edit");
+    const mon = u!.pokemon[0];
+    expect(mon.level).toBe(50);
+    expect(mon.nickname).toBe("Bolt");
+    expect(mon.isShiny).toBe(true);
+    // 레벨 50은 레벨 5보다 maxHp가 커야 한다(스탯 재계산 확인).
+    expect(mon.maxHp).toBeGreaterThan(20);
+    expect(mon.hp).toBeLessThanOrEqual(mon.maxHp);
+  });
+
+  it("PATCH /users/:id/pokemon/:uid changes species (validated) and updates pokedex", async () => {
+    await ctx.saveUser(makeUser("sp", {
+      party: ["m1"],
+      pokemon: [{ uid: "m1", species: "pikachu", nickname: null, level: 10, exp: 0, hp: 30, maxHp: 30, stats: {}, moves: [] } as any],
+      pokedex: ["pikachu"],
+    }));
+
+    const bad = await api(ctx, "PATCH", "/api/admin/users/sp/pokemon/m1", {
+      admin: true, body: { species: "not-a-pokemon" },
+    });
+    expect(bad.status).toBe(400);
+
+    const ok = await api(ctx, "PATCH", "/api/admin/users/sp/pokemon/m1", {
+      admin: true, body: { species: "eevee" },
+    });
+    expect(ok.status).toBe(200);
+    expect(ok.body.pokemon.species).toBe("eevee");
+    const u = await ctx.getUser("sp");
+    expect(u!.pokemon[0].species).toBe("eevee");
+    expect(u!.pokedex).toContain("eevee");
+  });
+
+  it("PATCH /users/:id/pokemon/:uid 404 for unknown pokemon / 400 for bad level", async () => {
+    await ctx.saveUser(makeUser("edit404", {
+      party: ["m1"],
+      pokemon: [{ uid: "m1", species: "pikachu", nickname: null, level: 5, exp: 0, hp: 20, maxHp: 20, stats: {}, moves: [] } as any],
+    }));
+    expect((await api(ctx, "PATCH", "/api/admin/users/edit404/pokemon/nope", { admin: true, body: { level: 9 } })).status).toBe(404);
+    expect((await api(ctx, "PATCH", "/api/admin/users/edit404/pokemon/m1", { admin: true, body: { level: 0 } })).status).toBe(400);
+    expect((await api(ctx, "PATCH", "/api/admin/users/edit404/pokemon/m1", { admin: true, body: { level: 101 } })).status).toBe(400);
+  });
+
+  it("DELETE /users/:id/pokemon/:uid removes from party and storage, syncs party array", async () => {
+    await ctx.saveUser(makeUser("del", {
+      party: ["a", "b"],
+      pokemon: [
+        { uid: "a", species: "pikachu", nickname: null, level: 5, hp: 20, maxHp: 20 } as any,
+        { uid: "b", species: "eevee", nickname: null, level: 5, hp: 20, maxHp: 20 } as any,
+      ],
+      storage: [{ uid: "c", species: "bulbasaur", nickname: null, level: 5, hp: 20, maxHp: 20 } as any],
+    }));
+
+    // 보관함 포켓몬 삭제
+    const delBox = await api(ctx, "DELETE", "/api/admin/users/del/pokemon/c", { admin: true });
+    expect(delBox.status).toBe(200);
+    expect((await ctx.getUser("del"))?.storage).toEqual([]);
+
+    // 파티 포켓몬 삭제 — party 배열에서도 빠진다
+    const delParty = await api(ctx, "DELETE", "/api/admin/users/del/pokemon/a", { admin: true });
+    expect(delParty.status).toBe(200);
+    const u = await ctx.getUser("del");
+    expect(u?.pokemon.map((p) => p.uid)).toEqual(["b"]);
+    expect(u?.party).toEqual(["b"]);
+
+    // 존재하지 않는 uid → 404
+    expect((await api(ctx, "DELETE", "/api/admin/users/del/pokemon/zzz", { admin: true })).status).toBe(404);
+  });
+
+  it("DELETE /users/:id/pokemon/:uid promotes storage to party when party would be emptied", async () => {
+    await ctx.saveUser(makeUser("promote", {
+      party: ["a"],
+      pokemon: [{ uid: "a", species: "pikachu", nickname: null, level: 5, hp: 20, maxHp: 20 } as any],
+      storage: [{ uid: "b", species: "eevee", nickname: null, level: 5, hp: 20, maxHp: 20 } as any],
+    }));
+
+    const res = await api(ctx, "DELETE", "/api/admin/users/promote/pokemon/a", { admin: true });
+    expect(res.status).toBe(200);
+    const u = await ctx.getUser("promote");
+    // 보관함의 eevee가 파티로 승격
+    expect(u?.party).toEqual(["b"]);
+    expect(u?.pokemon.map((p) => p.uid)).toEqual(["b"]);
+    expect(u?.storage).toEqual([]);
+  });
+
   // ── 일괄 보상(broadcast) ─────────────────────────────────────
   it("POST /broadcast/reward applies filter and reports processed count", async () => {
     await ctx.saveUser(makeUser("poor", { points: 100 }));

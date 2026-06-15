@@ -51,6 +51,27 @@ async function isGrantableItem(itemId: string): Promise<boolean> {
   return itemId in config.shop.items || itemId in config.battleShop.items;
 }
 
+// 운영 UI에 내려줄 개체 포켓몬 요약 — 카드/편집폼에 쓰는 필드만.
+function summarizePokemon(p: {
+  uid: string;
+  species: string;
+  nickname: string | null;
+  level: number;
+  hp: number;
+  maxHp: number;
+  isShiny?: boolean;
+}): { uid: string; species: string; nickname: string | null; level: number; hp: number; maxHp: number; shiny: boolean } {
+  return {
+    uid: p.uid,
+    species: p.species,
+    nickname: p.nickname ?? null,
+    level: p.level,
+    hp: p.hp,
+    maxHp: p.maxHp,
+    shiny: p.isShiny ?? false,
+  };
+}
+
 // Add repo
 adminRoutes.post("/repo", async (req, res) => {
   try {
@@ -320,6 +341,12 @@ adminRoutes.get("/users/:id", async (req, res) => {
         .map((uid) => user.pokemon.find((p) => p.uid === uid))
         .filter((p): p is NonNullable<typeof p> => Boolean(p))
         .map((p) => ({ uid: p.uid, species: p.species, level: p.level, shiny: p.isShiny ?? false })),
+      // 편집/삭제 UI용 전체 보유 목록 — 파티(user.pokemon)와 보관함(user.storage)을
+      // 합쳐 inParty 플래그로 구분. 편집폼에 필요한 최소 필드만(닉네임·레벨·이로치·종).
+      pokemonList: [
+        ...user.pokemon.map((p) => ({ ...summarizePokemon(p), inParty: user.party.includes(p.uid) })),
+        ...user.storage.map((p) => ({ ...summarizePokemon(p), inParty: false })),
+      ],
       pokemonCount: user.pokemon.length,
       storageCount: user.storage.length,
       eggCount: user.eggs.length,
@@ -428,6 +455,121 @@ adminRoutes.post("/users/:id/give-pokemon", async (req, res) => {
     });
   } catch (err) {
     log.error({ err }, "Admin give-pokemon error");
+    res.status(500).json({ error: "서버 오류" });
+  }
+});
+
+// 개체 포켓몬 수정 — 닉네임/레벨/이로치/종. 레벨 또는 종이 바뀌면 스탯·maxHp를
+// calculateStatsForLevel로 재계산하고 현재 hp를 새 maxHp로 클램프한다(레벨/종 변경 시
+// 현재 hp가 새 최대치보다 클 수 있으므로). 종 변경 시 존재 검증 + 도감 갱신.
+// 파티(user.pokemon)·보관함(user.storage) 어디에 있든 uid로 찾아 같은 객체를 수정한다.
+adminRoutes.patch("/users/:id/pokemon/:uid", async (req, res) => {
+  try {
+    const user = await getUser(req.params.id);
+    if (!user) return res.status(404).json({ error: "유저 없음" });
+
+    const mon =
+      user.pokemon.find((p) => p.uid === req.params.uid) ??
+      user.storage.find((p) => p.uid === req.params.uid);
+    if (!mon) return res.status(404).json({ error: "포켓몬 없음" });
+
+    const { nickname, level, shiny, species } = req.body ?? {};
+
+    // 닉네임 — 문자열이면 트림 후 빈 문자열은 null(닉네임 해제), null도 허용.
+    if (nickname !== undefined) {
+      if (nickname === null) {
+        mon.nickname = null;
+      } else if (typeof nickname === "string") {
+        const trimmed = nickname.trim();
+        mon.nickname = trimmed === "" ? null : trimmed;
+      } else {
+        return res.status(400).json({ error: "nickname은 문자열이어야 합니다" });
+      }
+    }
+
+    if (shiny !== undefined) {
+      if (typeof shiny !== "boolean") return res.status(400).json({ error: "shiny는 boolean이어야 합니다" });
+      mon.isShiny = shiny;
+    }
+
+    // 종 변경 — 존재 검증. 종이 바뀌면 variantId는 초기화(폼 변형은 새 종 기준 무의미).
+    let speciesChanged = false;
+    if (species !== undefined) {
+      if (typeof species !== "string" || !species.trim()) {
+        return res.status(400).json({ error: "species는 비어있지 않은 문자열이어야 합니다" });
+      }
+      const sp = species.trim();
+      if (!getSpeciesByName(sp)) return res.status(400).json({ error: "존재하지 않는 포켓몬입니다" });
+      if (sp !== mon.species) {
+        mon.species = sp;
+        mon.variantId = null;
+        speciesChanged = true;
+        if (!user.pokedex.includes(sp)) user.pokedex.push(sp);
+      }
+    }
+
+    // 레벨 변경 — 1~100 정수.
+    let levelChanged = false;
+    if (level !== undefined) {
+      const lv = Number(level);
+      if (!Number.isInteger(lv) || lv < 1 || lv > 100) {
+        return res.status(400).json({ error: "레벨은 1~100 정수여야 합니다" });
+      }
+      if (lv !== mon.level) {
+        mon.level = lv;
+        levelChanged = true;
+      }
+    }
+
+    // 레벨/종이 바뀌면 스탯·maxHp 재계산. hp는 새 maxHp로 클램프.
+    if (levelChanged || speciesChanged) {
+      const recalced = calculateStatsForLevel(mon.species, mon.level, mon.nature, mon.variantId);
+      mon.maxHp = recalced.maxHp;
+      mon.stats = recalced.stats;
+      mon.hp = Math.min(mon.hp, mon.maxHp);
+    }
+
+    await saveUser(user, "admin-adjust");
+    res.json({
+      ok: true,
+      pokemon: summarizePokemon(mon),
+    });
+  } catch (err) {
+    log.error({ err }, "Admin edit-pokemon error");
+    res.status(500).json({ error: "서버 오류" });
+  }
+});
+
+// 개체 포켓몬 삭제 — 파티/보관함 어디서든 제거하고 party 배열도 동기화한다.
+// 운영 도구라 마지막 1마리도 강제 삭제 허용하되, 결과적으로 빈 파티가 되면
+// 보관함의 첫 포켓몬을 파티로 승격해 "보유는 있는데 파티가 빈" 상태를 막는다.
+adminRoutes.delete("/users/:id/pokemon/:uid", async (req, res) => {
+  try {
+    const user = await getUser(req.params.id);
+    if (!user) return res.status(404).json({ error: "유저 없음" });
+
+    const uid = req.params.uid;
+    const inPokemon = user.pokemon.some((p) => p.uid === uid);
+    const inStorage = user.storage.some((p) => p.uid === uid);
+    if (!inPokemon && !inStorage) return res.status(404).json({ error: "포켓몬 없음" });
+
+    user.pokemon = user.pokemon.filter((p) => p.uid !== uid);
+    user.storage = user.storage.filter((p) => p.uid !== uid);
+    user.party = user.party.filter((id) => id !== uid);
+
+    // 빈 파티 방어 — 보유가 남아있으면 첫 포켓몬을 파티로.
+    if (user.party.length === 0 && user.pokemon.length > 0) {
+      user.party.push(user.pokemon[0].uid);
+    } else if (user.party.length === 0 && user.storage.length > 0) {
+      const promoted = user.storage.shift()!;
+      user.pokemon.push(promoted);
+      user.party.push(promoted.uid);
+    }
+
+    await saveUser(user, "admin-adjust");
+    res.json({ ok: true });
+  } catch (err) {
+    log.error({ err }, "Admin delete-pokemon error");
     res.status(500).json({ error: "서버 오류" });
   }
 });
