@@ -40,6 +40,7 @@ export function createApp() {
   // 아트 파일 읽기 헬퍼 — 경로 순회 방어 포함
   const BALL_ART_DIR = projectPath("data/colorscripts/small/ball");
   const POKEMON_ART_DIR = projectPath("data/colorscripts/small/regular");
+  const SHINY_ART_DIR = projectPath("data/colorscripts/small/shiny");
   const EGG_ART_DIR = projectPath("data/colorscripts/small/egg");
 
   function safeReadArt(baseDir: string, name: string): string | null {
@@ -80,8 +81,11 @@ export function createApp() {
 
     // 포켓몬 ANSI 아트 API (인증 불필요)
     // 종 id를 아트 파일명으로 정규화한다(폼 풀 id "mimikyu-disguised" → 베이스 "mimikyu").
+    // ?shiny=1이면 이로치 콜로스크립트를 우선 서빙하고, 없으면 일반 아트로 폴백한다.
     app.get(`${prefix}/art/:species`, (req, res) => {
-      const art = safeReadArt(POKEMON_ART_DIR, resolveArtName(req.params.species));
+      const name = resolveArtName(req.params.species);
+      const art = (req.query.shiny === "1" ? safeReadArt(SHINY_ART_DIR, name) : null)
+        ?? safeReadArt(POKEMON_ART_DIR, name);
       if (art) res.type("text/plain").send(art);
       else res.status(404).send("");
     });
