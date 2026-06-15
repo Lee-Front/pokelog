@@ -3,8 +3,8 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
-import { clearAllCaches } from "../../src/game/data-loader.js";
-import { clearEggGachaCache, getEggTierPool, getEggTierSummaries, hatchEgg } from "../../src/game/egg-gacha.js";
+import { clearAllCaches, getSpeciesByName } from "../../src/game/data-loader.js";
+import { clearEggGachaCache, getEggTierSummaries, hatchEgg } from "../../src/game/egg-gacha.js";
 import { getConfig } from "../../src/storage/config-store.js";
 import { DEFAULT_SHINY_RATE, getShinyRate } from "../../src/game/shiny.js";
 import { createPokemon } from "../../src/game/pokemon-factory.js";
@@ -56,18 +56,41 @@ describe("egg config application", () => {
     expect(result.pokemon.level).toBe(42);
   });
 
-  it("scales pool weights by weightMultiplier (relative ratio preserved)", async () => {
-    const baseline = await getEggTierPool("common");
-    const baseEntry = baseline.find((e) => e.species === "diglett")!;
+  it("applies admin-edited bucket chances to tier summaries (common derived)", async () => {
+    writeConfig({ egg: { common: { legendaryChance: 0.2, rareChance: 0.3 } } });
+    const summaries = await getEggTierSummaries();
+    const common = summaries.find((s) => s.tier === "common")!;
+    expect(common.legendaryChance).toBeCloseTo(0.2);
+    expect(common.rareChance).toBeCloseTo(0.3);
+    expect(common.commonChance).toBeCloseTo(0.5);
+    // 편집하지 않은 티어는 기본 확률로 폴백
+    expect(summaries.find((s) => s.tier === "legend")!.legendaryChance).toBeCloseTo(0.03);
+  });
 
-    writeConfig({ egg: { common: { weightMultiplier: 3 } } });
+  it("uses the edited legendaryChance when rolling the bucket", async () => {
+    // legendaryChance=1이면 버킷롤이 항상 legendary 버킷에 들어간다.
+    writeConfig({ egg: { common: { legendaryChance: 1, rareChance: 0 } } });
     clearEggGachaCache();
-    const scaled = await getEggTierPool("common");
-    const scaledEntry = scaled.find((e) => e.species === "diglett")!;
+    const result = await hatchEgg(
+      { id: "e", tier: "common", createdAt: new Date().toISOString() },
+      () => 0.5,
+    );
+    const species = getSpeciesByName(result.pokemon.species);
+    expect(Boolean(species!.isLegendary || species!.isMythical)).toBe(true);
+  });
 
-    // 배수만큼 커지되 floor(1)·반올림 오차 범위 내
-    expect(scaledEntry.weight).toBeGreaterThan(baseEntry.weight);
-    expect(scaledEntry.weight).toBe(Math.max(1, Math.round(baseEntry.weight * 3)));
+  it("tolerates a stale config that still carries the removed weightMultiplier key", async () => {
+    // 구 config에 weightMultiplier가 남아있어도 무해해야 한다(머지가 흡수, 동작 영향 없음).
+    writeConfig({ egg: { common: { weightMultiplier: 5, legendaryChance: 0, rareChance: 0 } } });
+    clearEggGachaCache();
+    const result = await hatchEgg(
+      { id: "e", tier: "common", createdAt: new Date().toISOString() },
+      () => 0.5,
+    );
+    const species = getSpeciesByName(result.pokemon.species);
+    // legendaryChance=0, rareChance=0 → 항상 common 버킷.
+    expect(Boolean(species!.isLegendary || species!.isMythical)).toBe(false);
+    expect(species!.isBaby).toBe(false);
   });
 });
 

@@ -115,25 +115,29 @@ const ALLOWED_CONFIG_PATHS = new Set([
   "meta.featureFlags.trade",
   "meta.featureFlags.achievements",
   "meta.featureFlags.regions",
-  // 알 가챠 — 티어별 cost/레벨/가중치 + 전역 이로치율.
+  // 알 가챠 — 티어별 cost/레벨 + 등급 버킷 등장확률(legendary/rare) + 전역 이로치율.
   "egg.common.cost",
   "egg.common.minLevel",
   "egg.common.maxLevel",
-  "egg.common.weightMultiplier",
+  "egg.common.legendaryChance",
+  "egg.common.rareChance",
   "egg.rare.cost",
   "egg.rare.minLevel",
   "egg.rare.maxLevel",
-  "egg.rare.weightMultiplier",
+  "egg.rare.legendaryChance",
+  "egg.rare.rareChance",
   "egg.legend.cost",
   "egg.legend.minLevel",
   "egg.legend.maxLevel",
-  "egg.legend.weightMultiplier",
+  "egg.legend.legendaryChance",
+  "egg.legend.rareChance",
   "shinyRate",
 ]);
 
 // 알/이로치 설정 검증 — 키 끝부분(leaf)으로 규칙을 고른다. 범위: cost≥0,
 // level 1~100(min≤max는 저장 후 부화 시 rollLevel이 음수 범위를 피하도록 별도 보장),
-// weightMultiplier>0, shinyRate 0~1.
+// legendaryChance/rareChance 0~1(합≤1은 저장 단계에서 형제값과 비교해 별도 보장),
+// shinyRate 0~1.
 function validateEggOrShiny(key: string, value: unknown): string | null {
   const isNum = typeof value === "number" && Number.isFinite(value);
   if (key === "shinyRate") {
@@ -148,8 +152,10 @@ function validateEggOrShiny(key: string, value: unknown): string | null {
       ? null
       : "레벨은 1~100 사이 정수여야 합니다";
   }
-  if (leaf === "weightMultiplier") {
-    return isNum && (value as number) > 0 ? null : "가중치 배수는 0보다 커야 합니다";
+  if (leaf === "legendaryChance" || leaf === "rareChance") {
+    return isNum && (value as number) >= 0 && (value as number) <= 1
+      ? null
+      : "등장확률은 0~1 사이 숫자여야 합니다";
   }
   return null;
 }
@@ -196,6 +202,18 @@ adminRoutes.put("/config", async (req, res) => {
       const tier = key.split(".")[1] as keyof typeof config.egg;
       if ((value as number) < config.egg[tier].minLevel) {
         return res.status(400).json({ error: "최대 레벨은 최소 레벨보다 작을 수 없습니다" });
+      }
+    }
+
+    // 버킷 등장확률은 legendaryChance + rareChance ≤ 1을 보장해야 common 파생확률이
+    // 음수가 되지 않는다. 한 쪽만 저장하므로 반대편은 현재 저장값과 합산해 비교한다.
+    const chanceLeaf = key.split(".").pop();
+    if ((chanceLeaf === "legendaryChance" || chanceLeaf === "rareChance") && key.startsWith("egg.")) {
+      const tier = key.split(".")[1] as keyof typeof config.egg;
+      const sibling =
+        chanceLeaf === "legendaryChance" ? config.egg[tier].rareChance : config.egg[tier].legendaryChance;
+      if ((value as number) + sibling > 1) {
+        return res.status(400).json({ error: "전설·희귀 등장확률의 합은 1을 넘을 수 없습니다" });
       }
     }
 

@@ -333,14 +333,17 @@ export interface BattleRewardConfig {
   dropTable: BattleDropEntry[];
 }
 
-// 알 가챠 티어별 튜닝 — cost/레벨 범위/등장 비중. 종별 세부 가중치 공식은 코드에
-// 유지되고(getEggWeight), weightMultiplier가 그 결과 전체에 곱해져 티어 풀 비중을 조정한다.
+// 알 가챠 티어별 튜닝 — cost/레벨 범위 + 등급 버킷 등장확률. 모든 알이 단일 풀(전 종)을
+// 공유하되, 티어마다 legendary/rare 버킷의 등장확률이 달라 희귀도를 가른다. common 버킷
+// 확률은 1 - legendaryChance - rareChance로 파생된다(별도 필드 없음).
 export interface EggTierConfig {
   cost: number;
   minLevel: number;
   maxLevel: number;
-  // getEggWeight 결과에 곱하는 배수(기본 1). 풀 내부 상대비는 유지하되 티어 비중을 조정.
-  weightMultiplier: number;
+  // 전설/환상 버킷 등장확률(0~1). legendaryChance + rareChance ≤ 1.
+  legendaryChance: number;
+  // 희귀(베이비·저포획률) 버킷 등장확률(0~1).
+  rareChance: number;
 }
 
 export interface EggConfig {

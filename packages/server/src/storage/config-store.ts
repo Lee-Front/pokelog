@@ -124,12 +124,13 @@ export const DEFAULT_CONFIG: ServerConfig = {
       "fire-stone": { name: "Fire Stone", price: 200 },
     },
   },
-  // 알 가챠 기본값 — 기존 egg-gacha.ts 상수와 동일. weightMultiplier=1은 종별 공식
-  // 결과를 그대로 사용(티어 비중 조정 없음). 운영자가 /admin에서 튜닝한다.
+  // 알 가챠 기본값 — 단일 풀 + 티어별 등급 버킷 등장확률. legendary/rare 확률만 노브이고
+  // common 버킷은 파생(1 - legendary - rare). 티어가 높을수록 전설·희귀 비중이 커진다.
+  // 운영자가 /admin에서 튜닝한다.
   egg: {
-    common: { cost: 120, minLevel: 1, maxLevel: 6, weightMultiplier: 1 },
-    rare: { cost: 450, minLevel: 5, maxLevel: 12, weightMultiplier: 1 },
-    legend: { cost: 3200, minLevel: 15, maxLevel: 25, weightMultiplier: 1 },
+    common: { cost: 120, minLevel: 1, maxLevel: 6, legendaryChance: 0.002, rareChance: 0.12 },
+    rare: { cost: 450, minLevel: 5, maxLevel: 12, legendaryChance: 0.01, rareChance: 0.4 },
+    legend: { cost: 3200, minLevel: 15, maxLevel: 25, legendaryChance: 0.03, rareChance: 0.47 },
   },
   shinyRate: DEFAULT_SHINY_RATE,
 };

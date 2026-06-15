@@ -192,12 +192,13 @@ describe("admin routes", () => {
     expect(config.body.rewards.combo.maxMultiplier).toBe(2.0);
   });
 
-  it("allows runtime tuning of egg tier cost/level/weight and shinyRate", async () => {
+  it("allows runtime tuning of egg tier cost/level/bucket-chances and shinyRate", async () => {
     const edits: Array<[string, unknown]> = [
       ["egg.common.cost", 200],
       ["egg.rare.minLevel", 8],
       ["egg.rare.maxLevel", 20],
-      ["egg.legend.weightMultiplier", 2],
+      ["egg.legend.legendaryChance", 0.05],
+      ["egg.legend.rareChance", 0.4],
       ["shinyRate", 0.01],
     ];
     for (const [key, value] of edits) {
@@ -209,7 +210,8 @@ describe("admin routes", () => {
     expect(config.body.egg.common.cost).toBe(200);
     expect(config.body.egg.rare.minLevel).toBe(8);
     expect(config.body.egg.rare.maxLevel).toBe(20);
-    expect(config.body.egg.legend.weightMultiplier).toBe(2);
+    expect(config.body.egg.legend.legendaryChance).toBe(0.05);
+    expect(config.body.egg.legend.rareChance).toBe(0.4);
     expect(config.body.shinyRate).toBe(0.01);
   });
 
@@ -218,7 +220,8 @@ describe("admin routes", () => {
       ["egg.common.cost", -5], // cost < 0
       ["egg.common.minLevel", 0], // level < 1
       ["egg.common.maxLevel", 101], // level > 100
-      ["egg.rare.weightMultiplier", 0], // multiplier not > 0
+      ["egg.rare.legendaryChance", 1.2], // chance > 1
+      ["egg.rare.rareChance", -0.1], // chance < 0
       ["shinyRate", 2], // shinyRate > 1
       ["shinyRate", -0.1], // shinyRate < 0
     ];
@@ -226,6 +229,13 @@ describe("admin routes", () => {
       const res = await t.admin().put("/api/admin/config", { key, value });
       expect(res.status).toBe(400);
     }
+  });
+
+  it("rejects bucket chances whose legendary + rare sum exceeds 1", async () => {
+    // default common rareChance=0.12; setting legendaryChance high enough to push
+    // the sum over 1 must fail (would make the derived common chance negative).
+    const res = await t.admin().put("/api/admin/config", { key: "egg.common.legendaryChance", value: 0.95 });
+    expect(res.status).toBe(400);
   });
 
   it("rejects an egg level range where min exceeds max", async () => {
@@ -236,8 +246,15 @@ describe("admin routes", () => {
 
   it("ships default egg/shiny config (DEFAULT_CONFIG)", async () => {
     const { DEFAULT_CONFIG } = await import("../../src/storage/config-store.js");
-    expect(DEFAULT_CONFIG.egg.common).toEqual({ cost: 120, minLevel: 1, maxLevel: 6, weightMultiplier: 1 });
+    expect(DEFAULT_CONFIG.egg.common).toEqual({
+      cost: 120,
+      minLevel: 1,
+      maxLevel: 6,
+      legendaryChance: 0.002,
+      rareChance: 0.12,
+    });
     expect(DEFAULT_CONFIG.egg.legend.cost).toBe(3200);
+    expect(DEFAULT_CONFIG.egg.legend.legendaryChance).toBe(0.03);
     expect(DEFAULT_CONFIG.shinyRate).toBeCloseTo(1 / 4096);
   });
 });
