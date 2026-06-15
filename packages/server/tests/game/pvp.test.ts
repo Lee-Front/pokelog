@@ -207,6 +207,82 @@ describe("party 모드 + 교체", () => {
   });
 });
 
+describe("가방 아이템 사용", () => {
+  /** alice가 더 약하게 — HP를 깎아두고 회복 아이템 사용을 검증. */
+  async function seedForItems(): Promise<void> {
+    const alicePokemon = strongMon("bulbasaur");
+    alicePokemon.hp = 40; // 회복 여지
+    alicePokemon.stats.speed = 200; // alice 선행(아이템이 어차피 기술보다 먼저지만 결정성 보강)
+    const bobPokemon = strongMon("charmander");
+    bobPokemon.stats = { attack: 1, defense: 200, speed: 10, spAttack: 1, spDefense: 200 }; // bob 데미지 미미
+    const alice = createUser("alice", "Alice", [alicePokemon]);
+    const bob = createUser("bob", "Bob", [bobPokemon]);
+    alice.inventory = { superPotion: 2 };
+    await userStore.saveUser(alice);
+    await userStore.saveUser(bob);
+  }
+
+  it("회복 아이템으로 활성 포켓몬 HP가 회복되고 인벤토리가 차감된다", async () => {
+    await seedForItems();
+    const m = await pvp.createChallenge({ challengerUserId: "alice", opponentUserId: "bob", mode: "single" });
+    await pvp.acceptChallenge("bob", m.id);
+
+    await pvp.submitAction("alice", m.id, { kind: "item", itemId: "superPotion" }, rng);
+    const resolved = await pvp.submitAction("bob", m.id, { kind: "move", moveId: "tackle" }, rng);
+
+    // bob 데미지가 미미하므로 회복(+50)이 반영돼 40보다 확실히 높다.
+    expect(resolved.challenger.team[0].hp).toBeGreaterThan(40);
+    const alice = await userStore.getUser("alice");
+    expect(alice!.inventory.superPotion).toBe(1); // 2 → 1
+  });
+
+  it("보유 0인 아이템 사용은 거부된다", async () => {
+    await seedForItems();
+    const m = await pvp.createChallenge({ challengerUserId: "alice", opponentUserId: "bob", mode: "single" });
+    await pvp.acceptChallenge("bob", m.id);
+    await expect(
+      pvp.submitAction("alice", m.id, { kind: "item", itemId: "potion" }, rng), // 보유 없음
+    ).rejects.toThrow();
+  });
+
+  it("전투 불가 아이템(볼 등) 사용은 거부된다", async () => {
+    await seedForItems();
+    const alice = await userStore.getUser("alice");
+    alice!.inventory.masterball = 1;
+    await userStore.saveUser(alice!);
+    const m = await pvp.createChallenge({ challengerUserId: "alice", opponentUserId: "bob", mode: "single" });
+    await pvp.acceptChallenge("bob", m.id);
+    await expect(
+      pvp.submitAction("alice", m.id, { kind: "item", itemId: "masterball" }, rng),
+    ).rejects.toThrow();
+  });
+
+  it("양측이 동시에 아이템을 쓰면 둘 다 회복·차감된다(party)", async () => {
+    const a1 = strongMon("bulbasaur"); a1.hp = 30; a1.stats = { attack: 1, defense: 200, speed: 100, spAttack: 1, spDefense: 200 };
+    const a2 = strongMon("ivysaur");
+    const b1 = strongMon("charmander"); b1.hp = 30; b1.stats = { attack: 1, defense: 200, speed: 50, spAttack: 1, spDefense: 200 };
+    const b2 = strongMon("charmeleon");
+    const alice = createUser("alice", "Alice", [a1, a2]);
+    const bob = createUser("bob", "Bob", [b1, b2]);
+    alice.inventory = { superPotion: 1 };
+    bob.inventory = { potion: 1 };
+    await userStore.saveUser(alice);
+    await userStore.saveUser(bob);
+
+    const m = await pvp.createChallenge({ challengerUserId: "alice", opponentUserId: "bob", mode: "party" });
+    await pvp.acceptChallenge("bob", m.id);
+    await pvp.submitAction("alice", m.id, { kind: "item", itemId: "superPotion" }, rng);
+    const resolved = await pvp.submitAction("bob", m.id, { kind: "item", itemId: "potion" }, rng);
+
+    expect(resolved.challenger.team[0].hp).toBe(80); // 30 + 50
+    expect(resolved.opponent.team[0].hp).toBe(50); // 30 + 20
+    const aliceAfter = await userStore.getUser("alice");
+    const bobAfter = await userStore.getUser("bob");
+    expect(aliceAfter!.inventory.superPotion).toBeUndefined(); // 1 → 0 (삭제)
+    expect(bobAfter!.inventory.potion).toBeUndefined();
+  });
+});
+
 describe("자동 대기열 페어링", () => {
   it("두 명이 같은 mode로 등록하면 즉시 active 매치 생성", async () => {
     await seedTwoUsers();

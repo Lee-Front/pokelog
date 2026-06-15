@@ -757,10 +757,13 @@ export interface PvpSide {
   forfeited: boolean;
 }
 
-/** 라운드 행동 — 기술 사용 또는 교체. */
+/** 라운드 행동 — 기술 사용 / 교체 / 가방 아이템 사용.
+ *  item: itemId는 config.shop.items 인벤토리 키(전투 사용가능=healAmount 보유).
+ *  targetUid 생략 시 활성 포켓몬에 사용. 메인시리즈식으로 아이템은 기술보다 먼저 처리된다. */
 export type PvpAction =
   | { kind: "move"; moveId: string }
-  | { kind: "switch"; teamIndex: number };
+  | { kind: "switch"; teamIndex: number }
+  | { kind: "item"; itemId: string; targetUid?: string };
 
 /** 인배틀 채팅 메시지. */
 export interface PvpChatMessage {

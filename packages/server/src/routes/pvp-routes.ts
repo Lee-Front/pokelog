@@ -48,7 +48,13 @@ function parseAction(body: Record<string, unknown>): PvpAction {
     }
     return { kind: "switch", teamIndex: body.teamIndex };
   }
-  throw new GameRuleError("kind는 'move' 또는 'switch'여야 합니다.");
+  if (kind === "item") {
+    if (typeof body.itemId !== "string") throw new GameRuleError("itemId가 필요합니다.");
+    // targetUid 생략 시 활성 포켓몬에 사용. 지정 시 같은 팀의 포켓몬 uid여야 한다(엔진/검증에서 확인).
+    const targetUid = typeof body.targetUid === "string" ? body.targetUid : undefined;
+    return { kind: "item", itemId: body.itemId, targetUid };
+  }
+  throw new GameRuleError("kind는 'move', 'switch' 또는 'item'이어야 합니다.");
 }
 
 // --- 지정 도전 ----------------------------------------------------------------

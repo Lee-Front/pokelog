@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import {
   resolveRound, resolveActionOrder, hasAliveReserve, isWipedOut, freshStatStages,
-  type EngineSide, type Rng,
+  type EngineSide, type Rng, type ItemLookup,
 } from "./pvp-engine.js";
 import type { PvpCombatant, PvpAction } from "../../../../shared/types.js";
 
@@ -46,7 +46,14 @@ function side(team: PvpCombatant[], over: Partial<EngineSide> = {}): EngineSide 
 
 const move = (moveId: string): PvpAction => ({ kind: "move", moveId });
 const switchTo = (teamIndex: number): PvpAction => ({ kind: "switch", teamIndex });
+const useItem = (itemId: string, targetUid?: string): PvpAction => ({ kind: "item", itemId, targetUid });
 const constRng = (v: number): Rng => () => v;
+
+/** 테스트용 아이템 룩업 — potion(20)/superPotion(50)만 전투 사용가능. */
+const items: ItemLookup = (id) =>
+  id === "potion" ? { name: "Potion", healAmount: 20 }
+    : id === "superPotion" ? { name: "Super Potion", healAmount: 50 }
+      : undefined;
 
 describe("resolveActionOrder", () => {
   it("교체가 기술보다 항상 먼저 행동한다", () => {
@@ -124,6 +131,60 @@ describe("상태이상 — 마비 속도 반감", () => {
     const para = mon({ statusCondition: "paralysis", stats: { attack: 80, defense: 80, speed: 100, spAttack: 80, spDefense: 80 } });
     const normal = mon({ stats: { attack: 80, defense: 80, speed: 70, spAttack: 80, spDefense: 80 } });
     expect(resolveActionOrder(para, move("tackle"), normal, move("tackle"), constRng(0.9))).toBe("opponent");
+  });
+});
+
+describe("resolveActionOrder — 아이템(가방)", () => {
+  it("아이템은 기술보다 먼저 행동한다(아이템 우선)", () => {
+    const fastMover = mon({ stats: { attack: 80, defense: 80, speed: 200, spAttack: 80, spDefense: 80 } });
+    const slowBag = mon({ stats: { attack: 80, defense: 80, speed: 10, spAttack: 80, spDefense: 80 } });
+    // 느린 쪽이 아이템, 빠른 쪽이 기술 → 아이템 쓴 느린 쪽이 먼저.
+    expect(resolveActionOrder(slowBag, useItem("potion"), fastMover, move("tackle"), constRng(0.9))).toBe("challenger");
+  });
+});
+
+describe("resolveRound — 아이템 사용", () => {
+  it("회복 아이템으로 활성 포켓몬 HP가 회복되고 consumed에 기록된다", () => {
+    fixRandom(0.5);
+    const healer = side([mon({ uid: "h1", nickname: "Healer", hp: 30, maxHp: 100 })]);
+    const foe = side([mon({ nickname: "Foe", moves: [{ id: "growl", pp: 40, maxPp: 40 }] })]);
+    const outcome = resolveRound(healer, useItem("superPotion"), foe, move("growl"), constRng(0.5), items);
+    expect(healer.team[0].hp).toBe(80); // 30 + 50
+    expect(outcome.consumed.challenger).toEqual({ itemId: "superPotion" });
+    expect(outcome.consumed.opponent).toBeUndefined();
+  });
+
+  it("targetUid로 예비 포켓몬을 회복할 수 있다(파티)", () => {
+    fixRandom(0.5);
+    const healer = side([
+      mon({ uid: "active", nickname: "Active", hp: 100, maxHp: 100 }),
+      mon({ uid: "reserve", nickname: "Reserve", hp: 10, maxHp: 100 }),
+    ]);
+    // 상대는 growl(위력0)로 데미지를 주지 않아 활성 HP가 변하지 않는다.
+    const foe = side([mon({ moves: [{ id: "growl", pp: 40, maxPp: 40 }] })]);
+    resolveRound(healer, useItem("potion", "reserve"), foe, move("growl"), constRng(0.5), items);
+    expect(healer.team[1].hp).toBe(30); // 10 + 20, 예비가 회복됨
+    expect(healer.team[0].hp).toBe(100); // 활성은 데미지 없음
+  });
+
+  it("양측이 동시에 아이템을 쓰면 둘 다 회복·소비된다", () => {
+    fixRandom(0.5);
+    const a = side([mon({ uid: "a", hp: 40, maxHp: 100 })], { nickname: "A" });
+    const b = side([mon({ uid: "b", hp: 50, maxHp: 100 })], { nickname: "B" });
+    const outcome = resolveRound(a, useItem("potion"), b, useItem("superPotion"), constRng(0.5), items);
+    expect(a.team[0].hp).toBe(60); // 40 + 20
+    expect(b.team[0].hp).toBe(100); // 50 + 50
+    expect(outcome.consumed.challenger).toEqual({ itemId: "potion" });
+    expect(outcome.consumed.opponent).toEqual({ itemId: "superPotion" });
+  });
+
+  it("전투 불가 아이템은 효과 없이 소비도 기록되지 않는다", () => {
+    fixRandom(0.5);
+    const a = side([mon({ uid: "a", hp: 40, maxHp: 100 })]);
+    const b = side([mon({ moves: [{ id: "growl", pp: 40, maxPp: 40 }] })]);
+    const outcome = resolveRound(a, useItem("masterball"), b, move("growl"), constRng(0.5), items);
+    expect(a.team[0].hp).toBe(40); // 회복 없음(데미지도 없음)
+    expect(outcome.consumed.challenger).toBeUndefined();
   });
 });
 

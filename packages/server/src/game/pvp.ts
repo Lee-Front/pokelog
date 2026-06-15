@@ -11,19 +11,21 @@
 import crypto from "node:crypto";
 import type {
   OwnedPokemon, PvpAction, PvpChatMessage, PvpCombatant, PvpMatch, PvpMode,
-  PvpQueueEntry, PvpResultKind, PvpSide, UserData,
+  PvpQueueEntry, PvpResultKind, PvpSide, ServerConfig, UserData,
 } from "../../../../shared/types.js";
 import { getUser } from "../storage/user-store.js";
 import { getPartyPokemon } from "./pokemon-state.js";
 import { GameRuleError } from "./game-errors.js";
 import {
   getMatch, newMatchId, saveMatch, updateMatch, listMatchesForUser,
-  updateQueue,
+  updateQueue, withLock,
 } from "../storage/pvp-store.js";
 import {
   resolveRound, hasAliveReserve, isWipedOut, freshStatStages,
-  type EngineSide, type Rng, defaultRng,
+  type EngineSide, type Rng, type ItemLookup, type RoundOutcome, defaultRng,
 } from "./pvp-engine.js";
+import { saveUser } from "../storage/user-store.js";
+import { decrementItem, isBattleUsableItem } from "./inventory-utils.js";
 import {
   lockStake, normalizeStakeSpec, normalizeDemand, buildOpponentStakeFromDemand,
   settleMatch,
@@ -323,6 +325,18 @@ export async function submitAction(
   action: PvpAction,
   rng: Rng = defaultRng,
 ): Promise<PvpMatch> {
+  // 아이템 액션은 config(전투가능 분류)·제출자 인벤토리가 있어야 검증되므로 락 밖에서 선조회.
+  // 인벤토리 실제 차감은 라운드가 실제로 해결될 때(consumed) user 락 하에서 수행한다.
+  const config = await getConfig();
+  const items = buildItemLookup(config);
+  if (action.kind === "item") {
+    const submitter = await getUser(userId);
+    if (!submitter) throw new GameRuleError("사용자를 찾을 수 없습니다.");
+    validateItemOwnership(submitter, items, action);
+  }
+
+  // 라운드가 해결되며 소비된 아이템(차감 대상)을 락 밖으로 꺼내 인벤토리에 반영한다.
+  let consumed: { challenger?: { itemId: string }; opponent?: { itemId: string } } = {};
   const result = await updateMatch(matchId, (match) => {
     if (match.status !== "active") {
       throw new GameRuleError("진행 중인 매치가 아닙니다.");
@@ -334,13 +348,55 @@ export async function submitAction(
 
     // 양측 제출 완료 시 라운드 해결.
     if (match.challenger.pendingAction && match.opponent.pendingAction) {
-      runRound(match, rng);
+      consumed = runRound(match, rng, items);
     }
     return match;
   });
   if (!result) throw new GameRuleError("매치를 찾을 수 없습니다.", 404);
+
+  // 실제 사용된 아이템을 양측 유저 인벤토리에서 차감(user 락으로 직렬화). 매치는 친선/내기 무관.
+  await consumeItems(result, consumed);
+
   // 라운드 해결로 승패가 났으면 보상/ELO 정산.
   return settleIfFinished(result);
+}
+
+/** config.shop.items 기반 ItemLookup — 전투 사용가능(healAmount) 아이템만 노출. */
+function buildItemLookup(config: ServerConfig): ItemLookup {
+  return (itemId: string) => {
+    const item = config.shop.items[itemId];
+    if (!isBattleUsableItem(item)) return undefined;
+    return { name: item.name, healAmount: item.healAmount };
+  };
+}
+
+/** 아이템 액션 제출 시 보유·전투가능 검증(차감은 라운드 해결 시점). */
+function validateItemOwnership(user: UserData, items: ItemLookup, action: { itemId: string }): void {
+  if (!items(action.itemId)) {
+    throw new GameRuleError("전투에서 사용할 수 없는 아이템입니다.");
+  }
+  if ((user.inventory[action.itemId] ?? 0) <= 0) {
+    throw new GameRuleError("보유한 아이템이 없습니다.");
+  }
+}
+
+/** 라운드 해결로 실제 사용된 아이템을 각 유저 인벤토리에서 1개씩 차감(user 락 직렬화). */
+async function consumeItems(
+  match: PvpMatch,
+  consumed: { challenger?: { itemId: string }; opponent?: { itemId: string } },
+): Promise<void> {
+  const drains: Array<{ userId: string; itemId: string }> = [];
+  if (consumed.challenger) drains.push({ userId: match.challenger.userId, itemId: consumed.challenger.itemId });
+  if (consumed.opponent) drains.push({ userId: match.opponent.userId, itemId: consumed.opponent.itemId });
+  for (const { userId, itemId } of drains) {
+    await withLock(`user:${userId}`, async () => {
+      const user = await getUser(userId);
+      if (!user) return;
+      if ((user.inventory[itemId] ?? 0) <= 0) return; // 이미 없으면 무시(이중차감 방지).
+      decrementItem(user.inventory, itemId);
+      await saveUser(user, "pvp-item-use");
+    });
+  }
 }
 
 /** 제출 행동 유효성 검증(현재 활성 포켓몬 기준). */
@@ -359,19 +415,25 @@ function validateAction(match: PvpMatch, side: PvpSide, action: PvpAction): void
     if (!target) throw new GameRuleError("교체 대상이 올바르지 않습니다.");
     if (action.teamIndex === side.activeIndex) throw new GameRuleError("이미 출전 중인 포켓몬입니다.");
     if (target.hp <= 0) throw new GameRuleError("기절한 포켓몬으로 교체할 수 없습니다.");
+  } else if (action.kind === "item") {
+    // 전투가능·보유 검증은 submitAction에서 config·인벤토리로 선수행. 여기선 대상(targetUid) 유효성만.
+    if (action.targetUid !== undefined && !side.team.some((p) => p.uid === action.targetUid)) {
+      throw new GameRuleError("아이템 대상 포켓몬이 올바르지 않습니다.");
+    }
   } else {
     throw new GameRuleError("알 수 없는 행동입니다.");
   }
 }
 
-/** 라운드 해결: 엔진 호출 → 기절 처리(강제 교체/승패) → 로그 적재 → 다음 라운드 준비. */
-function runRound(match: PvpMatch, rng: Rng): void {
+/** 라운드 해결: 엔진 호출 → 기절 처리(강제 교체/승패) → 로그 적재 → 다음 라운드 준비.
+ *  반환: 라운드에 실제 소비된 아이템(호출부가 인벤토리 차감). */
+function runRound(match: PvpMatch, rng: Rng, items: ItemLookup): RoundOutcome["consumed"] {
   const cEngine = asEngineSide(match.challenger);
   const oEngine = asEngineSide(match.opponent);
   const outcome = resolveRound(
     cEngine, match.challenger.pendingAction!,
     oEngine, match.opponent.pendingAction!,
-    rng,
+    rng, items,
   );
   // 엔진은 team/activeIndex를 in-place로 바꾼다 — PvpSide에 반영.
   match.challenger.activeIndex = cEngine.activeIndex;
@@ -401,13 +463,14 @@ function runRound(match: PvpMatch, rng: Rng): void {
     } else {
       finishMatch(match, "decided", match.opponent.userId, match.challenger.userId);
     }
-    return;
+    return outcome.consumed;
   }
 
   // 다음 라운드 준비.
   match.challenger.pendingAction = null;
   match.opponent.pendingAction = null;
   match.round += 1;
+  return outcome.consumed;
 }
 
 /** 활성 포켓몬이 기절했고 예비가 있으면 다음 살아있는 포켓몬으로 자동 교체. */

@@ -14,6 +14,7 @@
 import { calculateDamage, applyStatChanges, applyStatStageMultiplier, defaultStatStages } from "./battle.js";
 import { getEffectiveTypes } from "./pokemon-state.js";
 import { getMoveById } from "./data-loader.js";
+import { applyHealToCombatant } from "./inventory-utils.js";
 import {
   checkPreAttack, applyEndOfTurn, tickVolatiles,
   rollAilment, isVolatileAilment, addVolatile,
@@ -25,6 +26,13 @@ import type {
 /** 주입 가능한 난수원. 기본은 Math.random. */
 export type Rng = () => number;
 export const defaultRng: Rng = () => Math.random();
+
+/**
+ * 전투 사용가능 아이템 조회(주입). itemId → 회복량/이름. 전투 불가/미보유면 undefined.
+ * 엔진을 config·저장소와 분리하기 위해 호출부(pvp.ts)가 config로 만들어 주입한다.
+ */
+export type ItemLookup = (itemId: string) => { name: string; healAmount: number } | undefined;
+const noItems: ItemLookup = () => undefined;
 
 /** 매치의 한 진영을 엔진이 다루기 위한 최소 뷰(스토어의 PvpSide와 호환). */
 export interface EngineSide {
@@ -71,8 +79,9 @@ function effectiveSpeed(mon: PvpCombatant): number {
 }
 
 /**
- * 메인시리즈식 행동 순서 결정: 교체는 항상 기술보다 먼저, 그 다음 우선도, 그 다음 속도,
- * 동률이면 주입된 rng로 타이브레이크. "challenger" 또는 "opponent" 우선을 반환.
+ * 메인시리즈식 행동 순서 결정: 교체·아이템(가방)은 항상 기술보다 먼저, 그 다음 우선도,
+ * 그 다음 속도, 동률이면 주입된 rng로 타이브레이크. "challenger"/"opponent" 우선을 반환.
+ * 교체와 아이템은 같은 선행 브래킷이라 둘끼리는 속도/rng로 가른다.
  */
 export function resolveActionOrder(
   challengerMon: PvpCombatant,
@@ -81,12 +90,13 @@ export function resolveActionOrder(
   opponentAction: PvpAction,
   rng: Rng,
 ): "challenger" | "opponent" {
-  const cSwitch = challengerAction.kind === "switch";
-  const oSwitch = opponentAction.kind === "switch";
-  if (cSwitch !== oSwitch) return cSwitch ? "challenger" : "opponent";
+  // 교체·아이템은 기술보다 먼저 처리되는 선행 행동(pre-move). 한쪽만 선행이면 그쪽이 먼저.
+  const cPre = challengerAction.kind === "switch" || challengerAction.kind === "item";
+  const oPre = opponentAction.kind === "switch" || opponentAction.kind === "item";
+  if (cPre !== oPre) return cPre ? "challenger" : "opponent";
 
   // 둘 다 기술이면 우선도 비교
-  if (!cSwitch && !oSwitch) {
+  if (!cPre && !oPre) {
     const cPrio = getMoveById((challengerAction as { moveId: string }).moveId)?.priority ?? 0;
     const oPrio = getMoveById((opponentAction as { moveId: string }).moveId)?.priority ?? 0;
     if (cPrio !== oPrio) return cPrio > oPrio ? "challenger" : "opponent";
@@ -104,6 +114,11 @@ export interface RoundOutcome {
   /** 라운드 중 어느 한쪽 활성 포켓몬이 기절했는지(강제 교체 필요 신호). */
   challengerFainted: boolean;
   opponentFainted: boolean;
+  /**
+   * 이 라운드에 실제로 사용(소비)된 가방 아이템. 호출부가 유저 인벤토리를 실제 차감하는 데 쓴다.
+   * 효과는 스냅샷에 이미 적용됨 — 여기엔 차감할 itemId만 담긴다.
+   */
+  consumed: { challenger?: { itemId: string }; opponent?: { itemId: string } };
 }
 
 /** 교체 실행(살아있는 팀원으로). 메시지만 남기고 활성 인덱스 변경. */
@@ -114,6 +129,40 @@ function applySwitch(side: EngineSide, teamIndex: number, messages: string[]): v
   target.statStages = defaultStatStages();
   target.volatile = [];
   messages.push(`${side.nickname}: ${target.nickname ?? target.species}(으)로 교체했다!`);
+}
+
+/**
+ * 가방 아이템 사용(회복). 대상은 targetUid(미지정 시 활성 포켓몬). 효과를 스냅샷에 적용하고
+ * 메시지를 남긴 뒤, 소비된 itemId를 반환한다(호출부가 인벤토리 차감). 전투 불가/대상 없음 등으로
+ * 적용 못 하면 null 반환(이때 인벤은 차감되지 않는다 — 라운드 액션은 소비됨).
+ */
+function applyItem(
+  side: EngineSide,
+  itemId: string,
+  targetUid: string | undefined,
+  items: ItemLookup,
+  messages: string[],
+): string | null {
+  const item = items(itemId);
+  if (!item) {
+    messages.push(`${side.nickname}: 그 아이템은 전투에서 쓸 수 없다!`);
+    return null;
+  }
+  // 대상은 같은 팀의 포켓몬(기절 포함 — 회복으로 되살리진 않으나 메인시리즈처럼 회복은 허용).
+  // 미지정이면 현재 활성 포켓몬.
+  const target = targetUid
+    ? side.team.find((p) => p.uid === targetUid)
+    : active(side);
+  if (!target) {
+    messages.push(`${side.nickname}: 대상 포켓몬을 찾을 수 없다!`);
+    return null;
+  }
+  const healed = applyHealToCombatant(target, item.healAmount);
+  messages.push(
+    `${side.nickname}: ${item.name}을(를) 사용했다!` +
+    (healed > 0 ? ` ${target.nickname ?? target.species}의 HP가 ${healed} 회복되었다!` : ""),
+  );
+  return itemId;
 }
 
 /** ailment/stat-change 적용 — PvP 고유 rng 사용(테스트 결정성). 공격이 명중·유효했을 때만 호출. */
@@ -276,25 +325,30 @@ export function resolveRound(
   opponent: EngineSide,
   opponentAction: PvpAction,
   rng: Rng = defaultRng,
+  items: ItemLookup = noItems,
 ): RoundOutcome {
   const messages: string[] = [];
+  const consumed: RoundOutcome["consumed"] = {};
 
   const cMon = active(challenger);
   const oMon = active(opponent);
   const order = resolveActionOrder(cMon, challengerAction, oMon, opponentAction, rng);
 
   const first = order === "challenger"
-    ? { side: challenger, action: challengerAction, foe: opponent }
-    : { side: opponent, action: opponentAction, foe: challenger };
+    ? { key: "challenger" as const, side: challenger, action: challengerAction, foe: opponent }
+    : { key: "opponent" as const, side: opponent, action: opponentAction, foe: challenger };
   const second = order === "challenger"
-    ? { side: opponent, action: opponentAction, foe: challenger }
-    : { side: challenger, action: challengerAction, foe: opponent };
+    ? { key: "opponent" as const, side: opponent, action: opponentAction, foe: challenger }
+    : { key: "challenger" as const, side: challenger, action: challengerAction, foe: opponent };
 
   for (const turn of [first, second]) {
     // 행동자가 직전 행동으로 이미 기절했으면 스킵(예: 선공에 후공이 쓰러짐).
     if (active(turn.side).hp <= 0) continue;
     if (turn.action.kind === "switch") {
       applySwitch(turn.side, turn.action.teamIndex, messages);
+    } else if (turn.action.kind === "item") {
+      const usedItemId = applyItem(turn.side, turn.action.itemId, turn.action.targetUid, items, messages);
+      if (usedItemId) consumed[turn.key] = { itemId: usedItemId };
     } else {
       executeMove(turn.side, turn.foe, turn.action.moveId, rng, messages);
     }
@@ -313,6 +367,7 @@ export function resolveRound(
     messages,
     challengerFainted: cMonEnd.hp <= 0,
     opponentFainted: oMonEnd.hp <= 0,
+    consumed,
   };
 }
 
