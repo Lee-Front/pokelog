@@ -1,11 +1,12 @@
 /**
- * 유저간 PvP 매치 라이프사이클 — Phase 1(친선전).
+ * 유저간 PvP 매치 라이프사이클 — Phase 1(친선전) + Phase 2(보상/베팅/랭킹).
  *
  * 매칭: 지정 도전(challenge) + 자동 대기열(queue). 매치 상태머신
  *  pending → active → finished. 라운드는 양측 행동이 모두 제출되면 해결된다.
  *
  * 전투 해결은 pvp-engine에 위임하고, 여기서는 매치 상태(스냅샷·교체·승패·만료)와
- * 저장소 동시성(키별 락)을 다룬다. 보상/에스크로·랭킹은 Phase 2(미구현).
+ * 저장소 동시성(키별 락)을 다룬다. 보상/에스크로·ELO 정산은 pvp-rewards.settleMatch에
+ * 위임하며, 매치를 finished로 만든 직후 그 단일 진입점을 멱등 호출한다(Phase 2).
  */
 import crypto from "node:crypto";
 import type {
@@ -23,6 +24,20 @@ import {
   resolveRound, hasAliveReserve, isWipedOut, freshStatStages,
   type EngineSide, type Rng, defaultRng,
 } from "./pvp-engine.js";
+import { lockStake, normalizeStakeSpec, settleMatch } from "./pvp-rewards.js";
+import { getStats, listRanking } from "../storage/pvp-stats-store.js";
+import { getConfig } from "../storage/config-store.js";
+
+/**
+ * 매치가 finished면 보상/ELO 정산을 멱등 실행한다. settleMatch가 자체 매치 락에서
+ * settled 플래그로 이중정산을 막으므로 여러 번 호출해도 안전하다. 정산 후 최신 매치를 반환.
+ */
+async function settleIfFinished(match: PvpMatch): Promise<PvpMatch> {
+  if (match.status !== "finished") return match;
+  if (match.stakes.settled) return match;
+  await settleMatch(match.id);
+  return (await getMatch(match.id)) ?? match;
+}
 
 /** 지정 도전 수락 만료(분). */
 const CHALLENGE_EXPIRY_MINUTES = 5;
@@ -88,12 +103,16 @@ function asEngineSide(side: PvpSide): EngineSide {
 
 // --- 지정 도전 ----------------------------------------------------------------
 
-/** A가 B에게 도전 생성 → pending 매치. */
+/**
+ * A가 B에게 도전 생성 → pending 매치. 모든 매치는 에스크로(내기) 단일 경로다.
+ * challenger stake를 이 시점에 락한다(빈 stake도 유효 — 그게 친선전, 에스크로는 빈 채로 락).
+ */
 export async function createChallenge(input: {
   challengerUserId: string;
   opponentUserId: string;
   mode: PvpMode;
   challengerTeamUids?: string[];
+  challengerStake?: unknown;
 }): Promise<PvpMatch> {
   if (input.challengerUserId === input.opponentUserId) {
     throw new GameRuleError("자기 자신에게 도전할 수 없습니다.");
@@ -119,22 +138,33 @@ export async function createChallenge(input: {
     round: 0,
     roundLogs: [],
     chat: [],
-    stakes: { rewardMode: "friendly" },
+    stakes: {},
     result: null,
     createdAt: now.toISOString(),
     updatedAt: now.toISOString(),
     expiresAt: new Date(now.getTime() + CHALLENGE_EXPIRY_MINUTES * 60_000).toISOString(),
   };
+
+  // challenger stake를 명세·검증·락(빈 stake면 빈 에스크로가 락된다 — 친선).
+  const spec = normalizeStakeSpec(input.challengerStake);
+  const escrow = await lockStake(match, "challenger", spec);
+  match.stakes.challengerStake = spec;
+  match.stakes.challengerEscrow = escrow;
+
   await saveMatch(match);
   return match;
 }
 
-/** B가 도전 수락 → 상대 팀 스냅샷 후 active 전환. */
-export async function acceptChallenge(userId: string, matchId: string): Promise<PvpMatch> {
+/** B가 도전 수락 → 상대 팀 스냅샷 후 active 전환. opponent stake를 락한다(빈 stake도 유효). */
+export async function acceptChallenge(
+  userId: string,
+  matchId: string,
+  opponentStake?: unknown,
+): Promise<PvpMatch> {
   const opponentUser = await getUser(userId);
   if (!opponentUser) throw new GameRuleError("사용자를 찾을 수 없습니다.");
 
-  const result = await updateMatch(matchId, (match) => {
+  const result = await updateMatch(matchId, async (match) => {
     if (match.opponent.userId !== userId) {
       throw new GameRuleError("이 도전을 수락할 권한이 없습니다.");
     }
@@ -142,17 +172,29 @@ export async function acceptChallenge(userId: string, matchId: string): Promise<
       throw new GameRuleError("대기 중인 도전만 수락할 수 있습니다.");
     }
     if (isExpired(match)) {
+      // 만료 수락 → expired 종료(아래 settleIfFinished가 challenger 에스크로를 반환).
       finishMatch(match, "expired", null, null);
       return match;
     }
     match.opponent.team = buildTeam(opponentUser, match.mode);
+
+    // 팀 스냅샷이 정해진 뒤 opponent stake를 명세·검증·락(전투 팀과의 겹침 검사 위해 team 먼저).
+    // 비대칭 허용 — opponent는 challenger stake를 보고 자기 stake를 자유로 정한다(빈 stake도 유효).
+    const spec = normalizeStakeSpec(opponentStake);
+    const escrow = await lockStake(match, "opponent", spec);
+    match.stakes.opponentStake = spec;
+    match.stakes.opponentEscrow = escrow;
+
     match.status = "active";
     match.round = 1;
     match.expiresAt = undefined;
     return match;
   });
   if (!result) throw new GameRuleError("도전을 찾을 수 없습니다.", 404);
-  if (result.result?.kind === "expired") throw new GameRuleError("도전이 만료되었습니다.");
+  if (result.result?.kind === "expired") {
+    await settleIfFinished(result);
+    throw new GameRuleError("도전이 만료되었습니다.");
+  }
   return result;
 }
 
@@ -169,7 +211,8 @@ export async function declineChallenge(userId: string, matchId: string): Promise
     return match;
   });
   if (!result) throw new GameRuleError("도전을 찾을 수 없습니다.", 404);
-  return result;
+  // declined → challenger 에스크로 반환(wager).
+  return settleIfFinished(result);
 }
 
 // --- 자동 대기열 --------------------------------------------------------------
@@ -191,6 +234,7 @@ export async function enqueue(input: {
   const pairing = await updateQueue<{ partner: PvpQueueEntry | null }>((queue) => {
     // 이미 같은 유저가 큐에 있으면 갱신.
     const without = queue.entries.filter((e) => e.userId !== input.userId);
+    // 큐는 stake 협상이 없어 빈 stake(친선)로만 페어링 — 같은 mode끼리 매칭.
     const partner = without.find((e) => e.mode === input.mode);
     if (partner) {
       const remaining = without.filter((e) => e.userId !== partner.userId);
@@ -229,7 +273,8 @@ export async function enqueue(input: {
     round: 1,
     roundLogs: [],
     chat: [],
-    stakes: { rewardMode: "friendly" },
+    // 큐 매치는 stake 협상이 없어 항상 빈 stake(친선). 에스크로 없음 → 정산은 ELO만 갱신.
+    stakes: {},
     result: null,
     createdAt: now.toISOString(),
     updatedAt: now.toISOString(),
@@ -281,7 +326,8 @@ export async function submitAction(
     return match;
   });
   if (!result) throw new GameRuleError("매치를 찾을 수 없습니다.", 404);
-  return result;
+  // 라운드 해결로 승패가 났으면 보상/ELO 정산.
+  return settleIfFinished(result);
 }
 
 /** 제출 행동 유효성 검증(현재 활성 포켓몬 기준). */
@@ -375,12 +421,19 @@ export async function forfeit(userId: string, matchId: string): Promise<PvpMatch
     }
     const key = sideKeyOf(match, userId);
     match[key].forfeited = true;
-    const winnerKey = key === "challenger" ? "opponent" : "challenger";
-    finishMatch(match, "forfeit", match[winnerKey].userId, match[key].userId);
+    // pending(상대 미수락) 상태의 기권은 승패가 성립하지 않는다 — 상대는 아직 stake도
+    // 걸지 않았으므로 voided로 종료해 에스크로(challenger분)를 원소유자에게 반환한다.
+    if (match.status === "pending") {
+      finishMatch(match, "voided", null, null);
+    } else {
+      const winnerKey = key === "challenger" ? "opponent" : "challenger";
+      finishMatch(match, "forfeit", match[winnerKey].userId, match[key].userId);
+    }
     return match;
   });
   if (!result) throw new GameRuleError("매치를 찾을 수 없습니다.", 404);
-  return result;
+  // forfeit → 승자가 에스크로 획득(points 스틸 포함) / voided → 반환.
+  return settleIfFinished(result);
 }
 
 // --- 채팅 ---------------------------------------------------------------------
@@ -431,13 +484,29 @@ export async function getMatchForUser(userId: string, matchId: string): Promise<
       }
       return m;
     });
-    return updated ?? match;
+    // expired → challenger 에스크로 반환(wager).
+    return updated ? settleIfFinished(updated) : match;
   }
   return match;
 }
 
 export async function listMatches(userId: string): Promise<PvpMatch[]> {
   return listMatchesForUser(userId);
+}
+
+// --- 랭킹/전적(Phase 2) -------------------------------------------------------
+
+/** 리더보드(레이팅 내림차순). */
+export async function getRanking(limit?: number) {
+  return listRanking(limit);
+}
+
+/** 특정 유저의 전적·ELO. 미등록(전적 없음)이면 config 시작 레이팅으로 0전적 반환. */
+export async function getUserStats(userId: string) {
+  const stats = await getStats(userId);
+  if (stats) return stats;
+  const { elo } = (await getConfig()).pvp;
+  return { userId, nickname: userId, rating: elo.start, wins: 0, losses: 0, draws: 0, updatedAt: new Date().toISOString() };
 }
 
 // --- 공통 헬퍼 ----------------------------------------------------------------

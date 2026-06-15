@@ -133,6 +133,11 @@ export const DEFAULT_CONFIG: ServerConfig = {
     legend: { cost: 3200, minLevel: 15, maxLevel: 25, legendaryChance: 0.03, rareChance: 0.47 },
   },
   shinyRate: DEFAULT_SHINY_RATE,
+  // PvP 설정(Phase 2). 모든 매치는 에스크로(내기) 단일 경로 — 빈 stake가 친선.
+  // ELO는 시작 1000·K 32. 운영자가 /admin에서 튜닝한다.
+  pvp: {
+    elo: { start: 1000, k: 32 },
+  },
 };
 
 export async function getConfig(): Promise<ServerConfig> {
@@ -206,6 +211,11 @@ export async function getConfig(): Promise<ServerConfig> {
       legend: { ...DEFAULT_CONFIG.egg.legend, ...config.egg?.legend },
     },
     shinyRate: config.shinyRate ?? DEFAULT_CONFIG.shinyRate,
+    pvp: {
+      ...DEFAULT_CONFIG.pvp,
+      ...config.pvp,
+      elo: { ...DEFAULT_CONFIG.pvp.elo, ...config.pvp?.elo },
+    },
   };
 }
 

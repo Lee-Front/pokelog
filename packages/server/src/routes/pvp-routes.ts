@@ -1,7 +1,7 @@
 /**
- * 유저간 PvP REST 라우트 — Phase 1(친선전).
+ * 유저간 PvP REST 라우트.
  * 실시간성은 클라이언트 폴링 전제(GET /pvp/matches/:id 로 상태·상대행동·라운드로그 조회).
- * WebSocket/SSE는 도입하지 않는다(Phase 1).
+ * 모든 매치는 에스크로(내기) 단일 경로 — stake를 비우면 친선전. WebSocket/SSE 미도입.
  */
 import { Router } from "express";
 import type { Response } from "express";
@@ -11,7 +11,7 @@ import type { PvpAction, PvpMode } from "../../../../shared/types.js";
 import {
   createChallenge, acceptChallenge, declineChallenge,
   enqueue, dequeue, submitAction, forfeit, postChat,
-  getMatchForUser, listMatches,
+  getMatchForUser, listMatches, getRanking, getUserStats,
 } from "../game/pvp.js";
 import { childLogger } from "../logger.js";
 
@@ -55,7 +55,7 @@ function parseAction(body: Record<string, unknown>): PvpAction {
 
 pvpRoutes.post("/challenges", async (req: AuthRequest, res: Response) => {
   try {
-    const { opponentUserId, mode, teamUids } = req.body ?? {};
+    const { opponentUserId, mode, teamUids, stake } = req.body ?? {};
     if (typeof opponentUserId !== "string") {
       res.status(400).json({ error: "opponentUserId가 필요합니다." });
       return;
@@ -65,6 +65,8 @@ pvpRoutes.post("/challenges", async (req: AuthRequest, res: Response) => {
       opponentUserId,
       mode: parseMode(mode),
       challengerTeamUids: Array.isArray(teamUids) ? teamUids.map(String) : undefined,
+      // stake 생략/빈 객체면 친선전(빈 에스크로). { points, items, pokemonUids } 지정 시 내기.
+      challengerStake: stake,
     });
     res.status(201).json({ match });
   } catch (err) {
@@ -74,7 +76,8 @@ pvpRoutes.post("/challenges", async (req: AuthRequest, res: Response) => {
 
 pvpRoutes.post("/challenges/:id/accept", async (req: AuthRequest, res: Response) => {
   try {
-    const match = await acceptChallenge(req.userId!, req.params.id);
+    const stake = (req.body ?? {}).stake;
+    const match = await acceptChallenge(req.userId!, req.params.id, stake);
     res.json({ match });
   } catch (err) {
     handleError(err, res, "PvP challenge accept error");
@@ -99,6 +102,7 @@ pvpRoutes.post("/queue", async (req: AuthRequest, res: Response) => {
       userId: req.userId!,
       mode: parseMode(mode),
       teamUids: Array.isArray(teamUids) ? teamUids.map(String) : undefined,
+      // 큐는 stake 협상이 없어 항상 친선(빈 stake)으로 페어링된다.
     });
     if (result.matched) {
       res.status(201).json({ matched: true, match: result.match });
@@ -116,6 +120,28 @@ pvpRoutes.delete("/queue", async (req: AuthRequest, res: Response) => {
     res.json({ ok: true });
   } catch (err) {
     handleError(err, res, "PvP queue cancel error");
+  }
+});
+
+// --- 랭킹/전적(Phase 2) -------------------------------------------------------
+// 마운트는 ${prefix}/pvp 이므로 라우터 내부는 상대경로 → 실제: /api/pvp/ranking, /api/pvp/stats/:userId.
+
+pvpRoutes.get("/ranking", async (req: AuthRequest, res: Response) => {
+  try {
+    const limit = typeof req.query.limit === "string" ? Number.parseInt(req.query.limit, 10) : undefined;
+    const ranking = await getRanking(Number.isFinite(limit) ? limit : undefined);
+    res.json({ ranking });
+  } catch (err) {
+    handleError(err, res, "PvP ranking error");
+  }
+});
+
+pvpRoutes.get("/stats/:userId", async (req: AuthRequest, res: Response) => {
+  try {
+    const stats = await getUserStats(req.params.userId);
+    res.json({ stats });
+  } catch (err) {
+    handleError(err, res, "PvP stats error");
   }
 });
 

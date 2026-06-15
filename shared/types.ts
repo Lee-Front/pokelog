@@ -432,6 +432,13 @@ export interface ServerConfig {
   egg: EggConfig;
   // 이로치(shiny) 확률 — 알 부화·야생·스타터 등 createPokemon 공통. 0~1 (기본 1/4096).
   shinyRate: number;
+  pvp: PvpConfig;
+}
+
+// === PvP 설정(Phase 2) ===
+export interface PvpConfig {
+  /** ELO: 시작 레이팅 start(>0), K 계수 k(>0). 모든 매치에 적용. */
+  elo: { start: number; k: number };
 }
 
 // === Sync State ===
@@ -761,11 +768,51 @@ export interface PvpChatMessage {
 }
 
 /**
- * Phase 2 자리만 비워둔 보상/스테이크 메타. Phase 1(친선전)에서는 항상 friendly이며
- * 엔진/스토어는 이 필드를 읽지 않는다. (베팅/에스크로·승자독식 로직은 Phase 2.)
+ * 한쪽이 거는 자산 명세(에스크로에 락될 대상). 포인트·아이템·포켓몬을 조합 가능.
+ * 도전 생성 시 challenger가, 수락 시 opponent가 자기 stake를 지정한다. 비대칭 허용.
+ * **빈 stake(전부 0/없음)도 유효** — 그게 친선전이다(정산은 no-op).
+ *  - points: 거는 포인트(0 가능).
+ *  - items: { 아이템id: 수량 }. 보유 수량 이내.
+ *  - pokemonUids: 거는 포켓몬 uid 목록(파티/보관함에서 제거해 에스크로 보관).
+ */
+export interface PvpStakeSpec {
+  points: number;
+  items: Record<string, number>;
+  pokemonUids: string[];
+}
+
+/**
+ * 에스크로에 실제로 락된 자산 스냅샷. stake 확정 시점에 유저 데이터에서 빼서 여기로 옮긴다
+ * (소유권 이전). 포켓몬은 OwnedPokemon 전체를 복제 보관해 정산 시 승자에게 그대로 지급/원소유자
+ * 반환이 가능하다. 각 측의 에스크로는 한 번만 잠기고(locked) 한 번만 해제된다(released).
+ * 빈 stake면 전 필드가 0/빈 채로 locked=true가 된다(정산 시 no-op).
+ */
+export interface PvpEscrow {
+  /** 자산이 유저 데이터에서 빠져 에스크로로 이동 완료됐는지(이중 락 방지). */
+  locked: boolean;
+  points: number;
+  items: Record<string, number>;
+  /** 거치된 포켓몬 전체 스냅샷(원본은 유저 데이터에서 제거됨). */
+  pokemon: OwnedPokemon[];
+}
+
+/**
+ * 스테이크/에스크로 메타. 모든 매치는 단일 에스크로(내기) 경로를 따른다 — 별도 보상모드 없음.
+ * 빈 stake가 곧 친선전이며 정산은 no-op. 양측 stake 명세 + 락된 에스크로를 보관하고,
+ * settled 플래그로 정산 멱등성을 보장한다(승자독식·이중지급/복제 방지).
  */
 export interface PvpStakes {
-  rewardMode: "friendly";
+  /** 각 측이 걸기로 확정한 명세. 확정 전(opponent 미수락)이면 null. */
+  challengerStake?: PvpStakeSpec | null;
+  opponentStake?: PvpStakeSpec | null;
+  /** 각 측의 락된 에스크로. */
+  challengerEscrow?: PvpEscrow | null;
+  opponentEscrow?: PvpEscrow | null;
+  /**
+   * 정산 완료 여부(멱등 가드). finishMatch에서 보상 훅이 한 번 실행되면 true로 찍고,
+   * 이미 true면 재정산하지 않는다(이중지급·복제 방지).
+   */
+  settled?: boolean;
 }
 
 export interface PvpMatch {
@@ -808,7 +855,7 @@ export interface PvpResult {
   finishedAt: string;
 }
 
-/** 자동 대기열 엔트리. */
+/** 자동 대기열 엔트리. 큐는 에스크로 협상이 없으므로 항상 빈 stake(친선)로 페어링된다. */
 export interface PvpQueueEntry {
   userId: string;
   nickname: string;
@@ -820,6 +867,30 @@ export interface PvpQueueEntry {
 
 export interface PvpQueueState {
   entries: PvpQueueEntry[];
+}
+
+/**
+ * 유저별 PvP 누적 전적·레이팅(Phase 2). pvp/stats/{userId}.json에 영속.
+ * decided/forfeit 결과에 양측 ELO·전적을 갱신한다(무승부 포함). expired/declined/voided는 불변.
+ */
+export interface PvpStats {
+  userId: string;
+  nickname: string;
+  rating: number;
+  wins: number;
+  losses: number;
+  draws: number;
+  updatedAt: string;
+}
+
+/** 리더보드 한 줄(닉네임·ELO·전적). */
+export interface PvpRankingEntry {
+  userId: string;
+  nickname: string;
+  rating: number;
+  wins: number;
+  losses: number;
+  draws: number;
 }
 
 // === System Activity Log ===

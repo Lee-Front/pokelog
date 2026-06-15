@@ -132,7 +132,19 @@ const ALLOWED_CONFIG_PATHS = new Set([
   "egg.legend.legendaryChance",
   "egg.legend.rareChance",
   "shinyRate",
+  // PvP(Phase 2) — ELO 시작 레이팅/K 계수(모든 매치 적용).
+  "pvp.elo.start",
+  "pvp.elo.k",
 ]);
+
+// PvP 설정 검증 — ELO start/k는 양수.
+function validatePvp(key: string, value: unknown): string | null {
+  const isNum = typeof value === "number" && Number.isFinite(value);
+  if (key === "pvp.elo.start" || key === "pvp.elo.k") {
+    return isNum && (value as number) > 0 ? null : "ELO 값은 0보다 커야 합니다";
+  }
+  return null;
+}
 
 // 알/이로치 설정 검증 — 키 끝부분(leaf)으로 규칙을 고른다. 범위: cost≥0,
 // level 1~100(min≤max는 저장 후 부화 시 rollLevel이 음수 범위를 피하도록 별도 보장),
@@ -186,6 +198,11 @@ adminRoutes.put("/config", async (req, res) => {
     if (key === "shinyRate" || key.startsWith("egg.")) {
       const eggError = validateEggOrShiny(key, value);
       if (eggError) return res.status(400).json({ error: eggError });
+    }
+
+    if (key.startsWith("pvp.")) {
+      const pvpError = validatePvp(key, value);
+      if (pvpError) return res.status(400).json({ error: pvpError });
     }
 
     const config = await getConfig();

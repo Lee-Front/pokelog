@@ -257,4 +257,36 @@ describe("admin routes", () => {
     expect(DEFAULT_CONFIG.egg.legend.legendaryChance).toBe(0.03);
     expect(DEFAULT_CONFIG.shinyRate).toBeCloseTo(1 / 4096);
   });
+
+  it("allows runtime tuning of pvp elo", async () => {
+    const edits: Array<[string, unknown]> = [
+      ["pvp.elo.start", 1200],
+      ["pvp.elo.k", 24],
+    ];
+    for (const [key, value] of edits) {
+      const res = await t.admin().put("/api/admin/config", { key, value });
+      expect(res.status).toBe(200);
+    }
+    const config = await t.admin().get("/api/admin/config");
+    expect(config.body.pvp.elo.start).toBe(1200);
+    expect(config.body.pvp.elo.k).toBe(24);
+  });
+
+  it("rejects out-of-range pvp edits", async () => {
+    const bad: Array<[string, unknown]> = [
+      ["pvp.elo.start", 0],   // not > 0
+      ["pvp.elo.k", -5],      // not > 0
+    ];
+    for (const [key, value] of bad) {
+      const res = await t.admin().put("/api/admin/config", { key, value });
+      expect(res.status).toBe(400);
+    }
+  });
+
+  it("ships default pvp config (DEFAULT_CONFIG)", async () => {
+    const { DEFAULT_CONFIG } = await import("../../src/storage/config-store.js");
+    expect(DEFAULT_CONFIG.pvp).toEqual({
+      elo: { start: 1000, k: 32 },
+    });
+  });
 });
