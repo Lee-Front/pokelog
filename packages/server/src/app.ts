@@ -19,6 +19,7 @@ import { battleRoutes } from "./routes/battle-routes.js";
 import { pvpRoutes } from "./routes/pvp-routes.js";
 import { socialRoutes } from "./routes/social-routes.js";
 import { adminRoutes } from "./routes/admin-routes.js";
+import { regionRoutes } from "./routes/region-routes.js";
 import { authRateLimiter, gameRateLimiter, publicRateLimiter } from "./middleware/rate-limit-middleware.js";
 import { corsMiddleware } from "./middleware/cors-middleware.js";
 
@@ -54,6 +55,8 @@ export function createApp() {
     // 공개 라우트(meta, art)는 느슨한 한도 적용
     app.use(`${prefix}/meta`, publicRateLimiter);
     app.use(`${prefix}/art`, publicRateLimiter);
+    // 지역 출몰 데이터는 art/meta처럼 정적 공개 데이터 — 느슨한 한도
+    app.use(`${prefix}/regions`, publicRateLimiter, regionRoutes);
 
     // 서버 메타데이터 (인증 불필요)
     app.get(`${prefix}/meta`, async (_req, res) => {
