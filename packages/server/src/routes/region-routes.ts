@@ -85,7 +85,7 @@ export function findSpeciesRegions(
 export const regionRoutes = Router();
 
 // 지역 목록 — 정적 공개 데이터(인증 불필요)
-regionRoutes.get("/regions", (_req: Request, res: Response) => {
+regionRoutes.get("/", (_req: Request, res: Response) => {
   try {
     const regions = getRegionNames().map((id) => ({ id, name: getRegion(id).name }));
     res.json(regions);
@@ -97,7 +97,7 @@ regionRoutes.get("/regions", (_req: Request, res: Response) => {
 
 // 종 → 출몰 지역 역조회 — /:id 보다 먼저 등록해야 "of"가 id로 잡히지 않는다.
 // 어떤 지역에서도 안 나오는 종(또는 미존재 종)은 빈 목록(200)으로 응답한다.
-regionRoutes.get("/regions/of/:species", (req: Request, res: Response) => {
+regionRoutes.get("/of/:species", (req: Request, res: Response) => {
   const species = req.params.species;
   try {
     const regions = getRegionNames()
@@ -120,7 +120,7 @@ regionRoutes.get("/regions/of/:species", (req: Request, res: Response) => {
 });
 
 // 지역별 출몰 포켓몬(종별 집계) — 잘못된 id는 404
-regionRoutes.get("/regions/:id", (req: Request, res: Response) => {
+regionRoutes.get("/:id", (req: Request, res: Response) => {
   const id = req.params.id;
   try {
     const region = getRegion(id);

@@ -6,7 +6,8 @@ import type { RegionData } from "../../../../shared/types.js";
 
 function makeApp() {
   const app = express();
-  app.use("/api", regionRoutes);
+  // 실제 앱과 동일하게 `/api/regions`에 마운트(라우터 내부 경로는 /, /:id, /of/:species 상대경로).
+  app.use("/api/regions", regionRoutes);
   return app;
 }
 
