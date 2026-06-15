@@ -123,16 +123,42 @@ describe("normalizeStakeSpec / isEmptyStake", () => {
   });
 });
 
+// === demand 정규화/충족 ===
+describe("normalizeDemand / isEmptyDemand / buildOpponentStakeFromDemand", () => {
+  it("음수·비정수를 제거하고 빈 demand를 식별한다", () => {
+    const d = rewards.normalizeDemand({ points: 30.7, items: { potion: 2, bad: 0 }, pokemonCount: 1.9 });
+    expect(d.points).toBe(30);
+    expect(d.items).toEqual({ potion: 2 });
+    expect(d.pokemonCount).toBe(1);
+    expect(rewards.isEmptyDemand(d)).toBe(false);
+    expect(rewards.isEmptyDemand(rewards.normalizeDemand({}))).toBe(true);
+  });
+
+  it("demand 충족 stake는 points/items를 그대로 쓰고 고른 포켓몬을 담는다", () => {
+    const d = rewards.normalizeDemand({ points: 50, items: { potion: 1 }, pokemonCount: 2 });
+    const spec = rewards.buildOpponentStakeFromDemand(d, ["x", "y"]);
+    expect(spec.points).toBe(50);
+    expect(spec.items).toEqual({ potion: 1 });
+    expect(spec.pokemonUids).toEqual(["x", "y"]);
+  });
+
+  it("선택한 포켓몬 수가 demand.pokemonCount와 다르면 거부", () => {
+    const d = rewards.normalizeDemand({ pokemonCount: 2 });
+    expect(() => rewards.buildOpponentStakeFromDemand(d, ["x"])).toThrow();
+    expect(() => rewards.buildOpponentStakeFromDemand(d, ["x", "y", "z"])).toThrow();
+  });
+});
+
 // === 빈 stake = 친선전 ===
 describe("빈 stake(친선전) — 정산 no-op", () => {
   it("stake 없이 도전·수락하면 자산 이동 없이 ELO만 갱신된다", async () => {
     await userStore.saveUser(createUser("winner", "Winner", [oneShotMon("bulbasaur")], { points: 1000 }));
     await userStore.saveUser(createUser("loser", "Loser", [glassMon("charmander")], { points: 1000 }));
-    // stake 생략 → 빈 에스크로 락(친선).
+    // stake·demand 생략 → 빈 에스크로 락(친선).
     const m = await pvp.createChallenge({ challengerUserId: "winner", opponentUserId: "loser", mode: "single" });
     expect(m.stakes.challengerEscrow?.points).toBe(0);
     expect(m.stakes.challengerEscrow?.pokemon).toHaveLength(0);
-    await pvp.acceptChallenge("loser", m.id); // opponentStake 생략 → 빈 에스크로
+    await pvp.acceptChallenge("loser", m.id); // demand 빈 것 → opponentEscrow 빈 채 락
     const done = await playDecidedMatch(m.id);
     expect(done.result?.winnerUserId).toBe("winner");
     expect(done.stakes.settled).toBe(true);
@@ -182,11 +208,13 @@ describe("내기 — 에스크로 락/정산", () => {
 
   it("승자독식: 양측 에스크로 전부 승자에게", async () => {
     await seedWager();
+    // challenger가 100을 걸고 상대에게 200포인트+potion 1을 요구. 상대가 보유하면 수락 시 자동 차감.
     const m = await pvp.createChallenge({
       challengerUserId: "winner", opponentUserId: "loser", mode: "single",
       challengerStake: { points: 100, items: {}, pokemonUids: [] },
+      demand: { points: 200, items: { potion: 1 }, pokemonCount: 0 },
     });
-    await pvp.acceptChallenge("loser", m.id, { points: 200, items: { potion: 1 }, pokemonUids: [] });
+    await pvp.acceptChallenge("loser", m.id);
     const done = await playDecidedMatch(m.id);
     expect(done.result?.winnerUserId).toBe("winner");
     expect(done.stakes.settled).toBe(true);
@@ -218,8 +246,9 @@ describe("내기 — 에스크로 락/정산", () => {
     const m = await pvp.createChallenge({
       challengerUserId: "winner", opponentUserId: "loser", mode: "single",
       challengerStake: { points: 100, items: {}, pokemonUids: [] },
+      demand: { points: 150, items: {}, pokemonCount: 0 },
     });
-    await pvp.acceptChallenge("loser", m.id, { points: 150, items: {}, pokemonUids: [] });
+    await pvp.acceptChallenge("loser", m.id);
     const done = await playDecidedMatch(m.id);
     expect(done.result?.kind).toBe("decided");
     expect(done.result?.winnerUserId).toBeNull(); // 동시전멸 = 무승부
@@ -235,8 +264,9 @@ describe("내기 — 에스크로 락/정산", () => {
     const m = await pvp.createChallenge({
       challengerUserId: "winner", opponentUserId: "loser", mode: "single",
       challengerStake: { points: 100, items: {}, pokemonUids: [] },
+      demand: { points: 300, items: {}, pokemonCount: 0 },
     });
-    await pvp.acceptChallenge("loser", m.id, { points: 300, items: {}, pokemonUids: [] });
+    await pvp.acceptChallenge("loser", m.id);
     // loser가 기권 → winner 승.
     const done = await pvp.forfeit("loser", m.id);
     expect(done.result?.kind).toBe("forfeit");
@@ -268,6 +298,109 @@ describe("내기 — 에스크로 락/정산", () => {
     const done = await pvp.forfeit("winner", m.id); // 아직 pending
     expect(done.result?.kind).toBe("voided");
     expect((await userStore.getUser("winner"))!.points).toBe(1000);
+  });
+});
+
+// === 합의형 demand 충족(수락) ===
+describe("demand 충족 수락", () => {
+  it("demand points/items를 보유하면 수락 시 자동 차감되어 opponentEscrow에 락된다", async () => {
+    await userStore.saveUser(createUser("winner", "W", [oneShotMon("bulbasaur")], { points: 1000 }));
+    await userStore.saveUser(createUser("loser", "L", [glassMon("charmander")], { points: 1000, inventory: { potion: 3 } }));
+    const m = await pvp.createChallenge({
+      challengerUserId: "winner", opponentUserId: "loser", mode: "single",
+      demand: { points: 200, items: { potion: 1 }, pokemonCount: 0 },
+    });
+    const accepted = await pvp.acceptChallenge("loser", m.id);
+    expect(accepted.status).toBe("active");
+    // demand대로 차감되어 에스크로에 락.
+    expect(accepted.stakes.opponentEscrow?.points).toBe(200);
+    expect(accepted.stakes.opponentEscrow?.items).toEqual({ potion: 1 });
+    const l = await userStore.getUser("loser");
+    expect(l!.points).toBe(800);
+    expect(l!.inventory.potion).toBe(2);
+  });
+
+  it("opponent가 demand.pokemonCount만큼 직접 고른 포켓몬이 락된다", async () => {
+    await userStore.saveUser(createUser("winner", "W", [oneShotMon("bulbasaur")], {}));
+    const lMain = glassMon("charmander");
+    const lStake = strongMon("charmeleon"); // 전투 팀 밖(storage)
+    const loser = createUser("loser", "L", [lMain], {});
+    loser.storage = [lStake];
+    await userStore.saveUser(loser);
+
+    const m = await pvp.createChallenge({
+      challengerUserId: "winner", opponentUserId: "loser", mode: "single",
+      demand: { points: 0, items: {}, pokemonCount: 1 },
+    });
+    const accepted = await pvp.acceptChallenge("loser", m.id, [lStake.uid]);
+    expect(accepted.stakes.opponentEscrow?.pokemon).toHaveLength(1);
+    expect(accepted.stakes.opponentEscrow?.pokemon[0].uid).toBe(lStake.uid);
+    const l = await userStore.getUser("loser");
+    expect(l!.storage.find((p) => p.uid === lStake.uid)).toBeUndefined();
+  });
+
+  it("demand 포인트 부족이면 수락 거부(아무것도 차감 안 함)", async () => {
+    await userStore.saveUser(createUser("winner", "W", [oneShotMon("bulbasaur")], {}));
+    await userStore.saveUser(createUser("loser", "L", [glassMon("charmander")], { points: 50 }));
+    const m = await pvp.createChallenge({
+      challengerUserId: "winner", opponentUserId: "loser", mode: "single",
+      demand: { points: 200, items: {}, pokemonCount: 0 },
+    });
+    await expect(pvp.acceptChallenge("loser", m.id)).rejects.toThrow();
+    // 거부 시 차감 없음 + 매치는 여전히 pending.
+    expect((await userStore.getUser("loser"))!.points).toBe(50);
+    expect((await pvp.getMatchForUser("loser", m.id)).status).toBe("pending");
+  });
+
+  it("demand 아이템 부족이면 수락 거부", async () => {
+    await userStore.saveUser(createUser("winner", "W", [oneShotMon("bulbasaur")], {}));
+    await userStore.saveUser(createUser("loser", "L", [glassMon("charmander")], { inventory: { potion: 0 } }));
+    const m = await pvp.createChallenge({
+      challengerUserId: "winner", opponentUserId: "loser", mode: "single",
+      demand: { points: 0, items: { potion: 2 }, pokemonCount: 0 },
+    });
+    await expect(pvp.acceptChallenge("loser", m.id)).rejects.toThrow();
+  });
+
+  it("선택한 포켓몬 수가 demand.pokemonCount와 다르면 수락 거부", async () => {
+    await userStore.saveUser(createUser("winner", "W", [oneShotMon("bulbasaur")], {}));
+    const lMain = glassMon("charmander");
+    const lExtra = strongMon("charmeleon");
+    const loser = createUser("loser", "L", [lMain], {});
+    loser.storage = [lExtra];
+    await userStore.saveUser(loser);
+    const m = await pvp.createChallenge({
+      challengerUserId: "winner", opponentUserId: "loser", mode: "single",
+      demand: { points: 0, items: {}, pokemonCount: 2 },
+    });
+    // 1마리만 골라 수 불일치 → 거부.
+    await expect(pvp.acceptChallenge("loser", m.id, [lExtra.uid])).rejects.toThrow();
+  });
+
+  it("전투 팀 포켓몬으로 demand를 충족하려 하면 거부(안전규칙)", async () => {
+    await userStore.saveUser(createUser("winner", "W", [oneShotMon("bulbasaur")], {}));
+    const lMain = glassMon("charmander"); // single 전투 팀 = 이 1마리
+    const lExtra = strongMon("charmeleon");
+    const loser = createUser("loser", "L", [lMain], {});
+    loser.storage = [lExtra];
+    await userStore.saveUser(loser);
+    const m = await pvp.createChallenge({
+      challengerUserId: "winner", opponentUserId: "loser", mode: "single",
+      demand: { points: 0, items: {}, pokemonCount: 1 },
+    });
+    // 전투에 나갈 lMain을 stake로 내면 거부.
+    await expect(pvp.acceptChallenge("loser", m.id, [lMain.uid])).rejects.toThrow();
+  });
+
+  it("친선(빈 demand)은 포켓몬 선택 없이 수락된다", async () => {
+    await userStore.saveUser(createUser("winner", "W", [oneShotMon("bulbasaur")], {}));
+    await userStore.saveUser(createUser("loser", "L", [glassMon("charmander")], {}));
+    const m = await pvp.createChallenge({ challengerUserId: "winner", opponentUserId: "loser", mode: "single" });
+    const accepted = await pvp.acceptChallenge("loser", m.id);
+    expect(accepted.status).toBe("active");
+    expect(accepted.stakes.opponentEscrow?.locked).toBe(true);
+    expect(accepted.stakes.opponentEscrow?.points).toBe(0);
+    expect(accepted.stakes.opponentEscrow?.pokemon).toHaveLength(0);
   });
 });
 
@@ -332,9 +465,12 @@ describe("정산 멱등성", () => {
   it("settleMatch를 여러 번 호출해도 한 번만 지급된다", async () => {
     await userStore.saveUser(createUser("winner", "W", [oneShotMon("bulbasaur")], { points: 0 }));
     await userStore.saveUser(createUser("loser", "L", [glassMon("charmander")], { points: 1000 }));
-    // loser가 100을 건다 → winner 승 → 100 획득.
-    const m = await pvp.createChallenge({ challengerUserId: "winner", opponentUserId: "loser", mode: "single" });
-    await pvp.acceptChallenge("loser", m.id, { points: 100, items: {}, pokemonUids: [] });
+    // winner가 loser에게 100을 요구(demand) → winner 승 → 100 획득.
+    const m = await pvp.createChallenge({
+      challengerUserId: "winner", opponentUserId: "loser", mode: "single",
+      demand: { points: 100, items: {}, pokemonCount: 0 },
+    });
+    await pvp.acceptChallenge("loser", m.id);
     await playDecidedMatch(m.id); // 정산 1회
 
     // 강제로 settleMatch를 추가 호출 — settled 가드로 무동작.

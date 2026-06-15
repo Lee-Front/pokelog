@@ -55,7 +55,7 @@ function parseAction(body: Record<string, unknown>): PvpAction {
 
 pvpRoutes.post("/challenges", async (req: AuthRequest, res: Response) => {
   try {
-    const { opponentUserId, mode, teamUids, stake } = req.body ?? {};
+    const { opponentUserId, mode, teamUids, stake, demand } = req.body ?? {};
     if (typeof opponentUserId !== "string") {
       res.status(400).json({ error: "opponentUserId가 필요합니다." });
       return;
@@ -65,8 +65,10 @@ pvpRoutes.post("/challenges", async (req: AuthRequest, res: Response) => {
       opponentUserId,
       mode: parseMode(mode),
       challengerTeamUids: Array.isArray(teamUids) ? teamUids.map(String) : undefined,
-      // stake 생략/빈 객체면 친선전(빈 에스크로). { points, items, pokemonUids } 지정 시 내기.
+      // stake 생략/빈 객체면 challenger가 거는 것 없음. { points, items, pokemonUids } 지정 시 내기.
       challengerStake: stake,
+      // demand 생략/빈 객체면 상대 요구 없음(친선). { points, items, pokemonCount } 지정 시 요구.
+      demand,
     });
     res.status(201).json({ match });
   } catch (err) {
@@ -76,8 +78,10 @@ pvpRoutes.post("/challenges", async (req: AuthRequest, res: Response) => {
 
 pvpRoutes.post("/challenges/:id/accept", async (req: AuthRequest, res: Response) => {
   try {
-    const stake = (req.body ?? {}).stake;
-    const match = await acceptChallenge(req.userId!, req.params.id, stake);
+    // demand.pokemonCount 충족용으로 opponent가 직접 고른 포켓몬 uid(요구 없으면 생략 가능).
+    const raw = (req.body ?? {}).pokemonUids;
+    const pokemonUids = Array.isArray(raw) ? raw.map(String) : undefined;
+    const match = await acceptChallenge(req.userId!, req.params.id, pokemonUids);
     res.json({ match });
   } catch (err) {
     handleError(err, res, "PvP challenge accept error");

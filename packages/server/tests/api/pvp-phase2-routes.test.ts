@@ -109,4 +109,32 @@ describe("PvP Phase 2 routes", () => {
     expect(created.status).toBe(201);
     expect(created.body.match.stakes.challengerEscrow.points).toBe(100);
   });
+
+  it("demand 충족 수락 → opponentEscrow에 요구 자산 락", async () => {
+    const aToken = await seed("da", 0);
+    const bToken = await seed("db", 500);
+    const created = await t.authed(aToken).post("/api/pvp/challenges", {
+      opponentUserId: "db", mode: "single",
+      demand: { points: 150, items: {}, pokemonCount: 0 },
+    });
+    expect(created.status).toBe(201);
+    expect(created.body.match.stakes.demand.points).toBe(150);
+
+    const accepted = await t.authed(bToken).post(`/api/pvp/challenges/${created.body.match.id}/accept`);
+    expect(accepted.status).toBe(200);
+    expect(accepted.body.match.status).toBe("active");
+    expect(accepted.body.match.stakes.opponentEscrow.points).toBe(150);
+  });
+
+  it("demand 보유 부족 수락은 400으로 거부", async () => {
+    const aToken = await seed("ea", 0);
+    const bToken = await seed("eb", 10);
+    const created = await t.authed(aToken).post("/api/pvp/challenges", {
+      opponentUserId: "eb", mode: "single",
+      demand: { points: 9999, items: {}, pokemonCount: 0 },
+    });
+    expect(created.status).toBe(201);
+    const accepted = await t.authed(bToken).post(`/api/pvp/challenges/${created.body.match.id}/accept`);
+    expect(accepted.status).toBe(400);
+  });
 });

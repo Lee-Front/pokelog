@@ -17,7 +17,7 @@
  *  - voided/expired/declined: 이동 없음. wager 에스크로는 원소유자 반환.
  */
 import type {
-  OwnedPokemon, PvpEscrow, PvpMatch, PvpResult, PvpStakeSpec, UserData,
+  OwnedPokemon, PvpDemand, PvpEscrow, PvpMatch, PvpResult, PvpStakeSpec, UserData,
 } from "../../../../shared/types.js";
 import { getUser, saveUser } from "../storage/user-store.js";
 import { getMatch, saveMatch, withLock } from "../storage/pvp-store.js";
@@ -81,6 +81,45 @@ export function isEmptyStake(spec: PvpStakeSpec): boolean {
   return spec.points <= 0
     && Object.keys(spec.items).length === 0
     && spec.pokemonUids.length === 0;
+}
+
+/** 임의 입력을 PvpDemand로 정규화(음수·비정수 제거). pokemonCount는 마릿수만. */
+export function normalizeDemand(input: unknown): PvpDemand {
+  const obj = (input ?? {}) as Record<string, unknown>;
+  const points = Number.isFinite(obj.points) ? Math.max(0, Math.floor(obj.points as number)) : 0;
+  const items: Record<string, number> = {};
+  if (obj.items && typeof obj.items === "object") {
+    for (const [id, qty] of Object.entries(obj.items as Record<string, unknown>)) {
+      const n = Number.isFinite(qty) ? Math.floor(qty as number) : 0;
+      if (n > 0) items[id] = n;
+    }
+  }
+  const pokemonCount = Number.isFinite(obj.pokemonCount)
+    ? Math.max(0, Math.floor(obj.pokemonCount as number))
+    : 0;
+  return { points, items, pokemonCount };
+}
+
+/** demand가 비었는지(요구하는 게 아무것도 없음 — 친선). */
+export function isEmptyDemand(demand: PvpDemand): boolean {
+  return demand.points <= 0
+    && Object.keys(demand.items).length === 0
+    && demand.pokemonCount <= 0;
+}
+
+/**
+ * opponent가 고른 포켓몬 uid로 demand를 충족하는 PvpStakeSpec을 만든다. points/items는 demand
+ * 그대로(보유 검증·차감은 lockStake가 수행), 포켓몬은 opponent가 직접 고른 uid 목록.
+ * pokemonUids 길이가 demand.pokemonCount와 다르면 거부(원자성 — 락 전에 검증).
+ */
+export function buildOpponentStakeFromDemand(demand: PvpDemand, pokemonUids: string[]): PvpStakeSpec {
+  const uids = [...new Set(pokemonUids.map(String))];
+  if (uids.length !== demand.pokemonCount) {
+    throw new GameRuleError(
+      `요구된 포켓몬 ${demand.pokemonCount}마리를 정확히 선택해야 합니다(선택: ${uids.length}마리).`,
+    );
+  }
+  return { points: demand.points, items: { ...demand.items }, pokemonUids: uids };
 }
 
 /**

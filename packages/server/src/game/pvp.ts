@@ -24,7 +24,10 @@ import {
   resolveRound, hasAliveReserve, isWipedOut, freshStatStages,
   type EngineSide, type Rng, defaultRng,
 } from "./pvp-engine.js";
-import { lockStake, normalizeStakeSpec, settleMatch } from "./pvp-rewards.js";
+import {
+  lockStake, normalizeStakeSpec, normalizeDemand, buildOpponentStakeFromDemand,
+  settleMatch,
+} from "./pvp-rewards.js";
 import { getStats, listRanking } from "../storage/pvp-stats-store.js";
 import { getConfig } from "../storage/config-store.js";
 
@@ -104,8 +107,10 @@ function asEngineSide(side: PvpSide): EngineSide {
 // --- 지정 도전 ----------------------------------------------------------------
 
 /**
- * A가 B에게 도전 생성 → pending 매치. 모든 매치는 에스크로(내기) 단일 경로다.
- * challenger stake를 이 시점에 락한다(빈 stake도 유효 — 그게 친선전, 에스크로는 빈 채로 락).
+ * A가 B에게 도전 생성 → pending 매치. 합의형 내기: challenger가 자기 stake(challengerStake)를
+ * 이 시점에 락하고(빈 stake도 유효), 상대에게 요구할 자산(demand)을 매치에 저장한다. demand는
+ * 수락 시점에 opponent가 충족(차감)한다 — 이 시점엔 검증/차감하지 않는다(상대 자산이므로).
+ * challengerStake 비고 demand 빈 것 = 친선전(에스크로 빈 채 락, 정산 no-op).
  */
 export async function createChallenge(input: {
   challengerUserId: string;
@@ -113,6 +118,7 @@ export async function createChallenge(input: {
   mode: PvpMode;
   challengerTeamUids?: string[];
   challengerStake?: unknown;
+  demand?: unknown;
 }): Promise<PvpMatch> {
   if (input.challengerUserId === input.opponentUserId) {
     throw new GameRuleError("자기 자신에게 도전할 수 없습니다.");
@@ -150,16 +156,23 @@ export async function createChallenge(input: {
   const escrow = await lockStake(match, "challenger", spec);
   match.stakes.challengerStake = spec;
   match.stakes.challengerEscrow = escrow;
+  // 상대에게 요구할 자산(demand)을 매치에 저장(수락 시 충족·차감). 빈 demand면 요구 없음.
+  match.stakes.demand = normalizeDemand(input.demand);
 
   await saveMatch(match);
   return match;
 }
 
-/** B가 도전 수락 → 상대 팀 스냅샷 후 active 전환. opponent stake를 락한다(빈 stake도 유효). */
+/**
+ * B가 도전 수락 → 상대 팀 스냅샷 후 active 전환. 합의형: challenger가 건 demand를 충족한다.
+ * points/items는 demand대로 보유 시 자동 차감, 포켓몬은 opponent가 고른 pokemonUids로 충족
+ * (길이 === demand.pokemonCount). 충족분을 opponentEscrow에 락한다. 보유 부족·수 불일치·안전규칙
+ * 위반이면 아무것도 차감하지 않고 거부(원자성 — lockStake가 변경 전 전부 검증). demand 빈 것 = 친선.
+ */
 export async function acceptChallenge(
   userId: string,
   matchId: string,
-  opponentStake?: unknown,
+  pokemonUids?: string[],
 ): Promise<PvpMatch> {
   const opponentUser = await getUser(userId);
   if (!opponentUser) throw new GameRuleError("사용자를 찾을 수 없습니다.");
@@ -178,11 +191,11 @@ export async function acceptChallenge(
     }
     match.opponent.team = buildTeam(opponentUser, match.mode);
 
-    // 팀 스냅샷이 정해진 뒤 opponent stake를 명세·검증·락(전투 팀과의 겹침 검사 위해 team 먼저).
-    // 비대칭 허용 — opponent는 challenger stake를 보고 자기 stake를 자유로 정한다(빈 stake도 유효).
-    const spec = normalizeStakeSpec(opponentStake);
+    // 팀 스냅샷이 정해진 뒤 demand를 충족하는 opponent stake를 만들어 락(전투 팀 겹침 검사 위해 team 먼저).
+    // demand의 points/items는 그대로 요구, 포켓몬은 opponent가 고른 uid로 충족(수 일치 검증).
+    const demand = normalizeDemand(match.stakes.demand);
+    const spec = buildOpponentStakeFromDemand(demand, pokemonUids ?? []);
     const escrow = await lockStake(match, "opponent", spec);
-    match.stakes.opponentStake = spec;
     match.stakes.opponentEscrow = escrow;
 
     match.status = "active";

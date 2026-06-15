@@ -801,15 +801,29 @@ export interface PvpEscrow {
 }
 
 /**
+ * 도전자가 상대에게 요구하는 자산(합의형 내기). 도전 생성 시 challenger가 자기 stake와 함께
+ * 지정한다. points/items는 정확한 양/종류를 요구하고(상대가 보유하면 수락 시 자동 차감),
+ * 포켓몬은 상대 보유를 알 수 없으므로 마릿수(pokemonCount)만 요구한다 — 어떤 개체를 낼지는
+ * 수락하는 상대가 직접 고른다. 전 필드 0/빈이면 요구 없음(친선 또는 일방 stake).
+ */
+export interface PvpDemand {
+  points: number;
+  items: Record<string, number>;
+  pokemonCount: number;
+}
+
+/**
  * 스테이크/에스크로 메타. 모든 매치는 단일 에스크로(내기) 경로를 따른다 — 별도 보상모드 없음.
- * 빈 stake가 곧 친선전이며 정산은 no-op. 양측 stake 명세 + 락된 에스크로를 보관하고,
- * settled 플래그로 정산 멱등성을 보장한다(승자독식·이중지급/복제 방지).
+ * 합의형: challenger가 자기 stake(challengerStake)와 상대 요구(demand)를 정하고, opponent는
+ * 수락 시 demand를 충족(points/items 자동 차감 + 포켓몬 N마리 직접 선택)해 opponentEscrow를 채운다.
+ * challengerStake 비고 demand 빈 것 = 친선전(정산 no-op). settled 플래그로 정산 멱등성 보장.
  */
 export interface PvpStakes {
-  /** 각 측이 걸기로 확정한 명세. 확정 전(opponent 미수락)이면 null. */
+  /** challenger가 걸기로 확정한 명세(도전 생성 시 락). */
   challengerStake?: PvpStakeSpec | null;
-  opponentStake?: PvpStakeSpec | null;
-  /** 각 측의 락된 에스크로. */
+  /** challenger가 opponent에게 요구한 자산(수락 시 충족 검증·차감 기준). 빈/없음이면 친선. */
+  demand?: PvpDemand | null;
+  /** 각 측의 락된 에스크로. opponentEscrow는 demand 충족분을 수락 시점에 락한 것. */
   challengerEscrow?: PvpEscrow | null;
   opponentEscrow?: PvpEscrow | null;
   /**
