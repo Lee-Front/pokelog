@@ -374,7 +374,7 @@ adminRoutes.post("/test/give-points", async (req, res) => {
     if (!user) return res.status(404).json({ error: "유저 없음" });
 
     user.points += amount;
-    await saveUser(user);
+    await saveUser(user, "admin-adjust");
     res.json({ ok: true, points: user.points });
   } catch {
     res.status(500).json({ error: "서버 오류" });

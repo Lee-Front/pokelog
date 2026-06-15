@@ -29,8 +29,14 @@ export async function getUser(userId: string): Promise<UserData | null> {
   return user ? normalizeUserData(user) : null;
 }
 
-export async function saveUser(userData: UserData): Promise<void> {
+/**
+ * Persist a user. `reason` labels the call site so intentional balance drops
+ * (shop purchases, admin adjustments) can opt out of the regression warning
+ * below; omit it for the polling/reward paths where a drop is never expected.
+ */
+export async function saveUser(userData: UserData, reason?: string): Promise<void> {
   const normalized = normalizeUserData(userData);
+  await warnOnBalanceRegression(normalized, reason);
   await writeJson(userPath(normalized.account.id), normalized);
   // The user file is the source of truth; the index is a rebuildable cache.
   // If the index update fails we keep the successful save but surface the
@@ -42,6 +48,40 @@ export async function saveUser(userData: UserData): Promise<void> {
       { err, userId: normalized.account.id },
       "User saved but identity index update failed; index may be stale",
     );
+  }
+}
+
+/** Call sites that legitimately reduce points/exp; skip the regression warning. */
+const INTENTIONAL_DEBIT_REASONS = new Set(["shop-purchase", "admin-adjust"]);
+
+/**
+ * Diagnostic guard for the stale-save class of bug (#19): a save that lowers a
+ * user's points or totalExp below what is already on disk almost always means a
+ * stale in-memory object is overwriting a fresh reward. Read the current file
+ * and emit a WARNING (with a stack) on any regression so it surfaces in logs
+ * instead of silently zeroing balances. Intentional debits pass a `reason`.
+ */
+async function warnOnBalanceRegression(next: UserData, reason?: string): Promise<void> {
+  if (reason && INTENTIONAL_DEBIT_REASONS.has(reason)) return;
+  const existing = await readJson<UserData>(userPath(next.account.id));
+  if (!existing) return;
+
+  for (const field of ["points", "totalExp"] as const) {
+    const before = existing[field];
+    const after = next[field];
+    if (typeof before === "number" && typeof after === "number" && after < before) {
+      log.warn(
+        {
+          userId: next.account.id,
+          field,
+          before,
+          after,
+          reason,
+          stack: new Error("balance regression").stack,
+        },
+        `saveUser regression: ${field} ${before} -> ${after} (possible stale-save overwrite)`,
+      );
+    }
   }
 }
 

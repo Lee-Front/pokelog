@@ -64,7 +64,7 @@ shopRoutes.post("/buy", async (req, res) => {
 
     user.points -= totalCost;
     incrementItem(user.inventory, item, qty);
-    await saveUser(user);
+    await saveUser(user, "shop-purchase");
 
     res.json({
       message: `Purchased ${qty} ${shopItem.name}.`,

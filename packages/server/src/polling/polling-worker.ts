@@ -20,11 +20,39 @@ import { getAllUsers, isGitIntegration, normalizeRepoUrl, saveUser } from "../st
 import { pollNotionIntegration } from "../integrations/notion-polling.js";
 import { pollJiraIntegration } from "../integrations/jira-polling.js";
 import { pollSlackIntegration } from "../integrations/slack-polling.js";
-import type { GitIntegration, JiraIntegration, SlackIntegration, UserData } from "../../../../shared/types.js";
+import type { GitIntegration, JiraIntegration, NotionIntegration, SlackIntegration, UserData } from "../../../../shared/types.js";
 import { getUser } from "../storage/user-store.js";
 import { childLogger } from "../logger.js";
 const log = childLogger("polling-worker");
 
+
+/**
+ * Global polling serialization (#19). pollAllRepos and pollUserIntegrations both
+ * load-mutate-save user files; if they (or two pollUserIntegrations calls) run
+ * concurrently they interleave reads and writes and a stale snapshot can clobber
+ * a fresh git reward. A single module-level promise chain runs every polling
+ * body to completion before the next starts. The lock is held ONLY at this outer
+ * level — never re-entered inside processCommit — so there is no deadlock.
+ */
+let pollingChain: Promise<unknown> = Promise.resolve();
+
+function withPollingLock<T>(body: () => Promise<T>): Promise<T> {
+  // Chain after whatever is currently running, swallowing its result/error so
+  // one failed poll does not reject every queued poll. Callers still get their
+  // own body's result/rejection.
+  const run = pollingChain.then(body, body);
+  pollingChain = run.catch(() => undefined);
+  return run;
+}
+
+/** Non-git integrations handled by the notion/jira/slack polling loop. */
+function isPollableIntegration(integration: { provider: string }): boolean {
+  return (
+    integration.provider === "notion" ||
+    integration.provider === "jira" ||
+    integration.provider === "slack"
+  );
+}
 
 function getReposDir() {
   return path.join(getDataDir(), "repos");
@@ -132,11 +160,18 @@ async function pollRepoCommits(
   return commits.length;
 }
 
-export async function pollAllRepos(): Promise<void> {
+export function pollAllRepos(): Promise<void> {
+  return withPollingLock(pollAllReposBody);
+}
+
+async function pollAllReposBody(): Promise<void> {
   const config = await getConfig();
   const syncState = await getSyncState();
   const users = await getAllUsers();
   const integrationRepoMap = new Map<string, { authMode?: string; token?: string; tls?: GitTlsOptions }>();
+  log.info({ userCount: users.length }, "pollAllRepos: start");
+  let reposProcessed = 0;
+  let commitsRewarded = 0;
 
   for (const user of users) {
     for (const integration of user.integrations) {
@@ -161,13 +196,16 @@ export async function pollAllRepos(): Promise<void> {
       .map(([url, auth]) => ({ url, branches: null as string[] | null, source: "integration" as const, authMode: auth.authMode, token: auth.token, tls: auth.tls })),
   ];
 
+  // Git repos first: processCommit loads each matching user fresh, accrues, and
+  // saves atomically. This must run before the notion/jira/slack loop below.
   for (const repo of reposToPoll) {
     try {
       const repoDir = await ensureBareClone(repo.url, repo.authMode, repo.token, repo.tls);
       await fetchRepo(repoDir, repo.tls);
 
       const branches = repo.branches ?? await listRemoteBranches(repoDir);
-      await pollRepoCommits(repoDir, repo.url, branches, syncState);
+      commitsRewarded += await pollRepoCommits(repoDir, repo.url, branches, syncState);
+      reposProcessed += 1;
     } catch (err) {
       // Git errors can embed the token-bearing URL; redact before logging.
       const message = redactUrlCredentials(err instanceof Error ? err.message : String(err));
@@ -175,14 +213,23 @@ export async function pollAllRepos(): Promise<void> {
     }
   }
 
-  for (const user of users) {
+  // Non-git integrations. The `users` snapshot above is now stale for any user
+  // the git loop just rewarded, so we must NOT saveUser the snapshot object —
+  // that would overwrite the git accrual with zeros (#19). Reload each user
+  // fresh inside the loop, mutate the reloaded copy, and save that.
+  for (const snapshotUser of users) {
+    if (!snapshotUser.integrations.some((i) => isPollableIntegration(i))) continue;
+
+    const user = await getUser(snapshotUser.account.id);
+    if (!user) continue;
+
     for (const integration of user.integrations) {
-      if (!("config" in integration)) continue;
+      if (!isPollableIntegration(integration)) continue;
       if (integration.failCount >= 3 || integration.status === "error") continue;
 
       try {
         if (integration.provider === "notion") {
-          await pollNotionIntegration(user, integration, syncState);
+          await pollNotionIntegration(user, integration as NotionIntegration, syncState);
         } else if (integration.provider === "jira") {
           await pollJiraIntegration(user, integration as JiraIntegration, syncState);
         } else if (integration.provider === "slack") {
@@ -209,23 +256,33 @@ export async function pollAllRepos(): Promise<void> {
   }
 
   await saveSyncState(syncState);
+  log.info(
+    { userCount: users.length, reposProcessed, commitsRewarded },
+    "pollAllRepos: done",
+  );
 }
 
-/** Poll a single user's non-git integrations (Notion/Jira/Slack) on demand. */
-export async function pollUserIntegrations(userId: string): Promise<void> {
+/** Poll a single user's integrations (Notion/Jira/Slack + their git repos) on demand. */
+export function pollUserIntegrations(userId: string): Promise<void> {
+  return withPollingLock(() => pollUserIntegrationsBody(userId));
+}
+
+async function pollUserIntegrationsBody(userId: string): Promise<void> {
   const user = await getUser(userId);
   if (!user) return;
 
+  log.info({ userId }, "pollUserIntegrations: start");
   const syncState = await getSyncState();
-  let changed = false;
+  let userChanged = false;
+  let commitsRewarded = 0;
 
   for (const integration of user.integrations) {
-    if (!("config" in integration)) continue;
+    if (!isPollableIntegration(integration)) continue;
     if (integration.failCount >= 3 || integration.status === "error") continue;
 
     try {
       if (integration.provider === "notion") {
-        await pollNotionIntegration(user, integration, syncState);
+        await pollNotionIntegration(user, integration as NotionIntegration, syncState);
       } else if (integration.provider === "jira") {
         await pollJiraIntegration(user, integration as JiraIntegration, syncState);
       } else if (integration.provider === "slack") {
@@ -238,18 +295,27 @@ export async function pollUserIntegrations(userId: string): Promise<void> {
       integration.failCount = 0;
       integration.lastCheckedAt = new Date().toISOString();
       delete integration.lastError;
-      changed = true;
+      userChanged = true;
     } catch (err) {
       integration.status = "error";
       integration.failCount += 1;
       integration.lastCheckedAt = new Date().toISOString();
       integration.lastError = err instanceof Error ? err.message : `${integration.provider} polling failed`;
-      changed = true;
+      userChanged = true;
       log.error({ err }, `Error polling ${integration.provider} integration ${integration.id}`);
     }
   }
 
-  // Git integrations - poll repos this user uses
+  // Persist the notion/jira/slack accruals + integration status BEFORE git
+  // polling. This is the only place we save `user`: processCommit then loads
+  // this freshly-saved copy, accrues git rewards, and saves it itself. We must
+  // NOT save `user` again afterward or we'd clobber that git accrual (#19).
+  if (userChanged) {
+    await saveUser(user);
+  }
+
+  // Git integrations - poll repos this user uses. processCommit reloads the user
+  // we just saved; the stale `user` object here is intentionally never re-saved.
   for (const integration of user.integrations) {
     if (!isGitIntegration(integration)) continue;
     if (integration.failCount >= 3 || integration.status === "error") continue;
@@ -262,8 +328,7 @@ export async function pollUserIntegrations(userId: string): Promise<void> {
       await fetchRepo(repoDir, tls);
 
       const branches = await listRemoteBranches(repoDir);
-      await pollRepoCommits(repoDir, git.config.repoUrl, branches, syncState);
-      changed = true;
+      commitsRewarded += await pollRepoCommits(repoDir, git.config.repoUrl, branches, syncState);
     } catch (err) {
       // Git errors can embed the token-bearing URL; redact before logging.
       const message = redactUrlCredentials(err instanceof Error ? err.message : String(err));
@@ -271,10 +336,8 @@ export async function pollUserIntegrations(userId: string): Promise<void> {
     }
   }
 
-  if (changed) {
-    await saveUser(user);
-    await saveSyncState(syncState);
-  }
+  await saveSyncState(syncState);
+  log.info({ userId, commitsRewarded }, "pollUserIntegrations: done");
 }
 
 let pollingInterval: ReturnType<typeof setInterval> | null = null;
