@@ -2,7 +2,7 @@ import { Router } from "express";
 import crypto from "node:crypto";
 import { getConfig, saveConfig } from "../storage/config-store.js";
 import { getUser, saveUser, getAllUsers } from "../storage/user-store.js";
-import { pollAllRepos } from "../polling/polling-worker.js";
+import { pollAllRepos, recomputeUserSerialized } from "../polling/polling-worker.js";
 import { calculateReward } from "../game/reward.js";
 import { judgeCombo, getComboMultiplier } from "../game/combo.js";
 import { selectWildPokemon, scaleWildLevel } from "../game/encounter.js";
@@ -171,14 +171,39 @@ adminRoutes.get("/status", async (_req, res) => {
   }
 });
 
-// List users
+// List users — summary for the admin recompute/debug tool. Includes the
+// commit-derived balances and integration count so an operator can spot users
+// whose balance looks wrong (e.g. zeroed by #19) before recomputing them.
 adminRoutes.get("/users", async (_req, res) => {
   try {
     const users = await getAllUsers();
     res.json(
-      users.map((u) => ({ id: u.account.id, nickname: u.account.nickname }))
+      users.map((u) => ({
+        id: u.account.id,
+        nickname: u.account.nickname,
+        points: u.points,
+        totalExp: u.totalExp,
+        integrationCount: u.integrations.length,
+      }))
     );
   } catch {
+    res.status(500).json({ error: "서버 오류" });
+  }
+});
+
+// 유저 재적립 — 해당 유저의 커밋 이력만 직접 재계산해 포인트/경험치 복구.
+// syncState는 repo별 공유라 베이스라인을 리셋하지 않는다(다른 유저 중복 적립
+// 방지). recomputeUserSerialized가 전역 폴링락으로 직렬화하므로 진행 중 폴링과
+// 충돌하지 않는다. 비커밋 포인트는 의도적으로 초기화된다.
+adminRoutes.post("/users/:id/recompute", async (req, res) => {
+  try {
+    const user = await getUser(req.params.id);
+    if (!user) return res.status(404).json({ error: "유저 없음" });
+
+    const result = await recomputeUserSerialized(req.params.id);
+    res.json(result);
+  } catch (err) {
+    log.error({ err }, "Admin recompute error");
     res.status(500).json({ error: "서버 오류" });
   }
 });

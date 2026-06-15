@@ -106,6 +106,19 @@ describe("saveUser balance-regression warning (#19)", () => {
     expect(regressionWarns.length).toBe(0);
   });
 
+  it("does not warn for an intentional debit (admin-recompute)", async () => {
+    // recompute resets a balance to its commit-derived value, which can be
+    // lower than the prior (non-commit-inclusive) balance; this drop is intended.
+    await store.saveUser(createUser("ash", { points: 100, totalExp: 500 }));
+    warn.mockClear();
+
+    await store.saveUser(createUser("ash", { points: 20, totalExp: 80 }), "admin-recompute");
+    const regressionWarns = warn.mock.calls.filter(
+      ([meta]) => meta && (meta.field === "points" || meta.field === "totalExp"),
+    );
+    expect(regressionWarns.length).toBe(0);
+  });
+
   it("does not warn on the first save (no prior file)", async () => {
     await store.saveUser(createUser("brandnew", { points: 0, totalExp: 0 }));
     const regressionWarns = warn.mock.calls.filter(

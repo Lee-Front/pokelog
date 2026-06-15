@@ -52,7 +52,7 @@ export async function saveUser(userData: UserData, reason?: string): Promise<voi
 }
 
 /** Call sites that legitimately reduce points/exp; skip the regression warning. */
-const INTENTIONAL_DEBIT_REASONS = new Set(["shop-purchase", "admin-adjust"]);
+const INTENTIONAL_DEBIT_REASONS = new Set(["shop-purchase", "admin-adjust", "admin-recompute"]);
 
 /**
  * Diagnostic guard for the stale-save class of bug (#19): a save that lowers a

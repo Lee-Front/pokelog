@@ -248,6 +248,43 @@ export async function getNewCommitsAcrossBranches(
   }
 }
 
+/**
+ * List every distinct non-merge-deduplicated commit across all branches,
+ * oldest-first. Unlike getNewCommitsAcrossBranches this applies no syncState
+ * exclusion — it returns the repo's full history. Used by the admin recompute
+ * tool to replay a single user's commits from scratch without touching the
+ * shared per-repo syncState baseline (which would force-reprocess other users).
+ * `git log --all` already deduplicates commits reachable from several branches.
+ */
+export async function getAllCommitsAcrossBranches(
+  repoDir: string,
+): Promise<CommitInfo[]> {
+  const format = "%H|%ae|%aI|%P|%s"; // hash|email|date|parents|subject
+  try {
+    const { stdout } = await exec(
+      "git",
+      ["log", "--all", `--format=${format}`, "--reverse"],
+      { cwd: repoDir },
+    );
+    if (!stdout.trim()) return [];
+    return stdout
+      .trim()
+      .split("\n")
+      .map((line) => {
+        const [hash, authorEmail, timestamp, parents, message] = line.split("|");
+        return {
+          hash,
+          authorEmail,
+          timestamp,
+          parentCount: parents ? parents.trim().split(" ").length : 0,
+          message: message || "",
+        };
+      });
+  } catch {
+    return [];
+  }
+}
+
 /** Calculate byte changes for a single commit using diff-tree and cat-file */
 export async function getCommitByteChanges(
   repoDir: string,

@@ -115,6 +115,40 @@ describe("admin routes", () => {
     expect(pikachu.level).toBe(10);
   });
 
+  it("GET /users returns a balance summary per user", async () => {
+    const { userId } = await t.registerAndLogin("summaryuser", "charmander");
+    await t.admin().post("/api/admin/test/give-points", { userId, amount: 250 });
+
+    const res = await t.admin().get("/api/admin/users");
+    expect(res.status).toBe(200);
+    const entry = res.body.find((u: { id: string }) => u.id === userId);
+    expect(entry).toBeDefined();
+    expect(entry).toMatchObject({
+      id: userId,
+      points: 250,
+      integrationCount: 0,
+    });
+    expect(typeof entry.totalExp).toBe("number");
+  });
+
+  it("POST /users/:id/recompute returns before/after for a user with no git commits", async () => {
+    // A freshly registered user with admin-granted points has no git
+    // integrations, so recompute resets the non-commit balance to 0.
+    const { userId } = await t.registerAndLogin("recompuser", "charmander");
+    await t.admin().post("/api/admin/test/give-points", { userId, amount: 999 });
+
+    const res = await t.admin().post(`/api/admin/users/${userId}/recompute`);
+    expect(res.status).toBe(200);
+    expect(res.body.before.points).toBe(999);
+    expect(res.body.after.points).toBe(0); // no commits to re-credit
+    expect(res.body.after.totalExp).toBe(0);
+  });
+
+  it("POST /users/:id/recompute returns 404 for an unknown user", async () => {
+    const res = await t.admin().post("/api/admin/users/nope-not-real/recompute");
+    expect(res.status).toBe(404);
+  });
+
   it("ships conservative reward defaults (DEFAULT_CONFIG)", async () => {
     // Asserted against DEFAULT_CONFIG directly; the test harness writes its own
     // config.json so the live /config merges test overrides on top.

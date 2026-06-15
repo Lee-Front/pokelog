@@ -22,6 +22,7 @@ import { pollJiraIntegration } from "../integrations/jira-polling.js";
 import { pollSlackIntegration } from "../integrations/slack-polling.js";
 import type { GitIntegration, JiraIntegration, NotionIntegration, SlackIntegration, UserData } from "../../../../shared/types.js";
 import { getUser } from "../storage/user-store.js";
+import { recomputeUser, type RecomputeResult } from "./recompute.js";
 import { childLogger } from "../logger.js";
 const log = childLogger("polling-worker");
 
@@ -265,6 +266,16 @@ async function pollAllReposBody(): Promise<void> {
 /** Poll a single user's integrations (Notion/Jira/Slack + their git repos) on demand. */
 export function pollUserIntegrations(userId: string): Promise<void> {
   return withPollingLock(() => pollUserIntegrationsBody(userId));
+}
+
+/**
+ * Recompute one user's commit-derived balance, serialized with all polling via
+ * the same global lock so it never interleaves load-mutate-save with a poll
+ * (#19). The recompute body itself does not touch syncState, so concurrent polls
+ * of other users on the same repo are unaffected.
+ */
+export function recomputeUserSerialized(userId: string): Promise<RecomputeResult> {
+  return withPollingLock(() => recomputeUser(userId));
 }
 
 async function pollUserIntegrationsBody(userId: string): Promise<void> {
