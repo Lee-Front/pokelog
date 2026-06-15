@@ -368,11 +368,26 @@ export function getCatchRateOverrides(): CatchRateOverrides {
 
 export function getRegion(name: string): RegionData {
   if (!regionCache.has(name)) {
-    const raw = readJsonFile<RawRegionData | null>(`data/regions/${name}.json`, null);
-    if (!raw) {
-      throw new Error(`Region not found: ${name}`);
+    if (name === "default") {
+      // 기본 지역은 전체 지역(default 제외)의 출몰 포켓몬을 합쳐 랜덤 출몰시킨다.
+      const merged: RegionData["encounters"] = [];
+      for (const other of getRegionNames()) {
+        if (other === "default") continue;
+        try {
+          merged.push(...getRegion(other).encounters);
+        } catch {
+          // 깨진 지역 파일은 건너뛴다.
+        }
+      }
+      const raw = readJsonFile<RawRegionData | null>("data/regions/default.json", null);
+      regionCache.set(name, { name: raw?.name ?? "기본 지역", encounters: merged });
+    } else {
+      const raw = readJsonFile<RawRegionData | null>(`data/regions/${name}.json`, null);
+      if (!raw) {
+        throw new Error(`Region not found: ${name}`);
+      }
+      regionCache.set(name, normalizeRegionData(name, raw));
     }
-    regionCache.set(name, normalizeRegionData(name, raw));
   }
   return regionCache.get(name)!;
 }
