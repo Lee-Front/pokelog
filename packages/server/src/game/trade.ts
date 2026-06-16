@@ -72,6 +72,7 @@ function listTradeablePokemon(user: UserData): TradePokemonCandidate[] {
       speciesName: getDisplaySpeciesName(pokemon.species),
       nickname: pokemon.nickname,
       level: pokemon.level,
+      isShiny: pokemon.isShiny ?? false,
       location: "party",
     });
   }
@@ -87,6 +88,7 @@ function listTradeablePokemon(user: UserData): TradePokemonCandidate[] {
       speciesName: getDisplaySpeciesName(pokemon.species),
       nickname: pokemon.nickname,
       level: pokemon.level,
+      isShiny: pokemon.isShiny ?? false,
       location: "storage",
     });
   }

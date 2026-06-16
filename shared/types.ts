@@ -207,6 +207,7 @@ export interface TradePokemonCandidate {
   speciesName: string;
   nickname: string | null;
   level: number;
+  isShiny: boolean;
   location: "party" | "storage";
 }
 

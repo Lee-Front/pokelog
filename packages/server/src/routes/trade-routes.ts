@@ -56,6 +56,7 @@ async function buildTradeView(
       pokemonUid: trade.requesterPokemonUid,
       species: requesterPokemon?.species ?? null,
       speciesName: requesterPokemon ? getDisplaySpeciesName(requesterPokemon.species) : null,
+      isShiny: requesterPokemon?.isShiny ?? false,
     },
     responder: {
       userId: trade.responderUserId,
@@ -63,6 +64,7 @@ async function buildTradeView(
       pokemonUid: trade.responderPokemonUid,
       species: responderPokemon?.species ?? null,
       speciesName: responderPokemon ? getDisplaySpeciesName(responderPokemon.species) : null,
+      isShiny: responderPokemon?.isShiny ?? false,
     },
   };
 }
