@@ -40,6 +40,7 @@ export function resetGameData(user: UserData): void {
   user.storage = [];
   user.eggs = [];
   user.pokedex = [];
+  user.seenSpecies = [];
   user.inventory = {};
   user.pendingEvents = [];
   user.pendingEvolutions = [];

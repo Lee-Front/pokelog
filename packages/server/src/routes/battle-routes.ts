@@ -167,6 +167,10 @@ battleRoutes.post("/start", async (req, res) => {
       pokemon.hp = Math.min(pokemon.hp, pokemon.maxHp);
     }
 
+    // 야생을 전투에서 마주하면 영구 "만난적(발견)"에 기록 — 잡지 못하고 도망/패배해도 유지된다.
+    const seenList = user.seenSpecies ?? (user.seenSpecies = []);
+    if (!seenList.includes(battleState.wild.species)) seenList.push(battleState.wild.species);
+
     user.battleState = battleState;
     await saveUser(user);
     void appendEvent({

@@ -292,14 +292,10 @@ gameRoutes.get("/pokedex", async (req: AuthRequest, res: Response) => {
       return;
     }
 
-    const caughtSpecies = new Set([
-      ...user.pokemon.map((p) => p.species),
-      ...user.storage.map((p) => p.species),
-    ]);
-
+    // caught/seen은 영구 집합(user-store가 단조 유지). 현재 보유에서 파생하면 방생 시 사라지므로 금지.
     res.json({
-      seen: user.pokedex,
-      caught: [...caughtSpecies],
+      seen: user.seenSpecies ?? user.pokedex,
+      caught: user.pokedex,
       allSpecies: getAllSpecies(),
     });
   } catch (err) {

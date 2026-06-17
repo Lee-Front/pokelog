@@ -342,6 +342,12 @@ function normalizeUserData(user: UserData): UserData {
     );
   }
 
+  // 도감 영구 집합 — 단조 증가만(절대 줄지 않음). 보유 종은 반드시 "잡은적(caught=pokedex)"이고
+  // (방생-후 파생 버그 방지 + 과거 누락 보강), "만난적(seen)"은 caught를 항상 포함한다.
+  const ownedSpecies = [...reconciled.pokemon, ...reconciled.storage].map((p) => p.species);
+  const caught = [...new Set([...(Array.isArray(user.pokedex) ? user.pokedex : []), ...ownedSpecies])];
+  const seen = [...new Set([...(Array.isArray(user.seenSpecies) ? user.seenSpecies : []), ...caught])];
+
   return {
     ...user,
     currentRegion: user.currentRegion ?? "default",
@@ -349,6 +355,8 @@ function normalizeUserData(user: UserData): UserData {
     party: reconciled.party,
     pokemon: reconciled.pokemon,
     storage: reconciled.storage,
+    pokedex: caught,
+    seenSpecies: seen,
     eggs: Array.isArray(user.eggs) ? user.eggs : [],
     pendingEvolutions: Array.isArray(user.pendingEvolutions) ? user.pendingEvolutions : [],
     integrations: Array.isArray(user.integrations)

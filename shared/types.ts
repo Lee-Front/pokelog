@@ -295,7 +295,10 @@ export interface UserData {
   party: string[];
   pokemon: OwnedPokemon[];
   eggs: OwnedEgg[];
+  // 영구 "잡은적"(포획·획득) 종 집합. 획득 시 추가, 방생해도 유지(현재 보유에서 파생 금지).
   pokedex: string[];
+  // 영구 "만난적"(발견) 종 집합. 전투에서 야생을 마주하면 추가. normalize가 caught(pokedex) ⊇ 포함을 보장.
+  seenSpecies?: string[];
   inventory: Record<string, number>;
   pendingEvents: PendingEvent[];
   pendingEvolutions?: PendingEvolution[];
