@@ -8,8 +8,13 @@ import type {
 } from "../../../../shared/types.js";
 import { getSpeciesByName, getVariantById } from "./data-loader.js";
 import { GameRuleError } from "./game-errors.js";
-import { evolvePokemon, getEvolutionBranches } from "./growth.js";
-import { findPokemonByUid } from "./pokemon-state.js";
+import {
+  buildLevelEvolutionContext,
+  evolvePokemon,
+  getEvolutionBranches,
+  getMatchingEvolutionBranches,
+} from "./growth.js";
+import { findPokemonByUid, getPartyPokemon } from "./pokemon-state.js";
 
 export { GameRuleError as PendingEvolutionError };
 
@@ -57,6 +62,46 @@ export function queuePendingEvolution(
   user.pendingEvolutions = pendingEvolutions.filter((entry) => entry.pokemonUid !== pokemon.uid);
   user.pendingEvolutions.push(pending);
   return pending;
+}
+
+/**
+ * Retroactively queue pending evolutions for Pokémon that are ALREADY eligible
+ * but never re-level (so the level-up evolution path in growth.ts never fires
+ * for them) — e.g. level-100 base forms caught under the old party-scaling.
+ *
+ * Uses the SAME matching logic as the level-up path, so only genuinely-eligible
+ * evolutions are offered; item/trade evolutions won't match here (no usedItem/
+ * trade context) and are correctly excluded. This only QUEUES pending choices —
+ * it never auto-transforms — so the player confirms via /evolutions/resolve.
+ *
+ * Returns the number of newly queued pending evolutions.
+ */
+export function syncEligibleEvolutions(
+  user: UserData,
+  opts: { now?: Date; region?: string } = {},
+): number {
+  const party = getPartyPokemon(user);
+  const handledUids = new Set((user.pendingEvolutions ?? []).map((p) => p.pokemonUid));
+
+  let queued = 0;
+  for (const mon of [...user.pokemon, ...user.storage]) {
+    if (handledUids.has(mon.uid)) {
+      continue;
+    }
+
+    const branches = getMatchingEvolutionBranches(mon.species, {
+      level: mon.level,
+      ...buildLevelEvolutionContext(mon, party, { now: opts.now, region: opts.region }),
+    });
+
+    if (branches.length >= 1) {
+      queuePendingEvolution(user, mon, branches);
+      handledUids.add(mon.uid);
+      queued++;
+    }
+  }
+
+  return queued;
 }
 
 export function clearPendingEvolutionForPokemon(user: UserData, pokemonUid: string): void {

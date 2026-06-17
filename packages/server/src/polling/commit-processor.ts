@@ -2,7 +2,7 @@ import { getUsersForRepoCommit, saveUser } from "../storage/user-store.js";
 import { getConfig } from "../storage/config-store.js";
 import { calculateReward } from "../game/reward.js";
 import { judgeCombo, getComboMultiplier } from "../game/combo.js";
-import { checkEncounter, selectWildPokemon, scaleWildLevel } from "../game/encounter.js";
+import { checkEncounter, selectWildPokemon } from "../game/encounter.js";
 import { createWildPokemon } from "../game/pokemon-factory.js";
 import {
   applyLearnedMoves,
@@ -113,9 +113,7 @@ export async function processCommit(
     if (encounterResult.encountered) {
       const regionData = getRegion(currentRegion);
       const wildInfo = selectWildPokemon(regionData);
-      const partyLevels = getPartyPokemon(user).map((p) => p.level);
-      const wildLevel = scaleWildLevel(wildInfo.level, partyLevels, wildInfo.minLevel);
-      const wildPokemon = createWildPokemon(wildInfo.species, wildLevel);
+      const wildPokemon = createWildPokemon(wildInfo.species, wildInfo.level);
 
       const event = createEncounterEvent(wildPokemon, config.rewards.encounter.timeLimitHours);
       user.pendingEvents.push(event);

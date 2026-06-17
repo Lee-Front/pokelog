@@ -15,7 +15,7 @@ import {
 import { pollAllRepos, recomputeUserSerialized } from "../polling/polling-worker.js";
 import { calculateReward } from "../game/reward.js";
 import { judgeCombo, getComboMultiplier } from "../game/combo.js";
-import { selectWildPokemon, scaleWildLevel } from "../game/encounter.js";
+import { selectWildPokemon } from "../game/encounter.js";
 import { createWildPokemon, createPokemon } from "../game/pokemon-factory.js";
 import { getRegion } from "../game/data-loader.js";
 import { createEncounterEvent } from "../game/event-factory.js";
@@ -953,8 +953,7 @@ adminRoutes.post("/test/commit", async (req, res) => {
     if (encounterResult.encountered) {
       const regionData = getRegion(currentRegion);
       const pick = selectWildPokemon(regionData);
-      const partyLevels = getPartyPokemon(user).map((p) => p.level);
-      const wildLevel = scaleWildLevel(pick.level, partyLevels, pick.minLevel);
+      const wildLevel = pick.level;
       const wildPokemon = createWildPokemon(pick.species, wildLevel);
 
       const event = createEncounterEvent(wildPokemon, config.rewards.encounter.timeLimitHours);
@@ -1004,9 +1003,8 @@ adminRoutes.post("/test/encounter", async (req, res) => {
     if (!wildSpecies) {
       const regionData = getRegion(user.currentRegion ?? "default");
       const pick = selectWildPokemon(regionData);
-      const partyLevels = getPartyPokemon(user).map((p) => p.level);
       wildSpecies = pick.species;
-      wildLevel = scaleWildLevel(pick.level, partyLevels, pick.minLevel);
+      wildLevel = pick.level;
     }
     if (!wildLevel) wildLevel = 5;
 

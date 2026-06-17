@@ -27,7 +27,6 @@ vi.mock("../game/combo.js", () => ({
 vi.mock("../game/encounter.js", () => ({
   checkEncounter: vi.fn(),
   selectWildPokemon: vi.fn(),
-  scaleWildLevel: vi.fn(),
 }));
 
 vi.mock("../game/pokemon-factory.js", () => ({

@@ -4,10 +4,11 @@ import { authMiddleware, type AuthRequest } from "../middleware/auth-middleware.
 import { getUser, saveUser } from "../storage/user-store.js";
 import { getConfig } from "../storage/config-store.js";
 import { getAllSpecies, createWildPokemon } from "../game/pokemon-factory.js";
-import { selectWildPokemon, scaleWildLevel } from "../game/encounter.js";
+import { selectWildPokemon } from "../game/encounter.js";
 import { createEncounterEvent } from "../game/event-factory.js";
 import { getRegion, getRegionNames, getSpeciesByName } from "../game/data-loader.js";
 import { buildLevelEvolutionContext, getEvolutionBranchDiagnostics } from "../game/growth.js";
+import { syncEligibleEvolutions } from "../game/pending-evolution.js";
 import { findPokemonByUid, getPartyPokemon } from "../game/pokemon-state.js";
 import { getAnnouncements } from "../storage/announcement-store.js";
 import { childLogger } from "../logger.js";
@@ -30,6 +31,17 @@ gameRoutes.get("/status", async (req: AuthRequest, res: Response) => {
     const pendingCount = user.pendingEvents.filter(
       (e) => new Date(e.expiresAt) > now,
     ).length;
+
+    // Retroactively queue any already-eligible evolutions (e.g. Pokémon stuck at
+    // a level past their evolution threshold that never re-level), so the pending
+    // count below reflects them. Only writes when something was newly queued.
+    const queuedEvolutions = syncEligibleEvolutions(user, {
+      now,
+      region: user.currentRegion ?? "default",
+    });
+    if (queuedEvolutions > 0) {
+      await saveUser(user);
+    }
 
     const today = now.toISOString().slice(0, 10);
     const todayLogs = user.log.filter((l) => l.timestamp.startsWith(today));
@@ -135,9 +147,7 @@ gameRoutes.post("/wild/search", async (req: AuthRequest, res: Response) => {
 
     const regionData = getRegion(user.currentRegion ?? "default");
     const pick = selectWildPokemon(regionData);
-    const partyLevels = getPartyPokemon(user).map((p) => p.level);
-    const wildLevel = scaleWildLevel(pick.level, partyLevels, pick.minLevel);
-    const wildPokemon = createWildPokemon(pick.species, wildLevel);
+    const wildPokemon = createWildPokemon(pick.species, pick.level);
     const event = createEncounterEvent(wildPokemon, config.rewards.encounter.timeLimitHours);
 
     user.points -= cost;
