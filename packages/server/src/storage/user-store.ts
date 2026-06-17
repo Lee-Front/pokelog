@@ -209,13 +209,146 @@ function normalizeOwnedPokemon(pokemon: OwnedPokemon): OwnedPokemon {
   };
 }
 
+/**
+ * Roster slice of {@link UserData}: the three fields whose mutual invariant
+ * {@link reconcileRoster} enforces. Each pokemon `uid` must appear at most once
+ * across `pokemon[]` ∪ `storage[]`, and `party` may only reference uids present
+ * in `pokemon[]` (≤ 6, no duplicates).
+ */
+export interface RosterSlice {
+  party: string[];
+  pokemon: OwnedPokemon[];
+  storage: OwnedPokemon[];
+}
+
+/** Maximum party size; party uids are capped here after reconciliation. */
+const MAX_PARTY_SIZE = 6;
+
+/**
+ * Returns true when `next` is strictly more progressed than `current` and so
+ * should replace it as the kept copy of a duplicated uid. Compares `level`
+ * first, then `exp`; equal-or-lower returns false so the first-encountered copy
+ * wins ties (callers iterate pokemon[] before storage[], preserving order).
+ */
+function isMoreProgressed(next: OwnedPokemon, current: OwnedPokemon): boolean {
+  if (next.level !== current.level) return next.level > current.level;
+  if (next.exp !== current.exp) return next.exp > current.exp;
+  return false;
+}
+
+/**
+ * Enforces the roster invariant (#data-integrity): every pokemon uid appears at
+ * most once across `pokemon[]` ∪ `storage[]`, and `party` references only uids
+ * present in `pokemon[]` (deduped, capped at six).
+ *
+ * Production user files drifted into impossible states — the same uid in both
+ * `pokemon[]` and `storage[]` (sometimes diverged by evolution/leveling), or
+ * twice within one array — from unsynchronized read-modify-write. Running this
+ * at the single normalization chokepoint means the impossible state can neither
+ * be read nor persisted, and the same pass repairs existing files.
+ *
+ * Pure: no I/O. Deterministic dedupe keeps the most-progressed copy
+ * ({@link isMoreProgressed}); each kept uid lands in `pokemon[]` if the party
+ * references it, otherwise in the array its kept copy came from. Order is the
+ * stable first-appearance order of original `pokemon[]` then `storage[]`.
+ */
+export function reconcileRoster(roster: RosterSlice): RosterSlice {
+  const pokemon = Array.isArray(roster.pokemon) ? roster.pokemon : [];
+  const storage = Array.isArray(roster.storage) ? roster.storage : [];
+  const party = Array.isArray(roster.party) ? roster.party : [];
+  const partySet = new Set(party);
+
+  type Origin = "pokemon" | "storage";
+  interface Kept {
+    copy: OwnedPokemon;
+    origin: Origin;
+    /** First-appearance index across [pokemon..., storage...], for stable order. */
+    order: number;
+  }
+
+  // Group by uid, keeping the single most-progressed copy and remembering where
+  // it (the chosen copy) came from plus its first-appearance position.
+  const kept = new Map<string, Kept>();
+  let order = 0;
+  const consider = (entry: OwnedPokemon, origin: Origin): void => {
+    const seq = order++;
+    const existing = kept.get(entry.uid);
+    if (!existing) {
+      kept.set(entry.uid, { copy: entry, origin, order: seq });
+      return;
+    }
+    // Keep earliest first-appearance order; replace the copy only if strictly
+    // more progressed (ties keep the first encountered, i.e. existing).
+    if (isMoreProgressed(entry, existing.copy)) {
+      existing.copy = entry;
+      existing.origin = origin;
+    }
+  };
+  for (const entry of pokemon) consider(entry, "pokemon");
+  for (const entry of storage) consider(entry, "storage");
+
+  // Destination: party members must live in pokemon[]; otherwise honor origin.
+  // Emit in stable first-appearance order.
+  const ordered = [...kept.values()].sort((a, b) => a.order - b.order);
+  const nextPokemon: OwnedPokemon[] = [];
+  const nextStorage: OwnedPokemon[] = [];
+  for (const { copy, origin } of ordered) {
+    const dest: Origin = partySet.has(copy.uid) ? "pokemon" : origin;
+    if (dest === "pokemon") nextPokemon.push(copy);
+    else nextStorage.push(copy);
+  }
+
+  // Party may only reference uids now in pokemon[]; dedupe (first wins), cap.
+  const inPokemon = new Set(nextPokemon.map((p) => p.uid));
+  const seenParty = new Set<string>();
+  const nextParty: string[] = [];
+  for (const uid of party) {
+    if (!inPokemon.has(uid) || seenParty.has(uid)) continue;
+    seenParty.add(uid);
+    nextParty.push(uid);
+    if (nextParty.length >= MAX_PARTY_SIZE) break;
+  }
+
+  return { party: nextParty, pokemon: nextPokemon, storage: nextStorage };
+}
+
 function normalizeUserData(user: UserData): UserData {
+  // Map (fill defaults) first so reconcile compares normalized copies and each
+  // surviving entry is normalized exactly once; reconcile then drops duplicates.
+  const mappedPokemon = Array.isArray(user.pokemon) ? user.pokemon.map(normalizeOwnedPokemon) : [];
+  const mappedStorage = Array.isArray(user.storage) ? user.storage.map(normalizeOwnedPokemon) : [];
+  const reconciled = reconcileRoster({
+    party: Array.isArray(user.party) ? user.party : [],
+    pokemon: mappedPokemon,
+    storage: mappedStorage,
+  });
+
+  if (
+    reconciled.pokemon.length !== mappedPokemon.length ||
+    reconciled.storage.length !== mappedStorage.length ||
+    reconciled.party.length !== (Array.isArray(user.party) ? user.party.length : 0)
+  ) {
+    log.warn(
+      {
+        userId: user.account?.id,
+        pokemonBefore: mappedPokemon.length,
+        pokemonAfter: reconciled.pokemon.length,
+        storageBefore: mappedStorage.length,
+        storageAfter: reconciled.storage.length,
+        partyBefore: Array.isArray(user.party) ? user.party.length : 0,
+        partyAfter: reconciled.party.length,
+      },
+      "reconcileRoster repaired a duplicated/inconsistent roster",
+    );
+  }
+
   return {
     ...user,
     currentRegion: user.currentRegion ?? "default",
     battleMoney: user.battleMoney ?? 0,
-    pokemon: Array.isArray(user.pokemon) ? user.pokemon.map(normalizeOwnedPokemon) : [],
-    storage: Array.isArray(user.storage) ? user.storage.map(normalizeOwnedPokemon) : [],
+    party: reconciled.party,
+    pokemon: reconciled.pokemon,
+    storage: reconciled.storage,
     eggs: Array.isArray(user.eggs) ? user.eggs : [],
     pendingEvolutions: Array.isArray(user.pendingEvolutions) ? user.pendingEvolutions : [],
     integrations: Array.isArray(user.integrations)
