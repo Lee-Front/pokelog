@@ -189,6 +189,7 @@ export async function createChallenge(input: {
 export async function acceptChallenge(
   userId: string,
   matchId: string,
+  opponentTeamUids?: string[],
 ): Promise<PvpMatch> {
   const opponentUser = await getUser(userId);
   if (!opponentUser) throw new GameRuleError("사용자를 찾을 수 없습니다.");
@@ -208,7 +209,8 @@ export async function acceptChallenge(
     // demand 포켓몬은 stake로 빠지므로 전투 팀에서 제외하고 스냅샷한다.
     // (예전엔 팀에 포함돼 lockStake의 "전투 팀은 stake 불가"와 충돌 → 첫 포켓몬 지목 시 수락 불가였다.)
     const demand = normalizeDemand(match.stakes.demand);
-    match.opponent.team = buildTeam(opponentUser, match.mode, undefined, demand.pokemonUids);
+    // 수락자도 출전 포켓몬을 직접 고른다(opponentTeamUids). demand로 거는 포켓몬은 전투에 못 내보내므로 제외.
+    match.opponent.team = buildTeam(opponentUser, match.mode, opponentTeamUids, demand.pokemonUids);
 
     // demand의 points/items·포켓몬(challenger가 지정) 그대로 — lockStake가 소유·안전규칙 재검증·락.
     const spec = buildOpponentStakeFromDemand(demand);

@@ -121,6 +121,20 @@ describe("지정 도전 라이프사이클", () => {
     expect(bob!.pokemon.some((p) => p.uid === bobLead.uid)).toBe(false);
   });
 
+  it("1:1: 수락자가 출전 포켓몬을 직접 고른다(opponentTeamUids)", async () => {
+    const aliceMon = strongMon("bulbasaur");
+    const b1 = strongMon("charmander");
+    const b2 = strongMon("charmeleon");
+    await userStore.saveUser(createUser("alice", "Alice", [aliceMon]));
+    await userStore.saveUser(createUser("bob", "Bob", [b1, b2]));
+
+    const created = await pvp.createChallenge({ challengerUserId: "alice", opponentUserId: "bob", mode: "single" });
+    // 수락자 bob이 기본(첫째 b1) 대신 b2를 출전으로 고른다.
+    const accepted = await pvp.acceptChallenge("bob", created.id, [b2.uid]);
+    expect(accepted.opponent.team).toHaveLength(1);
+    expect(accepted.opponent.team[0].uid).toBe(b2.uid);
+  });
+
   it("거절하면 finished/declined", async () => {
     await seedTwoUsers();
     const created = await pvp.createChallenge({ challengerUserId: "alice", opponentUserId: "bob", mode: "single" });

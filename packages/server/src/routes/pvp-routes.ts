@@ -86,8 +86,13 @@ pvpRoutes.post("/challenges", async (req: AuthRequest, res: Response) => {
 
 pvpRoutes.post("/challenges/:id/accept", async (req: AuthRequest, res: Response) => {
   try {
-    // 포켓몬 demand는 challenger가 도전 생성 시 이미 특정 개체로 지정했으므로 opponent는 고르지 않는다.
-    const match = await acceptChallenge(req.userId!, req.params.id);
+    // 수락자가 출전 포켓몬을 고른다(teamUids). 생략 시 파티 기본(demand로 거는 포켓몬은 제외).
+    const { teamUids } = req.body ?? {};
+    const match = await acceptChallenge(
+      req.userId!,
+      req.params.id,
+      Array.isArray(teamUids) ? teamUids.map(String) : undefined,
+    );
     res.json({ match });
   } catch (err) {
     handleError(err, res, "PvP challenge accept error");
