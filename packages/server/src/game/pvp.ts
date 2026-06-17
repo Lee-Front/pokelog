@@ -72,10 +72,13 @@ function toCombatant(p: OwnedPokemon): PvpCombatant {
  * 유저의 전투 파티 스냅샷을 만든다. single 모드면 살아있는 첫 포켓몬 1마리.
  * 살아있는 포켓몬이 없으면 GameRuleError.
  */
-function buildTeam(user: UserData, mode: PvpMode, preferredUids?: string[]): PvpCombatant[] {
-  const party = getPartyPokemon(user).filter((p) => p.hp > 0);
+function buildTeam(user: UserData, mode: PvpMode, preferredUids?: string[], excludeUids?: string[]): PvpCombatant[] {
+  const exclude = new Set(excludeUids ?? []);
+  // stake로 거는 포켓몬은 전투 팀에 넣지 않는다 — 같은 개체를 걸면서 동시에 내보낼 수 없으므로
+  // (그러면 lockStake의 "전투 팀은 stake 불가" 규칙과 충돌해 수락 자체가 막혔다).
+  const party = getPartyPokemon(user).filter((p) => p.hp > 0 && !exclude.has(p.uid));
   if (party.length === 0) {
-    throw new GameRuleError("전투에 내보낼 수 있는 포켓몬이 없습니다(전원 기절).");
+    throw new GameRuleError("전투에 내보낼 수 있는 포켓몬이 없습니다(전원 기절 또는 거는 포켓몬 제외).");
   }
 
   let chosen = party;
@@ -135,7 +138,9 @@ export async function createChallenge(input: {
     throw new GameRuleError("두 사용자가 모두 존재해야 합니다.");
   }
 
-  const challengerTeam = buildTeam(challenger, input.mode, input.challengerTeamUids);
+  // challenger stake를 먼저 명세 — 거는 포켓몬은 전투 팀에서 제외해야 하므로.
+  const spec = normalizeStakeSpec(input.challengerStake);
+  const challengerTeam = buildTeam(challenger, input.mode, input.challengerTeamUids, spec.pokemonUids);
   // 상대 팀은 수락 시점에 스냅샷(수락 전 상태 반영). pending에서는 빈 팀 자리만 둔다.
   const now = new Date();
   const match: PvpMatch = {
@@ -164,8 +169,7 @@ export async function createChallenge(input: {
     }
   }
 
-  // challenger stake를 명세·검증·락(빈 stake면 빈 에스크로가 락된다 — 친선).
-  const spec = normalizeStakeSpec(input.challengerStake);
+  // challenger stake를 검증·락(빈 stake면 빈 에스크로가 락된다 — 친선).
   const escrow = await lockStake(match, "challenger", spec);
   match.stakes.challengerStake = spec;
   match.stakes.challengerEscrow = escrow;
@@ -201,11 +205,12 @@ export async function acceptChallenge(
       finishMatch(match, "expired", null, null);
       return match;
     }
-    match.opponent.team = buildTeam(opponentUser, match.mode);
-
-    // 팀 스냅샷이 정해진 뒤 demand를 충족하는 opponent stake를 만들어 락(전투 팀 겹침 검사 위해 team 먼저).
-    // demand의 points/items·포켓몬(challenger가 지정) 그대로 — lockStake가 소유·안전규칙 재검증·락.
+    // demand 포켓몬은 stake로 빠지므로 전투 팀에서 제외하고 스냅샷한다.
+    // (예전엔 팀에 포함돼 lockStake의 "전투 팀은 stake 불가"와 충돌 → 첫 포켓몬 지목 시 수락 불가였다.)
     const demand = normalizeDemand(match.stakes.demand);
+    match.opponent.team = buildTeam(opponentUser, match.mode, undefined, demand.pokemonUids);
+
+    // demand의 points/items·포켓몬(challenger가 지정) 그대로 — lockStake가 소유·안전규칙 재검증·락.
     const spec = buildOpponentStakeFromDemand(demand);
     const escrow = await lockStake(match, "opponent", spec);
     match.stakes.opponentEscrow = escrow;

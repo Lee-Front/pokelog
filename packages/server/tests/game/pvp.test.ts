@@ -94,6 +94,33 @@ describe("지정 도전 라이프사이클", () => {
     expect(accepted.opponent.team).toHaveLength(1);
   });
 
+  it("1:1: 상대 선두(전투) 포켓몬을 demand로 걸어도 수락된다 — 전투 팀에서 제외(회귀)", async () => {
+    const aliceMon = strongMon("bulbasaur");
+    const bobLead = strongMon("charmander");
+    const bobSecond = strongMon("charmeleon");
+    await userStore.saveUser(createUser("alice", "Alice", [aliceMon]));
+    await userStore.saveUser(createUser("bob", "Bob", [bobLead, bobSecond]));
+
+    // challenger가 상대의 '선두' 포켓몬(1:1이면 전투 팀이 되던 그 개체)을 stake로 요구.
+    const created = await pvp.createChallenge({
+      challengerUserId: "alice",
+      opponentUserId: "bob",
+      mode: "single",
+      demand: { pokemonUids: [bobLead.uid] },
+    });
+
+    // 예전엔 "전투에 내보낸 포켓몬은 stake로 걸 수 없습니다."로 막혔다 — 이제 수락된다.
+    const accepted = await pvp.acceptChallenge("bob", created.id);
+    expect(accepted.status).toBe("active");
+    // 전투 팀은 demand로 빠진 선두 대신 두 번째 포켓몬.
+    expect(accepted.opponent.team).toHaveLength(1);
+    expect(accepted.opponent.team[0].uid).toBe(bobSecond.uid);
+    // 선두는 에스크로에 락되고 bob 보유에서 빠진다.
+    expect(accepted.stakes.opponentEscrow?.pokemon.map((p) => p.uid)).toContain(bobLead.uid);
+    const bob = await userStore.getUser("bob");
+    expect(bob!.pokemon.some((p) => p.uid === bobLead.uid)).toBe(false);
+  });
+
   it("거절하면 finished/declined", async () => {
     await seedTwoUsers();
     const created = await pvp.createChallenge({ challengerUserId: "alice", opponentUserId: "bob", mode: "single" });
