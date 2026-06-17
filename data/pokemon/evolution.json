@@ -6254,6 +6254,7 @@
       {
         "id": "rockruff-lycanroc-2",
         "targetSpecies": "lycanroc",
+        "targetVariantId": "lycanroc-midnight",
         "trigger": "level-up",
         "conditions": [
           {
@@ -6270,6 +6271,7 @@
       {
         "id": "rockruff-lycanroc-3",
         "targetSpecies": "lycanroc",
+        "targetVariantId": "lycanroc-dusk",
         "trigger": "level-up",
         "conditions": [
           {

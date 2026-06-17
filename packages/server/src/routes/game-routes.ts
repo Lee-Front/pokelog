@@ -258,15 +258,14 @@ gameRoutes.get("/pokemon/:uid", async (req: AuthRequest, res: Response) => {
     }
 
     const activeParty = getPartyPokemon(user);
+    // getEvolutionBranchDiagnostics already resolves a variant-aware targetName
+    // (the form's name when a branch evolves into a variant), so use it directly.
     const evolutionPreview = getEvolutionBranchDiagnostics(pokemon.species, {
       level: pokemon.level,
       ...buildLevelEvolutionContext(pokemon, activeParty, {
         region: user.currentRegion ?? "default",
       }),
-    }).map((branch) => ({
-      ...branch,
-      targetName: getSpeciesByName(branch.targetSpecies)?.name ?? branch.targetSpecies,
-    }));
+    });
 
     res.json({ pokemon, evolutionPreview });
   } catch (err) {

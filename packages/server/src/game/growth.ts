@@ -1,4 +1,4 @@
-import { getMoveById, getSpeciesByName, getEvolutions } from "./data-loader.js";
+import { getMoveById, getSpeciesByName, getEvolutions, getVariantById } from "./data-loader.js";
 import { getDamageTakenTotal } from "./battle-progress.js";
 import { getMoveUsageCount } from "./move-usage.js";
 import { calculateStatsForLevel } from "./pokemon-stats.js";
@@ -183,7 +183,10 @@ export function evolvePokemon(pokemon: OwnedPokemon, targetSpecies: string, targ
   pokemon.species = targetSpecies;
   pokemon.variantId = targetVariantId ?? null;
 
-  const evolvedStats = calculateStatsForLevel(targetSpecies, pokemon.level, pokemon.nature);
+  // Mirror the wild/created-pokemon convention (pokemon-factory.createPokemon):
+  // stored stats bake in the variant's baseStatsOverride, so pass the variant
+  // id through to calculateStatsForLevel and persist the form's stats.
+  const evolvedStats = calculateStatsForLevel(targetSpecies, pokemon.level, pokemon.nature, pokemon.variantId);
   pokemon.maxHp = evolvedStats.maxHp;
   pokemon.hp = Math.min(pokemon.hp, pokemon.maxHp);
   pokemon.stats = evolvedStats.stats;
@@ -216,10 +219,29 @@ export type EvolutionBranchDiagnosticStatus = "available" | "blocked" | "unsuppo
 export interface EvolutionBranchDiagnostic {
   branchId: string;
   targetSpecies: string;
+  /** Variant form the branch evolves into, when it differs from the base species. */
+  targetVariantId?: string;
+  /** Display name of the target — the variant's name when targetVariantId is set, else the species name. */
+  targetName: string;
   trigger: string;
   status: EvolutionBranchDiagnosticStatus;
   requirements: string[];
   blockers: string[];
+}
+
+/**
+ * Display name for an evolution target. Prefers the variant's name when the
+ * branch points at a variant form (e.g. Lycanroc Midnight); otherwise falls
+ * back to the species display name.
+ */
+function getEvolutionTargetName(targetSpecies: string, targetVariantId?: string | null): string {
+  if (targetVariantId) {
+    const variant = getVariantById(targetVariantId);
+    if (variant) {
+      return variant.name;
+    }
+  }
+  return getSpeciesByName(targetSpecies)?.name ?? targetSpecies;
 }
 
 export function getEvolutionTimeOfDay(now: Date = new Date()): EvolutionTimeOfDay {
@@ -621,6 +643,8 @@ export function getEvolutionBranchDiagnostics(
     return {
       branchId: branch.id,
       targetSpecies: branch.targetSpecies,
+      ...(branch.targetVariantId ? { targetVariantId: branch.targetVariantId } : {}),
+      targetName: getEvolutionTargetName(branch.targetSpecies, branch.targetVariantId),
       trigger: branch.trigger,
       status,
       requirements,

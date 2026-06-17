@@ -6,20 +6,34 @@ import type {
   PendingEvolutionOption,
   UserData,
 } from "../../../../shared/types.js";
-import { getSpeciesByName } from "./data-loader.js";
+import { getSpeciesByName, getVariantById } from "./data-loader.js";
 import { GameRuleError } from "./game-errors.js";
-import { evolvePokemon } from "./growth.js";
+import { evolvePokemon, getEvolutionBranches } from "./growth.js";
 import { findPokemonByUid } from "./pokemon-state.js";
 
 export { GameRuleError as PendingEvolutionError };
 
+/**
+ * Display name for an evolution target. When the branch points at a variant
+ * form (e.g. Lycanroc Midnight), prefer the variant's name so the portal can
+ * label the chosen form correctly; otherwise fall back to the species name.
+ */
+function resolveTargetName(targetSpecies: string, targetVariantId?: string | null): string {
+  if (targetVariantId) {
+    const variant = getVariantById(targetVariantId);
+    if (variant) {
+      return variant.name;
+    }
+  }
+  return getSpeciesByName(targetSpecies)?.name ?? targetSpecies;
+}
+
 function buildOption(branch: EvolutionBranch): PendingEvolutionOption {
-  const target = getSpeciesByName(branch.targetSpecies);
   return {
     branchId: branch.id,
     targetSpecies: branch.targetSpecies,
     ...(branch.targetVariantId ? { targetVariantId: branch.targetVariantId } : {}),
-    targetName: target?.name ?? branch.targetSpecies,
+    targetName: resolveTargetName(branch.targetSpecies, branch.targetVariantId),
   };
 }
 
@@ -73,9 +87,19 @@ export function resolvePendingEvolutionChoice(
     throw new GameRuleError("Pokemon species no longer matches the pending evolution.");
   }
 
-  evolvePokemon(pokemon, option.targetSpecies, option.targetVariantId);
-  if (!user.pokedex.includes(option.targetSpecies)) {
-    user.pokedex.push(option.targetSpecies);
+  // The stored option is a snapshot from when the pending was queued and may
+  // predate later evolution-data changes (e.g. a branch gaining a
+  // targetVariantId). Resolve the branch from the CURRENT evolution data by id
+  // and treat that as authoritative, falling back to the snapshot only if the
+  // branch no longer exists.
+  const currentBranch = getEvolutionBranches(pendingEvolution.sourceSpecies)
+    .find((branch) => branch.id === branchId);
+  const targetSpecies = currentBranch?.targetSpecies ?? option.targetSpecies;
+  const targetVariantId = currentBranch ? currentBranch.targetVariantId : option.targetVariantId;
+
+  evolvePokemon(pokemon, targetSpecies, targetVariantId);
+  if (!user.pokedex.includes(targetSpecies)) {
+    user.pokedex.push(targetSpecies);
   }
 
   user.pendingEvolutions = pendingEvolutions.filter((entry) => entry.id !== pendingEvolutionId);
@@ -83,6 +107,6 @@ export function resolvePendingEvolutionChoice(
   return {
     pendingEvolution,
     pokemon,
-    targetSpecies: option.targetSpecies,
+    targetSpecies,
   };
 }
