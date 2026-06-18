@@ -187,6 +187,16 @@ export interface PendingEvolution {
   createdAt: string;
 }
 
+// 레벨업으로 기술을 배우려는데 이미 4개를 모두 가진 포켓몬이 있을 때 쌓이는 대기 결정.
+// 진화 대기(PendingEvolution)와 동일한 패턴 — 플레이어가 어떤 기술을 잊고 배울지(또는
+// 안 배울지) /moves/resolve로 직접 고른다. (pokemonUid, moveId)당 최대 1건만 쌓인다.
+export interface PendingMoveLearn {
+  id: string;
+  pokemonUid: string;
+  moveId: string;      // the new move offered to learn
+  createdAt: string;
+}
+
 export type TradeStatus = "pending" | "accepted" | "rejected" | "cancelled";
 
 export interface TradeRecord {
@@ -305,6 +315,7 @@ export interface UserData {
   inventory: Record<string, number>;
   pendingEvents: PendingEvent[];
   pendingEvolutions?: PendingEvolution[];
+  pendingMoveLearns?: PendingMoveLearn[];
   battleState: BattleState | null;
   storage: OwnedPokemon[];
   log: LogEntry[];

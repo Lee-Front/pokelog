@@ -3,6 +3,7 @@ import { applyExpToPokemon } from "./growth.js";
 import { incrementItem } from "./inventory-utils.js";
 import { getPartyPokemon } from "./pokemon-state.js";
 import { clearPendingEvolutionForPokemon, queuePendingEvolution } from "./pending-evolution.js";
+import { queuePendingMoveLearns } from "./pending-move-learn.js";
 import type {
   BattleDroppedItem,
   BattlePartyExp,
@@ -83,6 +84,11 @@ function grantExpToMember(
     }
   } else if (expResult.pendingBranches.length > 0) {
     queuePendingEvolution(user, pokemon, expResult.pendingBranches);
+  }
+
+  // 4개 한도를 넘겨 자동으로 못 배운 기술은 대기에 쌓아 플레이어가 결정하게 한다.
+  if (expResult.pendingMoveLearns.length > 0) {
+    queuePendingMoveLearns(user, pokemon.uid, expResult.pendingMoveLearns);
   }
 
   return {

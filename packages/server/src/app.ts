@@ -11,6 +11,7 @@ import { gameRoutes } from "./routes/game-routes.js";
 import { tradeRoutes } from "./routes/trade-routes.js";
 import { eggRoutes } from "./routes/egg-routes.js";
 import { evolutionRoutes } from "./routes/evolution-routes.js";
+import { moveRoutes } from "./routes/move-routes.js";
 import { itemRoutes } from "./routes/item-routes.js";
 import { storageRoutes } from "./routes/storage-routes.js";
 import { shopRoutes } from "./routes/shop-routes.js";
@@ -97,6 +98,7 @@ export function createApp() {
     app.use(`${prefix}/game`, tradeRoutes);
     app.use(`${prefix}/game`, eggRoutes);
     app.use(`${prefix}/game`, evolutionRoutes);
+    app.use(`${prefix}/game`, moveRoutes);
     app.use(`${prefix}/game`, itemRoutes);
     app.use(`${prefix}/game`, storageRoutes);
     app.use(`${prefix}/shop`, gameRateLimiter, shopRoutes);

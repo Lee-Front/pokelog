@@ -53,6 +53,7 @@ gameRoutes.get("/status", async (req: AuthRequest, res: Response) => {
       combo: user.combo,
       pendingEventCount: pendingCount,
       pendingEvolutionCount: user.pendingEvolutions?.length ?? 0,
+      pendingMoveLearnCount: user.pendingMoveLearns?.length ?? 0,
       todayLog: todayLogs,
       region: (() => { try { return getRegion(user.currentRegion ?? "default").name; } catch { return user.currentRegion ?? "default"; } })(),
     });

@@ -32,6 +32,7 @@ import { getPartyPokemon } from "../game/pokemon-state.js";
 import type { ServerConfig, UserData } from "../../../../shared/types.js";
 import { INTEGRATION_EVENT_CATALOG } from "../integrations/event-catalog.js";
 import { clearPendingEvolutionForPokemon, queuePendingEvolution } from "../game/pending-evolution.js";
+import { queuePendingMoveLearns } from "../game/pending-move-learn.js";
 
 import { query as queryEventLog } from "../storage/event-log.js";
 import { adminMiddleware } from "../middleware/admin-middleware.js";
@@ -386,6 +387,7 @@ adminRoutes.post("/provision", async (req, res) => {
       inventory: { pokeball: 5 },
       pendingEvents: [],
       pendingEvolutions: [],
+      pendingMoveLearns: [],
       battleState: null,
       storage: [],
       log: [],
@@ -911,7 +913,10 @@ adminRoutes.post("/test/commit", async (req, res) => {
         const result = checkLevelUp(poke);
         if (result.leveled) {
           poke.level = result.newLevel;
-          applyLearnedMoves(poke, result.newMoves);
+          const moveResult = applyLearnedMoves(poke, result.newMoves);
+          if (moveResult.pending.length > 0) {
+            queuePendingMoveLearns(user, poke.uid, moveResult.pending);
+          }
           const newStats = calculateStatsForLevel(poke.species, result.newLevel, poke.nature);
           poke.maxHp = newStats.maxHp;
           poke.hp = Math.min(poke.hp, poke.maxHp);

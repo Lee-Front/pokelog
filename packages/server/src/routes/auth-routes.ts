@@ -62,6 +62,7 @@ authRoutes.post("/register", async (req: Request, res: Response) => {
       inventory: { pokeball: 5 },
       pendingEvents: [],
       pendingEvolutions: [],
+      pendingMoveLearns: [],
       battleState: null,
       storage: [],
       log: [],

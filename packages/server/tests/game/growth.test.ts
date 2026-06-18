@@ -307,7 +307,7 @@ describe("checkEvolution", () => {
 });
 
 describe("applyLearnedMoves", () => {
-  it("adds newly learned moves and keeps the last four", () => {
+  it("fills empty slots only and queues overflow as pending (no FIFO shift)", () => {
     const pokemon = createOwnedPokemon({
       moves: [
         { id: "scratch", pp: 35, maxPp: 35 },
@@ -316,14 +316,16 @@ describe("applyLearnedMoves", () => {
       ],
     });
 
-    const learned = applyLearnedMoves(pokemon, ["smokescreen", "dragon-breath"]);
+    const result = applyLearnedMoves(pokemon, ["smokescreen", "dragon-breath"]);
 
-    expect(learned).toEqual(["smokescreen", "dragon-breath"]);
+    // 빈 슬롯(1개)에는 smokescreen만 들어가고, 넘친 dragon-breath는 pending으로.
+    expect(result.learned).toEqual(["smokescreen"]);
+    expect(result.pending).toEqual(["dragon-breath"]);
     expect(pokemon.moves.map((move) => move.id)).toEqual([
+      "scratch",
       "growl",
       "ember",
       "smokescreen",
-      "dragon-breath",
     ]);
   });
 });

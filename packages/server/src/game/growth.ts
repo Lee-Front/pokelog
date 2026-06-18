@@ -30,6 +30,8 @@ export interface ApplyExpResult {
   leveled: boolean;
   newLevel: number;
   learnedMoves: string[];
+  /** 4개 한도를 넘겨 자동으로 못 배운 기술 id들 — 플레이어 결정(잊기/안배우기) 대기 대상. */
+  pendingMoveLearns: string[];
   /** Single matching evolution branch that was applied immediately. */
   evolvedBranch: EvolutionBranch | null;
   /** Multiple matching branches that require a pending player choice. */
@@ -54,6 +56,7 @@ export function applyExpToPokemon(
     leveled: false,
     newLevel: pokemon.level,
     learnedMoves: [],
+    pendingMoveLearns: [],
     evolvedBranch: null,
     pendingBranches: [],
   };
@@ -67,7 +70,9 @@ export function applyExpToPokemon(
   pokemon.level = levelUp.newLevel;
   result.leveled = true;
   result.newLevel = levelUp.newLevel;
-  result.learnedMoves = applyLearnedMoves(pokemon, levelUp.newMoves);
+  const moveResult = applyLearnedMoves(pokemon, levelUp.newMoves);
+  result.learnedMoves = moveResult.learned;
+  result.pendingMoveLearns = moveResult.pending;
 
   const newStats = calculateStatsForLevel(pokemon.species, levelUp.newLevel, pokemon.nature);
   pokemon.maxHp = newStats.maxHp;
@@ -122,8 +127,8 @@ export function checkLevelUp(pokemon: OwnedPokemon): {
   };
 }
 
-/** 성격 보정 적용 — stats 객체를 직접 변경 */
-function buildMoveSlot(moveId: string): PokemonMove {
+/** 기술 슬롯 1개 생성 — pp/maxPp는 기술 데이터에서(없으면 10). pending-move-learn도 재사용. */
+export function buildMoveSlot(moveId: string): PokemonMove {
   const moveData = getMoveById(moveId);
   const pp = moveData?.pp ?? 10;
   return {
@@ -133,27 +138,35 @@ function buildMoveSlot(moveId: string): PokemonMove {
   };
 }
 
+/**
+ * 레벨업으로 새로 익힌 기술을 적용한다. 빈 슬롯(4개 미만)이 남아 있을 때만 추가하고,
+ * 한도를 넘긴 기술은 **자동으로 밀어내지 않는다**(과거 FIFO shift 제거) — 대신 pending으로
+ * 돌려줘 플레이어가 어떤 기술을 잊고 배울지(또는 안 배울지) 직접 고르게 한다.
+ *  - learned: 실제로 추가된 기술 id(이미 알거나 빈 슬롯에 들어간 것).
+ *  - pending: 자리 부족으로 못 배운 기술 id(이미 아는 기술은 제외).
+ */
 export function applyLearnedMoves(
   pokemon: OwnedPokemon,
   newMoveIds: string[],
   maxMoves: number = 4,
-): string[] {
-  const learnedMoveIds: string[] = [];
+): { learned: string[]; pending: string[] } {
+  const learned: string[] = [];
+  const pending: string[] = [];
 
   for (const moveId of newMoveIds) {
     if (pokemon.moves.some((move) => move.id === moveId)) {
       continue;
     }
 
-    pokemon.moves.push(buildMoveSlot(moveId));
-    learnedMoveIds.push(moveId);
+    if (pokemon.moves.length < maxMoves) {
+      pokemon.moves.push(buildMoveSlot(moveId));
+      learned.push(moveId);
+    } else {
+      pending.push(moveId);
+    }
   }
 
-  while (pokemon.moves.length > maxMoves) {
-    pokemon.moves.shift();
-  }
-
-  return learnedMoveIds;
+  return { learned, pending };
 }
 
 function resolveEvolutionAbilityId(species: string, currentAbilityId: string | null | undefined): string | null {

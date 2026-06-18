@@ -18,6 +18,7 @@ import { calculateStatsForLevel } from "../game/pokemon-stats.js";
 import { getRegion } from "../game/data-loader.js";
 import { createEncounterEvent } from "../game/event-factory.js";
 import { clearPendingEvolutionForPokemon, queuePendingEvolution } from "../game/pending-evolution.js";
+import { queuePendingMoveLearns } from "../game/pending-move-learn.js";
 import { getPartyPokemon } from "../game/pokemon-state.js";
 import {
   cloneBareRepo,
@@ -124,7 +125,10 @@ function applyCommitReward(
       const result = checkLevelUp(pokemon);
       if (result.leveled) {
         pokemon.level = result.newLevel;
-        applyLearnedMoves(pokemon, result.newMoves);
+        const moveResult = applyLearnedMoves(pokemon, result.newMoves);
+        if (moveResult.pending.length > 0) {
+          queuePendingMoveLearns(user, pokemon.uid, moveResult.pending);
+        }
         const newStats = calculateStatsForLevel(pokemon.species, result.newLevel, pokemon.nature);
         pokemon.maxHp = newStats.maxHp;
         pokemon.hp = Math.min(pokemon.hp, pokemon.maxHp);

@@ -359,6 +359,7 @@ function normalizeUserData(user: UserData): UserData {
     seenSpecies: seen,
     eggs: Array.isArray(user.eggs) ? user.eggs : [],
     pendingEvolutions: Array.isArray(user.pendingEvolutions) ? user.pendingEvolutions : [],
+    pendingMoveLearns: Array.isArray(user.pendingMoveLearns) ? user.pendingMoveLearns : [],
     integrations: Array.isArray(user.integrations)
       ? user.integrations.map(normalizeIntegration)
       : [],

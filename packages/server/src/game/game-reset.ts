@@ -17,6 +17,7 @@ import type { UserData } from "../../../../shared/types.js";
  *   inventory                        — 인벤토리 비움
  *   pendingEvents                    — 대기 중 야생 조우 제거
  *   pendingEvolutions                — 대기 중 진화 제거
+ *   pendingMoveLearns                — 대기 중 기술 배우기 결정 제거
  *   battleState                      — 진행 중 야생 전투 종료
  *   currentRegion                    — 기본 지역으로
  *
@@ -44,6 +45,7 @@ export function resetGameData(user: UserData): void {
   user.inventory = {};
   user.pendingEvents = [];
   user.pendingEvolutions = [];
+  user.pendingMoveLearns = [];
   user.battleState = null;
   user.currentRegion = "default";
 }
