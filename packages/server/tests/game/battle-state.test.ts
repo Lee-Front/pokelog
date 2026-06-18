@@ -9,6 +9,7 @@ import {
   applyMetaEffects,
   hasAlivePartyMembers,
 } from "../../src/game/battle-state.js";
+import { getDisplaySpeciesName } from "../../src/game/pokemon-state.js";
 import type {
   BattleState,
   OwnedPokemon,
@@ -110,7 +111,7 @@ describe("executePlayerAttack", () => {
 
     expect(battle.wild.hp).toBeLessThan(50);
     expect(log.length).toBeGreaterThan(0);
-    expect(log[0]).toMatch(/bulbasaur/);
+    expect(log[0]).toContain(getDisplaySpeciesName("bulbasaur"));
   });
 
   it("does not mutate wild HP when move misses", () => {
@@ -433,7 +434,7 @@ describe("applyEndOfTurnBattle", () => {
     applyEndOfTurnBattle(battle, player, log);
 
     expect(player.hp).toBeLessThan(100);
-    expect(log.some((m) => m.includes("bulbasaur"))).toBe(true);
+    expect(log.some((m) => m.includes(getDisplaySpeciesName("bulbasaur")))).toBe(true);
   });
 
   it("applies poison damage to wild at end of turn", () => {
@@ -446,7 +447,7 @@ describe("applyEndOfTurnBattle", () => {
     applyEndOfTurnBattle(battle, player, log);
 
     expect(battle.wild.hp).toBeLessThan(wildInitialHp);
-    expect(log.some((m) => m.includes("rattata"))).toBe(true);
+    expect(log.some((m) => m.includes(getDisplaySpeciesName("rattata")))).toBe(true);
   });
 
   it("ticks gigantamax countdown and reverts form at 0", () => {
