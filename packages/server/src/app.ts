@@ -38,12 +38,13 @@ export function createApp() {
   app.use(corsMiddleware());
   app.use(express.json({ limit: "1mb" }));
 
-  // 아트 파일 읽기 헬퍼 — 경로 순회 방어 포함
-  const BALL_ART_DIR = projectPath("data/colorscripts/small/ball");
-  const POKEMON_ART_DIR = projectPath("data/colorscripts/small/regular");
-  const SHINY_ART_DIR = projectPath("data/colorscripts/small/shiny");
-  const EGG_ART_DIR = projectPath("data/colorscripts/small/egg");
+  // 콜로스크립트 디렉터리 — size(small|large)별. ?size=large면 고해상 아트, 그 외 small.
+  function artDir(size: unknown, kind: "ball" | "regular" | "shiny" | "egg"): string {
+    const s = size === "large" ? "large" : "small";
+    return projectPath(`data/colorscripts/${s}/${kind}`);
+  }
 
+  // 아트 파일 읽기 헬퍼 — 경로 순회 방어 포함
   function safeReadArt(baseDir: string, name: string): string | null {
     const sanitized = name.replace(/[^a-zA-Z0-9-]/g, "");
     const resolved = path.resolve(baseDir, sanitized);
@@ -68,14 +69,14 @@ export function createApp() {
 
     // 알 ANSI 아트 API
     app.get(`${prefix}/art/egg/:name`, (req, res) => {
-      const art = safeReadArt(EGG_ART_DIR, req.params.name);
+      const art = safeReadArt(artDir(req.query.size, "egg"), req.params.name);
       if (art) res.type("text/plain").send(art);
       else res.status(404).send("");
     });
 
     // 볼 ANSI 아트 API — /:species보다 먼저 등록해야 매칭됨
     app.get(`${prefix}/art/ball/:name`, (req, res) => {
-      const art = safeReadArt(BALL_ART_DIR, req.params.name);
+      const art = safeReadArt(artDir(req.query.size, "ball"), req.params.name);
       if (art) res.type("text/plain").send(art);
       else res.status(404).send("");
     });
@@ -85,8 +86,8 @@ export function createApp() {
     // ?shiny=1이면 이로치 콜로스크립트를 우선 서빙하고, 없으면 일반 아트로 폴백한다.
     app.get(`${prefix}/art/:species`, (req, res) => {
       const name = resolveArtName(req.params.species);
-      const art = (req.query.shiny === "1" ? safeReadArt(SHINY_ART_DIR, name) : null)
-        ?? safeReadArt(POKEMON_ART_DIR, name);
+      const art = (req.query.shiny === "1" ? safeReadArt(artDir(req.query.size, "shiny"), name) : null)
+        ?? safeReadArt(artDir(req.query.size, "regular"), name);
       if (art) res.type("text/plain").send(art);
       else res.status(404).send("");
     });
