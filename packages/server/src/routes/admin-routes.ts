@@ -677,11 +677,14 @@ adminRoutes.post("/users/:id/reset-game", async (req, res) => {
 // 락으로 직렬화해 폴링 등 다른 쓰기와의 경합을 피한다. 처리/실패 수를 반환.
 adminRoutes.post("/broadcast/reward", async (req, res) => {
   try {
-    const { points, items, pokemon, filter } = req.body ?? {};
+    const { points, battleMoney, items, pokemon, filter } = req.body ?? {};
 
     // 입력 검증 — 존재하지 않는 item/species가 하나라도 있으면 시작 전에 400.
     if (points != null && (typeof points !== "number" || !Number.isFinite(points))) {
       return res.status(400).json({ error: "points는 숫자여야 합니다" });
+    }
+    if (battleMoney != null && (typeof battleMoney !== "number" || !Number.isFinite(battleMoney))) {
+      return res.status(400).json({ error: "battleMoney는 숫자여야 합니다" });
     }
     if (items && typeof items === "object") {
       for (const id of Object.keys(items)) {
@@ -715,6 +718,7 @@ adminRoutes.post("/broadcast/reward", async (req, res) => {
           const user = await getUser(id);
           if (!user) return;
           if (typeof points === "number") user.points = Math.max(0, user.points + points);
+          if (typeof battleMoney === "number") user.battleMoney = Math.max(0, user.battleMoney + battleMoney);
           if (items && typeof items === "object") {
             for (const [item, qty] of Object.entries(items as Record<string, number>)) {
               if (typeof qty === "number" && qty > 0) incrementItem(user.inventory, item, qty);
