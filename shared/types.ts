@@ -217,6 +217,9 @@ export interface StatStages {
   spAttack: number;
   spDefense: number;
   speed: number;
+  // 명중/회피 단계(−6~+6). 데미지용 2기반 표가 아니라 명중판정용 3기반 표를 쓴다.
+  accuracy: number;
+  evasion: number;
 }
 
 export type BattleWeather = "sun" | "rain" | "hail" | "sandstorm";

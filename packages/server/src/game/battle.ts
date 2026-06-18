@@ -2,7 +2,7 @@ import { getTypeChart } from "./data-loader.js";
 import type { PokemonStats, MoveData, StatStages } from "../../../../shared/types.js";
 
 export function defaultStatStages(): StatStages {
-  return { attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 };
+  return { attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0, accuracy: 0, evasion: 0 };
 }
 
 export function applyStatStageMultiplier(baseStat: number, stage: number): number {
@@ -13,11 +13,19 @@ export function applyStatStageMultiplier(baseStat: number, stage: number): numbe
   return Math.floor(baseStat * 2 / (2 + Math.abs(clamped)));
 }
 
+// 명중/회피 전용 단계 배율(본가식 — 데미지용 2기반표와 다른 비대칭표).
+// 단계 0=3/3, 양수 +n=(3+n)/3, 음수 −n=2/(2+n). 입력은 (사용자 명중단계 − 상대 회피단계).
+export function accuracyStageMultiplier(stage: number): number {
+  const clamped = Math.max(-6, Math.min(6, stage));
+  return clamped >= 0 ? (3 + clamped) / 3 : 2 / (2 - clamped);
+}
+
 export function applyStatChanges(
   stages: StatStages,
   changes: Array<{ stat: string; change: number }>,
 ): StatStages {
-  const result = { ...stages };
+  // 누락 키(구버전 battleState)도 0으로 채워 accuracy/evasion 변화가 유실되지 않게 한다.
+  const result = { ...defaultStatStages(), ...stages };
   for (const { stat, change } of changes) {
     if (stat in result) {
       result[stat as keyof StatStages] = Math.max(-6, Math.min(6, result[stat as keyof StatStages] + change));
@@ -49,9 +57,15 @@ export function calculateDamage(
 
   // Accuracy check. 본가에서 accuracy "—"(0/null)은 "필중"을 뜻한다(Swift·검무 등).
   // accuracy가 양수일 때만 명중 굴림을 하고, 0 이하면 반드시 명중시킨다.
+  // 본가식: 유효명중 = 기술명중 × 단계배율, 단계 = (사용자 명중 − 상대 회피), −6~+6 클램프.
   if (move.accuracy > 0) {
+    const combinedStage = Math.max(
+      -6,
+      Math.min(6, (attackerStages?.accuracy ?? 0) - (defenderStages?.evasion ?? 0)),
+    );
+    const effectiveAccuracy = move.accuracy * accuracyStageMultiplier(combinedStage);
     const accuracyRoll = Math.random() * 100;
-    if (accuracyRoll >= move.accuracy) {
+    if (accuracyRoll >= effectiveAccuracy) {
       return { damage: 0, missed: true, effectiveness: 1, message: "공격이 빗나갔다!", critical: false };
     }
   }
