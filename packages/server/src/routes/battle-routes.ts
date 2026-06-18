@@ -11,6 +11,7 @@ import type { BattleState, MoveData, OwnedPokemon, UserData } from "../../../../
 import { decrementItem, healPokemon } from "../game/inventory-utils.js";
 import { recordMoveUsage } from "../game/move-usage.js";
 import { grantBattleRewards } from "../game/battle-rewards.js";
+import { getDisplaySpeciesName } from "../game/pokemon-state.js";
 import { checkTurnForm } from "../game/battle-forms.js";
 import {
   checkPrimalReversion, canMegaEvolve, canGigantamax,
@@ -66,7 +67,7 @@ function sendFaintedResponse(
 async function finishWin(
   user: UserData, winner: OwnedPokemon, battle: BattleState, log: string[], res: Response,
 ): Promise<void> {
-  log.push(`야생 ${battle.wild.species}이(가) 쓰러졌다!`);
+  log.push(`야생 ${getDisplaySpeciesName(battle.wild.species)}이(가) 쓰러졌다!`);
   const config = await getConfig();
   const wild = { species: battle.wild.species, level: battle.wild.level };
 
@@ -90,9 +91,9 @@ async function finishWin(
 
   // 참여 포켓몬별 EXP/레벨업/진화 로그(살아있는 참여자만 rewards.partyExp에 들어온다).
   for (const member of rewards.partyExp ?? []) {
-    if (member.exp > 0) log.push(`${member.species}은(는) ${member.exp} 경험치를 얻었다!`);
-    if (member.leveledUp) log.push(`${member.species}은(는) 레벨 ${member.newLevel}이(가) 되었다!`);
-    if (member.evolvedInto) log.push(`${member.species}(으)로 진화했다!`);
+    if (member.exp > 0) log.push(`${getDisplaySpeciesName(member.species)}은(는) ${member.exp} 경험치를 얻었다!`);
+    if (member.leveledUp) log.push(`${getDisplaySpeciesName(member.species)}은(는) 레벨 ${member.newLevel}이(가) 되었다!`);
+    if (member.evolvedInto) log.push(`${getDisplaySpeciesName(member.species)}(으)로 진화했다!`);
   }
   if (rewards.battleMoney > 0) log.push(`배틀머니 ${rewards.battleMoney}을(를) 획득했다!`);
   for (const drop of rewards.droppedItems) {
@@ -218,7 +219,7 @@ async function handleFight(
     myPokemon.stats = transformed.stats;
     myPokemon.maxHp = transformed.maxHp;
     if (myPokemon.hp > myPokemon.maxHp) myPokemon.hp = myPokemon.maxHp;
-    log.push(`${myPokemon.species}이(가) 메가진화했다!`);
+    log.push(`${getDisplaySpeciesName(myPokemon.species)}이(가) 메가진화했다!`);
   }
 
   // Handle gigantamax
@@ -234,7 +235,7 @@ async function handleFight(
     const gmaxHp = applyGmaxHp(myPokemon.hp, myPokemon.maxHp);
     myPokemon.hp = gmaxHp.hp;
     myPokemon.maxHp = gmaxHp.maxHp;
-    log.push(`${myPokemon.species}이(가) 기가맥스했다!`);
+    log.push(`${getDisplaySpeciesName(myPokemon.species)}이(가) 기가맥스했다!`);
   }
 
   const selectedMove = myMove;
@@ -265,7 +266,7 @@ async function handleFight(
   const playerCanAct = preAttack.canAct;
   if (!playerCanAct && preAttack.selfDamage) {
     myPokemon.hp = Math.max(0, myPokemon.hp - preAttack.selfDamage);
-    log.push(`${myPokemon.species}이(가) ${preAttack.selfDamage} 데미지를 받았다!`);
+    log.push(`${getDisplaySpeciesName(myPokemon.species)}이(가) ${preAttack.selfDamage} 데미지를 받았다!`);
     const faintResult = await handleFainted(user, myPokemon, battle, log);
     if (faintResult) { sendFaintedResponse(res, faintResult, user.account.id, battle); return; }
   }
@@ -294,7 +295,7 @@ async function handleFight(
         return;
       }
       if (attackResult.flinchCaused) {
-        log.push(`야생 ${battle.wild.species}은(는) 풀이 죽어 움직이지 못했다!`);
+        log.push(`야생 ${getDisplaySpeciesName(battle.wild.species)}은(는) 풀이 죽어 움직이지 못했다!`);
       } else {
         const wildResult = await doWildAttackAndCheck(user, myPokemon, battle, log, wildChosenMove ?? undefined);
         if (wildResult) { sendFaintedResponse(res, wildResult, user.account.id, battle); return; }
@@ -356,7 +357,7 @@ async function handleCatch(
   const caught = guaranteedCatch || attemptCapture(catchBonus, battle.wild.hp, battle.wild.maxHp, baseCatchRate);
 
   if (caught) {
-    log.push(`야생 ${battle.wild.species}을(를) 잡았다!`);
+    log.push(`야생 ${getDisplaySpeciesName(battle.wild.species)}을(를) 잡았다!`);
     const newPokemon = wildPokemonToOwned(battle.wild);
 
     if (user.party.length < 6) {
@@ -462,7 +463,7 @@ async function handleSwitch(
   battle.playerStatStages = defaultStatStages();
   battle.playerVolatile = [];
   battle.playerBattleForm = undefined; // Reset battle form on switch
-  log.push(`${newPokemon.species}(으)로 교체했다!`);
+  log.push(`${getDisplaySpeciesName(newPokemon.species)}(으)로 교체했다!`);
 
   if (!forced) {
     const wildResult = await doWildAttackAndCheck(user, newPokemon, battle, log);

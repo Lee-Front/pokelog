@@ -3,7 +3,7 @@ import { checkHpThresholdForm, checkWeatherForm, checkPostAttackForm, checkMoveF
 import { getTransformedStats, revertGmaxHp } from "./battle-transformations.js";
 import { getDefaultWeatherTurns, getWeatherDamage, getWeatherFromMove, getWeatherTypeModifier, tickWeather } from "./weather.js";
 import { getMoveById } from "./data-loader.js";
-import { getEffectiveTypes } from "./pokemon-state.js";
+import { getEffectiveTypes, getDisplaySpeciesName } from "./pokemon-state.js";
 import {
   checkPreAttack, applyEndOfTurn, tickVolatiles,
   rollAilment, isVolatileAilment, addVolatile, rollSleepTurns, rollConfusionTurns, rollTrapTurns,
@@ -24,7 +24,7 @@ export function applyBattleFormChange(
   } else {
     battle.wildBattleForm = result.newForm;
   }
-  const prefix = side === "wild" ? `야생 ${battle.wild.species}: ` : "";
+  const prefix = side === "wild" ? `야생 ${getDisplaySpeciesName(battle.wild.species)}: ` : "";
   log.push(`${prefix}${result.message}`);
 }
 
@@ -75,13 +75,13 @@ export function applyWeatherEndOfTurn(
   const playerWeatherDmg = getWeatherDamage(battle.weather, playerTypes, myPokemon.maxHp);
   if (playerWeatherDmg > 0) {
     myPokemon.hp = Math.max(0, myPokemon.hp - playerWeatherDmg);
-    log.push(`${myPokemon.species}이(가) 날씨로 ${playerWeatherDmg} 데미지를 받았다!`);
+    log.push(`${getDisplaySpeciesName(myPokemon.species)}이(가) 날씨로 ${playerWeatherDmg} 데미지를 받았다!`);
   }
 
   const wildWeatherDmg = getWeatherDamage(battle.weather, wildTypes, battle.wild.maxHp);
   if (wildWeatherDmg > 0) {
     battle.wild.hp = Math.max(0, battle.wild.hp - wildWeatherDmg);
-    log.push(`야생 ${battle.wild.species}이(가) 날씨로 ${wildWeatherDmg} 데미지를 받았다!`);
+    log.push(`야생 ${getDisplaySpeciesName(battle.wild.species)}이(가) 날씨로 ${wildWeatherDmg} 데미지를 받았다!`);
   }
 
   const tick = tickWeather(battle.weather, battle.weatherTurns);
@@ -342,7 +342,7 @@ export function executePlayerAttack(
     playerWeatherMod,
   );
   battle.wild.hp = Math.max(0, battle.wild.hp - result.damage);
-  log.push(`${player.species}의 ${moveData.name}! ${result.missed ? "빗나갔다!" : `${result.damage} 데미지!`}`);
+  log.push(`${getDisplaySpeciesName(player.species)}의 ${moveData.name}! ${result.missed ? "빗나갔다!" : `${result.damage} 데미지!`}`);
   if (result.message) log.push(result.message);
 
   let flinchCaused = false;
@@ -444,7 +444,7 @@ export function resolvePreAttack(
     if (player.sleepTurns !== undefined && player.sleepTurns <= 0) {
       player.statusCondition = null;
       player.sleepTurns = undefined;
-      log.push(`${player.species}이(가) 잠에서 깨어났다!`);
+      log.push(`${getDisplaySpeciesName(player.species)}이(가) 잠에서 깨어났다!`);
       return { canAct: true };
     }
   }
@@ -528,7 +528,7 @@ export function applyEndOfTurnBattle(
   if (playerEot.opponentHealing > 0) {
     battle.wild.hp = Math.min(battle.wild.maxHp, battle.wild.hp + playerEot.opponentHealing);
   }
-  for (const msg of playerEot.messages) log.push(`${myPokemon.species}: ${msg}`);
+  for (const msg of playerEot.messages) log.push(`${getDisplaySpeciesName(myPokemon.species)}: ${msg}`);
 
   // Wild end-of-turn status/volatile effects
   const wildEot = applyEndOfTurn(
@@ -546,7 +546,7 @@ export function applyEndOfTurnBattle(
   if (wildEot.opponentHealing > 0) {
     myPokemon.hp = Math.min(myPokemon.maxHp, myPokemon.hp + wildEot.opponentHealing);
   }
-  for (const msg of wildEot.messages) log.push(`야생 ${battle.wild.species}: ${msg}`);
+  for (const msg of wildEot.messages) log.push(`야생 ${getDisplaySpeciesName(battle.wild.species)}: ${msg}`);
 
   // Tick volatile statuses
   battle.playerVolatile = tickVolatiles(battle.playerVolatile ?? []);
@@ -632,7 +632,7 @@ export async function handleFainted(
   log: string[],
 ): Promise<FaintedResult | null> {
   if (pokemon.hp > 0) return null;
-  log.push(`${pokemon.species}이(가) 쓰러졌다!`);
+  log.push(`${getDisplaySpeciesName(pokemon.species)}이(가) 쓰러졌다!`);
   if (hasAlivePartyMembers(user, pokemon.uid)) {
     await saveUser(user);
     return { fainted: true, gameOver: false, log, battleState: battle, result: "fainted" };
@@ -658,13 +658,13 @@ export async function doWildAttackAndCheck(
   );
   if (wildPreCheck.statusCleared) {
     battle.wild.statusCondition = null;
-    log.push(`야생 ${battle.wild.species}: ${wildPreCheck.message}`);
+    log.push(`야생 ${getDisplaySpeciesName(battle.wild.species)}: ${wildPreCheck.message}`);
   }
   if (!wildPreCheck.canAct) {
-    log.push(`야생 ${battle.wild.species}: ${wildPreCheck.message}`);
+    log.push(`야생 ${getDisplaySpeciesName(battle.wild.species)}: ${wildPreCheck.message}`);
     if (wildPreCheck.selfDamage) {
       battle.wild.hp = Math.max(0, battle.wild.hp - wildPreCheck.selfDamage);
-      log.push(`야생 ${battle.wild.species}이(가) ${wildPreCheck.selfDamage} 데미지를 받았다!`);
+      log.push(`야생 ${getDisplaySpeciesName(battle.wild.species)}이(가) ${wildPreCheck.selfDamage} 데미지를 받았다!`);
     }
     return await handleFainted(user, myPokemon, battle, log);
   }
@@ -691,7 +691,7 @@ export async function doWildAttackAndCheck(
   const previousHp = myPokemon.hp;
   myPokemon.hp = Math.max(0, myPokemon.hp - wildResult.damage);
   recordDamageTaken(myPokemon, previousHp - myPokemon.hp);
-  log.push(`야생 ${battle.wild.species}의 공격! ${wildResult.damage} 데미지!`);
+  log.push(`야생 ${getDisplaySpeciesName(battle.wild.species)}의 공격! ${wildResult.damage} 데미지!`);
   if (wildResult.message) log.push(wildResult.message);
 
   // Apply meta effects for wild pokemon (only if the attack didn't miss)
