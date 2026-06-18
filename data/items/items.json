@@ -1356,5 +1356,12 @@
     "category": "trainer",
     "cost": 0,
     "shortEffect": "기가맥스에 필요한 트레이너 아이템."
+  },
+  {
+    "id": "max-soup",
+    "name": "맥스 수프",
+    "category": "evolution",
+    "cost": 500,
+    "shortEffect": "거다이맥스할 수 있게 한다."
   }
 ]

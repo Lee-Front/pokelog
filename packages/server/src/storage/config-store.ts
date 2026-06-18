@@ -99,7 +99,15 @@ const DEFAULT_MEGA_SHOP_ITEMS = {
   "swampertite": { name: "Swampertite", price: 500 },
   "tyranitarite": { name: "Tyranitarite", price: 500 },
   "venusaurite": { name: "Venusaurite", price: 500 },
-  "key-stone": { name: "Key Stone", price: 5000 },
+  "key-stone": { name: "Key Stone", price: 1000 },
+} satisfies ServerConfig["shop"]["items"];
+
+// 거다이맥스용 아이템 — 다이맥스밴드(모든 거다이 해금 게이트, 재사용·키스톤과 동급) +
+// 맥스 수프(개체별 1회 기가팩터 해금). 배틀머니 상점 판매.
+// dynamax-band id는 canGigantamax가 기대하는 userInventory 키와 일치한다.
+const DEFAULT_GMAX_SHOP_ITEMS = {
+  "dynamax-band": { name: "Dynamax Band", price: 5000 },
+  "max-soup": { name: "Max Soup", price: 500 },
 } satisfies ServerConfig["shop"]["items"];
 
 export const DEFAULT_CONFIG: ServerConfig = {
@@ -176,6 +184,7 @@ export const DEFAULT_CONFIG: ServerConfig = {
       "ultra-ball": { name: "Ultra Ball", price: 70, catchBonus: 0.35 },
       "fire-stone": { name: "Fire Stone", price: 200 },
       ...DEFAULT_MEGA_SHOP_ITEMS,
+      ...DEFAULT_GMAX_SHOP_ITEMS,
     },
   },
   // 알 가챠 기본값 — 단일 풀 + 티어별 등급 버킷 등장확률. legendary/rare 확률만 노브이고

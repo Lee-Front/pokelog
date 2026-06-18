@@ -109,6 +109,16 @@ shopRoutes.post("/use", async (req, res) => {
       return;
     }
 
+    if (result.kind === "gmax-factor") {
+      res.json({
+        kind: result.kind,
+        message: `${result.pokemon.species}이(가) 거다이맥스할 수 있게 되었다!`,
+        pokemon: result.pokemon,
+        inventory: user.inventory,
+      });
+      return;
+    }
+
     res.json({
       kind: result.kind,
       message: `${result.previousSpecies} evolved into ${result.pokemon.species} using ${result.itemName}.`,
