@@ -4,6 +4,7 @@ import { readJson, writeJson } from "./json-store.js";
 import type { GitIntegration, Integration, OwnedPokemon, UserData } from "../../../../shared/types.js";
 import { getDataDir } from "../paths.js";
 import { getSpeciesByName } from "../game/data-loader.js";
+import { getExpForLevel } from "../game/growth.js";
 import { normalizeDamageTakenTotal } from "../game/battle-progress.js";
 import { resolvePokemonGender, seededGenderRoll } from "../game/pokemon-gender.js";
 import { normalizeMoveUsageCounts } from "../game/move-usage.js";
@@ -198,6 +199,10 @@ function normalizeOwnedPokemon(pokemon: OwnedPokemon): OwnedPokemon {
     ...pokemon,
     variantId: pokemon.variantId ?? null,
     gender,
+    // 레벨에 맞는 최소 누적 경험치 보정 — 과거 createPokemon이 exp:0으로 생성한 개체는
+    // 레벨>1이어도 exp가 0이라 사실상 레벨업이 막혀 있었다. 현재 레벨 임계치 미만이면 끌어올린다
+    // (이미 진행 중인 exp는 max로 보존, 스푸리어스 레벨업 없음).
+    exp: Math.max(pokemon.exp ?? 0, getExpForLevel(pokemon.level)),
     friendship: pokemon.friendship ?? 70,
     heldItem: pokemon.heldItem ?? null,
     abilityId: pokemon.abilityId ?? null,

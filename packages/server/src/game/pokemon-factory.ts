@@ -5,6 +5,7 @@ import { resolvePokemonGender } from "./pokemon-gender.js";
 import { buildStats } from "./pokemon-stats.js";
 import { resolveSpeciesOrVariant } from "./pokemon-state.js";
 import { getShinyRate } from "./shiny.js";
+import { getExpForLevel } from "./growth.js";
 
 function buildMoves(species: SpeciesData, level: number): PokemonMove[] {
   const allMoves = getMoves();
@@ -63,7 +64,9 @@ export function createPokemon(species: string, level: number): OwnedPokemon {
     variantId,
     nickname: null,
     level,
-    exp: 0,
+    // 레벨에 맞는 누적 경험치로 초기화(본가식). 0으로 두면 레벨>1 개체가 다음 레벨
+    // 임계치(level**3)에 한참 못 미쳐 사실상 레벨이 오르지 않는다.
+    exp: getExpForLevel(level),
     hp: maxHp,
     maxHp,
     stats,
@@ -113,7 +116,7 @@ export function wildPokemonToOwned(wild: WildPokemon): OwnedPokemon {
     variantId: wild.variantId ?? null,
     nickname: null,
     level: wild.level,
-    exp: 0,
+    exp: getExpForLevel(wild.level),
     hp: wild.hp,
     maxHp: wild.maxHp,
     stats: { ...wild.stats },

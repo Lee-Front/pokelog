@@ -38,7 +38,8 @@ describe("createPokemon", () => {
     expect(pokemon.uid).toEqual(expect.any(String));
     expect(pokemon.species).toBe("bulbasaur");
     expect(pokemon.level).toBe(5);
-    expect(pokemon.exp).toBe(0);
+    // 본가식: 레벨에 맞는 누적 경험치(level**3)로 초기화한다(과거 exp:0 버그 수정).
+    expect(pokemon.exp).toBe(pokemon.level ** 3);
     expect(pokemon.hp).toBe(pokemon.maxHp);
     expect(typeof pokemon.nature).toBe("string");
     expect(typeof pokemon.isShiny).toBe("boolean");
@@ -134,7 +135,7 @@ describe("wildPokemonToOwned", () => {
     expect(owned.variantId).toBe(wild.variantId);
     expect(owned.uid).toEqual(expect.any(String));
     expect(owned.caughtAt).toEqual(expect.any(String));
-    expect(owned.exp).toBe(0);
+    expect(owned.exp).toBe(owned.level ** 3);
   });
 
   it("preserves variantId from a variant wild pokemon", () => {
