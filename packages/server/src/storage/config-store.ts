@@ -164,24 +164,26 @@ export const DEFAULT_CONFIG: ServerConfig = {
   },
   // Conservative wild-battle reward defaults (match the cautious points/combo
   // launch tuning). Operators raise these via PUT /api/admin/config over time.
-  // Drop-table and battleShop item ids are real data/items/items.json ids.
+  // 드랍·배틀상점 아이템 id는 **인벤토리/전투 가방 네임스페이스(무하이픈)** 와 일치해야 한다
+  // (config.shop.items 키와 동일 체계: pokeball/greatball/superPotion…). items.json 하이픈
+  // id(poke-ball 등)로 주면 전투 가방·catch/heal이 인식 못 해 죽은 키가 된다.
   battle: {
     expMultiplier: 1.0,
     moneyPerLevel: 2,
     moneyBase: 3,
     dropTable: [
       { item: "potion", chance: 0.08, min: 1, max: 1 },
-      { item: "super-potion", chance: 0.03, min: 1, max: 1 },
-      { item: "poke-ball", chance: 0.05, min: 1, max: 1 },
-      { item: "great-ball", chance: 0.015, min: 1, max: 1 },
+      { item: "superPotion", chance: 0.03, min: 1, max: 1 },
+      { item: "pokeball", chance: 0.05, min: 1, max: 1 },
+      { item: "greatball", chance: 0.015, min: 1, max: 1 },
     ],
   },
   battleShop: {
     items: {
-      "super-potion": { name: "Super Potion", price: 30, healAmount: 50 },
-      "hyper-potion": { name: "Hyper Potion", price: 60, healAmount: 120 },
-      "great-ball": { name: "Great Ball", price: 25, catchBonus: 0.2 },
-      "ultra-ball": { name: "Ultra Ball", price: 70, catchBonus: 0.35 },
+      superPotion: { name: "Super Potion", price: 30, healAmount: 50 },
+      hyperPotion: { name: "Hyper Potion", price: 60, healAmount: 120 },
+      greatball: { name: "Great Ball", price: 25, catchBonus: 0.2 },
+      ultraball: { name: "Ultra Ball", price: 70, catchBonus: 0.35 },
       "fire-stone": { name: "Fire Stone", price: 200 },
       ...DEFAULT_MEGA_SHOP_ITEMS,
       ...DEFAULT_GMAX_SHOP_ITEMS,

@@ -317,6 +317,29 @@ export function reconcileRoster(roster: RosterSlice): RosterSlice {
   return { party: nextParty, pokemon: nextPokemon, storage: nextStorage };
 }
 
+// 인벤토리 아이템 키 별칭 — 과거 드랍/배틀상점이 하이픈 id(poke-ball 등)로 지급한 볼·포션을
+// 전투 가방·catch/heal이 인식하는 정식 키(무하이픈, config.shop.items 체계)로 병합한다.
+const INVENTORY_KEY_ALIASES: Record<string, string> = {
+  "poke-ball": "pokeball",
+  "great-ball": "greatball",
+  "ultra-ball": "ultraball",
+  "safari-ball": "safariball",
+  "master-ball": "masterball",
+  "super-potion": "superPotion",
+  "hyper-potion": "hyperPotion",
+};
+
+function normalizeInventory(inv: unknown): Record<string, number> {
+  const src = (inv && typeof inv === "object" ? inv : {}) as Record<string, unknown>;
+  const out: Record<string, number> = {};
+  for (const [key, raw] of Object.entries(src)) {
+    const n = typeof raw === "number" && Number.isFinite(raw) ? raw : 0;
+    const canonical = INVENTORY_KEY_ALIASES[key] ?? key;
+    out[canonical] = (out[canonical] ?? 0) + n;
+  }
+  return out;
+}
+
 function normalizeUserData(user: UserData): UserData {
   // Map (fill defaults) first so reconcile compares normalized copies and each
   // surviving entry is normalized exactly once; reconcile then drops duplicates.
@@ -357,6 +380,7 @@ function normalizeUserData(user: UserData): UserData {
     ...user,
     currentRegion: user.currentRegion ?? "default",
     battleMoney: user.battleMoney ?? 0,
+    inventory: normalizeInventory(user.inventory),
     party: reconciled.party,
     pokemon: reconciled.pokemon,
     storage: reconciled.storage,
