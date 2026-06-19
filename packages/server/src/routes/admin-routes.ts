@@ -605,7 +605,7 @@ adminRoutes.patch("/users/:id/pokemon/:uid", async (req, res) => {
 
     // 레벨/종이 바뀌면 스탯·maxHp 재계산. hp는 새 maxHp로 클램프.
     if (levelChanged || speciesChanged) {
-      const recalced = calculateStatsForLevel(mon.species, mon.level, mon.nature, mon.variantId, mon.ivs);
+      const recalced = calculateStatsForLevel(mon.species, mon.level, mon.nature, mon.variantId, mon.ivs, mon.evs);
       mon.maxHp = recalced.maxHp;
       mon.stats = recalced.stats;
       mon.hp = Math.min(mon.hp, mon.maxHp);
@@ -923,7 +923,7 @@ adminRoutes.post("/test/commit", async (req, res) => {
           if (moveResult.pending.length > 0) {
             queuePendingMoveLearns(user, poke.uid, moveResult.pending);
           }
-          const newStats = calculateStatsForLevel(poke.species, result.newLevel, poke.nature, poke.variantId, poke.ivs);
+          const newStats = calculateStatsForLevel(poke.species, result.newLevel, poke.nature, poke.variantId, poke.ivs, poke.evs);
           poke.maxHp = newStats.maxHp;
           poke.hp = Math.min(poke.hp, poke.maxHp);
           poke.stats = newStats.stats;

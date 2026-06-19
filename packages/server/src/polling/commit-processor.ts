@@ -77,7 +77,7 @@ export async function processCommit(
             if (moveResult.pending.length > 0) {
               queuePendingMoveLearns(user, pokemon.uid, moveResult.pending);
             }
-            const newStats = calculateStatsForLevel(pokemon.species, result.newLevel, pokemon.nature, pokemon.variantId, pokemon.ivs);
+            const newStats = calculateStatsForLevel(pokemon.species, result.newLevel, pokemon.nature, pokemon.variantId, pokemon.ivs, pokemon.evs);
             pokemon.maxHp = newStats.maxHp;
             pokemon.hp = Math.min(pokemon.hp, pokemon.maxHp);
             pokemon.stats = newStats.stats;

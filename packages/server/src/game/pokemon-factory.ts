@@ -7,6 +7,7 @@ import { resolveSpeciesOrVariant } from "./pokemon-state.js";
 import { getShinyRate } from "./shiny.js";
 import { getExpForLevel } from "./growth.js";
 import { randomIvs } from "./ivs.js";
+import { emptyEvs } from "./evs.js";
 
 function buildMoves(species: SpeciesData, level: number): PokemonMove[] {
   const allMoves = getMoves();
@@ -57,7 +58,8 @@ export function createPokemon(species: string, level: number): OwnedPokemon {
 
   const nature = pickRandomNature();
   const ivs = randomIvs();
-  const { maxHp, stats } = buildStats(speciesData, level, nature, variantId, ivs);
+  const evs = emptyEvs();
+  const { maxHp, stats } = buildStats(speciesData, level, nature, variantId, ivs, evs);
   const moves = buildMoves(speciesData, level);
 
   return {
@@ -73,6 +75,7 @@ export function createPokemon(species: string, level: number): OwnedPokemon {
     maxHp,
     stats,
     ivs,
+    evs,
     moves,
     caughtAt: new Date().toISOString(),
     gender: resolvePokemonGender(speciesData.genderRate, Math.random()),
@@ -128,6 +131,8 @@ export function wildPokemonToOwned(wild: WildPokemon): OwnedPokemon {
     // 잡은 개체는 야생의 IV를 그대로 물려받는다(야생 전투 스탯과 일치). 레거시 야생(ivs 없음)은
     // normalizeOwnedPokemon이 마이그레이션한다.
     ivs: wild.ivs ? { ...wild.ivs } : undefined,
+    // 야생은 EV를 쌓지 않으므로 잡은 개체는 0에서 시작한다.
+    evs: emptyEvs(),
     moves: wild.moves.map((move) => ({ ...move })),
     caughtAt: new Date().toISOString(),
     gender: wild.gender ?? null,

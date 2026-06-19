@@ -1,5 +1,7 @@
 import { getSpeciesByName } from "./data-loader.js";
 import { applyExpToPokemon } from "./growth.js";
+import { getEvYield, applyEvGain, emptyEvs } from "./evs.js";
+import { buildStatsForPokemon } from "./pokemon-stats.js";
 import { incrementItem } from "./inventory-utils.js";
 import { getPartyPokemon } from "./pokemon-state.js";
 import { clearPendingEvolutionForPokemon, queuePendingEvolution } from "./pending-evolution.js";
@@ -138,7 +140,18 @@ export function grantBattleRewards(
   const partyExp: BattlePartyExp[] = [];
   for (const member of participants) {
     if (member.hp <= 0) continue;
-    partyExp.push(grantExpToMember(user, member, exp, party, now));
+    // 격파한 야생에서 EV를 먼저 적립한다(레벨업이 나면 재계산에 자연히 반영되도록).
+    const evGain = getEvYield(wild.species);
+    member.evs = applyEvGain(member.evs ?? emptyEvs(), evGain);
+    const summary = grantExpToMember(user, member, exp, party, now);
+    if (!summary.leveledUp) {
+      // 레벨업 재계산이 없었으므로 EV 증가분을 지금 반영한다(현재 HP 보존, 클램프).
+      const recomputed = buildStatsForPokemon(member);
+      member.maxHp = recomputed.maxHp;
+      member.hp = Math.min(member.hp, member.maxHp);
+      member.stats = recomputed.stats;
+    }
+    partyExp.push(summary);
   }
 
   // 헤드라인(winner) — 첫 살아있는 참여자. 전원 기절 같은 예외는 participants[0]로 폴백.

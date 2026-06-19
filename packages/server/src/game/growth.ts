@@ -74,7 +74,7 @@ export function applyExpToPokemon(
   result.learnedMoves = moveResult.learned;
   result.pendingMoveLearns = moveResult.pending;
 
-  const newStats = calculateStatsForLevel(pokemon.species, levelUp.newLevel, pokemon.nature, pokemon.variantId, pokemon.ivs);
+  const newStats = calculateStatsForLevel(pokemon.species, levelUp.newLevel, pokemon.nature, pokemon.variantId, pokemon.ivs, pokemon.evs);
   pokemon.maxHp = newStats.maxHp;
   pokemon.hp = Math.min(pokemon.hp, pokemon.maxHp);
   pokemon.stats = newStats.stats;
@@ -199,7 +199,7 @@ export function evolvePokemon(pokemon: OwnedPokemon, targetSpecies: string, targ
   // Mirror the wild/created-pokemon convention (pokemon-factory.createPokemon):
   // stored stats bake in the variant's baseStatsOverride, so pass the variant
   // id through to calculateStatsForLevel and persist the form's stats.
-  const evolvedStats = calculateStatsForLevel(targetSpecies, pokemon.level, pokemon.nature, pokemon.variantId, pokemon.ivs);
+  const evolvedStats = calculateStatsForLevel(targetSpecies, pokemon.level, pokemon.nature, pokemon.variantId, pokemon.ivs, pokemon.evs);
   pokemon.maxHp = evolvedStats.maxHp;
   pokemon.hp = Math.min(pokemon.hp, pokemon.maxHp);
   pokemon.stats = evolvedStats.stats;

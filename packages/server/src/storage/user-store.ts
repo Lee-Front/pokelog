@@ -6,6 +6,7 @@ import { getDataDir } from "../paths.js";
 import { getSpeciesByName } from "../game/data-loader.js";
 import { getExpForLevel } from "../game/growth.js";
 import { seededIvs } from "../game/ivs.js";
+import { emptyEvs } from "../game/evs.js";
 import { calculateStatsForLevel } from "../game/pokemon-stats.js";
 import { normalizeDamageTakenTotal } from "../game/battle-progress.js";
 import { resolvePokemonGender, seededGenderRoll } from "../game/pokemon-gender.js";
@@ -200,6 +201,9 @@ function normalizeOwnedPokemon(pokemon: OwnedPokemon): OwnedPokemon {
   // 개체값(IV) 마이그레이션 — 과거 개체는 IV가 없다(=0 취급). 없으면 uid 기반 결정적 IV를
   // 부여하고 그 IV로 스탯을 재계산한다(본가식). 이미 있으면 그대로(스탯도 보존).
   let ivs = pokemon.ivs;
+  // 노력치(EV) 마이그레이션 — 과거 개체는 EV가 없다(=0 취급). 0 EV는 스탯에 영향이
+  // 없어 별도 재계산이 필요 없지만, 시그니처 일관성을 위해 재계산에도 함께 넘긴다.
+  const evs = pokemon.evs ?? emptyEvs();
   let { maxHp, stats, hp } = pokemon;
   if (!ivs) {
     ivs = seededIvs(`${pokemon.uid}:${pokemon.species}`);
@@ -210,6 +214,7 @@ function normalizeOwnedPokemon(pokemon: OwnedPokemon): OwnedPokemon {
         pokemon.nature ?? "hardy",
         pokemon.variantId,
         ivs,
+        evs,
       );
       maxHp = recalced.maxHp;
       stats = recalced.stats;
@@ -224,6 +229,7 @@ function normalizeOwnedPokemon(pokemon: OwnedPokemon): OwnedPokemon {
     variantId: pokemon.variantId ?? null,
     gender,
     ivs,
+    evs,
     maxHp,
     stats,
     hp,

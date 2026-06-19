@@ -115,6 +115,16 @@ export interface PokemonIVs {
   speed: number;
 }
 
+/** 노력치(EV) — 각 0~252, 합 ≤510, 스탯에 floor(EV/4) 기여(없으면 0 취급). */
+export interface PokemonEVs {
+  hp: number;
+  attack: number;
+  defense: number;
+  spAttack: number;
+  spDefense: number;
+  speed: number;
+}
+
 export type PrimaryStatus = "poison" | "burn" | "paralysis" | "sleep" | "freeze";
 
 export interface VolatileStatus {
@@ -148,6 +158,7 @@ export interface OwnedPokemon {
   sleepTurns?: number;
   hasGigantamaxFactor?: boolean;
   ivs?: PokemonIVs;
+  evs?: PokemonEVs;
 }
 
 export type EggTierId = "common" | "rare" | "legend";
