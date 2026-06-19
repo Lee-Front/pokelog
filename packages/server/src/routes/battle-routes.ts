@@ -18,7 +18,7 @@ import {
   getTransformedStats, applyGmaxHp, revertGmaxHp, getGmaxMove,
 } from "../game/battle-transformations.js";
 import {
-  applyBattleFormChange, applyWeatherEndOfTurn,
+  applyBattleFormChange, applyWeatherEndOfTurn, applyTerrainEndOfTurn,
   revertBattleForms,
   executePlayerAttack, resolvePreAttack, determineBattleTurnOrder, applyEndOfTurnBattle,
   handleFainted, doWildAttackAndCheck,
@@ -332,6 +332,7 @@ async function handleFight(
   // End-of-turn: status/volatile ticks, gmax countdown, weather damage
   applyEndOfTurnBattle(battle, myPokemon, log);
   applyWeatherEndOfTurn(battle, myPokemon, log);
+  applyTerrainEndOfTurn(battle, myPokemon, log);
 
   // Check if end-of-turn damage KO'd anyone
   if (myPokemon.hp <= 0) {

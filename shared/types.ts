@@ -257,6 +257,8 @@ export interface StatStages {
 
 export type BattleWeather = "sun" | "rain" | "hail" | "sandstorm";
 
+export type BattleTerrain = "electric" | "grassy" | "misty" | "psychic";
+
 export interface BattleState {
   eventId: string;
   myPokemonUid: string;
@@ -271,6 +273,8 @@ export interface BattleState {
   wildVolatile?: VolatileStatus[];
   weather?: BattleWeather;
   weatherTurns?: number;
+  terrain?: BattleTerrain;
+  terrainTurns?: number;
   playerBattleForm?: string | null;
   wildBattleForm?: string | null;
   transformationType?: "mega" | "gigantamax" | "primal" | null;

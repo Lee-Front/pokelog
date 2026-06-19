@@ -2,6 +2,10 @@ import { calculateDamage, determineTurnOrder, applyStatChanges, defaultStatStage
 import { checkHpThresholdForm, checkWeatherForm, checkPostAttackForm, checkMoveForm, checkPostSurfForm, checkFirstHitForm } from "./battle-forms.js";
 import { getTransformedStats, revertGmaxHp } from "./battle-transformations.js";
 import { getDefaultWeatherTurns, getWeatherDamage, getWeatherFromMove, getWeatherTypeModifier, tickWeather } from "./weather.js";
+import {
+  getDefaultTerrainTurns, getTerrainFromMove, getTerrainTypeModifier, getTerrainHeal,
+  terrainBlocksStatus, isGrounded, tickTerrain,
+} from "./terrain.js";
 import { getMoveById } from "./data-loader.js";
 import { getEffectiveTypes, getDisplaySpeciesName } from "./pokemon-state.js";
 import {
@@ -60,6 +64,58 @@ export function maybeSetWeather(
     "wild",
     log,
   );
+}
+
+export function maybeSetTerrain(
+  battle: BattleState,
+  moveId: string,
+  log: string[],
+): void {
+  const terrain = getTerrainFromMove(moveId);
+  if (!terrain) return;
+
+  battle.terrain = terrain;
+  battle.terrainTurns = getDefaultTerrainTurns();
+
+  const terrainNames: Record<string, string> = {
+    electric: "일렉트릭필드",
+    grassy: "그래스필드",
+    misty: "미스트필드",
+    psychic: "사이코필드",
+  };
+  log.push(`발밑에 ${terrainNames[terrain] ?? terrain}가 깔렸다!`);
+}
+
+export function applyTerrainEndOfTurn(
+  battle: BattleState,
+  myPokemon: OwnedPokemon,
+  log: string[],
+): void {
+  if (!battle.terrain) return;
+
+  const playerTypes = getEffectiveTypes(myPokemon.species, myPokemon.variantId, battle.playerBattleForm);
+  const wildTypes = getEffectiveTypes(battle.wild.species, battle.wild.variantId, battle.wildBattleForm);
+
+  // 그래스필드: 접지한 양측을 1/16 회복
+  const playerHeal = getTerrainHeal(battle.terrain, playerTypes, myPokemon.maxHp);
+  if (playerHeal > 0 && myPokemon.hp > 0) {
+    myPokemon.hp = Math.min(myPokemon.maxHp, myPokemon.hp + playerHeal);
+    log.push(`${getDisplaySpeciesName(myPokemon.species)}이(가) 필드로 ${playerHeal} 회복했다!`);
+  }
+
+  const wildHeal = getTerrainHeal(battle.terrain, wildTypes, battle.wild.maxHp);
+  if (wildHeal > 0 && battle.wild.hp > 0) {
+    battle.wild.hp = Math.min(battle.wild.maxHp, battle.wild.hp + wildHeal);
+    log.push(`야생 ${getDisplaySpeciesName(battle.wild.species)}이(가) 필드로 ${wildHeal} 회복했다!`);
+  }
+
+  const tick = tickTerrain(battle.terrain, battle.terrainTurns);
+  battle.terrain = tick.terrain;
+  battle.terrainTurns = tick.turns;
+
+  if (tick.expired) {
+    log.push("필드가 사라졌다!");
+  }
 }
 
 export function applyWeatherEndOfTurn(
@@ -189,6 +245,8 @@ export function maybeApplyAilment(
   targetStatus: PrimaryStatus | null | undefined,
   targetVolatiles: VolatileStatus[],
   log: string[],
+  battle?: BattleState,
+  targetTypes?: string[],
 ): { newStatus: PrimaryStatus | null; newVolatiles: VolatileStatus[]; sleepTurns?: number } {
   const ailment = moveData.meta?.ailment;
   const chance = moveData.meta?.ailmentChance ?? 0;
@@ -196,6 +254,14 @@ export function maybeApplyAilment(
 
   const primary = rollAilment(ailment, chance, targetStatus);
   if (primary) {
+    // 필드가 상태이상을 막는지: 일렉트릭(접지 대상 sleep 차단)/미스트(접지 대상 5대 상태이상 차단)
+    if (
+      battle?.terrain && targetTypes &&
+      terrainBlocksStatus(battle.terrain, primary, isGrounded(targetTypes))
+    ) {
+      log.push("필드가 상태이상을 막았다!");
+      return { newStatus: null, newVolatiles: targetVolatiles };
+    }
     const statusNames: Record<string, string> = {
       poison: "독", burn: "화상", paralysis: "마비", sleep: "잠듦", freeze: "얼음",
     };
@@ -331,15 +397,23 @@ export function executePlayerAttack(
     playerStats.attack = Math.max(1, Math.floor(playerStats.attack / 2));
   }
 
+  // 공격자(플레이어)/대상(야생) 타입 — 날씨·필드·상태이상 게이팅에 재사용
+  const playerAtkTypes = getEffectiveTypes(player.species, player.variantId, battle.playerBattleForm);
+  const wildDefTypes = getEffectiveTypes(battle.wild.species, battle.wild.variantId, battle.wildBattleForm);
+
   // Weather type modifier for player attack
   const playerWeatherMod = battle.weather ? getWeatherTypeModifier(battle.weather, moveData.type) : 1;
+  // Terrain type modifier for player attack (공격자 접지 여부, 대상 접지 여부 기준)
+  const playerTerrainMod = battle.terrain
+    ? getTerrainTypeModifier(battle.terrain, moveData.type, isGrounded(playerAtkTypes), isGrounded(wildDefTypes))
+    : 1;
 
   const result = calculateDamage(
     player.level, playerStats, battle.wild.stats, moveData,
-    getEffectiveTypes(player.species, player.variantId, battle.playerBattleForm),
-    getEffectiveTypes(battle.wild.species, battle.wild.variantId, battle.wildBattleForm),
+    playerAtkTypes,
+    wildDefTypes,
     battle.playerStatStages, battle.wildStatStages,
-    playerWeatherMod,
+    playerWeatherMod * playerTerrainMod,
   );
   battle.wild.hp = Math.max(0, battle.wild.hp - result.damage);
   log.push(`${getDisplaySpeciesName(player.species)}의 ${moveData.name}! ${result.missed ? "빗나갔다!" : `${result.damage} 데미지!`}`);
@@ -358,12 +432,14 @@ export function executePlayerAttack(
     // Apply stat changes for player
     maybeApplyStatChanges(battle, moveData, true, log);
 
-    // Apply ailment to wild from player attack
+    // Apply ailment to wild from player attack (필드 상태이상 차단 게이팅 포함)
     const ailmentResult = maybeApplyAilment(
       moveData,
       battle.wild.statusCondition,
       battle.wildVolatile ?? [],
       log,
+      battle,
+      wildDefTypes,
     );
     if (ailmentResult.newStatus) {
       battle.wild.statusCondition = ailmentResult.newStatus;
@@ -402,6 +478,9 @@ export function executePlayerAttack(
 
     // Player weather setting
     maybeSetWeather(battle, selectedMove.id, player.species, log);
+
+    // Player terrain setting
+    maybeSetTerrain(battle, selectedMove.id, log);
 
     // Check eiscue first-hit for wild (was the wild hit physically?)
     if (moveData.category === "physical" && result.damage > 0) {
@@ -675,9 +754,17 @@ export async function doWildAttackAndCheck(
     wildStats.attack = Math.max(1, Math.floor(wildStats.attack / 2));
   }
 
+  // 공격자(야생)/대상(플레이어) 타입 — 날씨·필드·상태이상 게이팅에 재사용
+  const wildAtkTypes = getEffectiveTypes(battle.wild.species, battle.wild.variantId, battle.wildBattleForm);
+  const playerDefTypes = getEffectiveTypes(myPokemon.species, myPokemon.variantId, battle.playerBattleForm);
+
   // Weather modifier for wild attack
   const wildMoveData = preSelectedWildMove ? getMoveById(preSelectedWildMove.id) : null;
   const wildWeatherMod = (battle.weather && wildMoveData) ? getWeatherTypeModifier(battle.weather, wildMoveData.type) : 1;
+  // Terrain modifier for wild attack (공격자 접지 여부, 대상 접지 여부 기준)
+  const wildTerrainMod = (battle.terrain && wildMoveData)
+    ? getTerrainTypeModifier(battle.terrain, wildMoveData.type, isGrounded(wildAtkTypes), isGrounded(playerDefTypes))
+    : 1;
 
   const wildResult = wildAttack(
     battle.wild.species, battle.wild.level, wildStats,
@@ -685,7 +772,7 @@ export async function doWildAttackAndCheck(
     battle.wildStatStages, battle.playerStatStages,
     preSelectedWildMove,
     battle.wild.variantId, myPokemon.variantId,
-    wildWeatherMod,
+    wildWeatherMod * wildTerrainMod,
     battle.wildBattleForm, battle.playerBattleForm,
   );
   const previousHp = myPokemon.hp;
@@ -705,12 +792,14 @@ export async function doWildAttackAndCheck(
     // Apply stat changes for wild pokemon
     maybeApplyStatChanges(battle, wildResult.moveData, false, log);
 
-    // Apply ailment to player from wild attack
+    // Apply ailment to player from wild attack (필드 상태이상 차단 게이팅 포함)
     const ailmentResult = maybeApplyAilment(
       wildResult.moveData,
       myPokemon.statusCondition,
       battle.playerVolatile ?? [],
       log,
+      battle,
+      playerDefTypes,
     );
     if (ailmentResult.newStatus) {
       myPokemon.statusCondition = ailmentResult.newStatus;
@@ -746,6 +835,11 @@ export async function doWildAttackAndCheck(
     // Wild weather setting
     if (wildResult.moveId) {
       maybeSetWeather(battle, wildResult.moveId, myPokemon.species, log);
+    }
+
+    // Wild terrain setting
+    if (wildResult.moveId) {
+      maybeSetTerrain(battle, wildResult.moveId, log);
     }
 
     // Check eiscue first-hit for player (was the player hit physically?)
