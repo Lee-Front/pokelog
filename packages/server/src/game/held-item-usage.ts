@@ -3,6 +3,8 @@ import { getItemById } from "./data-loader.js";
 import { GameRuleError } from "./game-errors.js";
 import { decrementItem, incrementItem } from "./inventory-utils.js";
 import { isHoldableItem } from "./inventory-catalog.js";
+import { getMegaStoneTargetSpecies } from "./battle-transformations.js";
+import { getDisplaySpeciesName } from "./pokemon-state.js";
 
 export { GameRuleError as HeldItemError };
 
@@ -35,6 +37,15 @@ export function equipHeldItem(user: UserData, pokemonUid: string, itemId: string
   }
 
   const pokemon = getPartyPokemon(user, pokemonUid);
+
+  // 메가스톤은 맞는 종에만 착용 허용 — 잘못된 스톤은 애초에 들 수 없게 막는다.
+  if (getItemById(itemId)?.category === "mega-stone") {
+    const target = getMegaStoneTargetSpecies(itemId);
+    if (target && target !== pokemon.species) {
+      throw new GameRuleError(`이 메가스톤은 ${getDisplaySpeciesName(target)} 전용입니다.`);
+    }
+  }
+
   const previousHeldItem = pokemon.heldItem ?? null;
 
   if (previousHeldItem === itemId) {

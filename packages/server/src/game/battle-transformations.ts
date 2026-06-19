@@ -1,55 +1,76 @@
 import { readFileSync } from "node:fs";
 import type { OwnedPokemon, BattleState, PokemonStats } from "../../../../shared/types.js";
-import { getVariants } from "./data-loader.js";
+import { getVariants, getItems, getAllSpeciesList } from "./data-loader.js";
 import { buildStatsForPokemon } from "./pokemon-stats.js";
 import { projectPath } from "../paths.js";
 
 export type TransformationType = "mega" | "gigantamax" | "primal";
 
-// ── Mega stone → variant ID mapping ──
+// ── Mega stone ↔ variant 매핑 ──
+// 스톤명이 종마다 불규칙(lucario→lucarionite, blastoise→blastoisinite, mewtwo→mewtwonite 등)
+// 이라 단순 유추(species+"ite")로는 18/48이 틀렸다(예: 루카리오가 "올바른 메가스톤이 아닙니다"
+// 로 거부). items.json mega-stone의 shortEffect 한글 종명으로 매칭하고(주), 실패 시 스톤
+// stem↔종 슬러그 접두사로 폴백해 stone→variant 맵을 1회 구축한다(전 스톤 해결).
+let megaStoneToVariantCache: Map<string, string> | null = null;
 
-/**
- * Derive the expected mega stone name from a variant ID.
- * Examples:
- *   "charizard-mega-x" → "charizardite-x"
- *   "venusaur-mega"    → "venusaurite"
- *   "mewtwo-mega-y"    → "mewtwonite-y"
- */
-function variantIdToMegaStone(variantId: string): string {
-  // e.g. "charizard-mega-x" → baseSpecies="charizard", suffix="x"
-  const parts = variantId.split("-mega");
-  const species = parts[0]; // e.g. "charizard"
-  const suffix = parts[1]; // e.g. "-x" or "" (empty for non-x/y)
-
-  // Build stone name: species + "ite" + suffix
-  // Special cases for certain species names
-  const stoneBase = species + "ite";
-
-  if (suffix && suffix.startsWith("-")) {
-    // e.g. charizard + "ite" + "-x" → "charizardite-x"
-    return stoneBase + suffix;
+function buildMegaStoneToVariant(): Map<string, string> {
+  if (megaStoneToVariantCache) return megaStoneToVariantCache;
+  const map = new Map<string, string>();
+  const megaVariants = getVariants().filter((v) => v.category === "mega");
+  const variantIds = new Set(megaVariants.map((v) => v.id));
+  const megaSpecies = [...new Set(megaVariants.map((v) => v.baseSpecies))];
+  const nameToSlug = new Map<string, string>();
+  for (const s of getAllSpeciesList()) {
+    if (s.name && s.species) nameToSlug.set(s.name, s.species);
   }
 
-  return stoneBase;
+  for (const item of getItems()) {
+    if (item.category !== "mega-stone") continue;
+    const id = item.id;
+    const suffix = id.endsWith("-x") ? "-x" : id.endsWith("-y") ? "-y" : "";
+
+    // 1) shortEffect의 한글 종명 → 슬러그.
+    let species: string | undefined;
+    const m = (item.shortEffect ?? "").match(/^(.+?)(?:을|를)\s*메가진화/);
+    if (m) species = nameToSlug.get(m[1]);
+
+    // 2) 폴백: 스톤 stem(ite/-x/-y 제거)과 메가가능 종 슬러그의 최장 접두사 매칭.
+    if (!species) {
+      const stem = id.replace(/ite(-[xy])?$/, "");
+      let best = "";
+      for (const sp of megaSpecies) {
+        if ((stem.startsWith(sp) || sp.startsWith(stem)) && sp.length > best.length) best = sp;
+      }
+      species = best || undefined;
+    }
+
+    if (!species) continue;
+    const variantId = `${species}-mega${suffix}`;
+    if (variantIds.has(variantId)) map.set(id, variantId);
+  }
+
+  megaStoneToVariantCache = map;
+  return map;
 }
 
 /**
- * Get the mega variant ID for a given species + held item combo.
- * Returns null if no matching mega variant exists.
+ * 종 + 지닌 스톤 조합으로 메가 variant id 반환. 잘못된 스톤이면 null.
  */
 export function getMegaVariantForItem(species: string, heldItem: string): string | null {
-  const megaVariants = getVariants().filter(
-    (v) => v.baseSpecies === species && v.category === "mega",
-  );
+  const variantId = buildMegaStoneToVariant().get(heldItem);
+  if (!variantId) return null;
+  const variant = getVariants().find((v) => v.id === variantId);
+  return variant && variant.baseSpecies === species ? variantId : null;
+}
 
-  for (const variant of megaVariants) {
-    const expectedStone = variantIdToMegaStone(variant.id);
-    if (expectedStone === heldItem) {
-      return variant.id;
-    }
-  }
-
-  return null;
+/**
+ * 메가스톤이 활성화하는 대상 종 슬러그. 메가스톤이 아니거나 미매핑이면 null.
+ * (장착 시 "맞는 종에만 착용" 검증에 쓴다.)
+ */
+export function getMegaStoneTargetSpecies(stoneId: string): string | null {
+  const variantId = buildMegaStoneToVariant().get(stoneId);
+  if (!variantId) return null;
+  return getVariants().find((v) => v.id === variantId)?.baseSpecies ?? null;
 }
 
 // ── Primal reversion ──
