@@ -326,7 +326,7 @@ export function reconcileRoster(roster: RosterSlice): RosterSlice {
   const nextPokemon: OwnedPokemon[] = [];
   const nextStorage: OwnedPokemon[] = [];
   for (const { copy, origin } of ordered) {
-    const dest: Origin = partySet.has(copy.uid) ? "pokemon" : origin;
+    const dest: Origin = partySet.has(copy.uid) ? "pokemon" : "storage";
     if (dest === "pokemon") nextPokemon.push(copy);
     else nextStorage.push(copy);
   }

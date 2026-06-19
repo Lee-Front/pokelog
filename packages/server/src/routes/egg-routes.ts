@@ -13,9 +13,11 @@ const MAX_PARTY_SIZE = 6;
 // 부화한 포켓몬을 파티에 넣되, 파티가 꽉 차면 보관함으로 보낸다.
 // 도감 등록도 함께 처리하고, 어디로 갔는지 반환한다.
 function placeHatched(user: UserData, pokemon: OwnedPokemon): "party" | "storage" {
-  user.pokemon.push(pokemon);
+  // 파티 만석이면 pokemon[]에 넣지 않고 storage[]에만 넣는다 — 양쪽에 넣으면 uid 중복으로
+  // reconcileRoster가 한쪽을 드롭해 개체가 사라진다(파티 만석 시 부화 개체 유실 버그).
   let destination: "party" | "storage";
   if (user.party.length < MAX_PARTY_SIZE) {
+    user.pokemon.push(pokemon);
     user.party.push(pokemon.uid);
     destination = "party";
   } else {

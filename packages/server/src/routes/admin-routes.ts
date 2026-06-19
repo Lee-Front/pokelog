@@ -524,9 +524,10 @@ adminRoutes.post("/users/:id/give-pokemon", async (req, res) => {
 
     const pokemon = createPokemon(species, level ?? 5);
     if (typeof shiny === "boolean") pokemon.isShiny = shiny;
-    user.pokemon.push(pokemon);
-    if (user.party.length < 6) user.party.push(pokemon.uid);
-    else user.storage.push(pokemon);
+    if (user.party.length < 6) {
+      user.pokemon.push(pokemon);
+      user.party.push(pokemon.uid);
+    } else user.storage.push(pokemon);
     if (!user.pokedex.includes(pokemon.species)) user.pokedex.push(pokemon.species);
 
     await saveUser(user);
@@ -728,9 +729,10 @@ adminRoutes.post("/broadcast/reward", async (req, res) => {
             for (const p of pokemon) {
               const mon = createPokemon(p.species, p.level ?? 5);
               if (typeof p.shiny === "boolean") mon.isShiny = p.shiny;
-              user.pokemon.push(mon);
-              if (user.party.length < 6) user.party.push(mon.uid);
-              else user.storage.push(mon);
+              if (user.party.length < 6) {
+                user.pokemon.push(mon);
+                user.party.push(mon.uid);
+              } else user.storage.push(mon);
               if (!user.pokedex.includes(mon.species)) user.pokedex.push(mon.species);
             }
           }
@@ -1077,8 +1079,8 @@ adminRoutes.post("/test/give-pokemon", async (req, res) => {
     if (typeof hasGigantamaxFactor === "boolean") {
       pokemon.hasGigantamaxFactor = hasGigantamaxFactor;
     }
-    user.pokemon.push(pokemon);
     if (user.party.length < 6) {
+      user.pokemon.push(pokemon);
       user.party.push(pokemon.uid);
     } else {
       user.storage.push(pokemon);

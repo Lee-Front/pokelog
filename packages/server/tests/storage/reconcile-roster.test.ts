@@ -33,13 +33,14 @@ function roster(overrides: Partial<RosterSlice> = {}): RosterSlice {
 const uids = (list: OwnedPokemon[]): string[] => list.map((p) => p.uid);
 
 describe("reconcileRoster", () => {
-  it("collapses a uid present identically in both pokemon[] and storage[] (origin dictates when not in party)", () => {
+  it("collapses a uid present identically in both pokemon[] and storage[]; non-party copy lands in storage[]", () => {
     const a = mon({ uid: "a", species: "pikachu", level: 10 });
     const result = reconcileRoster(roster({ pokemon: [a], storage: [{ ...a }] }));
 
-    // One copy total, kept in pokemon[] (first appearance), gone from storage[].
-    expect(uids(result.pokemon)).toEqual(["a"]);
-    expect(uids(result.storage)).toEqual([]);
+    // One copy total (first appearance kept). 파티에 없으므로 박스(storage[])로 보낸다 —
+    // pokemon[]에만 남기면 파티·박스 어디에도 안 보이는 고아가 된다(개체 유실 버그).
+    expect(uids(result.pokemon)).toEqual([]);
+    expect(uids(result.storage)).toEqual(["a"]);
   });
 
   it("keeps the more-progressed diverged copy (deerling L6 in pokemon vs sawsbuck L58 in storage), not in party → lands in storage[]", () => {
@@ -123,8 +124,9 @@ describe("reconcileRoster", () => {
       }),
     );
 
-    expect(uids(result.pokemon)).toEqual(["a", "b"]);
-    expect(uids(result.storage)).toEqual(["c", "d"]);
+    // 비-파티 개체는 전부 박스(storage[])로 — 첫 등장 순서는 그대로 보존된다.
+    expect(uids(result.pokemon)).toEqual([]);
+    expect(uids(result.storage)).toEqual(["a", "b", "c", "d"]);
   });
 
   it("ties on level and exp keep the first-encountered copy (pokemon[] before storage[])", () => {
@@ -133,9 +135,9 @@ describe("reconcileRoster", () => {
 
     const result = reconcileRoster(roster({ pokemon: [inPokemon], storage: [inStorage] }));
 
-    // Tie → first encountered (pokemon[]) wins; its origin keeps it in pokemon[].
-    expect(result.pokemon).toHaveLength(1);
-    expect(result.pokemon[0]).toMatchObject({ uid: "t", species: "ditto" });
-    expect(result.storage).toEqual([]);
+    // Tie → first encountered (pokemon[]) wins. 파티에 없으므로 박스(storage[])로 간다.
+    expect(result.storage).toHaveLength(1);
+    expect(result.storage[0]).toMatchObject({ uid: "t", species: "ditto" });
+    expect(result.pokemon).toEqual([]);
   });
 });
