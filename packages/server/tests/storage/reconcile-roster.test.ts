@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { OwnedPokemon } from "../../../../shared/types.js";
-import { reconcileRoster, type RosterSlice } from "../../src/storage/user-store.js";
+import { dropDanglingPending, reconcileRoster, type RosterSlice } from "../../src/storage/user-store.js";
 
 /**
  * reconcileRoster enforces the roster invariant: every pokemon uid appears at
@@ -139,5 +139,37 @@ describe("reconcileRoster", () => {
     expect(result.storage).toHaveLength(1);
     expect(result.storage[0]).toMatchObject({ uid: "t", species: "ditto" });
     expect(result.pokemon).toEqual([]);
+  });
+});
+
+describe("dropDanglingPending", () => {
+  // 가리키는 포켓몬이 살아있는 대기만 남기고, 사라진 개체를 가리키는 댕글링 대기는 버린다.
+  // (resolve 404로 한 번에 하나씩 처리하는 큐가 막히는 회귀를 방지.)
+  it("keeps entries whose pokemonUid is live and drops the rest", () => {
+    const live = new Set(["alive-1", "alive-2"]);
+    const entries = [
+      { id: "a", pokemonUid: "alive-1", moveId: "tackle" },
+      { id: "b", pokemonUid: "ghost-1", moveId: "wrap" },
+      { id: "c", pokemonUid: "alive-2", moveId: "growl" },
+      { id: "d", pokemonUid: "ghost-2", moveId: "hex" },
+    ];
+
+    const result = dropDanglingPending(entries, live);
+
+    expect(result.map((e) => e.id)).toEqual(["a", "c"]);
+  });
+
+  it("returns the same entries (none dropped) when every uid is live", () => {
+    const live = new Set(["x"]);
+    const entries = [{ id: "e1", pokemonUid: "x", moveId: "ember" }];
+    expect(dropDanglingPending(entries, live)).toEqual(entries);
+  });
+
+  it("drops everything when no uid is live (e.g. all targets deleted)", () => {
+    const entries = [
+      { id: "e1", pokemonUid: "gone", moveId: "ember" },
+      { id: "e2", pokemonUid: "gone", moveId: "scratch" },
+    ];
+    expect(dropDanglingPending(entries, new Set<string>())).toEqual([]);
   });
 });

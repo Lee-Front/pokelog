@@ -368,6 +368,19 @@ function normalizeInventory(inv: unknown): Record<string, number> {
   return out;
 }
 
+/**
+ * 가리키는 포켓몬(pokemonUid)이 살아있는(liveUids에 존재하는) 대기 결정만 남긴다.
+ * 과거 로스터 손상으로 개체는 사라졌는데 pendingEvolutions/pendingMoveLearns만 남으면
+ * resolve가 404("Pokemon not found.")를 내고, 한 번에 하나씩 처리하는 UI에서는 그 한 건이
+ * 큐 전체를 막는다 — normalize 단계에서 댕글링을 걷어내 자가 치유한다.
+ */
+export function dropDanglingPending<T extends { pokemonUid: string }>(
+  entries: T[],
+  liveUids: ReadonlySet<string>,
+): T[] {
+  return entries.filter((entry) => liveUids.has(entry.pokemonUid));
+}
+
 function normalizeUserData(user: UserData): UserData {
   // Map (fill defaults) first so reconcile compares normalized copies and each
   // surviving entry is normalized exactly once; reconcile then drops duplicates.
@@ -404,6 +417,29 @@ function normalizeUserData(user: UserData): UserData {
   const caught = [...new Set([...(Array.isArray(user.pokedex) ? user.pokedex : []), ...ownedSpecies])];
   const seen = [...new Set([...(Array.isArray(user.seenSpecies) ? user.seenSpecies : []), ...caught])];
 
+  // 댕글링 대기 정리 — 가리키는 포켓몬이 더 이상 존재하지 않는(party/pokemon[]/storage[]
+  // 어디에도 없는) pendingEvolutions/pendingMoveLearns를 제거한다. 과거 로스터 손상으로
+  // 개체는 사라졌는데 대기 결정만 남으면 /moves|/evolutions/resolve가 404("Pokemon not
+  // found.")를 내고, 한 번에 하나씩 처리하는 UI에서는 그 한 건이 큐 전체를 막는다.
+  const liveUids = new Set([...reconciled.pokemon, ...reconciled.storage].map((p) => p.uid));
+  const rawPendingEvolutions = Array.isArray(user.pendingEvolutions) ? user.pendingEvolutions : [];
+  const rawPendingMoveLearns = Array.isArray(user.pendingMoveLearns) ? user.pendingMoveLearns : [];
+  const pendingEvolutions = dropDanglingPending(rawPendingEvolutions, liveUids);
+  const pendingMoveLearns = dropDanglingPending(rawPendingMoveLearns, liveUids);
+  if (
+    pendingEvolutions.length !== rawPendingEvolutions.length ||
+    pendingMoveLearns.length !== rawPendingMoveLearns.length
+  ) {
+    log.warn(
+      {
+        userId: user.account?.id,
+        droppedEvolutions: rawPendingEvolutions.length - pendingEvolutions.length,
+        droppedMoveLearns: rawPendingMoveLearns.length - pendingMoveLearns.length,
+      },
+      "normalizeUserData dropped dangling pending decisions (target pokemon no longer exists)",
+    );
+  }
+
   return {
     ...user,
     currentRegion: user.currentRegion ?? "default",
@@ -415,8 +451,8 @@ function normalizeUserData(user: UserData): UserData {
     pokedex: caught,
     seenSpecies: seen,
     eggs: Array.isArray(user.eggs) ? user.eggs : [],
-    pendingEvolutions: Array.isArray(user.pendingEvolutions) ? user.pendingEvolutions : [],
-    pendingMoveLearns: Array.isArray(user.pendingMoveLearns) ? user.pendingMoveLearns : [],
+    pendingEvolutions,
+    pendingMoveLearns,
     integrations: Array.isArray(user.integrations)
       ? user.integrations.map(normalizeIntegration)
       : [],
