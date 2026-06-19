@@ -1,0 +1,2810 @@
+{
+  "abomasnow": {
+    "attack": 1,
+    "spAttack": 1
+  },
+  "abra": {
+    "spAttack": 1
+  },
+  "absol": {
+    "attack": 2
+  },
+  "accelgor": {
+    "speed": 2
+  },
+  "aegislash-shield": {
+    "defense": 2,
+    "spDefense": 1
+  },
+  "aerodactyl": {
+    "speed": 2
+  },
+  "aggron": {
+    "defense": 3
+  },
+  "aipom": {
+    "speed": 1
+  },
+  "alakazam": {
+    "spAttack": 3
+  },
+  "alcremie": {
+    "spDefense": 2
+  },
+  "alomomola": {
+    "hp": 2
+  },
+  "altaria": {
+    "spDefense": 2
+  },
+  "amaura": {
+    "hp": 1
+  },
+  "ambipom": {
+    "speed": 2
+  },
+  "amoonguss": {
+    "hp": 2
+  },
+  "ampharos": {
+    "spAttack": 3
+  },
+  "anorith": {
+    "attack": 1
+  },
+  "appletun": {
+    "hp": 2
+  },
+  "applin": {
+    "defense": 1
+  },
+  "araquanid": {
+    "spDefense": 2
+  },
+  "arbok": {
+    "attack": 2
+  },
+  "arcanine": {
+    "attack": 2
+  },
+  "arceus": {
+    "hp": 3
+  },
+  "archen": {
+    "attack": 1
+  },
+  "archeops": {
+    "attack": 2
+  },
+  "arctovish": {
+    "defense": 2
+  },
+  "arctozolt": {
+    "attack": 2
+  },
+  "ariados": {
+    "attack": 2
+  },
+  "armaldo": {
+    "attack": 2
+  },
+  "aromatisse": {
+    "hp": 2
+  },
+  "aron": {
+    "defense": 1
+  },
+  "arrokuda": {
+    "speed": 1
+  },
+  "articuno": {
+    "spDefense": 3
+  },
+  "audino": {
+    "hp": 2
+  },
+  "aurorus": {
+    "hp": 2
+  },
+  "avalugg": {
+    "defense": 2
+  },
+  "axew": {
+    "attack": 1
+  },
+  "azelf": {
+    "attack": 2,
+    "spAttack": 1
+  },
+  "azumarill": {
+    "hp": 3
+  },
+  "azurill": {
+    "hp": 1
+  },
+  "bagon": {
+    "attack": 1
+  },
+  "baltoy": {
+    "spDefense": 1
+  },
+  "banette": {
+    "attack": 2
+  },
+  "barbaracle": {
+    "attack": 2
+  },
+  "barboach": {
+    "hp": 1
+  },
+  "barraskewda": {
+    "speed": 2
+  },
+  "basculegion-male": {
+    "hp": 3
+  },
+  "basculin-red-striped": {
+    "speed": 2
+  },
+  "bastiodon": {
+    "defense": 2
+  },
+  "bayleef": {
+    "defense": 1,
+    "spDefense": 1
+  },
+  "beartic": {
+    "attack": 2
+  },
+  "beautifly": {
+    "spAttack": 3
+  },
+  "beedrill": {
+    "attack": 2,
+    "spDefense": 1
+  },
+  "beheeyem": {
+    "spAttack": 2
+  },
+  "beldum": {
+    "defense": 1
+  },
+  "bellossom": {
+    "spDefense": 3
+  },
+  "bellsprout": {
+    "attack": 1
+  },
+  "bergmite": {
+    "defense": 1
+  },
+  "bewear": {
+    "attack": 2
+  },
+  "bibarel": {
+    "attack": 2
+  },
+  "bidoof": {
+    "hp": 1
+  },
+  "binacle": {
+    "attack": 1
+  },
+  "bisharp": {
+    "attack": 2
+  },
+  "blacephalon": {
+    "spAttack": 3
+  },
+  "blastoise": {
+    "spDefense": 3
+  },
+  "blaziken": {
+    "attack": 3
+  },
+  "blipbug": {
+    "spDefense": 1
+  },
+  "blissey": {
+    "hp": 3
+  },
+  "blitzle": {
+    "speed": 1
+  },
+  "boldore": {
+    "attack": 1,
+    "defense": 1
+  },
+  "boltund": {
+    "speed": 2
+  },
+  "bonsly": {
+    "defense": 1
+  },
+  "bouffalant": {
+    "attack": 2
+  },
+  "bounsweet": {
+    "hp": 1
+  },
+  "braixen": {
+    "spAttack": 2
+  },
+  "braviary": {
+    "attack": 2
+  },
+  "breloom": {
+    "attack": 2
+  },
+  "brionne": {
+    "spAttack": 2
+  },
+  "bronzong": {
+    "defense": 1,
+    "spDefense": 1
+  },
+  "bronzor": {
+    "defense": 1
+  },
+  "bruxish": {
+    "attack": 2
+  },
+  "budew": {
+    "spAttack": 1
+  },
+  "buizel": {
+    "speed": 1
+  },
+  "bulbasaur": {
+    "spAttack": 1
+  },
+  "buneary": {
+    "speed": 1
+  },
+  "bunnelby": {
+    "speed": 1
+  },
+  "burmy": {
+    "spDefense": 1
+  },
+  "butterfree": {
+    "spAttack": 2,
+    "spDefense": 1
+  },
+  "buzzwole": {
+    "attack": 1,
+    "defense": 2
+  },
+  "cacnea": {
+    "spAttack": 1
+  },
+  "cacturne": {
+    "attack": 1,
+    "spAttack": 1
+  },
+  "calyrex": {
+    "hp": 3
+  },
+  "camerupt": {
+    "attack": 1,
+    "spAttack": 1
+  },
+  "carbink": {
+    "defense": 1,
+    "spDefense": 1
+  },
+  "carkol": {
+    "defense": 2
+  },
+  "carnivine": {
+    "attack": 2
+  },
+  "carracosta": {
+    "defense": 2
+  },
+  "carvanha": {
+    "attack": 1
+  },
+  "cascoon": {
+    "defense": 2
+  },
+  "castform": {
+    "hp": 1
+  },
+  "caterpie": {
+    "hp": 1
+  },
+  "celebi": {
+    "hp": 3
+  },
+  "celesteela": {
+    "attack": 1,
+    "defense": 1,
+    "spAttack": 1
+  },
+  "centiskorch": {
+    "attack": 2
+  },
+  "chandelure": {
+    "spAttack": 3
+  },
+  "chansey": {
+    "hp": 2
+  },
+  "charizard": {
+    "spAttack": 3
+  },
+  "charjabug": {
+    "defense": 2
+  },
+  "charmander": {
+    "speed": 1
+  },
+  "charmeleon": {
+    "spAttack": 1,
+    "speed": 1
+  },
+  "chatot": {
+    "attack": 1
+  },
+  "cherrim": {
+    "spAttack": 2
+  },
+  "cherubi": {
+    "spAttack": 1
+  },
+  "chesnaught": {
+    "defense": 3
+  },
+  "chespin": {
+    "defense": 1
+  },
+  "chewtle": {
+    "attack": 1
+  },
+  "chikorita": {
+    "spDefense": 1
+  },
+  "chimchar": {
+    "speed": 1
+  },
+  "chimecho": {
+    "spAttack": 1,
+    "spDefense": 1
+  },
+  "chinchou": {
+    "hp": 1
+  },
+  "chingling": {
+    "spAttack": 1
+  },
+  "cinccino": {
+    "speed": 2
+  },
+  "cinderace": {
+    "speed": 3
+  },
+  "clamperl": {
+    "defense": 1
+  },
+  "clauncher": {
+    "spAttack": 1
+  },
+  "clawitzer": {
+    "spAttack": 2
+  },
+  "claydol": {
+    "spDefense": 2
+  },
+  "clefable": {
+    "hp": 3
+  },
+  "clefairy": {
+    "hp": 2
+  },
+  "cleffa": {
+    "spDefense": 1
+  },
+  "clobbopus": {
+    "attack": 1
+  },
+  "cloyster": {
+    "defense": 2
+  },
+  "coalossal": {
+    "defense": 3
+  },
+  "cobalion": {
+    "defense": 3
+  },
+  "cofagrigus": {
+    "defense": 2
+  },
+  "combee": {
+    "speed": 1
+  },
+  "combusken": {
+    "attack": 1,
+    "spAttack": 1
+  },
+  "comfey": {
+    "spDefense": 2
+  },
+  "conkeldurr": {
+    "attack": 3
+  },
+  "copperajah": {
+    "attack": 2
+  },
+  "corphish": {
+    "attack": 1
+  },
+  "corsola": {
+    "defense": 1,
+    "spDefense": 1
+  },
+  "corviknight": {
+    "defense": 3
+  },
+  "corvisquire": {
+    "speed": 2
+  },
+  "cosmoem": {
+    "defense": 1,
+    "spDefense": 1
+  },
+  "cosmog": {
+    "hp": 1
+  },
+  "cottonee": {
+    "speed": 1
+  },
+  "crabominable": {
+    "attack": 2
+  },
+  "crabrawler": {
+    "attack": 1
+  },
+  "cradily": {
+    "spDefense": 2
+  },
+  "cramorant": {
+    "spDefense": 2
+  },
+  "cranidos": {
+    "attack": 1
+  },
+  "crawdaunt": {
+    "attack": 2
+  },
+  "cresselia": {
+    "spDefense": 3
+  },
+  "croagunk": {
+    "attack": 1
+  },
+  "crobat": {
+    "speed": 3
+  },
+  "croconaw": {
+    "attack": 1,
+    "defense": 1
+  },
+  "crustle": {
+    "defense": 2
+  },
+  "cryogonal": {
+    "spDefense": 2
+  },
+  "cubchoo": {
+    "attack": 1
+  },
+  "cubone": {
+    "defense": 1
+  },
+  "cufant": {
+    "attack": 1
+  },
+  "cursola": {
+    "spAttack": 2
+  },
+  "cutiefly": {
+    "speed": 1
+  },
+  "cyndaquil": {
+    "speed": 1
+  },
+  "darkrai": {
+    "spAttack": 2,
+    "speed": 1
+  },
+  "darmanitan-standard": {
+    "attack": 2
+  },
+  "dartrix": {
+    "hp": 2
+  },
+  "darumaka": {
+    "attack": 1
+  },
+  "decidueye": {
+    "attack": 3
+  },
+  "dedenne": {
+    "speed": 2
+  },
+  "deerling": {
+    "speed": 1
+  },
+  "deino": {
+    "attack": 1
+  },
+  "delcatty": {
+    "hp": 1,
+    "speed": 1
+  },
+  "delibird": {
+    "speed": 1
+  },
+  "delphox": {
+    "spAttack": 3
+  },
+  "deoxys-normal": {
+    "attack": 1,
+    "spAttack": 1,
+    "speed": 1
+  },
+  "dewgong": {
+    "spDefense": 2
+  },
+  "dewott": {
+    "spAttack": 2
+  },
+  "dewpider": {
+    "spDefense": 1
+  },
+  "dhelmise": {
+    "attack": 2
+  },
+  "dialga": {
+    "spAttack": 3
+  },
+  "diancie": {
+    "defense": 1,
+    "spDefense": 2
+  },
+  "diggersby": {
+    "hp": 2
+  },
+  "diglett": {
+    "speed": 1
+  },
+  "ditto": {
+    "hp": 1
+  },
+  "dodrio": {
+    "attack": 2
+  },
+  "doduo": {
+    "attack": 1
+  },
+  "donphan": {
+    "attack": 1,
+    "defense": 1
+  },
+  "dottler": {
+    "spDefense": 2
+  },
+  "doublade": {
+    "defense": 2
+  },
+  "dracovish": {
+    "defense": 2
+  },
+  "dracozolt": {
+    "attack": 2
+  },
+  "dragalge": {
+    "spDefense": 2
+  },
+  "dragapult": {
+    "speed": 3
+  },
+  "dragonair": {
+    "attack": 2
+  },
+  "dragonite": {
+    "attack": 3
+  },
+  "drakloak": {
+    "speed": 2
+  },
+  "drampa": {
+    "spAttack": 2
+  },
+  "drapion": {
+    "defense": 2
+  },
+  "dratini": {
+    "attack": 1
+  },
+  "drednaw": {
+    "attack": 2
+  },
+  "dreepy": {
+    "speed": 1
+  },
+  "drifblim": {
+    "hp": 2
+  },
+  "drifloon": {
+    "hp": 1
+  },
+  "drilbur": {
+    "attack": 1
+  },
+  "drizzile": {
+    "spAttack": 2
+  },
+  "drowzee": {
+    "spDefense": 1
+  },
+  "druddigon": {
+    "attack": 2
+  },
+  "dubwool": {
+    "defense": 2
+  },
+  "ducklett": {
+    "hp": 1
+  },
+  "dugtrio": {
+    "speed": 2
+  },
+  "dunsparce": {
+    "hp": 1
+  },
+  "duosion": {
+    "spAttack": 2
+  },
+  "duraludon": {
+    "spAttack": 2
+  },
+  "durant": {
+    "defense": 2
+  },
+  "dusclops": {
+    "defense": 1,
+    "spDefense": 1
+  },
+  "dusknoir": {
+    "defense": 1,
+    "spDefense": 2
+  },
+  "duskull": {
+    "spDefense": 1
+  },
+  "dustox": {
+    "spDefense": 3
+  },
+  "dwebble": {
+    "defense": 1
+  },
+  "eelektrik": {
+    "attack": 2
+  },
+  "eelektross": {
+    "attack": 3
+  },
+  "eevee": {
+    "spDefense": 1
+  },
+  "eiscue-ice": {
+    "defense": 2
+  },
+  "ekans": {
+    "attack": 1
+  },
+  "eldegoss": {
+    "spDefense": 2
+  },
+  "electabuzz": {
+    "speed": 2
+  },
+  "electivire": {
+    "attack": 3
+  },
+  "electrike": {
+    "speed": 1
+  },
+  "electrode": {
+    "speed": 2
+  },
+  "elekid": {
+    "speed": 1
+  },
+  "elgyem": {
+    "spAttack": 1
+  },
+  "emboar": {
+    "attack": 3
+  },
+  "emolga": {
+    "speed": 2
+  },
+  "empoleon": {
+    "spAttack": 3
+  },
+  "enamorus-incarnate": {
+    "spAttack": 3
+  },
+  "entei": {
+    "hp": 1,
+    "attack": 2
+  },
+  "escavalier": {
+    "attack": 2
+  },
+  "espeon": {
+    "spAttack": 2
+  },
+  "espurr": {
+    "speed": 1
+  },
+  "eternatus": {
+    "hp": 3
+  },
+  "excadrill": {
+    "attack": 2
+  },
+  "exeggcute": {
+    "defense": 1
+  },
+  "exeggutor": {
+    "spAttack": 2
+  },
+  "exploud": {
+    "hp": 3
+  },
+  "falinks": {
+    "attack": 2,
+    "spDefense": 1
+  },
+  "farfetchd": {
+    "attack": 1
+  },
+  "fearow": {
+    "speed": 2
+  },
+  "feebas": {
+    "speed": 1
+  },
+  "fennekin": {
+    "spAttack": 1
+  },
+  "feraligatr": {
+    "attack": 2,
+    "defense": 1
+  },
+  "ferroseed": {
+    "defense": 1
+  },
+  "ferrothorn": {
+    "defense": 2
+  },
+  "finneon": {
+    "speed": 1
+  },
+  "flaaffy": {
+    "spAttack": 2
+  },
+  "flabebe": {
+    "spDefense": 1
+  },
+  "flapple": {
+    "attack": 2
+  },
+  "flareon": {
+    "attack": 2
+  },
+  "fletchinder": {
+    "speed": 2
+  },
+  "fletchling": {
+    "speed": 1
+  },
+  "floatzel": {
+    "speed": 2
+  },
+  "floette": {
+    "spDefense": 2
+  },
+  "florges": {
+    "spDefense": 3
+  },
+  "flygon": {
+    "attack": 1,
+    "speed": 2
+  },
+  "fomantis": {
+    "attack": 1
+  },
+  "foongus": {
+    "hp": 1
+  },
+  "forretress": {
+    "defense": 2
+  },
+  "fraxure": {
+    "attack": 2
+  },
+  "frillish-male": {
+    "spDefense": 1
+  },
+  "froakie": {
+    "speed": 1
+  },
+  "frogadier": {
+    "speed": 2
+  },
+  "froslass": {
+    "speed": 2
+  },
+  "frosmoth": {
+    "spAttack": 2
+  },
+  "furfrou": {
+    "speed": 1
+  },
+  "furret": {
+    "speed": 2
+  },
+  "gabite": {
+    "attack": 2
+  },
+  "gallade": {
+    "attack": 3
+  },
+  "galvantula": {
+    "speed": 2
+  },
+  "garbodor": {
+    "attack": 2
+  },
+  "garchomp": {
+    "attack": 3
+  },
+  "gardevoir": {
+    "spAttack": 3
+  },
+  "gastly": {
+    "spAttack": 1
+  },
+  "gastrodon": {
+    "hp": 2
+  },
+  "genesect": {
+    "attack": 1,
+    "spAttack": 1,
+    "speed": 1
+  },
+  "gengar": {
+    "spAttack": 3
+  },
+  "geodude": {
+    "defense": 1
+  },
+  "gible": {
+    "attack": 1
+  },
+  "gigalith": {
+    "attack": 3
+  },
+  "girafarig": {
+    "spAttack": 2
+  },
+  "giratina-altered": {
+    "hp": 3
+  },
+  "glaceon": {
+    "spAttack": 2
+  },
+  "glalie": {
+    "hp": 2
+  },
+  "glameow": {
+    "speed": 1
+  },
+  "glastrier": {
+    "attack": 3
+  },
+  "gligar": {
+    "defense": 1
+  },
+  "gliscor": {
+    "defense": 2
+  },
+  "gloom": {
+    "spAttack": 2
+  },
+  "gogoat": {
+    "hp": 2
+  },
+  "golbat": {
+    "speed": 2
+  },
+  "goldeen": {
+    "attack": 1
+  },
+  "golduck": {
+    "spAttack": 2
+  },
+  "golem": {
+    "defense": 3
+  },
+  "golett": {
+    "attack": 1
+  },
+  "golisopod": {
+    "defense": 2
+  },
+  "golurk": {
+    "attack": 2
+  },
+  "goodra": {
+    "spDefense": 3
+  },
+  "goomy": {
+    "spDefense": 1
+  },
+  "gorebyss": {
+    "spAttack": 2
+  },
+  "gossifleur": {
+    "spDefense": 1
+  },
+  "gothita": {
+    "spDefense": 1
+  },
+  "gothitelle": {
+    "spDefense": 3
+  },
+  "gothorita": {
+    "spDefense": 2
+  },
+  "gourgeist-average": {
+    "defense": 2
+  },
+  "granbull": {
+    "attack": 2
+  },
+  "grapploct": {
+    "attack": 2
+  },
+  "graveler": {
+    "defense": 2
+  },
+  "greedent": {
+    "hp": 2
+  },
+  "greninja": {
+    "speed": 3
+  },
+  "grimer": {
+    "hp": 1
+  },
+  "grimmsnarl": {
+    "attack": 3
+  },
+  "grookey": {
+    "attack": 1
+  },
+  "grotle": {
+    "attack": 1,
+    "defense": 1
+  },
+  "groudon": {
+    "attack": 3
+  },
+  "grovyle": {
+    "speed": 2
+  },
+  "growlithe": {
+    "attack": 1
+  },
+  "grubbin": {
+    "attack": 1
+  },
+  "grumpig": {
+    "spDefense": 2
+  },
+  "gulpin": {
+    "hp": 1
+  },
+  "gumshoos": {
+    "attack": 2
+  },
+  "gurdurr": {
+    "attack": 2
+  },
+  "guzzlord": {
+    "hp": 3
+  },
+  "gyarados": {
+    "attack": 2
+  },
+  "hakamo-o": {
+    "defense": 2
+  },
+  "happiny": {
+    "hp": 1
+  },
+  "hariyama": {
+    "hp": 2
+  },
+  "hatenna": {
+    "spAttack": 1
+  },
+  "hatterene": {
+    "spAttack": 3
+  },
+  "hattrem": {
+    "spAttack": 2
+  },
+  "haunter": {
+    "spAttack": 2
+  },
+  "hawlucha": {
+    "attack": 2
+  },
+  "haxorus": {
+    "attack": 3
+  },
+  "heatmor": {
+    "spAttack": 2
+  },
+  "heatran": {
+    "spAttack": 3
+  },
+  "heliolisk": {
+    "spAttack": 1,
+    "speed": 1
+  },
+  "helioptile": {
+    "speed": 1
+  },
+  "heracross": {
+    "attack": 2
+  },
+  "herdier": {
+    "attack": 2
+  },
+  "hippopotas": {
+    "defense": 1
+  },
+  "hippowdon": {
+    "defense": 2
+  },
+  "hitmonchan": {
+    "spDefense": 2
+  },
+  "hitmonlee": {
+    "attack": 2
+  },
+  "hitmontop": {
+    "spDefense": 2
+  },
+  "ho-oh": {
+    "spDefense": 3
+  },
+  "honchkrow": {
+    "attack": 2
+  },
+  "honedge": {
+    "defense": 1
+  },
+  "hoopa": {
+    "spAttack": 3
+  },
+  "hoothoot": {
+    "hp": 1
+  },
+  "hoppip": {
+    "spDefense": 1
+  },
+  "horsea": {
+    "spAttack": 1
+  },
+  "houndoom": {
+    "spAttack": 2
+  },
+  "houndour": {
+    "spAttack": 1
+  },
+  "huntail": {
+    "attack": 1,
+    "defense": 1
+  },
+  "hydreigon": {
+    "spAttack": 3
+  },
+  "hypno": {
+    "spDefense": 2
+  },
+  "igglybuff": {
+    "hp": 1
+  },
+  "illumise": {
+    "speed": 1
+  },
+  "impidimp": {
+    "spAttack": 1
+  },
+  "incineroar": {
+    "attack": 3
+  },
+  "indeedee-male": {
+    "spAttack": 2
+  },
+  "infernape": {
+    "attack": 1,
+    "spAttack": 1,
+    "speed": 1
+  },
+  "inkay": {
+    "attack": 1
+  },
+  "inteleon": {
+    "speed": 3
+  },
+  "ivysaur": {
+    "spAttack": 1,
+    "spDefense": 1
+  },
+  "jangmo-o": {
+    "defense": 1
+  },
+  "jellicent-male": {
+    "spDefense": 2
+  },
+  "jigglypuff": {
+    "hp": 2
+  },
+  "jirachi": {
+    "hp": 3
+  },
+  "jolteon": {
+    "speed": 2
+  },
+  "joltik": {
+    "speed": 1
+  },
+  "jumpluff": {
+    "speed": 3
+  },
+  "jynx": {
+    "spAttack": 2
+  },
+  "kabuto": {
+    "defense": 1
+  },
+  "kabutops": {
+    "attack": 2
+  },
+  "kadabra": {
+    "spAttack": 2
+  },
+  "kakuna": {
+    "defense": 2
+  },
+  "kangaskhan": {
+    "hp": 2
+  },
+  "karrablast": {
+    "attack": 1
+  },
+  "kartana": {
+    "attack": 3
+  },
+  "kecleon": {
+    "spDefense": 1
+  },
+  "keldeo-ordinary": {
+    "spAttack": 3
+  },
+  "kingdra": {
+    "attack": 1,
+    "spAttack": 1,
+    "spDefense": 1
+  },
+  "kingler": {
+    "attack": 2
+  },
+  "kirlia": {
+    "spAttack": 2
+  },
+  "klang": {
+    "defense": 2
+  },
+  "kleavor": {
+    "attack": 3
+  },
+  "klefki": {
+    "defense": 1
+  },
+  "klink": {
+    "defense": 1
+  },
+  "klinklang": {
+    "defense": 3
+  },
+  "koffing": {
+    "defense": 1
+  },
+  "komala": {
+    "attack": 2
+  },
+  "kommo-o": {
+    "defense": 3
+  },
+  "krabby": {
+    "attack": 1
+  },
+  "kricketot": {
+    "defense": 1
+  },
+  "kricketune": {
+    "attack": 2
+  },
+  "krokorok": {
+    "attack": 2
+  },
+  "krookodile": {
+    "attack": 3
+  },
+  "kubfu": {
+    "attack": 1
+  },
+  "kyogre": {
+    "spAttack": 3
+  },
+  "kyurem": {
+    "hp": 1,
+    "attack": 1,
+    "spAttack": 1
+  },
+  "lairon": {
+    "defense": 2
+  },
+  "lampent": {
+    "spAttack": 2
+  },
+  "landorus-incarnate": {
+    "spAttack": 3
+  },
+  "lanturn": {
+    "hp": 2
+  },
+  "lapras": {
+    "hp": 2
+  },
+  "larvesta": {
+    "attack": 1
+  },
+  "larvitar": {
+    "attack": 1
+  },
+  "latias": {
+    "spDefense": 3
+  },
+  "latios": {
+    "spAttack": 3
+  },
+  "leafeon": {
+    "defense": 2
+  },
+  "leavanny": {
+    "attack": 3
+  },
+  "ledian": {
+    "spDefense": 2
+  },
+  "ledyba": {
+    "spDefense": 1
+  },
+  "lickilicky": {
+    "hp": 3
+  },
+  "lickitung": {
+    "hp": 2
+  },
+  "liepard": {
+    "speed": 2
+  },
+  "lileep": {
+    "spDefense": 1
+  },
+  "lilligant": {
+    "spAttack": 2
+  },
+  "lillipup": {
+    "attack": 1
+  },
+  "linoone": {
+    "speed": 2
+  },
+  "litleo": {
+    "spAttack": 1
+  },
+  "litten": {
+    "speed": 1
+  },
+  "litwick": {
+    "spAttack": 1
+  },
+  "lombre": {
+    "spDefense": 2
+  },
+  "lopunny": {
+    "speed": 2
+  },
+  "lotad": {
+    "spDefense": 1
+  },
+  "loudred": {
+    "hp": 2
+  },
+  "lucario": {
+    "attack": 1,
+    "spAttack": 1
+  },
+  "ludicolo": {
+    "spDefense": 3
+  },
+  "lugia": {
+    "spDefense": 3
+  },
+  "lumineon": {
+    "speed": 2
+  },
+  "lunala": {
+    "spAttack": 3
+  },
+  "lunatone": {
+    "spAttack": 2
+  },
+  "lurantis": {
+    "attack": 2
+  },
+  "luvdisc": {
+    "speed": 1
+  },
+  "luxio": {
+    "attack": 2
+  },
+  "luxray": {
+    "attack": 3
+  },
+  "lycanroc-midday": {
+    "attack": 2
+  },
+  "machamp": {
+    "attack": 3
+  },
+  "machoke": {
+    "attack": 2
+  },
+  "machop": {
+    "attack": 1
+  },
+  "magby": {
+    "speed": 1
+  },
+  "magcargo": {
+    "defense": 2
+  },
+  "magearna": {
+    "spAttack": 3
+  },
+  "magikarp": {
+    "speed": 1
+  },
+  "magmar": {
+    "spAttack": 2
+  },
+  "magmortar": {
+    "spAttack": 3
+  },
+  "magnemite": {
+    "spAttack": 1
+  },
+  "magneton": {
+    "spAttack": 2
+  },
+  "magnezone": {
+    "spAttack": 3
+  },
+  "makuhita": {
+    "hp": 1
+  },
+  "malamar": {
+    "attack": 2
+  },
+  "mamoswine": {
+    "attack": 3
+  },
+  "manaphy": {
+    "hp": 3
+  },
+  "mandibuzz": {
+    "spAttack": 2
+  },
+  "manectric": {
+    "speed": 2
+  },
+  "mankey": {
+    "attack": 1
+  },
+  "mantine": {
+    "spDefense": 2
+  },
+  "mantyke": {
+    "spDefense": 1
+  },
+  "maractus": {
+    "spAttack": 2
+  },
+  "mareanie": {
+    "defense": 1
+  },
+  "mareep": {
+    "spAttack": 1
+  },
+  "marill": {
+    "hp": 2
+  },
+  "marowak": {
+    "defense": 2
+  },
+  "marshadow": {
+    "attack": 2,
+    "speed": 1
+  },
+  "marshtomp": {
+    "attack": 2
+  },
+  "masquerain": {
+    "spAttack": 1,
+    "spDefense": 1
+  },
+  "mawile": {
+    "attack": 1,
+    "defense": 1
+  },
+  "medicham": {
+    "speed": 2
+  },
+  "meditite": {
+    "speed": 1
+  },
+  "meganium": {
+    "defense": 1,
+    "spDefense": 2
+  },
+  "melmetal": {
+    "attack": 3
+  },
+  "meloetta-aria": {
+    "spAttack": 1,
+    "spDefense": 1,
+    "speed": 1
+  },
+  "meltan": {
+    "attack": 1
+  },
+  "meowstic-male": {
+    "speed": 2
+  },
+  "meowth": {
+    "speed": 1
+  },
+  "mesprit": {
+    "attack": 1,
+    "spAttack": 1,
+    "spDefense": 1
+  },
+  "metagross": {
+    "defense": 3
+  },
+  "metang": {
+    "defense": 2
+  },
+  "metapod": {
+    "defense": 2
+  },
+  "mew": {
+    "hp": 3
+  },
+  "mewtwo": {
+    "spAttack": 3
+  },
+  "mienfoo": {
+    "attack": 1
+  },
+  "mienshao": {
+    "attack": 2
+  },
+  "mightyena": {
+    "attack": 2
+  },
+  "milcery": {
+    "spDefense": 1
+  },
+  "milotic": {
+    "spDefense": 2
+  },
+  "miltank": {
+    "defense": 2
+  },
+  "mime-jr": {
+    "spDefense": 1
+  },
+  "mimikyu-disguised": {
+    "spDefense": 2
+  },
+  "minccino": {
+    "speed": 1
+  },
+  "minior-red-meteor": {
+    "defense": 1,
+    "spDefense": 1
+  },
+  "minun": {
+    "speed": 1
+  },
+  "misdreavus": {
+    "spDefense": 1
+  },
+  "mismagius": {
+    "spAttack": 1,
+    "spDefense": 1
+  },
+  "moltres": {
+    "spAttack": 3
+  },
+  "monferno": {
+    "spAttack": 1,
+    "speed": 1
+  },
+  "morelull": {
+    "spDefense": 1
+  },
+  "morgrem": {
+    "spAttack": 2
+  },
+  "morpeko-full-belly": {
+    "speed": 2
+  },
+  "mothim": {
+    "attack": 1,
+    "spAttack": 1
+  },
+  "mr-mime": {
+    "spDefense": 2
+  },
+  "mr-rime": {
+    "spAttack": 3
+  },
+  "mudbray": {
+    "attack": 1
+  },
+  "mudkip": {
+    "attack": 1
+  },
+  "mudsdale": {
+    "attack": 2
+  },
+  "muk": {
+    "hp": 1,
+    "attack": 1
+  },
+  "munchlax": {
+    "hp": 1
+  },
+  "munna": {
+    "hp": 1
+  },
+  "murkrow": {
+    "speed": 1
+  },
+  "musharna": {
+    "hp": 2
+  },
+  "naganadel": {
+    "spAttack": 3
+  },
+  "natu": {
+    "spAttack": 1
+  },
+  "necrozma": {
+    "attack": 1,
+    "spAttack": 2
+  },
+  "nickit": {
+    "spDefense": 1
+  },
+  "nidoking": {
+    "attack": 3
+  },
+  "nidoqueen": {
+    "hp": 3
+  },
+  "nidoran-f": {
+    "hp": 1
+  },
+  "nidoran-m": {
+    "attack": 1
+  },
+  "nidorina": {
+    "hp": 2
+  },
+  "nidorino": {
+    "attack": 2
+  },
+  "nihilego": {
+    "spDefense": 3
+  },
+  "nincada": {
+    "defense": 1
+  },
+  "ninetales": {
+    "spDefense": 1,
+    "speed": 1
+  },
+  "ninjask": {
+    "speed": 2
+  },
+  "noctowl": {
+    "hp": 2
+  },
+  "noibat": {
+    "speed": 1
+  },
+  "noivern": {
+    "speed": 2
+  },
+  "nosepass": {
+    "defense": 1
+  },
+  "numel": {
+    "spAttack": 1
+  },
+  "nuzleaf": {
+    "attack": 2
+  },
+  "obstagoon": {
+    "defense": 3
+  },
+  "octillery": {
+    "attack": 1,
+    "spAttack": 1
+  },
+  "oddish": {
+    "spAttack": 1
+  },
+  "omanyte": {
+    "defense": 1
+  },
+  "omastar": {
+    "defense": 2
+  },
+  "onix": {
+    "defense": 1
+  },
+  "oranguru": {
+    "spDefense": 2
+  },
+  "orbeetle": {
+    "spDefense": 3
+  },
+  "oricorio-baile": {
+    "spAttack": 2
+  },
+  "oshawott": {
+    "spAttack": 1
+  },
+  "overqwil": {
+    "attack": 2
+  },
+  "pachirisu": {
+    "speed": 1
+  },
+  "palkia": {
+    "spAttack": 3
+  },
+  "palossand": {
+    "defense": 2
+  },
+  "palpitoad": {
+    "hp": 2
+  },
+  "pancham": {
+    "attack": 1
+  },
+  "pangoro": {
+    "attack": 2
+  },
+  "panpour": {
+    "speed": 1
+  },
+  "pansage": {
+    "speed": 1
+  },
+  "pansear": {
+    "speed": 1
+  },
+  "paras": {
+    "attack": 1
+  },
+  "parasect": {
+    "attack": 2,
+    "defense": 1
+  },
+  "passimian": {
+    "attack": 2
+  },
+  "patrat": {
+    "attack": 1
+  },
+  "pawniard": {
+    "attack": 1
+  },
+  "pelipper": {
+    "defense": 2
+  },
+  "perrserker": {
+    "attack": 2
+  },
+  "persian": {
+    "speed": 2
+  },
+  "petilil": {
+    "spAttack": 1
+  },
+  "phanpy": {
+    "hp": 1
+  },
+  "phantump": {
+    "attack": 1
+  },
+  "pheromosa": {
+    "speed": 3
+  },
+  "phione": {
+    "hp": 1
+  },
+  "pichu": {
+    "speed": 1
+  },
+  "pidgeot": {
+    "speed": 3
+  },
+  "pidgeotto": {
+    "speed": 2
+  },
+  "pidgey": {
+    "speed": 1
+  },
+  "pidove": {
+    "attack": 1
+  },
+  "pignite": {
+    "attack": 2
+  },
+  "pikachu": {
+    "speed": 2
+  },
+  "pikipek": {
+    "attack": 1
+  },
+  "piloswine": {
+    "hp": 1,
+    "attack": 1
+  },
+  "pincurchin": {
+    "attack": 2
+  },
+  "pineco": {
+    "defense": 1
+  },
+  "pinsir": {
+    "attack": 2
+  },
+  "piplup": {
+    "spAttack": 1
+  },
+  "plusle": {
+    "speed": 1
+  },
+  "poipole": {
+    "speed": 1
+  },
+  "politoed": {
+    "spDefense": 3
+  },
+  "poliwag": {
+    "speed": 1
+  },
+  "poliwhirl": {
+    "speed": 2
+  },
+  "poliwrath": {
+    "defense": 3
+  },
+  "polteageist": {
+    "spAttack": 2
+  },
+  "ponyta": {
+    "speed": 1
+  },
+  "poochyena": {
+    "attack": 1
+  },
+  "popplio": {
+    "spAttack": 1
+  },
+  "porygon": {
+    "spAttack": 1
+  },
+  "porygon-z": {
+    "spAttack": 3
+  },
+  "porygon2": {
+    "spAttack": 2
+  },
+  "primarina": {
+    "spAttack": 3
+  },
+  "primeape": {
+    "attack": 2
+  },
+  "prinplup": {
+    "spAttack": 2
+  },
+  "probopass": {
+    "defense": 1,
+    "spDefense": 2
+  },
+  "psyduck": {
+    "spAttack": 1
+  },
+  "pumpkaboo-average": {
+    "defense": 1
+  },
+  "pupitar": {
+    "attack": 2
+  },
+  "purrloin": {
+    "speed": 1
+  },
+  "purugly": {
+    "speed": 2
+  },
+  "pyroar-male": {
+    "spAttack": 2
+  },
+  "pyukumuku": {
+    "spDefense": 2
+  },
+  "quagsire": {
+    "hp": 2
+  },
+  "quilava": {
+    "spAttack": 1,
+    "speed": 1
+  },
+  "quilladin": {
+    "defense": 2
+  },
+  "qwilfish": {
+    "attack": 1
+  },
+  "raboot": {
+    "speed": 2
+  },
+  "raichu": {
+    "speed": 3
+  },
+  "raikou": {
+    "spAttack": 1,
+    "speed": 2
+  },
+  "ralts": {
+    "spAttack": 1
+  },
+  "rampardos": {
+    "attack": 2
+  },
+  "rapidash": {
+    "speed": 2
+  },
+  "raticate": {
+    "speed": 2
+  },
+  "rattata": {
+    "speed": 1
+  },
+  "rayquaza": {
+    "attack": 2,
+    "spAttack": 1
+  },
+  "regice": {
+    "spDefense": 3
+  },
+  "regidrago": {
+    "hp": 3
+  },
+  "regieleki": {
+    "speed": 3
+  },
+  "regigigas": {
+    "attack": 3
+  },
+  "regirock": {
+    "defense": 3
+  },
+  "registeel": {
+    "defense": 2,
+    "spDefense": 1
+  },
+  "relicanth": {
+    "hp": 1,
+    "defense": 1
+  },
+  "remoraid": {
+    "spAttack": 1
+  },
+  "reshiram": {
+    "spAttack": 3
+  },
+  "reuniclus": {
+    "spAttack": 3
+  },
+  "rhydon": {
+    "attack": 2
+  },
+  "rhyhorn": {
+    "defense": 1
+  },
+  "rhyperior": {
+    "attack": 3
+  },
+  "ribombee": {
+    "speed": 2
+  },
+  "rillaboom": {
+    "attack": 3
+  },
+  "riolu": {
+    "attack": 1
+  },
+  "rockruff": {
+    "attack": 1
+  },
+  "roggenrola": {
+    "defense": 1
+  },
+  "rolycoly": {
+    "defense": 1
+  },
+  "rookidee": {
+    "speed": 1
+  },
+  "roselia": {
+    "spAttack": 2
+  },
+  "roserade": {
+    "spAttack": 3
+  },
+  "rotom": {
+    "spAttack": 1,
+    "speed": 1
+  },
+  "rowlet": {
+    "hp": 1
+  },
+  "rufflet": {
+    "attack": 1
+  },
+  "runerigus": {
+    "defense": 2
+  },
+  "sableye": {
+    "attack": 1,
+    "defense": 1
+  },
+  "salamence": {
+    "attack": 3
+  },
+  "salandit": {
+    "speed": 1
+  },
+  "salazzle": {
+    "speed": 2
+  },
+  "samurott": {
+    "spAttack": 3
+  },
+  "sandaconda": {
+    "defense": 2
+  },
+  "sandile": {
+    "attack": 1
+  },
+  "sandshrew": {
+    "defense": 1
+  },
+  "sandslash": {
+    "defense": 2
+  },
+  "sandygast": {
+    "defense": 1
+  },
+  "sawk": {
+    "attack": 2
+  },
+  "sawsbuck": {
+    "attack": 2
+  },
+  "scatterbug": {
+    "defense": 1
+  },
+  "sceptile": {
+    "speed": 3
+  },
+  "scizor": {
+    "attack": 2
+  },
+  "scolipede": {
+    "speed": 3
+  },
+  "scorbunny": {
+    "speed": 1
+  },
+  "scrafty": {
+    "defense": 1,
+    "spDefense": 1
+  },
+  "scraggy": {
+    "attack": 1
+  },
+  "scyther": {
+    "attack": 1
+  },
+  "seadra": {
+    "defense": 1,
+    "spAttack": 1
+  },
+  "seaking": {
+    "attack": 2
+  },
+  "sealeo": {
+    "hp": 2
+  },
+  "seedot": {
+    "defense": 1
+  },
+  "seel": {
+    "spDefense": 1
+  },
+  "seismitoad": {
+    "hp": 3
+  },
+  "sentret": {
+    "attack": 1
+  },
+  "serperior": {
+    "speed": 3
+  },
+  "servine": {
+    "speed": 2
+  },
+  "seviper": {
+    "attack": 1,
+    "spAttack": 1
+  },
+  "sewaddle": {
+    "defense": 1
+  },
+  "sharpedo": {
+    "attack": 2
+  },
+  "shaymin-land": {
+    "hp": 3
+  },
+  "shedinja": {
+    "hp": 2
+  },
+  "shelgon": {
+    "defense": 2
+  },
+  "shellder": {
+    "defense": 1
+  },
+  "shellos": {
+    "hp": 1
+  },
+  "shelmet": {
+    "defense": 1
+  },
+  "shieldon": {
+    "defense": 1
+  },
+  "shiftry": {
+    "attack": 3
+  },
+  "shiinotic": {
+    "spDefense": 2
+  },
+  "shinx": {
+    "attack": 1
+  },
+  "shroomish": {
+    "hp": 1
+  },
+  "shuckle": {
+    "defense": 1,
+    "spDefense": 1
+  },
+  "shuppet": {
+    "attack": 1
+  },
+  "sigilyph": {
+    "spAttack": 2
+  },
+  "silcoon": {
+    "defense": 2
+  },
+  "silicobra": {
+    "defense": 1
+  },
+  "silvally": {
+    "hp": 3
+  },
+  "simipour": {
+    "speed": 2
+  },
+  "simisage": {
+    "speed": 2
+  },
+  "simisear": {
+    "speed": 2
+  },
+  "sinistea": {
+    "spAttack": 1
+  },
+  "sirfetchd": {
+    "attack": 2
+  },
+  "sizzlipede": {
+    "attack": 1
+  },
+  "skarmory": {
+    "defense": 2
+  },
+  "skiddo": {
+    "hp": 1
+  },
+  "skiploom": {
+    "speed": 2
+  },
+  "skitty": {
+    "speed": 1
+  },
+  "skorupi": {
+    "defense": 1
+  },
+  "skrelp": {
+    "spDefense": 1
+  },
+  "skuntank": {
+    "hp": 2
+  },
+  "skwovet": {
+    "hp": 1
+  },
+  "slaking": {
+    "hp": 3
+  },
+  "slakoth": {
+    "hp": 1
+  },
+  "sliggoo": {
+    "spDefense": 2
+  },
+  "slowbro": {
+    "defense": 2
+  },
+  "slowking": {
+    "spDefense": 2
+  },
+  "slowpoke": {
+    "hp": 1
+  },
+  "slugma": {
+    "spAttack": 1
+  },
+  "slurpuff": {
+    "defense": 2
+  },
+  "smeargle": {
+    "speed": 1
+  },
+  "smoochum": {
+    "spAttack": 1
+  },
+  "sneasel": {
+    "speed": 1
+  },
+  "sneasler": {
+    "attack": 2
+  },
+  "snivy": {
+    "speed": 1
+  },
+  "snom": {
+    "spAttack": 1
+  },
+  "snorlax": {
+    "hp": 2
+  },
+  "snorunt": {
+    "hp": 1
+  },
+  "snover": {
+    "attack": 1
+  },
+  "snubbull": {
+    "attack": 1
+  },
+  "sobble": {
+    "spDefense": 1,
+    "speed": 1
+  },
+  "solgaleo": {
+    "attack": 3
+  },
+  "solosis": {
+    "spAttack": 1
+  },
+  "solrock": {
+    "attack": 2
+  },
+  "spearow": {
+    "speed": 1
+  },
+  "spectrier": {
+    "spAttack": 3
+  },
+  "spewpa": {
+    "defense": 2
+  },
+  "spheal": {
+    "hp": 1
+  },
+  "spinarak": {
+    "attack": 1
+  },
+  "spinda": {
+    "spAttack": 1
+  },
+  "spiritomb": {
+    "defense": 1,
+    "spDefense": 1
+  },
+  "spoink": {
+    "spDefense": 1
+  },
+  "spritzee": {
+    "hp": 1
+  },
+  "squirtle": {
+    "defense": 1
+  },
+  "stakataka": {
+    "defense": 3
+  },
+  "stantler": {
+    "attack": 1
+  },
+  "staraptor": {
+    "attack": 3
+  },
+  "staravia": {
+    "speed": 2
+  },
+  "starly": {
+    "speed": 1
+  },
+  "starmie": {
+    "speed": 2
+  },
+  "staryu": {
+    "speed": 1
+  },
+  "steelix": {
+    "defense": 2
+  },
+  "steenee": {
+    "speed": 2
+  },
+  "stonjourner": {
+    "defense": 2
+  },
+  "stoutland": {
+    "attack": 3
+  },
+  "stufful": {
+    "attack": 1
+  },
+  "stunfisk": {
+    "hp": 2
+  },
+  "stunky": {
+    "speed": 1
+  },
+  "sudowoodo": {
+    "defense": 2
+  },
+  "suicune": {
+    "defense": 1,
+    "spDefense": 2
+  },
+  "sunflora": {
+    "spAttack": 2
+  },
+  "sunkern": {
+    "spAttack": 1
+  },
+  "surskit": {
+    "speed": 1
+  },
+  "swablu": {
+    "spDefense": 1
+  },
+  "swadloon": {
+    "defense": 2
+  },
+  "swalot": {
+    "hp": 2
+  },
+  "swampert": {
+    "attack": 3
+  },
+  "swanna": {
+    "speed": 2
+  },
+  "swellow": {
+    "speed": 2
+  },
+  "swinub": {
+    "attack": 1
+  },
+  "swirlix": {
+    "defense": 1
+  },
+  "swoobat": {
+    "speed": 2
+  },
+  "sylveon": {
+    "spDefense": 2
+  },
+  "taillow": {
+    "speed": 1
+  },
+  "talonflame": {
+    "speed": 3
+  },
+  "tangela": {
+    "defense": 1
+  },
+  "tangrowth": {
+    "defense": 2
+  },
+  "tapu-bulu": {
+    "attack": 3
+  },
+  "tapu-fini": {
+    "spDefense": 3
+  },
+  "tapu-koko": {
+    "speed": 3
+  },
+  "tapu-lele": {
+    "spAttack": 3
+  },
+  "tauros": {
+    "attack": 1,
+    "speed": 1
+  },
+  "teddiursa": {
+    "attack": 1
+  },
+  "tentacool": {
+    "spDefense": 1
+  },
+  "tentacruel": {
+    "spDefense": 2
+  },
+  "tepig": {
+    "hp": 1
+  },
+  "terrakion": {
+    "attack": 3
+  },
+  "thievul": {
+    "spDefense": 2
+  },
+  "throh": {
+    "hp": 2
+  },
+  "thundurus-incarnate": {
+    "attack": 3
+  },
+  "thwackey": {
+    "attack": 2
+  },
+  "timburr": {
+    "attack": 1
+  },
+  "tirtouga": {
+    "defense": 1
+  },
+  "togedemaru": {
+    "attack": 2
+  },
+  "togekiss": {
+    "spAttack": 2,
+    "spDefense": 1
+  },
+  "togepi": {
+    "spDefense": 1
+  },
+  "togetic": {
+    "spDefense": 2
+  },
+  "torchic": {
+    "spAttack": 1
+  },
+  "torkoal": {
+    "defense": 2
+  },
+  "tornadus-incarnate": {
+    "attack": 3
+  },
+  "torracat": {
+    "speed": 2
+  },
+  "torterra": {
+    "attack": 2,
+    "defense": 1
+  },
+  "totodile": {
+    "attack": 1
+  },
+  "toucannon": {
+    "attack": 3
+  },
+  "toxapex": {
+    "defense": 2
+  },
+  "toxel": {
+    "spAttack": 1
+  },
+  "toxicroak": {
+    "attack": 2
+  },
+  "toxtricity-amped": {
+    "spAttack": 2
+  },
+  "tranquill": {
+    "attack": 2
+  },
+  "trapinch": {
+    "attack": 1
+  },
+  "treecko": {
+    "speed": 1
+  },
+  "trevenant": {
+    "attack": 2
+  },
+  "tropius": {
+    "hp": 2
+  },
+  "trubbish": {
+    "speed": 1
+  },
+  "trumbeak": {
+    "attack": 2
+  },
+  "tsareena": {
+    "attack": 3
+  },
+  "turtonator": {
+    "defense": 2
+  },
+  "turtwig": {
+    "attack": 1
+  },
+  "tympole": {
+    "speed": 1
+  },
+  "tynamo": {
+    "speed": 1
+  },
+  "type-null": {
+    "hp": 2
+  },
+  "typhlosion": {
+    "spAttack": 3
+  },
+  "tyranitar": {
+    "attack": 3
+  },
+  "tyrantrum": {
+    "attack": 2
+  },
+  "tyrogue": {
+    "attack": 1
+  },
+  "tyrunt": {
+    "attack": 1
+  },
+  "umbreon": {
+    "spDefense": 2
+  },
+  "unfezant": {
+    "attack": 3
+  },
+  "unown": {
+    "attack": 1,
+    "spAttack": 1
+  },
+  "ursaluna": {
+    "attack": 3
+  },
+  "ursaring": {
+    "attack": 2
+  },
+  "urshifu-single-strike": {
+    "attack": 3
+  },
+  "uxie": {
+    "defense": 2,
+    "spDefense": 1
+  },
+  "vanillish": {
+    "spAttack": 2
+  },
+  "vanillite": {
+    "spAttack": 1
+  },
+  "vanilluxe": {
+    "spAttack": 3
+  },
+  "vaporeon": {
+    "hp": 2
+  },
+  "venipede": {
+    "defense": 1
+  },
+  "venomoth": {
+    "spAttack": 1,
+    "speed": 1
+  },
+  "venonat": {
+    "spDefense": 1
+  },
+  "venusaur": {
+    "spAttack": 2,
+    "spDefense": 1
+  },
+  "vespiquen": {
+    "defense": 1,
+    "spDefense": 1
+  },
+  "vibrava": {
+    "attack": 1,
+    "speed": 1
+  },
+  "victini": {
+    "hp": 3
+  },
+  "victreebel": {
+    "attack": 3
+  },
+  "vigoroth": {
+    "speed": 2
+  },
+  "vikavolt": {
+    "spAttack": 3
+  },
+  "vileplume": {
+    "spAttack": 3
+  },
+  "virizion": {
+    "spDefense": 3
+  },
+  "vivillon": {
+    "hp": 1,
+    "spAttack": 1,
+    "speed": 1
+  },
+  "volbeat": {
+    "speed": 1
+  },
+  "volcanion": {
+    "spAttack": 3
+  },
+  "volcarona": {
+    "spAttack": 3
+  },
+  "voltorb": {
+    "speed": 1
+  },
+  "vullaby": {
+    "defense": 1
+  },
+  "vulpix": {
+    "speed": 1
+  },
+  "wailmer": {
+    "hp": 1
+  },
+  "wailord": {
+    "hp": 2
+  },
+  "walrein": {
+    "hp": 3
+  },
+  "wartortle": {
+    "defense": 1,
+    "spDefense": 1
+  },
+  "watchog": {
+    "attack": 2
+  },
+  "weavile": {
+    "attack": 1,
+    "speed": 1
+  },
+  "weedle": {
+    "speed": 1
+  },
+  "weepinbell": {
+    "attack": 2
+  },
+  "weezing": {
+    "defense": 2
+  },
+  "whimsicott": {
+    "speed": 2
+  },
+  "whirlipede": {
+    "defense": 2
+  },
+  "whiscash": {
+    "hp": 2
+  },
+  "whismur": {
+    "hp": 1
+  },
+  "wigglytuff": {
+    "hp": 3
+  },
+  "wimpod": {
+    "speed": 1
+  },
+  "wingull": {
+    "speed": 1
+  },
+  "wishiwashi-solo": {
+    "hp": 1
+  },
+  "wobbuffet": {
+    "hp": 2
+  },
+  "woobat": {
+    "speed": 1
+  },
+  "wooloo": {
+    "defense": 1
+  },
+  "wooper": {
+    "hp": 1
+  },
+  "wormadam-plant": {
+    "spDefense": 2
+  },
+  "wurmple": {
+    "hp": 1
+  },
+  "wynaut": {
+    "hp": 1
+  },
+  "wyrdeer": {
+    "attack": 1,
+    "spAttack": 1
+  },
+  "xatu": {
+    "spAttack": 1,
+    "speed": 1
+  },
+  "xerneas": {
+    "hp": 3
+  },
+  "xurkitree": {
+    "spAttack": 3
+  },
+  "yamask": {
+    "defense": 1
+  },
+  "yamper": {
+    "hp": 1
+  },
+  "yanma": {
+    "speed": 1
+  },
+  "yanmega": {
+    "attack": 2
+  },
+  "yungoos": {
+    "attack": 1
+  },
+  "yveltal": {
+    "hp": 3
+  },
+  "zacian": {
+    "speed": 3
+  },
+  "zamazenta": {
+    "speed": 3
+  },
+  "zangoose": {
+    "attack": 2
+  },
+  "zapdos": {
+    "spAttack": 3
+  },
+  "zarude": {
+    "attack": 3
+  },
+  "zebstrika": {
+    "speed": 2
+  },
+  "zekrom": {
+    "attack": 3
+  },
+  "zeraora": {
+    "speed": 3
+  },
+  "zigzagoon": {
+    "speed": 1
+  },
+  "zoroark": {
+    "spAttack": 2
+  },
+  "zorua": {
+    "spAttack": 1
+  },
+  "zubat": {
+    "speed": 1
+  },
+  "zweilous": {
+    "attack": 2
+  },
+  "zygarde-50": {
+    "hp": 3
+  }
+}

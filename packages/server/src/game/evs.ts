@@ -1,5 +1,5 @@
 import type { PokemonEVs } from "../../../../shared/types.js";
-import { getSpeciesByName } from "./data-loader.js";
+import { getSpeciesByName, getEvYields } from "./data-loader.js";
 
 // 노력치(EV) — 6스탯 각 0~252, 합 ≤510. 본가식 스탯 계산에 floor(EV/4)로 기여한다.
 export const EV_STAT_MAX = 252;
@@ -26,12 +26,18 @@ export function evContribution(ev: number): number {
 /**
  * 격파한 야생 개체가 주는 EV 수확량.
  *
- * 실제 PokéAPI effort(노력치 수확) 데이터가 로컬에 없으므로, MVP로 **종족값에서
- * 도출**한다: 종의 가장 높은 baseStat 한 칸에 EV 1을 준다(동률은 hp→attack→
- * defense→spAttack→spDefense→speed 정규 순서로 앞선 키 채택). 추후 실제 effort
- * 데이터로 교체하기 쉽도록 이 함수 하나에 도출 로직을 가둔다.
+ * 우선 **본가 실측 수율**(data/pokemon/ev-yields.json, PokéAPI effort 유래)을 쓴다.
+ * 해당 종이 표에 없으면(누락/폼) **종족값 파생 폴백**: 가장 높은 baseStat 한 칸에
+ * EV 1(동률은 hp→attack→defense→spAttack→spDefense→speed 정규 순서로 앞선 키).
+ * 도출/조회 로직을 이 함수 하나에 가둬 표 교체·확장이 쉽게.
  */
 export function getEvYield(species: string): Partial<PokemonEVs> {
+  const real = getEvYields()[species];
+  if (real && Object.keys(real).length > 0) {
+    return real as Partial<PokemonEVs>;
+  }
+
+  // 폴백 — 표에 없는 종.
   const speciesData = getSpeciesByName(species);
   if (!speciesData) return {};
 

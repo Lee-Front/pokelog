@@ -41,6 +41,7 @@ let naturesCache: NatureData[] | null = null;
 let itemsCache: ItemData[] | null = null;
 let variantsCache: VariantData[] | null = null;
 let catchRateOverrideCache: CatchRateOverrides | null = null;
+let evYieldsCache: Record<string, Record<string, number>> | null = null;
 const regionCache = new Map<string, RegionData>();
 
 function readJsonFile<T>(relativePath: string, fallback: T): T {
@@ -328,6 +329,18 @@ export function getNatures(): NatureData[] {
   return naturesCache!;
 }
 
+// 종족별 본가 실측 EV 수율 — { [species]: { attack?: 1, speed?: 1, ... } }. 0 스탯은 생략.
+// 파일에 없는 종(누락/폼)은 evs.getEvYield가 종족값 파생으로 폴백.
+export function getEvYields(): Record<string, Record<string, number>> {
+  if (!evYieldsCache) {
+    evYieldsCache = readJsonFile<Record<string, Record<string, number>>>(
+      "data/pokemon/ev-yields.json",
+      {},
+    );
+  }
+  return evYieldsCache!;
+}
+
 export function getItems(): ItemData[] {
   if (!itemsCache) {
     itemsCache = readJsonFile<ItemData[]>("data/items/items.json", []);
@@ -417,6 +430,7 @@ export function clearAllCaches(): void {
   itemsCache = null;
   variantsCache = null;
   catchRateOverrideCache = null;
+  evYieldsCache = null;
   speciesAliasCache = null;
   regionCache.clear();
 }
