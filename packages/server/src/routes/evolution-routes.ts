@@ -113,7 +113,7 @@ evolutionRoutes.post("/form-change", async (req: AuthRequest, res: Response) => 
     // Recalculate stats with variant override
     const speciesData = getSpeciesByName(pokemon.species);
     if (speciesData) {
-      const { maxHp, stats } = buildStats(speciesData, pokemon.level, pokemon.nature, pokemon.variantId);
+      const { maxHp, stats } = buildStats(speciesData, pokemon.level, pokemon.nature, pokemon.variantId, pokemon.ivs);
       const hpRatio = pokemon.maxHp > 0 ? pokemon.hp / pokemon.maxHp : 1;
       pokemon.maxHp = maxHp;
       pokemon.hp = Math.max(1, Math.round(maxHp * hpRatio));

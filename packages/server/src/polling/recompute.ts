@@ -129,7 +129,7 @@ function applyCommitReward(
         if (moveResult.pending.length > 0) {
           queuePendingMoveLearns(user, pokemon.uid, moveResult.pending);
         }
-        const newStats = calculateStatsForLevel(pokemon.species, result.newLevel, pokemon.nature);
+        const newStats = calculateStatsForLevel(pokemon.species, result.newLevel, pokemon.nature, pokemon.variantId, pokemon.ivs);
         pokemon.maxHp = newStats.maxHp;
         pokemon.hp = Math.min(pokemon.hp, pokemon.maxHp);
         pokemon.stats = newStats.stats;

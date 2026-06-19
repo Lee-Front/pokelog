@@ -6,6 +6,7 @@ import { buildStats } from "./pokemon-stats.js";
 import { resolveSpeciesOrVariant } from "./pokemon-state.js";
 import { getShinyRate } from "./shiny.js";
 import { getExpForLevel } from "./growth.js";
+import { randomIvs } from "./ivs.js";
 
 function buildMoves(species: SpeciesData, level: number): PokemonMove[] {
   const allMoves = getMoves();
@@ -55,7 +56,8 @@ export function createPokemon(species: string, level: number): OwnedPokemon {
   }
 
   const nature = pickRandomNature();
-  const { maxHp, stats } = buildStats(speciesData, level, nature, variantId);
+  const ivs = randomIvs();
+  const { maxHp, stats } = buildStats(speciesData, level, nature, variantId, ivs);
   const moves = buildMoves(speciesData, level);
 
   return {
@@ -70,6 +72,7 @@ export function createPokemon(species: string, level: number): OwnedPokemon {
     hp: maxHp,
     maxHp,
     stats,
+    ivs,
     moves,
     caughtAt: new Date().toISOString(),
     gender: resolvePokemonGender(speciesData.genderRate, Math.random()),
@@ -90,7 +93,8 @@ export function createWildPokemon(species: string, level: number): WildPokemon {
   }
 
   const nature = pickRandomNature();
-  const { maxHp, stats } = buildStats(speciesData, level, nature, variantId);
+  const ivs = randomIvs();
+  const { maxHp, stats } = buildStats(speciesData, level, nature, variantId, ivs);
   const moves = buildMoves(speciesData, level);
 
   return {
@@ -100,6 +104,7 @@ export function createWildPokemon(species: string, level: number): WildPokemon {
     hp: maxHp,
     maxHp,
     stats,
+    ivs,
     moves,
     nature,
     gender: resolvePokemonGender(speciesData.genderRate, Math.random()),
@@ -120,6 +125,9 @@ export function wildPokemonToOwned(wild: WildPokemon): OwnedPokemon {
     hp: wild.hp,
     maxHp: wild.maxHp,
     stats: { ...wild.stats },
+    // 잡은 개체는 야생의 IV를 그대로 물려받는다(야생 전투 스탯과 일치). 레거시 야생(ivs 없음)은
+    // normalizeOwnedPokemon이 마이그레이션한다.
+    ivs: wild.ivs ? { ...wild.ivs } : undefined,
     moves: wild.moves.map((move) => ({ ...move })),
     caughtAt: new Date().toISOString(),
     gender: wild.gender ?? null,

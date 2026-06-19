@@ -105,6 +105,16 @@ export interface PokemonStats {
   spDefense: number;
 }
 
+/** 개체값(IV) — 6스탯 각 0~31. 본가식 스탯 계산에 종족값과 함께 더해진다(없으면 0 취급). */
+export interface PokemonIVs {
+  hp: number;
+  attack: number;
+  defense: number;
+  spAttack: number;
+  spDefense: number;
+  speed: number;
+}
+
 export type PrimaryStatus = "poison" | "burn" | "paralysis" | "sleep" | "freeze";
 
 export interface VolatileStatus {
@@ -137,6 +147,7 @@ export interface OwnedPokemon {
   statusCondition?: PrimaryStatus | null;
   sleepTurns?: number;
   hasGigantamaxFactor?: boolean;
+  ivs?: PokemonIVs;
 }
 
 export type EggTierId = "common" | "rare" | "legend";
@@ -160,6 +171,7 @@ export interface WildPokemon {
   ability?: string;
   isShiny?: boolean;
   statusCondition?: PrimaryStatus | null;
+  ivs?: PokemonIVs;
 }
 
 export interface PendingEvent {

@@ -5,6 +5,8 @@ import type { GitIntegration, Integration, OwnedPokemon, UserData } from "../../
 import { getDataDir } from "../paths.js";
 import { getSpeciesByName } from "../game/data-loader.js";
 import { getExpForLevel } from "../game/growth.js";
+import { seededIvs } from "../game/ivs.js";
+import { calculateStatsForLevel } from "../game/pokemon-stats.js";
 import { normalizeDamageTakenTotal } from "../game/battle-progress.js";
 import { resolvePokemonGender, seededGenderRoll } from "../game/pokemon-gender.js";
 import { normalizeMoveUsageCounts } from "../game/move-usage.js";
@@ -195,10 +197,36 @@ function normalizeOwnedPokemon(pokemon: OwnedPokemon): OwnedPokemon {
     seededGenderRoll(`${pokemon.uid}:${pokemon.species}`),
   );
 
+  // 개체값(IV) 마이그레이션 — 과거 개체는 IV가 없다(=0 취급). 없으면 uid 기반 결정적 IV를
+  // 부여하고 그 IV로 스탯을 재계산한다(본가식). 이미 있으면 그대로(스탯도 보존).
+  let ivs = pokemon.ivs;
+  let { maxHp, stats, hp } = pokemon;
+  if (!ivs) {
+    ivs = seededIvs(`${pokemon.uid}:${pokemon.species}`);
+    try {
+      const recalced = calculateStatsForLevel(
+        pokemon.species,
+        pokemon.level,
+        pokemon.nature ?? "hardy",
+        pokemon.variantId,
+        ivs,
+      );
+      maxHp = recalced.maxHp;
+      stats = recalced.stats;
+      hp = Math.min(pokemon.hp, maxHp);
+    } catch {
+      /* 종 데이터 없으면 기존 스탯 유지 */
+    }
+  }
+
   return {
     ...pokemon,
     variantId: pokemon.variantId ?? null,
     gender,
+    ivs,
+    maxHp,
+    stats,
+    hp,
     // 레벨에 맞는 최소 누적 경험치 보정 — 과거 createPokemon이 exp:0으로 생성한 개체는
     // 레벨>1이어도 exp가 0이라 사실상 레벨업이 막혀 있었다. 현재 레벨 임계치 미만이면 끌어올린다
     // (이미 진행 중인 exp는 max로 보존, 스푸리어스 레벨업 없음).

@@ -75,7 +75,7 @@ describe("useInventoryItem", () => {
     user.inventory = { "thunder-stone": 1 };
 
     const result = useInventoryItem(user, "thunder-stone", pokemon.uid);
-    const expectedStats = calculateStatsForLevel("raichu", 20, pokemon.nature);
+    const expectedStats = calculateStatsForLevel("raichu", 20, pokemon.nature, pokemon.variantId, pokemon.ivs);
 
     expect(result.kind).toBe("evolution");
     expect(result.previousSpecies).toBe("pikachu");
