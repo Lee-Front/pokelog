@@ -72,6 +72,11 @@ async function finishWin(
   const wild = { species: battle.wild.species, level: battle.wild.level };
 
   user.pendingEvents = user.pendingEvents.filter((e) => e.id !== battle.eventId);
+  // 변신(메가/거다이/원시)이 승리와 같은 턴에 일어나면 battleState가 null로 응답되어 변신 폼이
+  // 클라이언트에 전달되지 않아 이미지가 안 바뀐다. revertBattleForms가 폼을 지우기 전에 캡처해
+  // 응답에 함께 실어, 결과 화면에서도 변신한 모습이 보이게 한다.
+  const wonTransformationType = battle.transformationType ?? null;
+  const wonPlayerBattleForm = battle.playerBattleForm ?? null;
   revertBattleForms(battle, winner);
   user.battleState = null;
 
@@ -102,7 +107,14 @@ async function finishWin(
 
   await saveUser(user);
   logBattleEnd(user.account.id, battle, "win");
-  res.json({ log, battleState: null, result: "win", rewards });
+  res.json({
+    log,
+    battleState: null,
+    result: "win",
+    rewards,
+    transformationType: wonTransformationType,
+    playerBattleForm: wonPlayerBattleForm,
+  });
 }
 
 battleRoutes.post("/start", async (req, res) => {
