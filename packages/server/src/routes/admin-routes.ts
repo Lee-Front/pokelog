@@ -1,7 +1,7 @@
 import { Router } from "express";
 import crypto from "node:crypto";
 import { getConfig, saveConfig } from "../storage/config-store.js";
-import { getUser, saveUser, getAllUsers } from "../storage/user-store.js";
+import { getUser, saveUser, getAllUsers, deleteUser } from "../storage/user-store.js";
 import { hashPassword, issueToken } from "../auth/auth.js";
 import { withLock } from "../storage/pvp-store.js";
 import { resetGameData } from "../game/game-reset.js";
@@ -652,6 +652,21 @@ adminRoutes.delete("/users/:id/pokemon/:uid", async (req, res) => {
     res.json({ ok: true });
   } catch (err) {
     log.error({ err }, "Admin delete-pokemon error");
+    res.status(500).json({ error: "서버 오류" });
+  }
+});
+
+// 계정 영구 삭제 — 유저 파일·인덱스 제거. 되돌릴 수 없다(게임 리셋과 달리 계정 자체가 사라짐).
+// 연동/배부 매핑은 포털 측 데이터라 여기서 건드리지 않는다(필요 시 재배부).
+adminRoutes.delete("/users/:id", async (req, res) => {
+  try {
+    const user = await getUser(req.params.id);
+    if (!user) return res.status(404).json({ error: "유저 없음" });
+
+    await deleteUser(req.params.id);
+    res.json({ ok: true });
+  } catch (err) {
+    log.error({ err }, "Admin delete-user error");
     res.status(500).json({ error: "서버 오류" });
   }
 });
