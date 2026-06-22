@@ -148,6 +148,8 @@ const ALLOWED_CONFIG_PATHS = new Set([
   "rewards.encounter.ceilingBytes",
   "rewards.encounter.timeLimitHours",
   "rewards.encounter.searchCost",
+  // 무료 일괄 야생 롤이 한 번에 생성하는 조우 개수(1~50).
+  "rewards.encounter.rollCount",
   "meta.serverName",
   "meta.displayName",
   "meta.apiVersion",
@@ -232,6 +234,13 @@ adminRoutes.put("/config", async (req, res) => {
         !value.every((m) => typeof m === "number" && Number.isFinite(m) && m > 0)
       ) {
         return res.status(400).json({ error: "multipliers는 양수로 이루어진 비어있지 않은 배열이어야 합니다" });
+      }
+    }
+
+    // 일괄 야생 롤 개수 — 1~50의 정수.
+    if (key === "rewards.encounter.rollCount") {
+      if (typeof value !== "number" || !Number.isInteger(value) || value < 1 || value > 50) {
+        return res.status(400).json({ error: "rollCount는 1~50 사이의 정수여야 합니다" });
       }
     }
 

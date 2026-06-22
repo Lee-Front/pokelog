@@ -130,7 +130,9 @@ gameRoutes.delete("/events/:id", async (req: AuthRequest, res: Response) => {
   }
 });
 
-// 포인트를 소비해 현재 지역에서 야생 포켓몬을 즉시 탐색(조우 생성)한다.
+// 무료 일괄 야생 롤 — 현재 지역 풀에서 rollCount(기본 12)마리를 한 번에 생성해
+// 야생 보드를 통째로 교체한다(기존 wild_encounter 제거, 다른 pending 이벤트는 유지).
+// 포인트 차감 없음(무료). 포털은 이 응답을 받아 슬롯 롤 애니메이션 후 일괄 공개한다.
 gameRoutes.post("/wild/search", async (req: AuthRequest, res: Response) => {
   try {
     const user = await getUser(req.userId!);
@@ -140,22 +142,24 @@ gameRoutes.post("/wild/search", async (req: AuthRequest, res: Response) => {
     }
 
     const config = await getConfig();
-    const cost = config.rewards.encounter.searchCost;
-    if (user.points < cost) {
-      res.status(400).json({ error: `포인트가 부족합니다 (필요: ${cost}P)` });
-      return;
-    }
-
+    const rollCount = config.rewards.encounter.rollCount;
+    const timeLimitHours = config.rewards.encounter.timeLimitHours;
     const regionData = getRegion(user.currentRegion ?? "default");
-    const pick = selectWildPokemon(regionData);
-    const wildPokemon = createWildPokemon(pick.species, pick.level);
-    const event = createEncounterEvent(wildPokemon, config.rewards.encounter.timeLimitHours);
 
-    user.points -= cost;
-    user.pendingEvents.push(event);
+    // rollCount만큼 조우를 생성한다.
+    const newBatch = Array.from({ length: rollCount }, () => {
+      const pick = selectWildPokemon(regionData);
+      const wildPokemon = createWildPokemon(pick.species, pick.level);
+      return createEncounterEvent(wildPokemon, timeLimitHours);
+    });
+
+    // 보드 교체 — 기존 야생 조우는 제거하되 진화/기술배우기 등 다른 pending은 보존한다.
+    user.pendingEvents = user.pendingEvents
+      .filter((e) => e.type !== "wild_encounter")
+      .concat(newBatch);
     await saveUser(user);
 
-    res.status(201).json({ event, cost, remainingPoints: user.points });
+    res.status(200).json({ events: newBatch, count: newBatch.length });
   } catch (err) {
     log.error({ err }, "Wild search error");
     res.status(500).json({ error: "서버 오류가 발생했습니다" });

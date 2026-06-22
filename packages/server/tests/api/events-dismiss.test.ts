@@ -16,11 +16,12 @@ describe("야생 이벤트 삭제 + types", () => {
   });
 
   async function makeEncounter(): Promise<{ token: string; eventId: string }> {
-    const { token, userId } = await app.registerAndLogin();
-    await app.admin().post("/api/admin/test/give-points", { userId, amount: 200 });
+    const { token } = await app.registerAndLogin();
+    // 무료 일괄 야생 롤 — 첫 조우 id를 dismiss 대상으로 쓴다.
     const res = await app.authed(token).post("/api/game/wild/search");
-    expect(res.status).toBe(201);
-    return { token, eventId: (res.body as { event: { id: string } }).event.id };
+    expect(res.status).toBe(200);
+    const events = (res.body as { events: { id: string }[] }).events;
+    return { token, eventId: events[0].id };
   }
 
   it("GET /events 의 각 pokemon에 types 배열이 포함된다", async () => {

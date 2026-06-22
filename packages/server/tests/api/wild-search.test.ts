@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { setupTestApp, type TestApp } from "./test-helpers.js";
 
-// POST /game/wild/search — 포인트 소비 야생 탐색
+// POST /game/wild/search — 무료 일괄 야생 롤(보드 교체)
 
 describe("POST /api/game/wild/search", () => {
   let app: TestApp;
@@ -14,50 +14,58 @@ describe("POST /api/game/wild/search", () => {
     app.cleanup();
   });
 
-  it("포인트가 부족하면 400 (신규 유저는 0P)", async () => {
+  it("포인트 없이도 일괄 야생 조우 배치를 생성한다(무료)", async () => {
     const { token } = await app.registerAndLogin();
     const res = await app.authed(token).post("/api/game/wild/search");
-    expect(res.status).toBe(400);
-    expect((res.body as { error: string }).error).toContain("포인트");
-  });
-
-  it("포인트를 차감하고 조우 이벤트를 생성한다", async () => {
-    const { token, userId } = await app.registerAndLogin();
-    await app.admin().post("/api/admin/test/give-points", { userId, amount: 250 });
-
-    const res = await app.authed(token).post("/api/game/wild/search");
-    expect(res.status).toBe(201);
+    expect(res.status).toBe(200);
 
     const body = res.body as {
-      event: { id: string; type: string; pokemon: { species: string; level: number } };
-      cost: number;
-      remainingPoints: number;
+      events: { id: string; type: string; pokemon: { species: string; level: number } }[];
+      count: number;
     };
-    expect(body.cost).toBe(100); // 기본값
-    expect(body.remainingPoints).toBe(150);
-    expect(body.event.type).toBe("wild_encounter");
-    expect(body.event.pokemon.species).toBeTruthy();
+    // 기본 rollCount = 12
+    expect(body.count).toBe(12);
+    expect(body.events).toHaveLength(12);
+    expect(body.events.every((e) => e.type === "wild_encounter")).toBe(true);
+    expect(body.events.every((e) => Boolean(e.pokemon.species))).toBe(true);
 
-    // 생성된 이벤트가 /game/events에 노출되고, 탐색 비용/잔액도 함께 내려온다
+    // 생성된 배치가 /game/events에 그대로 노출된다
     const events = await app.authed(token).get("/api/game/events");
     expect(events.status).toBe(200);
-    const eventsBody = events.body as {
-      events: { id: string }[];
-      searchCost: number;
-      points: number;
-    };
-    expect(eventsBody.events.some((e) => e.id === body.event.id)).toBe(true);
-    expect(eventsBody.searchCost).toBe(100);
-    expect(eventsBody.points).toBe(150);
+    const eventsBody = events.body as { events: { id: string }[] };
+    const ids = new Set(eventsBody.events.map((e) => e.id));
+    expect(body.events.every((e) => ids.has(e.id))).toBe(true);
   });
 
-  it("연속 탐색 시 매번 차감된다", async () => {
+  it("재탐색은 야생 보드를 통째로 교체한다(이전 야생 조우 제거)", async () => {
+    const { token } = await app.registerAndLogin();
+
+    const first = await app.authed(token).post("/api/game/wild/search");
+    const firstBody = first.body as { events: { id: string }[] };
+    const firstIds = new Set(firstBody.events.map((e) => e.id));
+
+    const second = await app.authed(token).post("/api/game/wild/search");
+    expect(second.status).toBe(200);
+    const secondBody = second.body as { events: { id: string }[]; count: number };
+    expect(secondBody.count).toBe(12);
+
+    // /game/events에는 두 번째 배치만 남고 첫 배치 id는 사라진다
+    const events = await app.authed(token).get("/api/game/events");
+    const eventsBody = events.body as { events: { id: string }[] };
+    expect(eventsBody.events).toHaveLength(12);
+    expect(eventsBody.events.some((e) => firstIds.has(e.id))).toBe(false);
+    const secondIds = new Set(secondBody.events.map((e) => e.id));
+    expect(eventsBody.events.every((e) => secondIds.has(e.id))).toBe(true);
+  });
+
+  it("포인트를 차감하지 않는다(무료)", async () => {
     const { token, userId } = await app.registerAndLogin();
     await app.admin().post("/api/admin/test/give-points", { userId, amount: 200 });
 
-    expect((await app.authed(token).post("/api/game/wild/search")).status).toBe(201);
-    expect((await app.authed(token).post("/api/game/wild/search")).status).toBe(201);
-    // 0P 남음 → 세 번째는 실패
-    expect((await app.authed(token).post("/api/game/wild/search")).status).toBe(400);
+    expect((await app.authed(token).post("/api/game/wild/search")).status).toBe(200);
+    expect((await app.authed(token).post("/api/game/wild/search")).status).toBe(200);
+
+    const status = await app.authed(token).get("/api/game/status");
+    expect((status.body as { points: number }).points).toBe(200);
   });
 });
