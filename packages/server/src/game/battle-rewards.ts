@@ -12,9 +12,13 @@ import type {
   BattleRewardConfig,
   BattleRewards,
   OwnedPokemon,
+  PokemonEVs,
   UserData,
   WildPokemon,
 } from "../../../../shared/types.js";
+
+/** 승리 후 미감염 참여자가 포켓루스에 감염될 확률(본가 1/3 대비 보수적). */
+export const POKERUS_INFECTION_CHANCE = 0.03;
 
 /** EXP yield using the main-series formula: floor(baseExp * level / 7) * multiplier. */
 export function calculateBattleExp(
@@ -141,7 +145,15 @@ export function grantBattleRewards(
   for (const member of participants) {
     if (member.hp <= 0) continue;
     // 격파한 야생에서 EV를 먼저 적립한다(레벨업이 나면 재계산에 자연히 반영되도록).
-    const evGain = getEvYield(wild.species);
+    // 포켓루스 감염 개체는 수확량 2배(applyEvGain이 252/510 상한을 그대로 강제).
+    const baseYield = getEvYield(wild.species);
+    const mult = member.pokerus ? 2 : 1;
+    const evGain: Partial<PokemonEVs> =
+      mult === 1
+        ? baseYield
+        : (Object.fromEntries(
+            Object.entries(baseYield).map(([key, value]) => [key, (value ?? 0) * mult]),
+          ) as Partial<PokemonEVs>);
     member.evs = applyEvGain(member.evs ?? emptyEvs(), evGain);
     const summary = grantExpToMember(user, member, exp, party, now);
     if (!summary.leveledUp) {
@@ -152,6 +164,16 @@ export function grantBattleRewards(
       member.stats = recomputed.stats;
     }
     partyExp.push(summary);
+  }
+
+  // 포켓루스 감염 — 승리 후 낮은 확률로 미감염 생존 참여자 1마리를 감염시킨다.
+  // 모든 EV/EXP 적립과 드랍 롤이 끝난 뒤(여기 맨 마지막)에 롤해서 기존 RNG 시퀀스를
+  // 교란하지 않는다. 감염 개체는 다음 전투부터 EV 2배를 받는다.
+  if (random() < POKERUS_INFECTION_CHANCE) {
+    const candidate = participants.find((m) => m.hp > 0 && !m.pokerus);
+    if (candidate) {
+      candidate.pokerus = true;
+    }
   }
 
   // 헤드라인(winner) — 첫 살아있는 참여자. 전원 기절 같은 예외는 participants[0]로 폴백.

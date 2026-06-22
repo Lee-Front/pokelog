@@ -98,4 +98,47 @@ describe("useInventoryItem", () => {
     expect(pokemon.species).toBe("pikachu");
     expect(user.inventory["moon-stone"]).toBe(1);
   });
+
+  it("applies a vitamin (+10 EV), recomputes stats, and consumes it", () => {
+    const user = createUserData();
+    const pokemon = createPokemon("pikachu", 50);
+    pokemon.evs = undefined; // 미초기화 개체도 안전하게 처리되어야 한다.
+
+    user.party = [pokemon.uid];
+    user.pokemon = [pokemon];
+    user.inventory = { protein: 1 };
+
+    const result = useInventoryItem(user, "protein", pokemon.uid);
+
+    expect(result.kind).toBe("vitamin");
+    expect(pokemon.evs?.attack).toBe(10);
+    expect(user.inventory.protein).toBeUndefined();
+  });
+
+  it("rejects a vitamin when the stat is already at the 252 cap", () => {
+    const user = createUserData();
+    const pokemon = createPokemon("pikachu", 50);
+    pokemon.evs = { hp: 0, attack: 252, defense: 0, spAttack: 0, spDefense: 0, speed: 0 };
+
+    user.party = [pokemon.uid];
+    user.pokemon = [pokemon];
+    user.inventory = { protein: 1 };
+
+    expect(() => useInventoryItem(user, "protein", pokemon.uid)).toThrow(ItemUseError);
+    expect(pokemon.evs.attack).toBe(252);
+    expect(user.inventory.protein).toBe(1);
+  });
+
+  it("rejects a vitamin when the 510 total is already reached", () => {
+    const user = createUserData();
+    const pokemon = createPokemon("pikachu", 50);
+    pokemon.evs = { hp: 6, attack: 252, defense: 0, spAttack: 0, spDefense: 0, speed: 252 };
+
+    user.party = [pokemon.uid];
+    user.pokemon = [pokemon];
+    user.inventory = { iron: 1 };
+
+    expect(() => useInventoryItem(user, "iron", pokemon.uid)).toThrow(ItemUseError);
+    expect(user.inventory.iron).toBe(1);
+  });
 });

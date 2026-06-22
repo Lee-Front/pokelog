@@ -11,6 +11,8 @@ import type { BattleState, MoveData, OwnedPokemon, UserData } from "../../../../
 import { decrementItem, healPokemon } from "../game/inventory-utils.js";
 import { recordMoveUsage } from "../game/move-usage.js";
 import { grantBattleRewards } from "../game/battle-rewards.js";
+import { getEvYield, applyEvGain, emptyEvs } from "../game/evs.js";
+import { buildStatsForPokemon } from "../game/pokemon-stats.js";
 import { getDisplaySpeciesName } from "../game/pokemon-state.js";
 import { checkTurnForm } from "../game/battle-forms.js";
 import {
@@ -382,6 +384,24 @@ async function handleCatch(
 
     if (!user.pokedex.includes(battle.wild.species)) {
       user.pokedex.push(battle.wild.species);
+    }
+
+    // 포획 보상 EV — 잡은 야생 종의 수확량을 현재 출전 중인 개체에게 적립한다(살아있을 때만).
+    // 포켓루스 감염 개체는 2배. 적립 후 스탯을 재계산하되 현재 HP는 보존(클램프).
+    if (myPokemon.hp > 0) {
+      const baseYield = getEvYield(battle.wild.species);
+      const mult = myPokemon.pokerus ? 2 : 1;
+      const evGain =
+        mult === 1
+          ? baseYield
+          : Object.fromEntries(
+              Object.entries(baseYield).map(([key, value]) => [key, (value ?? 0) * mult]),
+            );
+      myPokemon.evs = applyEvGain(myPokemon.evs ?? emptyEvs(), evGain);
+      const recomputed = buildStatsForPokemon(myPokemon);
+      myPokemon.maxHp = recomputed.maxHp;
+      myPokemon.hp = Math.min(myPokemon.hp, myPokemon.maxHp);
+      myPokemon.stats = recomputed.stats;
     }
 
     user.pendingEvents = user.pendingEvents.filter((e) => e.id !== battle.eventId);

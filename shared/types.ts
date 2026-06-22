@@ -159,6 +159,8 @@ export interface OwnedPokemon {
   hasGigantamaxFactor?: boolean;
   ivs?: PokemonIVs;
   evs?: PokemonEVs;
+  // 포켓루스 감염 여부. undefined = 미감염(마이그레이션 불필요). 감염 시 EV 수확량 2배.
+  pokerus?: boolean;
 }
 
 export type EggTierId = "common" | "rare" | "legend";

@@ -158,6 +158,14 @@ export const DEFAULT_CONFIG: ServerConfig = {
       potion: { name: "Potion", price: 150, healAmount: 20 },
       superPotion: { name: "Super Potion", price: 400, healAmount: 50 },
       hyperPotion: { name: "Hyper Potion", price: 800, healAmount: 120 },
+      // 영양제 — 지정 노력치를 +10. 키는 영양제 아이템 id(VITAMIN_STAT)와 일치시켜
+      // 구매(인벤토리 키)→사용(VITAMIN_STAT 조회)이 동일 네임스페이스로 이어지게 한다.
+      protein: { name: "단백질", price: 3000 },
+      calcium: { name: "칼슘", price: 3000 },
+      iron: { name: "철분", price: 3000 },
+      zinc: { name: "아연", price: 3000 },
+      carbos: { name: "카르본", price: 3000 },
+      "hp-up": { name: "맥스업", price: 3000 },
       ...DEFAULT_EVOLUTION_SHOP_ITEMS,
       ...DEFAULT_HELD_EVOLUTION_SHOP_ITEMS,
     },

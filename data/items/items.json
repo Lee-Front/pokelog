@@ -1363,5 +1363,47 @@
     "category": "evolution",
     "cost": 500,
     "shortEffect": "거다이맥스할 수 있게 한다."
+  },
+  {
+    "id": "protein",
+    "name": "단백질",
+    "category": "vitamins",
+    "cost": 3000,
+    "shortEffect": "공격 노력치가 오른다."
+  },
+  {
+    "id": "calcium",
+    "name": "칼슘",
+    "category": "vitamins",
+    "cost": 3000,
+    "shortEffect": "특수공격 노력치가 오른다."
+  },
+  {
+    "id": "iron",
+    "name": "철분",
+    "category": "vitamins",
+    "cost": 3000,
+    "shortEffect": "방어 노력치가 오른다."
+  },
+  {
+    "id": "zinc",
+    "name": "아연",
+    "category": "vitamins",
+    "cost": 3000,
+    "shortEffect": "특수방어 노력치가 오른다."
+  },
+  {
+    "id": "carbos",
+    "name": "카르본",
+    "category": "vitamins",
+    "cost": 3000,
+    "shortEffect": "스피드 노력치가 오른다."
+  },
+  {
+    "id": "hp-up",
+    "name": "맥스업",
+    "category": "vitamins",
+    "cost": 3000,
+    "shortEffect": "HP 노력치가 오른다."
   }
 ]

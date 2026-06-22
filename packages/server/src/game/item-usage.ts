@@ -2,6 +2,8 @@ import type { OwnedPokemon, ShopItem, UserData } from "../../../../shared/types.
 import { getItems, getVariants } from "./data-loader.js";
 import { GameRuleError } from "./game-errors.js";
 import { evolvePokemon, getEvolutionItemUseTarget } from "./growth.js";
+import { applyEvGain, emptyEvs, EV_STAT_MAX, EV_TOTAL_MAX, EV_STAT_KEYS, VITAMIN_STAT } from "./evs.js";
+import { buildStatsForPokemon } from "./pokemon-stats.js";
 import { decrementItem, healPokemon } from "./inventory-utils.js";
 import { clearPendingEvolutionForPokemon } from "./pending-evolution.js";
 import { getDisplaySpeciesName } from "./pokemon-state.js";
@@ -9,7 +11,7 @@ import { getDisplaySpeciesName } from "./pokemon-state.js";
 export { GameRuleError as ItemUseError };
 
 export interface ItemUseResult {
-  kind: "healing" | "evolution" | "gmax-factor";
+  kind: "healing" | "evolution" | "gmax-factor" | "vitamin";
   item: string;
   itemName: string;
   pokemon: OwnedPokemon;
@@ -87,6 +89,31 @@ export function useInventoryItem(
 
     return {
       kind: "gmax-factor",
+      item,
+      itemName,
+      pokemon,
+    };
+  }
+
+  // 영양제(영양제) — 지정 노력치를 +10. 252/510 상한에 걸리면 거부한다. 적용 후
+  // 스탯을 재계산하되 현재 HP는 보존(클램프)한다.
+  const vitaminStat = VITAMIN_STAT[item];
+  if (vitaminStat) {
+    const currentEvs = pokemon.evs ?? emptyEvs();
+    const currentTotal = EV_STAT_KEYS.reduce((sum, key) => sum + currentEvs[key], 0);
+    if (currentEvs[vitaminStat] >= EV_STAT_MAX || currentTotal >= EV_TOTAL_MAX) {
+      throw new GameRuleError("이미 노력치가 최대입니다.");
+    }
+
+    pokemon.evs = applyEvGain(currentEvs, { [vitaminStat]: 10 });
+    const recomputed = buildStatsForPokemon(pokemon);
+    pokemon.maxHp = recomputed.maxHp;
+    pokemon.hp = Math.min(pokemon.hp, pokemon.maxHp);
+    pokemon.stats = recomputed.stats;
+    decrementItem(user.inventory, item);
+
+    return {
+      kind: "vitamin",
       item,
       itemName,
       pokemon,

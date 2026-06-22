@@ -6,6 +6,16 @@ export const EV_STAT_MAX = 252;
 export const EV_TOTAL_MAX = 510;
 export const EV_STAT_KEYS = ["hp", "attack", "defense", "spAttack", "spDefense", "speed"] as const;
 
+/** 영양제(영양제 아이템 id → 오르는 노력치 키). 한 번에 +10 적립한다. */
+export const VITAMIN_STAT: Record<string, keyof PokemonEVs> = {
+  protein: "attack",
+  calcium: "spAttack",
+  iron: "defense",
+  zinc: "spDefense",
+  carbos: "speed",
+  "hp-up": "hp",
+};
+
 /** 신규/마이그레이션 개체용 — 전부 0. */
 export function emptyEvs(): PokemonEVs {
   return {
