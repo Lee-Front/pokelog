@@ -54,7 +54,7 @@ function clonePokemon(p: OwnedPokemon): OwnedPokemon {
 }
 
 function emptyEscrow(): PvpEscrow {
-  return { locked: true, points: 0, items: {}, pokemon: [] };
+  return { locked: true, points: 0, gameMoney: 0, items: {}, pokemon: [] };
 }
 
 // --- stake 명세 정규화·검증 ----------------------------------------------------
@@ -63,6 +63,7 @@ function emptyEscrow(): PvpEscrow {
 export function normalizeStakeSpec(input: unknown): PvpStakeSpec {
   const obj = (input ?? {}) as Record<string, unknown>;
   const points = Number.isFinite(obj.points) ? Math.max(0, Math.floor(obj.points as number)) : 0;
+  const gameMoney = Number.isFinite(obj.gameMoney) ? Math.max(0, Math.floor(obj.gameMoney as number)) : 0;
   const items: Record<string, number> = {};
   if (obj.items && typeof obj.items === "object") {
     for (const [id, qty] of Object.entries(obj.items as Record<string, unknown>)) {
@@ -73,12 +74,13 @@ export function normalizeStakeSpec(input: unknown): PvpStakeSpec {
   const pokemonUids = Array.isArray(obj.pokemonUids)
     ? [...new Set(obj.pokemonUids.map(String))]
     : [];
-  return { points, items, pokemonUids };
+  return { points, gameMoney, items, pokemonUids };
 }
 
 /** stake가 비었는지(거는 게 아무것도 없음). */
 export function isEmptyStake(spec: PvpStakeSpec): boolean {
   return spec.points <= 0
+    && spec.gameMoney <= 0
     && Object.keys(spec.items).length === 0
     && spec.pokemonUids.length === 0;
 }
@@ -87,6 +89,7 @@ export function isEmptyStake(spec: PvpStakeSpec): boolean {
 export function normalizeDemand(input: unknown): PvpDemand {
   const obj = (input ?? {}) as Record<string, unknown>;
   const points = Number.isFinite(obj.points) ? Math.max(0, Math.floor(obj.points as number)) : 0;
+  const gameMoney = Number.isFinite(obj.gameMoney) ? Math.max(0, Math.floor(obj.gameMoney as number)) : 0;
   const items: Record<string, number> = {};
   if (obj.items && typeof obj.items === "object") {
     for (const [id, qty] of Object.entries(obj.items as Record<string, unknown>)) {
@@ -97,12 +100,13 @@ export function normalizeDemand(input: unknown): PvpDemand {
   const pokemonUids = Array.isArray(obj.pokemonUids)
     ? [...new Set(obj.pokemonUids.map(String))]
     : [];
-  return { points, items, pokemonUids };
+  return { points, gameMoney, items, pokemonUids };
 }
 
 /** demand가 비었는지(요구하는 게 아무것도 없음 — 친선). */
 export function isEmptyDemand(demand: PvpDemand): boolean {
   return demand.points <= 0
+    && demand.gameMoney <= 0
     && Object.keys(demand.items).length === 0
     && demand.pokemonUids.length === 0;
 }
@@ -116,6 +120,7 @@ export function isEmptyDemand(demand: PvpDemand): boolean {
 export function buildOpponentStakeFromDemand(demand: PvpDemand): PvpStakeSpec {
   return {
     points: demand.points,
+    gameMoney: demand.gameMoney,
     items: { ...demand.items },
     pokemonUids: [...demand.pokemonUids],
   };
@@ -171,6 +176,9 @@ export async function lockStake(
     if (spec.points > 0 && user.points < spec.points) {
       throw new GameRuleError("거는 포인트가 보유 포인트를 초과합니다.");
     }
+    if (spec.gameMoney > 0 && user.gameMoney < spec.gameMoney) {
+      throw new GameRuleError("거는 게임머니가 보유 게임머니를 초과합니다.");
+    }
     for (const [item, qty] of Object.entries(spec.items)) {
       if ((user.inventory[item] ?? 0) < qty) {
         throw new GameRuleError(`아이템 '${item}' 보유 수량이 부족합니다.`);
@@ -198,6 +206,8 @@ export async function lockStake(
     const escrow = emptyEscrow();
     escrow.points = spec.points;
     user.points -= spec.points;
+    escrow.gameMoney = spec.gameMoney;
+    user.gameMoney -= spec.gameMoney;
 
     for (const [item, qty] of Object.entries(spec.items)) {
       user.inventory[item] = (user.inventory[item] ?? 0) - qty;
@@ -230,6 +240,7 @@ async function creditEscrow(userId: string, escrow: PvpEscrow): Promise<void> {
       return;
     }
     user.points += escrow.points;
+    user.gameMoney += escrow.gameMoney;
     for (const [item, qty] of Object.entries(escrow.items)) {
       incrementItem(user.inventory, item, qty);
     }

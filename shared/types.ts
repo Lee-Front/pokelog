@@ -858,6 +858,8 @@ export interface PvpChatMessage {
  */
 export interface PvpStakeSpec {
   points: number;
+  /** 거는 게임머니(0 가능). points와 동일 취급. */
+  gameMoney: number;
   items: Record<string, number>;
   pokemonUids: string[];
 }
@@ -872,6 +874,8 @@ export interface PvpEscrow {
   /** 자산이 유저 데이터에서 빠져 에스크로로 이동 완료됐는지(이중 락 방지). */
   locked: boolean;
   points: number;
+  /** 락된 게임머니 스냅샷. */
+  gameMoney: number;
   items: Record<string, number>;
   /** 거치된 포켓몬 전체 스냅샷(원본은 유저 데이터에서 제거됨). */
   pokemon: OwnedPokemon[];
@@ -887,6 +891,8 @@ export interface PvpEscrow {
  */
 export interface PvpDemand {
   points: number;
+  /** 상대에게 요구하는 게임머니(0 가능). points와 동일 취급. */
+  gameMoney: number;
   items: Record<string, number>;
   /** 상대(opponent)에게 요구하는 특정 포켓몬 uid 목록. 상대 보유여야 함. */
   pokemonUids: string[];

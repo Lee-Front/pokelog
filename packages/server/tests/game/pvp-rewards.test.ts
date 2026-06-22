@@ -121,6 +121,14 @@ describe("normalizeStakeSpec / isEmptyStake", () => {
     expect(rewards.isEmptyStake(spec)).toBe(false);
     expect(rewards.isEmptyStake(rewards.normalizeStakeSpec({}))).toBe(true);
   });
+
+  it("gameMoney도 points처럼 정규화되고, gameMoney만 있는 stake는 비어있지 않다", () => {
+    const spec = rewards.normalizeStakeSpec({ gameMoney: 99.9 });
+    expect(spec.gameMoney).toBe(99);
+    expect(spec.points).toBe(0);
+    expect(rewards.isEmptyStake(spec)).toBe(false);
+    expect(rewards.normalizeStakeSpec({ gameMoney: -5 }).gameMoney).toBe(0);
+  });
 });
 
 // === demand 정규화/충족 ===
@@ -141,6 +149,13 @@ describe("normalizeDemand / isEmptyDemand / buildOpponentStakeFromDemand", () =>
     expect(spec.points).toBe(50);
     expect(spec.items).toEqual({ potion: 1 });
     expect(spec.pokemonUids).toEqual(["x", "y"]);
+  });
+
+  it("gameMoney demand도 정규화되고 충족 stake로 그대로 복사된다", () => {
+    const d = rewards.normalizeDemand({ gameMoney: 70.4 });
+    expect(d.gameMoney).toBe(70);
+    expect(rewards.isEmptyDemand(d)).toBe(false);
+    expect(rewards.buildOpponentStakeFromDemand(d).gameMoney).toBe(70);
   });
 });
 
@@ -222,6 +237,35 @@ describe("내기 — 에스크로 락/정산", () => {
     // loser: 1000 - 200 = 800, potion 5-1 = 4
     expect(l!.points).toBe(800);
     expect(l!.inventory.potion).toBe(4);
+  });
+
+  it("gameMoney만 건 내기: 락·차감되고 승자에게 정산된다(친선 아님)", async () => {
+    await userStore.saveUser(createUser("winner", "W", [oneShotMon("bulbasaur")], { points: 0, gameMoney: 500 }));
+    await userStore.saveUser(createUser("loser", "L", [glassMon("charmander")], { points: 0, gameMoney: 500 }));
+    const m = await pvp.createChallenge({
+      challengerUserId: "winner", opponentUserId: "loser", mode: "single",
+      challengerStake: { gameMoney: 100, items: {}, pokemonUids: [] },
+      demand: { gameMoney: 150, items: {}, pokemonUids: [] },
+    });
+    // 친선 아님: challenger 에스크로에 gameMoney가 락되어야 한다.
+    expect(m.stakes.challengerEscrow?.locked).toBe(true);
+    expect(m.stakes.challengerEscrow?.gameMoney).toBe(100);
+    const wAfterLock = await userStore.getUser("winner");
+    expect(wAfterLock!.gameMoney).toBe(400); // 500 - 100 락
+
+    await pvp.acceptChallenge("loser", m.id);
+    const lAfterAccept = await userStore.getUser("loser");
+    expect(lAfterAccept!.gameMoney).toBe(350); // 500 - 150 demand 락
+
+    const done = await playDecidedMatch(m.id);
+    expect(done.result?.winnerUserId).toBe("winner");
+
+    const w = await userStore.getUser("winner");
+    const l = await userStore.getUser("loser");
+    // winner: 400 + 100(자기 반환) + 150(상대분) = 650
+    expect(w!.gameMoney).toBe(650);
+    expect(l!.gameMoney).toBe(350); // 패자 몰수, 추가 변동 없음
+    expect(w!.points).toBe(0); // points는 무관
   });
 
   it("무승부(동시전멸): 에스크로 원소유자 반환", async () => {
