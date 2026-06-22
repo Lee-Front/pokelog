@@ -300,6 +300,9 @@ async function handleFight(
     "wild", log,
   );
 
+  // 풀죽음 임시 플래그는 매 턴 시작 시 초기화(다른 호출처가 설정해도 영속되지 않게).
+  battle.playerFlinched = false;
+
   if (turnOrder === "player") {
     if (playerCanAct) {
       recordMoveUsage(myPokemon, selectedMove.id);
@@ -321,7 +324,12 @@ async function handleFight(
   } else {
     const wildResult = await doWildAttackAndCheck(user, myPokemon, battle, log, wildChosenMove ?? undefined);
     if (wildResult) { sendFaintedResponse(res, wildResult, user.account.id, battle); return; }
-    if (playerCanAct) {
+    // 야생이 선공하며 풀죽음을 유발했으면 플레이어는 이번 턴 행동 불가(임시 플래그 즉시 해제).
+    const playerFlinched = battle.playerFlinched ?? false;
+    battle.playerFlinched = false;
+    if (playerFlinched) {
+      log.push(`${getDisplaySpeciesName(myPokemon.species)}은(는) 풀이 죽어 움직이지 못했다!`);
+    } else if (playerCanAct) {
       recordMoveUsage(myPokemon, selectedMove.id);
       executePlayerAttack(battle, myPokemon, selectedMoveData, selectedMove, log);
       if (battle.wild.hp <= 0) {

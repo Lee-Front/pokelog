@@ -42,6 +42,21 @@ export interface DamageResult {
   critical: boolean;
 }
 
+// 급소(크리티컬) 데미지 배율 — 본가 Gen6+의 1.5배.
+export const CRIT_MULTIPLIER = 1.5;
+
+/**
+ * 급소 발생 여부 굴림(순수 함수, 테스트 주입용 random).
+ * critRate(급소 단계)별 본가 Gen6+ 확률: 0→1/24, 1→1/8, 2→1/2, 3 이상→필중(1/1).
+ * 단계가 음수면 0으로 클램프한다.
+ */
+export function rollCritical(critRate: number, random: () => number = Math.random): boolean {
+  const stage = Math.max(0, critRate);
+  const critThresholds = [24, 8, 2, 1]; // stage 0=1/24, 1=1/8, 2=1/2, 3 이상=필중
+  const critDenominator = critThresholds[Math.min(stage, 3)];
+  return random() * critDenominator < 1;
+}
+
 export function calculateDamage(
   attackerLevel: number,
   attackerStats: PokemonStats,
@@ -75,11 +90,9 @@ export function calculateDamage(
     return { damage: 0, missed: false, effectiveness: 1, message: "", critical: false };
   }
 
-  // Critical hit check
+  // Critical hit check — 급소 확률표는 순수 helper(rollCritical)로 분리.
   const critStage = move.meta?.critRate ?? 0;
-  const critThresholds = [24, 8, 2, 1]; // stage 0=1/24, 1=1/8, 2=1/2, 3=always
-  const critDenominator = critThresholds[Math.min(critStage, 3)];
-  const isCritical = Math.random() * critDenominator < 1;
+  const isCritical = rollCritical(critStage);
 
   // Determine atk/def based on category, applying stat stages
   // If critical: ignore negative attacker stages and positive defender stages
@@ -123,7 +136,7 @@ export function calculateDamage(
   const stab = attackerTypes.includes(move.type) ? 1.5 : 1.0;
 
   // Critical hit multiplier
-  const critMultiplier = isCritical ? 1.5 : 1.0;
+  const critMultiplier = isCritical ? CRIT_MULTIPLIER : 1.0;
 
   // Random factor
   const randomFactor = 0.85 + Math.random() * 0.15;

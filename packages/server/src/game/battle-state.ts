@@ -13,7 +13,7 @@ import {
 } from "./held-item-battle.js";
 import { getEffectiveTypes, getDisplaySpeciesName } from "./pokemon-state.js";
 import {
-  checkPreAttack, applyEndOfTurn, tickVolatiles,
+  checkPreAttack, applyEndOfTurn, tickVolatiles, hasVolatile,
   rollAilment, isVolatileAilment, addVolatile, rollSleepTurns, rollConfusionTurns, rollTrapTurns,
 } from "./status-conditions.js";
 import type { BattleState, MoveData, OwnedPokemon, PrimaryStatus, StatStages, UserData, VolatileStatus } from "../../../../shared/types.js";
@@ -439,6 +439,8 @@ export function executePlayerAttack(
 
   battle.wild.hp = Math.max(0, battle.wild.hp - result.damage);
   log.push(`${getDisplaySpeciesName(player.species)}의 ${moveData.name}! ${result.missed ? "빗나갔다!" : `${result.damage} 데미지!`}`);
+  // 급소(크리티컬) — 빗나가지 않은 데미지 기술에서만 표시
+  if (!result.missed && result.critical && moveData.category !== "status") log.push("급소에 맞았다!");
   if (result.message) log.push(result.message);
   if (survive.kind === "focus-sash") log.push("기합의띠로 버텼다!");
   else if (survive.kind === "focus-band") log.push("기합의머리띠로 버텼다!");
@@ -679,8 +681,22 @@ export function applyEndOfTurnBattle(
   applyHeldEndOfTurnHeal(battle.wild, log, `야생 ${getDisplaySpeciesName(battle.wild.species)}`);
 
   // Tick volatile statuses
+  // 하품(yawn): 카운터가 다 떨어져 제거되는 순간, 대상에게 주상태이상이 없으면 잠듦.
+  const playerHadYawn = hasVolatile(battle.playerVolatile ?? [], "yawn");
+  const wildHadYawn = hasVolatile(battle.wildVolatile ?? [], "yawn");
   battle.playerVolatile = tickVolatiles(battle.playerVolatile ?? []);
   battle.wildVolatile = tickVolatiles(battle.wildVolatile ?? []);
+
+  if (playerHadYawn && !hasVolatile(battle.playerVolatile, "yawn") && !myPokemon.statusCondition) {
+    myPokemon.statusCondition = "sleep";
+    myPokemon.sleepTurns = rollSleepTurns();
+    log.push(`${getDisplaySpeciesName(myPokemon.species)}은(는) 잠들어 버렸다!`);
+  }
+  if (wildHadYawn && !hasVolatile(battle.wildVolatile, "yawn") && !battle.wild.statusCondition) {
+    battle.wild.statusCondition = "sleep";
+    battle.wild.sleepTurns = rollSleepTurns();
+    log.push(`야생 ${getDisplaySpeciesName(battle.wild.species)}은(는) 잠들어 버렸다!`);
+  }
 
   // Gigantamax countdown
   if (battle.transformationType === "gigantamax" && battle.gmaxTurnsRemaining != null) {
@@ -712,7 +728,7 @@ export function wildAttack(
   weatherModifier: number = 1,
   wildBattleForm?: string | null,
   targetBattleForm?: string | null,
-): { damage: number; moveId: string | null; moveData: MoveData | null; message: string; missed?: boolean; priority?: number } {
+): { damage: number; moveId: string | null; moveData: MoveData | null; message: string; missed?: boolean; critical?: boolean; priority?: number } {
   const availableMoves = wildMoves.filter((move) => move.pp > 0);
   if (availableMoves.length === 0) {
     return { damage: 0, moveId: null, moveData: null, message: "야생 포켓몬이 쓸 수 있는 기술이 없다!" };
@@ -744,6 +760,7 @@ export function wildAttack(
     moveData,
     message: result.message,
     missed: result.missed,
+    critical: result.critical,
     priority: moveData.priority ?? 0,
   };
 }
@@ -849,6 +866,8 @@ export async function doWildAttackAndCheck(
   myPokemon.hp = Math.max(0, myPokemon.hp - wildResult.damage);
   recordDamageTaken(myPokemon, previousHp - myPokemon.hp);
   log.push(`야생 ${getDisplaySpeciesName(battle.wild.species)}의 공격! ${wildResult.damage} 데미지!`);
+  // 급소(크리티컬) — 빗나가지 않은 데미지 기술에서만 표시
+  if (!wildResult.missed && wildResult.critical && wildResult.moveData?.category !== "status") log.push("급소에 맞았다!");
   if (wildSurvive.kind === "focus-sash") log.push("기합의띠로 버텼다!");
   else if (wildSurvive.kind === "focus-band") log.push("기합의머리띠로 버텼다!");
   // 생명의구슬 반동(야생 보유자용 — 보통 no-op)
@@ -884,6 +903,13 @@ export async function doWildAttackAndCheck(
       if (ailmentResult.sleepTurns !== undefined) myPokemon.sleepTurns = ailmentResult.sleepTurns;
     }
     battle.playerVolatile = ailmentResult.newVolatiles;
+
+    // 풀죽음(flinch) 판정 — executePlayerAttack와 동일하게 "apply if under"(roll < chance).
+    // 야생이 선공한 경우에만 의미가 있으므로 battle.playerFlinched 임시 플래그로 알린다.
+    const wildFlinchChance = wildResult.moveData.meta?.flinchChance ?? 0;
+    if (wildFlinchChance > 0 && Math.random() * 100 < wildFlinchChance) {
+      battle.playerFlinched = true;
+    }
 
     // Wild post-attack form check (aegislash)
     applyBattleFormChange(

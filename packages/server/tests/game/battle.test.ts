@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { calculateDamage, determineTurnOrder } from "../../src/game/battle.js";
+import { calculateDamage, determineTurnOrder, rollCritical, CRIT_MULTIPLIER } from "../../src/game/battle.js";
 import type { PokemonStats, MoveData } from "../../../../shared/types.js";
 
 describe("calculateDamage", () => {
@@ -357,6 +357,56 @@ describe("calculateDamage", () => {
     const critResult = calculateDamage(10, attackerStats, defenderStats, hitMove, ["normal"], ["normal"]);
     expect(critResult).toHaveProperty("critical");
     expect(critResult.critical).toBe(true);
+  });
+});
+
+describe("rollCritical", () => {
+  // 본가 Gen6+ 급소 확률표: stage 0=1/24, 1=1/8, 2=1/2, 3 이상=필중.
+  // random()*denominator < 1 일 때 급소. 경계 굴림을 주입해 표를 검증한다.
+
+  it("CRIT_MULTIPLIER is 1.5", () => {
+    expect(CRIT_MULTIPLIER).toBe(1.5);
+  });
+
+  it("stage 0 → 1/24 (denominator 24)", () => {
+    // 0.0 → 0 < 1 급소; 1/24 직전(<1/24)도 급소; 1/24 이상은 비급소.
+    expect(rollCritical(0, () => 0.0)).toBe(true);
+    expect(rollCritical(0, () => 0.5 / 24)).toBe(true); // 0.5 < 1 → 급소
+    expect(rollCritical(0, () => 1 / 24)).toBe(false); // 1*24/24 = 1, 1 < 1 거짓
+    expect(rollCritical(0, () => 0.99)).toBe(false);
+  });
+
+  it("stage 1 → 1/8 (denominator 8)", () => {
+    expect(rollCritical(1, () => 0.0)).toBe(true);
+    expect(rollCritical(1, () => 0.5 / 8)).toBe(true); // 0.5 < 1
+    expect(rollCritical(1, () => 1 / 8)).toBe(false); // 1 < 1 거짓
+    expect(rollCritical(1, () => 0.5)).toBe(false); // 4 < 1 거짓
+  });
+
+  it("stage 2 → 1/2 (denominator 2)", () => {
+    expect(rollCritical(2, () => 0.0)).toBe(true);
+    expect(rollCritical(2, () => 0.49)).toBe(true); // 0.98 < 1
+    expect(rollCritical(2, () => 0.5)).toBe(false); // 1 < 1 거짓
+    expect(rollCritical(2, () => 0.99)).toBe(false);
+  });
+
+  it("stage 3 이상 → 항상 급소 (denominator 1)", () => {
+    expect(rollCritical(3, () => 0.99)).toBe(true); // 0.99 < 1
+    expect(rollCritical(3, () => 0.0)).toBe(true);
+    expect(rollCritical(5, () => 0.99)).toBe(true); // 3 초과도 1/1로 클램프
+  });
+
+  it("음수 critRate는 0단계로 클램프", () => {
+    expect(rollCritical(-1, () => 1 / 24)).toBe(false);
+    expect(rollCritical(-1, () => 0.0)).toBe(true);
+  });
+
+  it("기본 random은 Math.random (인자 생략 시 동작)", () => {
+    const spy = vi.spyOn(Math, "random").mockReturnValue(0.0);
+    expect(rollCritical(0)).toBe(true);
+    spy.mockReturnValue(0.99);
+    expect(rollCritical(0)).toBe(false);
+    spy.mockRestore();
   });
 });
 

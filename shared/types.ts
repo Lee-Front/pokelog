@@ -184,6 +184,8 @@ export interface WildPokemon {
   ability?: string;
   isShiny?: boolean;
   statusCondition?: PrimaryStatus | null;
+  // 하품 만료로 잠든 야생의 남은 수면 턴(있을 때만; 미설정이면 종전과 동일하게 무시).
+  sleepTurns?: number;
   ivs?: PokemonIVs;
   // 야생은 보통 지닌물건이 없지만(생성 시 미설정), 전투 헬퍼가 일반적으로
   // heldItem을 참조/소모할 수 있도록 선택 필드로 둔다(미지닌이면 no-op).
@@ -286,6 +288,9 @@ export interface BattleState {
   transformationUsed?: boolean;
   gmaxTurnsRemaining?: number;
   playerPreTransformMaxHp?: number;
+  // 야생이 선공해 풀죽음(flinch)을 유발했는지 알리는 1턴짜리 임시 플래그.
+  // doWildAttackAndCheck가 설정하고, 야생 선공 분기에서 소비 즉시 해제한다(영속 저장 안 함).
+  playerFlinched?: boolean;
 }
 
 export interface BattleDroppedItem {
