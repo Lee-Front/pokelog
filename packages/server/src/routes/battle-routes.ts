@@ -26,6 +26,7 @@ import {
   handleFainted, doWildAttackAndCheck,
   type FaintedResult,
 } from "../game/battle-state.js";
+import { applySwitchInAbilities } from "../game/abilities.js";
 import { appendEvent } from "../storage/event-log.js";
 import { childLogger } from "../logger.js";
 
@@ -186,6 +187,13 @@ battleRoutes.post("/start", async (req, res) => {
     const seenList = user.seenSpecies ?? (user.seenSpecies = []);
     if (!seenList.includes(battleState.wild.species)) seenList.push(battleState.wild.species);
 
+    // 스위치인 특성(intimidate·날씨/필드 세터): 양측 등장 시 발동.
+    // 플레이어 리드가 먼저 등장 → 야생 스탯을 깎고, 이어 야생이 등장 → 플레이어 스탯을 깎는다.
+    // 무특성/미지원이면 no-op이라 종전 동작과 동일하다.
+    const startLog: string[] = [];
+    battleState.wildStatStages = applySwitchInAbilities(battleState, "player", pokemon, battleState.wildStatStages, startLog);
+    battleState.playerStatStages = applySwitchInAbilities(battleState, "wild", battleState.wild, battleState.playerStatStages, startLog);
+
     user.battleState = battleState;
     await saveUser(user);
     void appendEvent({
@@ -200,7 +208,7 @@ battleRoutes.post("/start", async (req, res) => {
         myLevel: pokemon.level,
       },
     });
-    res.json({ battleState });
+    res.json({ battleState, log: startLog });
   } catch (err) {
     log.error({ err }, "Battle start error");
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
@@ -505,6 +513,9 @@ async function handleSwitch(
   battle.playerVolatile = [];
   battle.playerBattleForm = undefined; // Reset battle form on switch
   log.push(`${getDisplaySpeciesName(newPokemon.species)}(으)로 교체했다!`);
+
+  // 교체로 들어온 포켓몬의 스위치인 특성(intimidate·날씨/필드 세터): 야생 스탯을 깎는다.
+  battle.wildStatStages = applySwitchInAbilities(battle, "player", newPokemon, battle.wildStatStages, log);
 
   if (!forced) {
     const wildResult = await doWildAttackAndCheck(user, newPokemon, battle, log);

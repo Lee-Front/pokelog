@@ -13,6 +13,12 @@ import {
 } from "./held-item-battle.js";
 import { getEffectiveTypes, getDisplaySpeciesName } from "./pokemon-state.js";
 import {
+  hasAbility, getAbilityOffenseMultiplier, checkAbilityImmunity,
+  getAbilityDefenseMultiplier, applyContactAbilities, applyEndOfTurnAbilities,
+  getAbilitySpeedMultiplier, abilitySurvivesKO, applySwitchInAbilities,
+  abilityBlocksStatus,
+} from "./abilities.js";
+import {
   checkPreAttack, applyEndOfTurn, tickVolatiles, hasVolatile,
   rollAilment, isVolatileAilment, addVolatile, rollSleepTurns, rollConfusionTurns, rollTrapTurns,
 } from "./status-conditions.js";
@@ -251,6 +257,7 @@ export function maybeApplyAilment(
   log: string[],
   battle?: BattleState,
   targetTypes?: string[],
+  targetAbilityHolder?: { abilityId?: string | null; ability?: string | null },
 ): { newStatus: PrimaryStatus | null; newVolatiles: VolatileStatus[]; sleepTurns?: number } {
   const ailment = moveData.meta?.ailment;
   const chance = moveData.meta?.ailmentChance ?? 0;
@@ -258,6 +265,11 @@ export function maybeApplyAilment(
 
   const primary = rollAilment(ailment, chance, targetStatus);
   if (primary) {
+    // 특성 상태이상 면역(limber·immunity·insomnia 등): 부여 직전 차단.
+    if (targetAbilityHolder && abilityBlocksStatus(targetAbilityHolder, primary)) {
+      log.push("특성으로 상태이상을 막았다!");
+      return { newStatus: null, newVolatiles: targetVolatiles };
+    }
     // 필드가 상태이상을 막는지: 일렉트릭(접지 대상 sleep 차단)/미스트(접지 대상 5대 상태이상 차단)
     if (
       battle?.terrain && targetTypes &&
@@ -405,6 +417,30 @@ export function executePlayerAttack(
   const playerAtkTypes = getEffectiveTypes(player.species, player.variantId, battle.playerBattleForm);
   const wildDefTypes = getEffectiveTypes(battle.wild.species, battle.wild.variantId, battle.wildBattleForm);
 
+  // 특성 방어 면역/흡수(volt-absorb·levitate 등): 데미지 적용 전 판정.
+  // 면역이면 데미지 0, 2차효과/접촉/풀죽음을 모두 스킵하고 heal/boost만 적용.
+  // status 기술이거나 무특성/미지원이면 immune=false라 종전과 동일하게 진행한다.
+  if (moveData.category !== "status") {
+    const immunity = checkAbilityImmunity(battle.wild, moveData.type, moveData.category);
+    if (immunity.immune) {
+      // pp는 이미 위에서 차감됨(빗나감과 동일하게 소모).
+      log.push(`${getDisplaySpeciesName(battle.wild.species)}에게는 효과가 없는 것 같다...`);
+      if (immunity.healFraction) {
+        const heal = Math.max(1, Math.floor(battle.wild.maxHp * immunity.healFraction));
+        if (battle.wild.hp > 0 && battle.wild.hp < battle.wild.maxHp) {
+          battle.wild.hp = Math.min(battle.wild.maxHp, battle.wild.hp + heal);
+          log.push(`${getDisplaySpeciesName(battle.wild.species)}이(가) ${heal} 회복했다!`);
+        }
+      }
+      if (immunity.boostStat) {
+        battle.wildStatStages = applyStatChanges(battle.wildStatStages ?? defaultStatStages(), [{ stat: immunity.boostStat, change: 1 }]);
+        log.push(`${getDisplaySpeciesName(battle.wild.species)}의 능력이 올랐다!`);
+      }
+      checkHpForms(battle, player, log);
+      return { flinchCaused: false };
+    }
+  }
+
   // Weather type modifier for player attack
   const playerWeatherMod = battle.weather ? getWeatherTypeModifier(battle.weather, moveData.type) : 1;
   // Terrain type modifier for player attack (공격자 접지 여부, 대상 접지 여부 기준)
@@ -429,12 +465,37 @@ export function executePlayerAttack(
     result.damage = Math.floor(result.damage * playerOffenseMod);
   }
 
+  // 특성 공격 보정(overgrow·technician·huge-power·guts·adaptability 등) — 지닌물건과 동일 패턴.
+  const playerAbilityOffenseMod = getAbilityOffenseMultiplier(
+    player, moveData.type, moveData.category, moveData.power,
+    player.maxHp > 0 ? player.hp / player.maxHp : 0,
+    playerAtkTypes.includes(moveData.type),
+    player.statusCondition != null,
+  );
+  if (playerAbilityOffenseMod !== 1 && result.damage > 0) {
+    result.damage = Math.floor(result.damage * playerAbilityOffenseMod);
+  }
+
+  // 특성 방어 보정(thick-fat·multiscale·filter 등) — 야생 방어자 기준.
+  const wildAbilityDefenseMod = getAbilityDefenseMultiplier(
+    battle.wild, moveData.type,
+    battle.wild.maxHp > 0 ? battle.wild.hp / battle.wild.maxHp : 0,
+    result.effectiveness > 1,
+  );
+  if (wildAbilityDefenseMod !== 1 && result.damage > 0) {
+    result.damage = Math.floor(result.damage * wildAbilityDefenseMod);
+  }
+
   // 기합의띠/기합의머리띠: post-damage HP를 쓰기 전에 일격 버티기 판정
   const wildAtFull = battle.wild.hp >= battle.wild.maxHp;
   const survive = tryFocusSurvive(battle.wild, result.damage, wildAtFull);
   if (survive.kind) {
     result.damage = survive.finalDamage;
     if (survive.consumed) battle.wild.heldItem = null;
+  } else if (result.damage >= battle.wild.hp && battle.wild.hp > 0 && abilitySurvivesKO(battle.wild, wildAtFull)) {
+    // 옹골참(sturdy): 풀피에서 일격사를 HP 1로 버틴다(기합의띠 미발동 시).
+    result.damage = battle.wild.hp - 1;
+    log.push(`${getDisplaySpeciesName(battle.wild.species)}은(는) 옹골참으로 버텼다!`);
   }
 
   battle.wild.hp = Math.max(0, battle.wild.hp - result.damage);
@@ -465,7 +526,7 @@ export function executePlayerAttack(
     // Apply stat changes for player
     maybeApplyStatChanges(battle, moveData, true, log);
 
-    // Apply ailment to wild from player attack (필드 상태이상 차단 게이팅 포함)
+    // Apply ailment to wild from player attack (필드/특성 상태이상 차단 게이팅 포함)
     const ailmentResult = maybeApplyAilment(
       moveData,
       battle.wild.statusCondition,
@@ -473,16 +534,32 @@ export function executePlayerAttack(
       log,
       battle,
       wildDefTypes,
+      battle.wild,
     );
     if (ailmentResult.newStatus) {
       battle.wild.statusCondition = ailmentResult.newStatus;
     }
     battle.wildVolatile = ailmentResult.newVolatiles;
 
+    // 접촉(=물리 프록시) 피격 특성: 야생(방어자)의 static/flame-body/poison-point/rough-skin/iron-barbs
+    if (moveData.category === "physical" && result.damage > 0) {
+      const contact = applyContactAbilities(battle.wild, player.statusCondition != null, player.maxHp);
+      if (contact.inflictStatus && !player.statusCondition) {
+        player.statusCondition = contact.inflictStatus;
+        const names: Record<string, string> = { poison: "독", burn: "화상", paralysis: "마비" };
+        log.push(`${getDisplaySpeciesName(player.species)}은(는) ${names[contact.inflictStatus] ?? contact.inflictStatus} 상태가 되었다!`);
+      }
+      if (contact.recoilDamage && player.hp > 0) {
+        player.hp = Math.max(0, player.hp - contact.recoilDamage);
+        log.push(`${getDisplaySpeciesName(player.species)}은(는) 상대 특성으로 ${contact.recoilDamage} 데미지를 받았다!`);
+      }
+    }
+
     // Check flinch
     // "apply if under": roll < chance means flinch IS applied
+    // inner-focus 특성을 가진 대상(야생)은 풀죽음에 면역이다.
     const flinchChance = moveData.meta?.flinchChance ?? 0;
-    if (flinchChance > 0 && Math.random() * 100 < flinchChance) {
+    if (flinchChance > 0 && !hasAbility(battle.wild, "inner-focus") && Math.random() * 100 < flinchChance) {
       flinchCaused = true;
     }
 
@@ -604,8 +681,12 @@ export function determineBattleTurnOrder(
     wildSpeedBase = Math.max(1, Math.floor(wildSpeedBase / 2));
   }
 
-  const playerSpeed = applyStatStageMultiplier(playerSpeedBase, battle.playerStatStages?.speed ?? 0);
-  const wildSpeed = applyStatStageMultiplier(wildSpeedBase, battle.wildStatStages?.speed ?? 0);
+  // 특성 속도 배율(swift-swim·chlorophyll·sand-rush·slush-rush): 날씨 일치 시 ×2.
+  const playerSpeedAbilityMult = getAbilitySpeedMultiplier(player, battle.weather);
+  const wildSpeedAbilityMult = getAbilitySpeedMultiplier(battle.wild, battle.weather);
+
+  const playerSpeed = applyStatStageMultiplier(playerSpeedBase, battle.playerStatStages?.speed ?? 0) * playerSpeedAbilityMult;
+  const wildSpeed = applyStatStageMultiplier(wildSpeedBase, battle.wildStatStages?.speed ?? 0) * wildSpeedAbilityMult;
 
   // 선제공격손톱(quick-claw): 속도 비교 전 20% 확률로 선공.
   // 우선도(priority)가 같을 때만 의미가 있으므로 동일 우선도에서 판정한다.
@@ -635,11 +716,34 @@ export function determineBattleTurnOrder(
  * - Volatile status tick (decrement turns, remove expired)
  * Mutates battle and player in place; appends to log.
  */
+/** 특성 턴 종료 회복/데미지(speed-boost 제외)를 HP에 적용한다. */
+function applyAbilityEotHpChange(
+  mon: { hp: number; maxHp: number },
+  eot: { healing: number; message?: string },
+  log: string[],
+  displayName: string,
+): void {
+  if (mon.hp <= 0) return;
+  if (eot.healing > 0) {
+    if (mon.hp >= mon.maxHp) return;
+    mon.hp = Math.min(mon.maxHp, mon.hp + eot.healing);
+    if (eot.message) log.push(`${displayName}은(는) ${eot.message}`);
+  } else if (eot.healing < 0) {
+    mon.hp = Math.max(0, mon.hp + eot.healing);
+    if (eot.message) log.push(`${displayName}은(는) ${eot.message}`);
+  }
+}
+
 export function applyEndOfTurnBattle(
   battle: BattleState,
   myPokemon: OwnedPokemon,
   log: string[],
 ): void {
+  // 특성 턴 종료 효과(poison-heal·rain-dish·dry-skin·ice-body·speed-boost) — 양측 선계산.
+  // poison-heal은 기존 독 데미지를 취소하고 회복으로 대체하므로 EOT 데미지 적용 전에 처리한다.
+  const playerAbilityEot = applyEndOfTurnAbilities(myPokemon, battle.weather, myPokemon.statusCondition === "poison", myPokemon.maxHp);
+  const wildAbilityEot = applyEndOfTurnAbilities(battle.wild, battle.weather, battle.wild.statusCondition === "poison", battle.wild.maxHp);
+
   // Player end-of-turn status/volatile effects
   const playerEot = applyEndOfTurn(
     myPokemon.statusCondition,
@@ -647,8 +751,15 @@ export function applyEndOfTurnBattle(
     myPokemon.maxHp,
     battle.wild.maxHp,
   );
-  if (playerEot.damage > 0) {
-    myPokemon.hp = Math.max(0, myPokemon.hp - playerEot.damage);
+  // poison-heal: 독 데미지(maxHp/8)와 그 메시지를 제거한다.
+  let playerEotDamage = playerEot.damage;
+  let playerEotMessages = playerEot.messages;
+  if (playerAbilityEot.cancelPoison && myPokemon.statusCondition === "poison") {
+    playerEotDamage = Math.max(0, playerEotDamage - Math.max(1, Math.floor(myPokemon.maxHp / 8)));
+    playerEotMessages = playerEotMessages.filter((m) => m !== "독 데미지를 받았다!");
+  }
+  if (playerEotDamage > 0) {
+    myPokemon.hp = Math.max(0, myPokemon.hp - playerEotDamage);
   }
   if (playerEot.healing > 0) {
     myPokemon.hp = Math.min(myPokemon.maxHp, myPokemon.hp + playerEot.healing);
@@ -656,7 +767,7 @@ export function applyEndOfTurnBattle(
   if (playerEot.opponentHealing > 0) {
     battle.wild.hp = Math.min(battle.wild.maxHp, battle.wild.hp + playerEot.opponentHealing);
   }
-  for (const msg of playerEot.messages) log.push(`${getDisplaySpeciesName(myPokemon.species)}: ${msg}`);
+  for (const msg of playerEotMessages) log.push(`${getDisplaySpeciesName(myPokemon.species)}: ${msg}`);
 
   // Wild end-of-turn status/volatile effects
   const wildEot = applyEndOfTurn(
@@ -665,8 +776,14 @@ export function applyEndOfTurnBattle(
     battle.wild.maxHp,
     myPokemon.maxHp,
   );
-  if (wildEot.damage > 0) {
-    battle.wild.hp = Math.max(0, battle.wild.hp - wildEot.damage);
+  let wildEotDamage = wildEot.damage;
+  let wildEotMessages = wildEot.messages;
+  if (wildAbilityEot.cancelPoison && battle.wild.statusCondition === "poison") {
+    wildEotDamage = Math.max(0, wildEotDamage - Math.max(1, Math.floor(battle.wild.maxHp / 8)));
+    wildEotMessages = wildEotMessages.filter((m) => m !== "독 데미지를 받았다!");
+  }
+  if (wildEotDamage > 0) {
+    battle.wild.hp = Math.max(0, battle.wild.hp - wildEotDamage);
   }
   if (wildEot.healing > 0) {
     battle.wild.hp = Math.min(battle.wild.maxHp, battle.wild.hp + wildEot.healing);
@@ -674,7 +791,22 @@ export function applyEndOfTurnBattle(
   if (wildEot.opponentHealing > 0) {
     myPokemon.hp = Math.min(myPokemon.maxHp, myPokemon.hp + wildEot.opponentHealing);
   }
-  for (const msg of wildEot.messages) log.push(`야생 ${getDisplaySpeciesName(battle.wild.species)}: ${msg}`);
+  for (const msg of wildEotMessages) log.push(`야생 ${getDisplaySpeciesName(battle.wild.species)}: ${msg}`);
+
+  // 특성 회복/데미지 적용(rain-dish·ice-body·dry-skin·poison-heal). 회복은 hp>0이고 풀피 아닐 때만,
+  // 데미지(dry-skin 햇살)는 hp>0일 때만. speed-boost는 아래에서 별도 단계 증가.
+  applyAbilityEotHpChange(myPokemon, playerAbilityEot, log, getDisplaySpeciesName(myPokemon.species));
+  applyAbilityEotHpChange(battle.wild, wildAbilityEot, log, `야생 ${getDisplaySpeciesName(battle.wild.species)}`);
+
+  // speed-boost: 턴 종료 시 speed 단계 +1(상한 +6은 applyStatChanges가 클램프).
+  if (playerAbilityEot.speedBoost && myPokemon.hp > 0) {
+    battle.playerStatStages = applyStatChanges(battle.playerStatStages ?? defaultStatStages(), [{ stat: "speed", change: 1 }]);
+    log.push(`${getDisplaySpeciesName(myPokemon.species)}의 스피드가 올랐다!`);
+  }
+  if (wildAbilityEot.speedBoost && battle.wild.hp > 0) {
+    battle.wildStatStages = applyStatChanges(battle.wildStatStages ?? defaultStatStages(), [{ stat: "speed", change: 1 }]);
+    log.push(`야생 ${getDisplaySpeciesName(battle.wild.species)}의 스피드가 올랐다!`);
+  }
 
   // 지닌물건 턴 종료 회복(먹다남은음식) — 양측
   applyHeldEndOfTurnHeal(myPokemon, log, getDisplaySpeciesName(myPokemon.species));
@@ -847,11 +979,54 @@ export async function doWildAttackAndCheck(
     battle.wildBattleForm, battle.playerBattleForm,
   );
 
+  // 특성 방어 면역/흡수(플레이어 방어자): 데미지 적용 전 판정.
+  // 면역이면 데미지 0, 2차효과/접촉/풀죽음 스킵하고 heal/boost만 적용.
+  if (wildResult.moveData && wildResult.moveData.category !== "status") {
+    const immunity = checkAbilityImmunity(myPokemon, wildResult.moveData.type, wildResult.moveData.category);
+    if (immunity.immune) {
+      log.push(`${getDisplaySpeciesName(myPokemon.species)}에게는 효과가 없는 것 같다...`);
+      if (immunity.healFraction) {
+        const heal = Math.max(1, Math.floor(myPokemon.maxHp * immunity.healFraction));
+        if (myPokemon.hp > 0 && myPokemon.hp < myPokemon.maxHp) {
+          myPokemon.hp = Math.min(myPokemon.maxHp, myPokemon.hp + heal);
+          log.push(`${getDisplaySpeciesName(myPokemon.species)}이(가) ${heal} 회복했다!`);
+        }
+      }
+      if (immunity.boostStat) {
+        battle.playerStatStages = applyStatChanges(battle.playerStatStages ?? defaultStatStages(), [{ stat: immunity.boostStat, change: 1 }]);
+        log.push(`${getDisplaySpeciesName(myPokemon.species)}의 능력이 올랐다!`);
+      }
+      checkHpForms(battle, myPokemon, log);
+      return await handleFainted(user, myPokemon, battle, log);
+    }
+  }
+
   // 지닌물건 공격 보정(야생 보유자용 — 야생은 보통 미지닌이라 1로 no-op).
   // 야생은 effectiveness 정보가 없으므로 super-effective 의존 효과(달인의띠)는 미적용.
   if (wildResult.moveData && wildResult.damage > 0) {
     const wildOffenseMod = getHeldOffenseMultiplier(battle.wild, wildResult.moveData.category, false);
     if (wildOffenseMod !== 1) wildResult.damage = Math.floor(wildResult.damage * wildOffenseMod);
+  }
+
+  // 특성 공격 보정(야생 공격자) — STAB은 야생 타입 기준, 상태이상 보유 여부 반영.
+  if (wildResult.moveData && wildResult.damage > 0) {
+    const wildAbilityOffenseMod = getAbilityOffenseMultiplier(
+      battle.wild, wildResult.moveData.type, wildResult.moveData.category, wildResult.moveData.power,
+      battle.wild.maxHp > 0 ? battle.wild.hp / battle.wild.maxHp : 0,
+      wildAtkTypes.includes(wildResult.moveData.type),
+      battle.wild.statusCondition != null,
+    );
+    if (wildAbilityOffenseMod !== 1) wildResult.damage = Math.floor(wildResult.damage * wildAbilityOffenseMod);
+  }
+
+  // 특성 방어 보정(플레이어 방어자). 야생은 effectiveness 정보가 없어 super-effective 의존 효과는 미적용.
+  if (wildResult.moveData && wildResult.damage > 0) {
+    const playerAbilityDefenseMod = getAbilityDefenseMultiplier(
+      myPokemon, wildResult.moveData.type,
+      myPokemon.maxHp > 0 ? myPokemon.hp / myPokemon.maxHp : 0,
+      false,
+    );
+    if (playerAbilityDefenseMod !== 1) wildResult.damage = Math.floor(wildResult.damage * playerAbilityDefenseMod);
   }
 
   // 기합의띠/기합의머리띠: post-damage HP를 쓰기 전에 플레이어 일격 버티기 판정
@@ -860,6 +1035,10 @@ export async function doWildAttackAndCheck(
   if (wildSurvive.kind) {
     wildResult.damage = wildSurvive.finalDamage;
     if (wildSurvive.consumed) myPokemon.heldItem = null;
+  } else if (wildResult.damage >= myPokemon.hp && myPokemon.hp > 0 && abilitySurvivesKO(myPokemon, playerAtFull)) {
+    // 옹골참(sturdy): 풀피에서 일격사를 HP 1로 버틴다.
+    wildResult.damage = myPokemon.hp - 1;
+    log.push(`${getDisplaySpeciesName(myPokemon.species)}은(는) 옹골참으로 버텼다!`);
   }
 
   const previousHp = myPokemon.hp;
@@ -889,7 +1068,7 @@ export async function doWildAttackAndCheck(
     // Apply stat changes for wild pokemon
     maybeApplyStatChanges(battle, wildResult.moveData, false, log);
 
-    // Apply ailment to player from wild attack (필드 상태이상 차단 게이팅 포함)
+    // Apply ailment to player from wild attack (필드/특성 상태이상 차단 게이팅 포함)
     const ailmentResult = maybeApplyAilment(
       wildResult.moveData,
       myPokemon.statusCondition,
@@ -897,6 +1076,7 @@ export async function doWildAttackAndCheck(
       log,
       battle,
       playerDefTypes,
+      myPokemon,
     );
     if (ailmentResult.newStatus) {
       myPokemon.statusCondition = ailmentResult.newStatus;
@@ -904,10 +1084,25 @@ export async function doWildAttackAndCheck(
     }
     battle.playerVolatile = ailmentResult.newVolatiles;
 
+    // 접촉(=물리 프록시) 피격 특성: 플레이어(방어자)의 static/flame-body/poison-point/rough-skin/iron-barbs
+    if (wildResult.moveData.category === "physical" && wildResult.damage > 0) {
+      const contact = applyContactAbilities(myPokemon, battle.wild.statusCondition != null, battle.wild.maxHp);
+      if (contact.inflictStatus && !battle.wild.statusCondition) {
+        battle.wild.statusCondition = contact.inflictStatus;
+        const names: Record<string, string> = { poison: "독", burn: "화상", paralysis: "마비" };
+        log.push(`야생 ${getDisplaySpeciesName(battle.wild.species)}은(는) ${names[contact.inflictStatus] ?? contact.inflictStatus} 상태가 되었다!`);
+      }
+      if (contact.recoilDamage && battle.wild.hp > 0) {
+        battle.wild.hp = Math.max(0, battle.wild.hp - contact.recoilDamage);
+        log.push(`야생 ${getDisplaySpeciesName(battle.wild.species)}은(는) 상대 특성으로 ${contact.recoilDamage} 데미지를 받았다!`);
+      }
+    }
+
     // 풀죽음(flinch) 판정 — executePlayerAttack와 동일하게 "apply if under"(roll < chance).
     // 야생이 선공한 경우에만 의미가 있으므로 battle.playerFlinched 임시 플래그로 알린다.
+    // inner-focus 특성을 가진 플레이어는 풀죽음에 면역이다.
     const wildFlinchChance = wildResult.moveData.meta?.flinchChance ?? 0;
-    if (wildFlinchChance > 0 && Math.random() * 100 < wildFlinchChance) {
+    if (wildFlinchChance > 0 && !hasAbility(myPokemon, "inner-focus") && Math.random() * 100 < wildFlinchChance) {
       battle.playerFlinched = true;
     }
 
