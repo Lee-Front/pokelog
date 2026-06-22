@@ -4,7 +4,7 @@ import { authMiddleware, type AuthRequest } from "../middleware/auth-middleware.
 import { getUser, saveUser } from "../storage/user-store.js";
 import { getConfig } from "../storage/config-store.js";
 import { getAllSpecies, createWildPokemon } from "../game/pokemon-factory.js";
-import { selectWildPokemon } from "../game/encounter.js";
+import { selectFromEncounters, splitEncounters } from "../game/encounter.js";
 import { createEncounterEvent } from "../game/event-factory.js";
 import { getRegion, getRegionNames, getSpeciesByName } from "../game/data-loader.js";
 import { buildLevelEvolutionContext, getEvolutionBranchDiagnostics } from "../game/growth.js";
@@ -131,12 +131,23 @@ gameRoutes.post("/wild/search", async (req: AuthRequest, res: Response) => {
     const rollCount = config.rewards.encounter.rollCount;
     const regionData = getRegion(user.currentRegion ?? "default");
 
-    // rollCount만큼 조우를 생성한다.
+    // 전설/환상은 일반 가중 추첨에서 제외한다 — 일반 풀에서만 rollCount 배치를 뽑는다.
+    const { normal: normalPool, legendary: legendaryPool } = splitEncounters(regionData);
+
+    // rollCount만큼 일반 조우를 생성한다.
     const newBatch = Array.from({ length: rollCount }, () => {
-      const pick = selectWildPokemon(regionData);
+      const pick = selectFromEncounters(normalPool);
       const wildPokemon = createWildPokemon(pick.species, pick.level);
       return createEncounterEvent(wildPokemon);
     });
+
+    // 게이팅된 전설 주입 — 롤 1회당 확률적으로 슬롯 하나를 지역 전설로 교체한다(최대 1마리, 쿨다운 없음).
+    if (legendaryPool.length && Math.random() < config.rewards.encounter.wildLegendaryChance) {
+      const pick = selectFromEncounters(legendaryPool);
+      const legendary = createEncounterEvent(createWildPokemon(pick.species, pick.level));
+      const slot = Math.floor(Math.random() * newBatch.length);
+      newBatch[slot] = legendary;
+    }
 
     // 보드 교체 — 기존 야생 조우는 제거하되 진화/기술배우기 등 다른 pending은 보존한다.
     user.pendingEvents = user.pendingEvents

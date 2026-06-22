@@ -143,6 +143,8 @@ const ALLOWED_CONFIG_PATHS = new Set([
   "rewards.combo.multipliers",
   // 무료 일괄 야생 롤이 한 번에 생성하는 조우 개수(1~50).
   "rewards.encounter.rollCount",
+  // 롤 1회당 전설/환상이 끼어들 확률(0~1).
+  "rewards.encounter.wildLegendaryChance",
   "meta.serverName",
   "meta.displayName",
   "meta.apiVersion",
@@ -234,6 +236,13 @@ adminRoutes.put("/config", async (req, res) => {
     if (key === "rewards.encounter.rollCount") {
       if (typeof value !== "number" || !Number.isInteger(value) || value < 1 || value > 50) {
         return res.status(400).json({ error: "rollCount는 1~50 사이의 정수여야 합니다" });
+      }
+    }
+
+    // 야생 전설 등장 확률 — 0~1 사이의 실수.
+    if (key === "rewards.encounter.wildLegendaryChance") {
+      if (typeof value !== "number" || !Number.isFinite(value) || value < 0 || value > 1) {
+        return res.status(400).json({ error: "wildLegendaryChance는 0~1 사이의 숫자여야 합니다" });
       }
     }
 

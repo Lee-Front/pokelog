@@ -144,6 +144,8 @@ export const DEFAULT_CONFIG: ServerConfig = {
     encounter: {
       // 무료 "탐색" 1회가 생성하는 야생 조우 개수(일괄 롤). 보드를 통째로 교체한다.
       rollCount: 12,
+      // 롤 1회당 전설/환상이 끼어들 확률(0~1). ≈ 50롤당 1마리. 쿨다운 없음(파밍 허용).
+      wildLegendaryChance: 0.02,
     },
     integrations: DEFAULT_INTEGRATION_REWARD_RULES,
   },

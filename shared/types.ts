@@ -385,6 +385,12 @@ export interface ComboConfig {
 export interface EncounterConfig {
   /** 무료 "탐색" 1회가 생성하는 야생 조우 개수(일괄 롤). 기본 12. */
   rollCount: number;
+  /**
+   * 롤 1회당 전설/환상 포켓몬이 끼어들 확률(0~1). 기본 0.02(≈ 50롤당 1마리).
+   * 적중 시 배치의 슬롯 하나를 지역 전설 풀에서 가중 추첨한 한 마리로 교체한다.
+   * 알 확률과 무관(알은 별도 설정).
+   */
+  wildLegendaryChance: number;
 }
 
 export interface ShopItem {

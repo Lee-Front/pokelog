@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { selectWildPokemon } from "./encounter.js";
+import {
+  selectWildPokemon,
+  selectFromEncounters,
+  splitEncounters,
+  isLegendaryEncounter,
+} from "./encounter.js";
+import { getRegion } from "./data-loader.js";
 import type { RegionData } from "../../../../shared/types.js";
 
 afterEach(() => {
@@ -43,5 +49,59 @@ describe("selectWildPokemon", () => {
     const pick = selectWildPokemon(region);
     expect(pick.species).toBe("rattata");
     expect(pick.level).toBe(12);
+  });
+});
+
+describe("legendary split + gated injection", () => {
+  // 출몰 엔트리에 직접 종족 플래그가 없으므로 data-loader 분류를 검증한다.
+  // kanto: 일반 다수 + 전설(articuno/zapdos/moltres/mewtwo, weight 2) + 환상(mew, weight 1).
+  const region = getRegion("kanto");
+
+  it("splits a region into non-legendary normal and legendary/mythical pools", () => {
+    const { normal, legendary } = splitEncounters(region);
+    expect(normal.length).toBeGreaterThan(0);
+    expect(legendary.length).toBeGreaterThan(0);
+    // 일반 풀에는 전설/환상이 하나도 없다.
+    expect(normal.every((e) => !isLegendaryEncounter(e))).toBe(true);
+    // 전설 풀은 전부 전설/환상이다.
+    expect(legendary.every((e) => isLegendaryEncounter(e))).toBe(true);
+    // mew(환상)와 mewtwo(전설)가 전설 풀에 들어간다.
+    const legNames = legendary.map((e) => e.species);
+    expect(legNames).toContain("mew");
+    expect(legNames).toContain("mewtwo");
+  });
+
+  // 라우트의 게이팅 주입 로직을 그대로 재현하는 헬퍼(주입 가능 RNG).
+  function rollBatch(
+    regionData: RegionData,
+    rollCount: number,
+    wildLegendaryChance: number,
+    rng: () => number,
+  ): string[] {
+    const { normal, legendary } = splitEncounters(regionData);
+    const batch = Array.from({ length: rollCount }, () => selectFromEncounters(normal, rng).species);
+    if (legendary.length && rng() < wildLegendaryChance) {
+      const slot = Math.floor(rng() * batch.length);
+      batch[slot] = selectFromEncounters(legendary, rng).species;
+    }
+    return batch;
+  }
+
+  const isLeg = (species: string) =>
+    isLegendaryEncounter({ species, weight: 1, levelRange: [1, 1] });
+
+  it("injects exactly one legendary when chance is forced to 1", () => {
+    // 모든 random()이 0이면: 일반은 첫 엔트리, gate(0<1) 통과, slot 0, 전설 첫 엔트리.
+    const batch = rollBatch(region, 12, 1, () => 0);
+    const legCount = batch.filter(isLeg).length;
+    expect(legCount).toBe(1);
+    // 나머지 11마리는 전부 비전설이다.
+    expect(batch.filter((s) => !isLeg(s)).length).toBe(11);
+  });
+
+  it("injects zero legendaries when chance is 0", () => {
+    const batch = rollBatch(region, 12, 0, () => 0);
+    expect(batch.some(isLeg)).toBe(false);
+    expect(batch.filter((s) => !isLeg(s)).length).toBe(12);
   });
 });
