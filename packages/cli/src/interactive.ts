@@ -68,7 +68,7 @@ const MENU_TREE: MenuNode[] = [
     label: "상점", desc: "상점 / 뽑기", auth: true, server: true,
     children: [
       { label: "상점", cmd: "shop", desc: "아이템 구매" },
-      { label: "배틀 상점", cmd: "battle-shop", desc: "배틀머니로 구매" },
+      { label: "배틀 상점", cmd: "battle-shop", desc: "게임머니로 구매" },
       { label: "뽑기", cmd: "egg",  desc: "포켓몬 가챠" },
     ],
   },

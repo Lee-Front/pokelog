@@ -117,23 +117,6 @@ export async function testCommit(userId: string, bytes: string) {
   }
 }
 
-export async function testEncounter(userId: string, species?: string, level?: string) {
-  if (!(await ensureAdminKey())) return;
-  const body: Record<string, unknown> = { userId };
-  if (species) body.species = species;
-  if (level) body.level = parseInt(level, 10);
-  let res = await apiPost("/api/admin/test/encounter", body);
-  if (!res.ok && await handleAdminAuthFailure(res.data.error)) {
-    res = await apiPost("/api/admin/test/encounter", body);
-  }
-  if (res.ok) {
-    const d = res.data.event as { id: string; species: string; level: number };
-    console.log(`야생 ${d.species} Lv.${d.level} 출현! (이벤트: ${d.id.slice(0, 12)})`);
-  } else {
-    console.error(`오류: ${res.data.error}`);
-  }
-}
-
 export async function testGivePoints(userId: string, amount: string) {
   if (!(await ensureAdminKey())) return;
   let res = await apiPost("/api/admin/test/give-points", { userId, amount: parseInt(amount, 10) });

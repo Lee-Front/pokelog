@@ -4,7 +4,7 @@ import {
   adminRepoAdd, adminRepoList, adminRepoRemove,
   adminConfigShow, adminConfigSet,
   adminStatus, adminUsers, adminPollingRun,
-  testCommit, testEncounter, testGivePoints, testGiveItem, testGivePokemon,
+  testCommit, testGivePoints, testGiveItem, testGivePokemon,
 } from "./commands/admin.js";
 
 const program = new Command();
@@ -28,7 +28,6 @@ polling.command("run").description("수동 Polling 실행").action(adminPollingR
 // 테스트/디버그 명령어
 const test = program.command("test").description("테스트/디버그 도구");
 test.command("commit <userId> <bytes>").description("가짜 커밋 이벤트 발생").action(testCommit);
-test.command("encounter <userId> [species] [level]").description("야생 조우 강제 발생").action(testEncounter);
 test.command("give-points <userId> <amount>").description("포인트 직접 지급").action(testGivePoints);
 test.command("give-item <userId> <item> [quantity]").description("아이템 직접 지급").action(testGiveItem);
 test.command("give-pokemon <userId> <species> [level]").description("포켓몬 직접 지급").action(testGivePokemon);

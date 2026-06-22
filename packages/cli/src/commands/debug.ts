@@ -22,7 +22,7 @@ export async function debugCommand() {
     console.log();
     const action = await selectAction("디버그 메뉴:", [
       { name: "테스트 커밋 발생", value: "commit" },
-      { name: "야생 조우 강제 발생", value: "encounter" },
+      { name: "야생 탐색(무료 롤)", value: "encounter" },
       { name: "포인트 지급", value: "points" },
       { name: "아이템 지급", value: "item" },
       { name: "포켓몬 지급", value: "pokemon" },
@@ -58,18 +58,17 @@ export async function debugCommand() {
         break;
       }
       case "encounter": {
-        const species = await inputPrompt("포켓몬 종류 (빈값=랜덤):");
-        const level = await numberPrompt("레벨 (빈값=랜덤):");
-        const body: Record<string, unknown> = { userId: currentUserId };
-        if (species) body.species = species;
-        if (level) body.level = level;
-        let res = await apiPost("/api/admin/test/encounter", body);
-        if (!res.ok && await handleAdminAuthFailure(res.data.error)) {
-          res = await apiPost("/api/admin/test/encounter", body);
-        }
+        // 현재 지역에서 무료 탐색 — 야생 조우 목록을 새로 생성(배치)한다.
+        const res = await apiPost("/api/game/wild/search", {});
         if (res.ok) {
-          const evt = res.data.event as { species: string; level: number };
-          console.log(`  야생 ${evt.species} Lv.${evt.level} 조우 이벤트 생성!`);
+          const events = (res.data.events as Array<{ species?: string; level?: number; pokemon?: { species: string; level: number } }>) ?? [];
+          const count = (res.data.count as number) ?? events.length;
+          console.log(`  야생 ${count}마리를 발견했습니다!`);
+          for (const evt of events) {
+            const sp = evt.pokemon?.species ?? evt.species ?? "?";
+            const lv = evt.pokemon?.level ?? evt.level ?? 0;
+            console.log(`    야생 ${sp} Lv.${lv}`);
+          }
         } else {
           console.error(`  오류: ${res.data.error}`);
         }

@@ -81,7 +81,7 @@ describe("pushBattleOutcome", () => {
         result: "win",
         rewards: {
           exp: 71,
-          battleMoney: 23,
+          gameMoney: 23,
           droppedItems: [{ item: "potion", qty: 1 }],
           leveledUp: true,
           newLevel: 11,
@@ -92,7 +92,7 @@ describe("pushBattleOutcome", () => {
     expect(log[0]).toContain("전투 승리!");
     expect(log.join("\n")).toContain("71 EXP");
     expect(log.join("\n")).toContain("레벨 11");
-    expect(log.join("\n")).toContain("23 배틀머니");
+    expect(log.join("\n")).toContain("23 게임머니");
     expect(log.join("\n")).toContain("potion 1개");
   });
 });
@@ -103,14 +103,14 @@ describe("battleRewardLines", () => {
   });
 
   it("omits zero-value reward lines", () => {
-    const lines = battleRewardLines({ exp: 0, battleMoney: 0, droppedItems: [] });
+    const lines = battleRewardLines({ exp: 0, gameMoney: 0, droppedItems: [] });
     expect(lines).toEqual([]);
   });
 
   it("shows an evolution line when the winner evolved", () => {
     const lines = battleRewardLines({
       exp: 100,
-      battleMoney: 5,
+      gameMoney: 5,
       droppedItems: [],
       evolvedInto: "charmeleon",
     });
