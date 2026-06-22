@@ -6,7 +6,8 @@ import { getConfig } from "../storage/config-store.js";
 import { defaultStatStages } from "../game/battle.js";
 import { attemptCapture, getCatchRate } from "../game/capture.js";
 import { wildPokemonToOwned } from "../game/pokemon-factory.js";
-import { getMoveById } from "../game/data-loader.js";
+import { getMoveById, getSpeciesByName } from "../game/data-loader.js";
+import { getZPower } from "../game/z-moves.js";
 import type { BattleState, MoveData, OwnedPokemon, UserData } from "../../../../shared/types.js";
 import { decrementItem, healPokemon } from "../game/inventory-utils.js";
 import { recordMoveUsage } from "../game/move-usage.js";
@@ -260,8 +261,36 @@ async function handleFight(
     log.push(`${getDisplaySpeciesName(myPokemon.species)}이(가) 기가맥스했다!`);
   }
 
+  // Handle terastal (플레이어 전용·배틀당 1회, 메가/거다이 게이트와 독립)
+  // 아이템(테라오브) 없이 행동 플래그 + 1회 게이트만으로 발동(단순화 — z-moves.ts/문서 참조).
+  // teraType은 개체의 teraType, 없으면 종 1차 타입으로 기본값. 스탯은 안 바뀌고 타이핑만 바뀐다.
+  const terastal = data?.terastal as boolean | undefined;
+  if (terastal === true) {
+    if (battle.playerTerastallized) { res.status(400).json({ error: "이번 배틀에서 이미 테라스탈했습니다" }); return; }
+    const primaryType = getSpeciesByName(myPokemon.species)?.types?.[0];
+    const teraType = myPokemon.teraType ?? primaryType;
+    if (!teraType) { res.status(400).json({ error: "테라스탈 타입을 결정할 수 없습니다" }); return; }
+    battle.playerTeraType = teraType;
+    battle.playerTerastallized = true;
+    log.push(`${getDisplaySpeciesName(myPokemon.species)}이(가) ${teraType}테라스탈했다!`);
+  }
+
   const selectedMove = myMove;
   let selectedMoveData = moveData;
+
+  // Handle Z-move (플레이어 전용·배틀당 1회, 공격기 전용)
+  // 위력만 Z파워로 증폭(크리스탈 타입 매칭·Z상태기 없음 — 단순화 MVP, z-moves.ts 참조).
+  // 공유 무브 데이터를 변형하지 않도록 얕은 복제본으로 위력을 덮어쓴다.
+  const zmove = data?.zmove as boolean | undefined;
+  if (zmove === true) {
+    if (battle.zMoveUsed) { res.status(400).json({ error: "이번 배틀에서 이미 Z기술을 사용했습니다" }); return; }
+    if (moveData.category === "status" || moveData.power <= 0) {
+      res.status(400).json({ error: "Z기술은 공격기에만 쓸 수 있습니다" }); return;
+    }
+    battle.zMoveUsed = true;
+    selectedMoveData = { ...moveData, power: getZPower(moveData.power) };
+    log.push(`${getDisplaySpeciesName(myPokemon.species)}의 Z파워가 폭발한다!`);
+  }
 
   // G-Max move substitution: when Gigantamaxed, replace matching-type moves
   if (battle.transformationType === "gigantamax" && selectedMoveData.category !== "status") {

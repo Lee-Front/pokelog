@@ -161,6 +161,9 @@ export interface OwnedPokemon {
   evs?: PokemonEVs;
   // 포켓루스 감염 여부. undefined = 미감염(마이그레이션 불필요). 감염 시 EV 수확량 2배.
   pokerus?: boolean;
+  // 테라스탈 시 변경되는 개체의 테라스탈 타입(영문 슬러그). 미설정이면 테라스탈 시점에
+  // 종 1차 타입으로 기본값 처리. 영속 개체 속성일 뿐, 전투 중 효과는 BattleState에 담긴다.
+  teraType?: string;
 }
 
 export type EggTierId = "common" | "rare" | "legend";
@@ -288,6 +291,14 @@ export interface BattleState {
   transformationUsed?: boolean;
   gmaxTurnsRemaining?: number;
   playerPreTransformMaxHp?: number;
+  // 테라스탈(플레이어 전용·배틀당 1회). 메가/거다이 게이트(transformationUsed)와 독립.
+  // playerTerastallized=true면 공격 STAB 계산이 teraType 기반으로 바뀌고, 방어 시 유효
+  // 타입이 [playerTeraType]로 치환된다. 스탯은 안 바뀌므로 전투 종료 시 그냥 사라진다(되돌릴 것 없음).
+  playerTeraType?: string | null;
+  playerTerastallized?: boolean;
+  // Z기술(플레이어 전용·배틀당 1회). 메가/거다이/테라와 독립 게이트. true면 이번 전투에서
+  // 이미 Z기술을 썼다는 뜻. (단순화 MVP: 크리스탈 타입 매칭·Z상태기 없음 — Z파워 위력 증폭만.)
+  zMoveUsed?: boolean;
   // 야생이 선공해 풀죽음(flinch)을 유발했는지 알리는 1턴짜리 임시 플래그.
   // doWildAttackAndCheck가 설정하고, 야생 선공 분기에서 소비 즉시 해제한다(영속 저장 안 함).
   playerFlinched?: boolean;

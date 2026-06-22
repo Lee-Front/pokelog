@@ -360,6 +360,76 @@ describe("calculateDamage", () => {
   });
 });
 
+describe("calculateDamage — 테라스탈 STAB", () => {
+  let randomSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    randomSpy = vi.spyOn(Math, "random");
+  });
+
+  afterEach(() => {
+    randomSpy.mockRestore();
+  });
+
+  const attackerStats: PokemonStats = { attack: 50, defense: 40, speed: 30, spAttack: 60, spDefense: 40 };
+  const defenderStats: PokemonStats = { attack: 40, defense: 40, speed: 30, spAttack: 40, spDefense: 40 };
+  const fireMove: MoveData = {
+    id: "ember", name: "불꽃세례", type: "fire", category: "special",
+    power: 40, accuracy: 100, pp: 25, description: "",
+  };
+
+  // 같은 입력(난수 고정)으로 STAB만 다른 케이스를 비교한다. STAB 외 모든 항(난수보정 0.85, 효과 1.0)
+  // 은 동일하므로 데미지 비율이 곧 STAB 비율이다.
+  function damageWith(teraStab?: { teraType: string; originalTypes: string[] }, attackerTypes: string[] = ["fire"]): number {
+    randomSpy.mockReturnValueOnce(0.5).mockReturnValueOnce(0.5).mockReturnValueOnce(0.0);
+    return calculateDamage(
+      10, attackerStats, defenderStats, fireMove, attackerTypes, ["normal"],
+      undefined, undefined, 1, teraStab,
+    ).damage;
+  }
+
+  // floor는 데미지 식 전체에 1번만 적용되므로, "tera로 얻은 STAB"의 데미지는 "같은 STAB을
+  // 내는 비테라 경로"의 데미지와 byte-identical 해야 한다(난수가 모두 고정이므로). 그래서
+  // STAB 1.5/1.0은 비테라 동등 경로(["fire"]/["normal"])와 정확히 일치하는지 검증한다.
+
+  it("테라 타입 === 기술 타입이고 원래 타입에도 있으면 STAB 2.0 (겹STAB)", () => {
+    // STAB 2.0은 비테라로 재현 불가(최대 1.5)이므로 1.5 기준 대비 더 큰지 + floor전 비율로 검증.
+    const stab15 = damageWith(undefined, ["fire"]); // STAB 1.5
+    const tera = damageWith({ teraType: "fire", originalTypes: ["fire"] }); // STAB 2.0
+    expect(tera).toBeGreaterThan(stab15);
+    // 동일 내부 float이므로 tera = floor(pre * 2.0), stab15 = floor(pre * 1.5).
+    // pre = stab15/1.5 (정수 floor 오차 ±1 허용).
+    const expected = Math.floor((stab15 / 1.5) * 2.0);
+    expect(Math.abs(tera - expected)).toBeLessThanOrEqual(1);
+  });
+
+  it("테라 타입 === 기술 타입이지만 원래 타입엔 없으면 STAB 1.5 (비테라 1.5와 동일)", () => {
+    // 원래 normal 단일, 테라 fire로 바꿔 fire기 → 새 타입 STAB 1.5.
+    const stab15 = damageWith(undefined, ["fire"]); // 비테라 STAB 1.5
+    const tera = damageWith({ teraType: "fire", originalTypes: ["normal"] }); // STAB 1.5
+    expect(tera).toBe(stab15);
+  });
+
+  it("기술 타입 !== 테라 타입이지만 원래 타입에 있으면 원타입 STAB 1.5 유지", () => {
+    // 원래 fire, 테라 water로. fire기는 테라와 안 맞지만 원래 fire라 1.5 유지.
+    const stab15 = damageWith(undefined, ["fire"]); // 비테라 STAB 1.5
+    const tera = damageWith({ teraType: "water", originalTypes: ["fire"] }); // STAB 1.5
+    expect(tera).toBe(stab15);
+  });
+
+  it("기술 타입이 테라 타입도 원래 타입도 아니면 STAB 1.0 (비테라 1.0과 동일)", () => {
+    const stab10 = damageWith(undefined, ["normal"]); // 비테라 STAB 1.0
+    const tera = damageWith({ teraType: "water", originalTypes: ["grass"] }); // STAB 1.0
+    expect(tera).toBe(stab10);
+  });
+
+  it("teraStab 미제공 시 종전 STAB과 동일(byte-identical)", () => {
+    const a = damageWith(undefined, ["fire"]);
+    const b = damageWith(undefined, ["fire"]);
+    expect(a).toBe(b);
+  });
+});
+
 describe("rollCritical", () => {
   // 본가 Gen6+ 급소 확률표: stage 0=1/24, 1=1/8, 2=1/2, 3 이상=필중.
   // random()*denominator < 1 일 때 급소. 경계 굴림을 주입해 표를 검증한다.

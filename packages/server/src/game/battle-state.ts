@@ -451,12 +451,19 @@ export function executePlayerAttack(
   // 지닌물건 방어 보정: 야생이 돌격조끼 보유 시 특수 데미지 ÷1.5 (def×1.5 등가)
   const wildSpDefMod = getHeldSpDefMultiplier(battle.wild, moveData.category);
 
+  // 테라스탈 STAB: 플레이어가 terastallize했으면 teraType + 원래 타입(playerAtkTypes)을 넘겨
+  // 본가식 STAB(2.0/1.5/1.0)을 계산하게 한다. 미발동이면 undefined → 종전과 동일.
+  const playerTeraStab = (battle.playerTerastallized && battle.playerTeraType)
+    ? { teraType: battle.playerTeraType, originalTypes: playerAtkTypes }
+    : undefined;
+
   const result = calculateDamage(
     player.level, playerStats, battle.wild.stats, moveData,
     playerAtkTypes,
     wildDefTypes,
     battle.playerStatStages, battle.wildStatStages,
     (playerWeatherMod * playerTerrainMod) / wildSpDefMod,
+    playerTeraStab,
   );
 
   // 지닌물건 공격 보정: 생명의구슬/힘의머리띠/박식안경/달인의띠
@@ -860,6 +867,8 @@ export function wildAttack(
   weatherModifier: number = 1,
   wildBattleForm?: string | null,
   targetBattleForm?: string | null,
+  // 대상(플레이어)이 terastallize했으면 그 테라 타입. 주어지면 방어 시 유효 타입을 [teraType]로 치환.
+  targetTeraType?: string | null,
 ): { damage: number; moveId: string | null; moveData: MoveData | null; message: string; missed?: boolean; critical?: boolean; priority?: number } {
   const availableMoves = wildMoves.filter((move) => move.pp > 0);
   if (availableMoves.length === 0) {
@@ -874,13 +883,18 @@ export function wildAttack(
 
   chosen.pp -= 1;
 
+  // 방어자(플레이어) 유효 타입 — terastallize했으면 [teraType]로 치환(본가식 방어 타입 변경).
+  const targetDefTypes = targetTeraType
+    ? [targetTeraType]
+    : getEffectiveTypes(targetSpecies, targetVariantId, targetBattleForm);
+
   const result = calculateDamage(
     wildLevel,
     wildStats,
     targetStats,
     moveData,
     getEffectiveTypes(wildSpecies, wildVariantId, wildBattleForm),
-    getEffectiveTypes(targetSpecies, targetVariantId, targetBattleForm),
+    targetDefTypes,
     attackerStages,
     defenderStages,
     weatherModifier,
@@ -977,6 +991,8 @@ export async function doWildAttackAndCheck(
     battle.wild.variantId, myPokemon.variantId,
     (wildWeatherMod * wildTerrainMod) / playerSpDefMod,
     battle.wildBattleForm, battle.playerBattleForm,
+    // 플레이어가 terastallize했으면 방어 유효 타입을 [teraType]로 치환(데미지 타입상성용).
+    (battle.playerTerastallized && battle.playerTeraType) ? battle.playerTeraType : null,
   );
 
   // 특성 방어 면역/흡수(플레이어 방어자): 데미지 적용 전 판정.

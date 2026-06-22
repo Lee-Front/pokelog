@@ -57,6 +57,16 @@ export function rollCritical(critRate: number, random: () => number = Math.rando
   return random() * critDenominator < 1;
 }
 
+/**
+ * 테라스탈 STAB 보정 정보(선택). terastallize한 공격자의 STAB을 본가식으로 계산하기 위해
+ * 호출처가 teraType(테라 타입)과 originalTypes(테라 전 원래 타입)를 함께 넘긴다.
+ * 미지정이면 STAB은 종전과 동일(attackerTypes에 move.type 포함 시 1.5).
+ */
+export interface TeraStab {
+  teraType: string;
+  originalTypes: string[];
+}
+
 export function calculateDamage(
   attackerLevel: number,
   attackerStats: PokemonStats,
@@ -67,6 +77,7 @@ export function calculateDamage(
   attackerStages?: StatStages,
   defenderStages?: StatStages,
   weatherModifier: number = 1,
+  teraStab?: TeraStab,
 ): DamageResult {
   const typeChart = getTypeChart();
 
@@ -133,7 +144,23 @@ export function calculateDamage(
   }
 
   // STAB (Same-Type Attack Bonus)
-  const stab = attackerTypes.includes(move.type) ? 1.5 : 1.0;
+  // 테라스탈 시(teraStab 제공) 본가식 보정:
+  //  - 기술 타입 === 테라 타입: 원래 타입에도 그 타입이 있었으면 2.0(겹STAB), 아니면 1.5.
+  //  - 기술 타입 !== 테라 타입이지만 원래 타입에 있으면 1.5(테라 후에도 원타입 STAB 유지).
+  //  - 둘 다 아니면 1.0.
+  // teraStab 미제공이면 종전과 byte-identical(attackerTypes 포함 여부로 1.5/1.0).
+  let stab: number;
+  if (teraStab) {
+    if (move.type === teraStab.teraType) {
+      stab = teraStab.originalTypes.includes(move.type) ? 2.0 : 1.5;
+    } else if (teraStab.originalTypes.includes(move.type)) {
+      stab = 1.5;
+    } else {
+      stab = 1.0;
+    }
+  } else {
+    stab = attackerTypes.includes(move.type) ? 1.5 : 1.0;
+  }
 
   // Critical hit multiplier
   const critMultiplier = isCritical ? CRIT_MULTIPLIER : 1.0;
