@@ -284,7 +284,7 @@ async function handleFight(
   }
 
   // Determine turn order (paralysis speed halving + stat stages applied inside)
-  const turnOrder = determineBattleTurnOrder(battle, myPokemon, selectedMoveData, wildMoveData ?? { priority: 0 });
+  const turnOrder = determineBattleTurnOrder(battle, myPokemon, selectedMoveData, wildMoveData ?? { priority: 0 }, log);
 
   // Turn start form checks (morpeko)
   applyBattleFormChange(

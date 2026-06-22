@@ -7,6 +7,10 @@ import {
   terrainBlocksStatus, isGrounded, tickTerrain,
 } from "./terrain.js";
 import { getMoveById } from "./data-loader.js";
+import {
+  getHeldOffenseMultiplier, getHeldSpDefMultiplier, applyLifeOrbRecoil,
+  tryFocusSurvive, applyHeldEndOfTurnHeal, maybeConsumePinchBerry, quickClawTriggers,
+} from "./held-item-battle.js";
 import { getEffectiveTypes, getDisplaySpeciesName } from "./pokemon-state.js";
 import {
   checkPreAttack, applyEndOfTurn, tickVolatiles,
@@ -408,20 +412,47 @@ export function executePlayerAttack(
     ? getTerrainTypeModifier(battle.terrain, moveData.type, isGrounded(playerAtkTypes), isGrounded(wildDefTypes))
     : 1;
 
+  // 지닌물건 방어 보정: 야생이 돌격조끼 보유 시 특수 데미지 ÷1.5 (def×1.5 등가)
+  const wildSpDefMod = getHeldSpDefMultiplier(battle.wild, moveData.category);
+
   const result = calculateDamage(
     player.level, playerStats, battle.wild.stats, moveData,
     playerAtkTypes,
     wildDefTypes,
     battle.playerStatStages, battle.wildStatStages,
-    playerWeatherMod * playerTerrainMod,
+    (playerWeatherMod * playerTerrainMod) / wildSpDefMod,
   );
+
+  // 지닌물건 공격 보정: 생명의구슬/힘의머리띠/박식안경/달인의띠
+  const playerOffenseMod = getHeldOffenseMultiplier(player, moveData.category, result.effectiveness > 1);
+  if (playerOffenseMod !== 1 && result.damage > 0) {
+    result.damage = Math.floor(result.damage * playerOffenseMod);
+  }
+
+  // 기합의띠/기합의머리띠: post-damage HP를 쓰기 전에 일격 버티기 판정
+  const wildAtFull = battle.wild.hp >= battle.wild.maxHp;
+  const survive = tryFocusSurvive(battle.wild, result.damage, wildAtFull);
+  if (survive.kind) {
+    result.damage = survive.finalDamage;
+    if (survive.consumed) battle.wild.heldItem = null;
+  }
+
   battle.wild.hp = Math.max(0, battle.wild.hp - result.damage);
   log.push(`${getDisplaySpeciesName(player.species)}의 ${moveData.name}! ${result.missed ? "빗나갔다!" : `${result.damage} 데미지!`}`);
   if (result.message) log.push(result.message);
+  if (survive.kind === "focus-sash") log.push("기합의띠로 버텼다!");
+  else if (survive.kind === "focus-band") log.push("기합의머리띠로 버텼다!");
 
   let flinchCaused = false;
 
   if (!result.missed) {
+    // 생명의구슬 반동: 데미지를 입힌 비-status 공격 직후 보유자 HP 감소
+    if (moveData.category !== "status" && result.damage > 0) {
+      applyLifeOrbRecoil(player, log);
+    }
+    // 위기 회복 나무열매(기력의탄산수): 야생이 데미지를 받은 직후 조건 충족 시 회복
+    maybeConsumePinchBerry(battle.wild, log, `야생 ${getDisplaySpeciesName(battle.wild.species)}`);
+
     // Apply meta effects for player
     const metaResult = applyMetaEffects(moveData, result.damage, player.hp, player.maxHp);
     if (metaResult.hpChange !== 0) {
@@ -560,6 +591,7 @@ export function determineBattleTurnOrder(
   player: OwnedPokemon,
   playerMoveData: { priority?: number },
   wildMoveData: { priority?: number },
+  log: string[] = [],
 ): "player" | "wild" {
   let playerSpeedBase = player.stats.speed;
   if (player.statusCondition === "paralysis") {
@@ -572,6 +604,21 @@ export function determineBattleTurnOrder(
 
   const playerSpeed = applyStatStageMultiplier(playerSpeedBase, battle.playerStatStages?.speed ?? 0);
   const wildSpeed = applyStatStageMultiplier(wildSpeedBase, battle.wildStatStages?.speed ?? 0);
+
+  // 선제공격손톱(quick-claw): 속도 비교 전 20% 확률로 선공.
+  // 우선도(priority)가 같을 때만 의미가 있으므로 동일 우선도에서 판정한다.
+  const playerPriority = playerMoveData.priority ?? 0;
+  const wildPriority = wildMoveData.priority ?? 0;
+  if (playerPriority === wildPriority) {
+    if (quickClawTriggers(player)) {
+      log.push("빠른발톱이 발동!");
+      return "player";
+    }
+    if (quickClawTriggers(battle.wild)) {
+      log.push("빠른발톱이 발동!");
+      return "wild";
+    }
+  }
 
   return determineTurnOrder(
     playerSpeed, wildSpeed,
@@ -626,6 +673,10 @@ export function applyEndOfTurnBattle(
     myPokemon.hp = Math.min(myPokemon.maxHp, myPokemon.hp + wildEot.opponentHealing);
   }
   for (const msg of wildEot.messages) log.push(`야생 ${getDisplaySpeciesName(battle.wild.species)}: ${msg}`);
+
+  // 지닌물건 턴 종료 회복(먹다남은음식) — 양측
+  applyHeldEndOfTurnHeal(myPokemon, log, getDisplaySpeciesName(myPokemon.species));
+  applyHeldEndOfTurnHeal(battle.wild, log, `야생 ${getDisplaySpeciesName(battle.wild.species)}`);
 
   // Tick volatile statuses
   battle.playerVolatile = tickVolatiles(battle.playerVolatile ?? []);
@@ -766,19 +817,46 @@ export async function doWildAttackAndCheck(
     ? getTerrainTypeModifier(battle.terrain, wildMoveData.type, isGrounded(wildAtkTypes), isGrounded(playerDefTypes))
     : 1;
 
+  // 지닌물건 방어 보정: 플레이어가 돌격조끼 보유 시 특수 데미지 ÷1.5
+  const playerSpDefMod = wildMoveData ? getHeldSpDefMultiplier(myPokemon, wildMoveData.category) : 1;
+
   const wildResult = wildAttack(
     battle.wild.species, battle.wild.level, wildStats,
     battle.wild.moves, myPokemon.stats, myPokemon.species,
     battle.wildStatStages, battle.playerStatStages,
     preSelectedWildMove,
     battle.wild.variantId, myPokemon.variantId,
-    wildWeatherMod * wildTerrainMod,
+    (wildWeatherMod * wildTerrainMod) / playerSpDefMod,
     battle.wildBattleForm, battle.playerBattleForm,
   );
+
+  // 지닌물건 공격 보정(야생 보유자용 — 야생은 보통 미지닌이라 1로 no-op).
+  // 야생은 effectiveness 정보가 없으므로 super-effective 의존 효과(달인의띠)는 미적용.
+  if (wildResult.moveData && wildResult.damage > 0) {
+    const wildOffenseMod = getHeldOffenseMultiplier(battle.wild, wildResult.moveData.category, false);
+    if (wildOffenseMod !== 1) wildResult.damage = Math.floor(wildResult.damage * wildOffenseMod);
+  }
+
+  // 기합의띠/기합의머리띠: post-damage HP를 쓰기 전에 플레이어 일격 버티기 판정
+  const playerAtFull = myPokemon.hp >= myPokemon.maxHp;
+  const wildSurvive = tryFocusSurvive(myPokemon, wildResult.damage, playerAtFull);
+  if (wildSurvive.kind) {
+    wildResult.damage = wildSurvive.finalDamage;
+    if (wildSurvive.consumed) myPokemon.heldItem = null;
+  }
+
   const previousHp = myPokemon.hp;
   myPokemon.hp = Math.max(0, myPokemon.hp - wildResult.damage);
   recordDamageTaken(myPokemon, previousHp - myPokemon.hp);
   log.push(`야생 ${getDisplaySpeciesName(battle.wild.species)}의 공격! ${wildResult.damage} 데미지!`);
+  if (wildSurvive.kind === "focus-sash") log.push("기합의띠로 버텼다!");
+  else if (wildSurvive.kind === "focus-band") log.push("기합의머리띠로 버텼다!");
+  // 생명의구슬 반동(야생 보유자용 — 보통 no-op)
+  if (wildResult.moveData && !wildResult.missed && wildResult.moveData.category !== "status" && wildResult.damage > 0) {
+    applyLifeOrbRecoil(battle.wild, log);
+  }
+  // 위기 회복 나무열매: 플레이어가 데미지를 받은 직후 조건 충족 시 회복
+  maybeConsumePinchBerry(myPokemon, log, getDisplaySpeciesName(myPokemon.species));
   if (wildResult.message) log.push(wildResult.message);
 
   // Apply meta effects for wild pokemon (only if the attack didn't miss)

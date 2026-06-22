@@ -183,6 +183,9 @@ export interface WildPokemon {
   isShiny?: boolean;
   statusCondition?: PrimaryStatus | null;
   ivs?: PokemonIVs;
+  // 야생은 보통 지닌물건이 없지만(생성 시 미설정), 전투 헬퍼가 일반적으로
+  // heldItem을 참조/소모할 수 있도록 선택 필드로 둔다(미지닌이면 no-op).
+  heldItem?: string | null;
 }
 
 export interface PendingEvent {
