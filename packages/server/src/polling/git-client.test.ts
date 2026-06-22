@@ -84,16 +84,16 @@ describe("git-client", () => {
     expect(commits[0].hash).toBe(secondHash);
   });
 
-  it("getCommitByteChanges returns correct bytes for new file", async () => {
+  it("getCommitByteChanges counts added text (diff) for new file", async () => {
     const bytes = await getCommitByteChanges(repoDir, firstHash);
-    // "hello world\n" = 12 bytes
-    expect(bytes).toBe(12);
+    // 추가된 줄 "+hello world" → 내용 "hello world" = 11 bytes (전체 파일 크기가 아님)
+    expect(bytes).toBe(11);
   });
 
-  it("getCommitByteChanges returns correct bytes for modified file", async () => {
+  it("getCommitByteChanges counts added+deleted text for modified file", async () => {
     const bytes = await getCommitByteChanges(repoDir, secondHash);
-    // max(old=12, new=28) = 28
-    expect(bytes).toBe(28);
+    // 삭제 "hello world"(11) + 추가 "hello world updated content"(27) = 38
+    expect(bytes).toBe(38);
   });
 
   it("getLatestHash returns the latest commit hash", async () => {

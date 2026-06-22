@@ -286,68 +286,66 @@ export async function getAllCommitsAcrossBranches(
 }
 
 /** Calculate byte changes for a single commit using diff-tree and cat-file */
+// 보상 산정에서 제외할 생성/빌드/바이너리 경로. 사람이 작성한 데이터(json 포함)는 인정한다.
+// (바이너리는 git이 텍스트 diff를 내지 않아 어차피 0바이트로 잡히지만, 생성된 *텍스트*
+//  — dist 번들·lockfile·min/소스맵 — 는 경로로 명시 제외해야 한다.)
+const REWARD_EXCLUDED_DIRS = [
+  "dist", "build", "target", "out", "node_modules", ".next", ".gradle", "vendor", "coverage", ".idea",
+];
+const REWARD_EXCLUDED_BASENAMES = [
+  "package-lock.json", "yarn.lock", "pnpm-lock.yaml", "composer.lock", "gemfile.lock", "poetry.lock",
+];
+const REWARD_EXCLUDED_EXTENSIONS = [".map", ".min.js", ".min.css", ".lock"];
+
+/** 보상 산정에서 제외할 생성/빌드 경로인지. json 등 작성 데이터는 인정(false). */
+export function isGeneratedPath(filePath: string): boolean {
+  const lower = filePath.toLowerCase();
+  const segments = lower.split("/");
+  if (segments.some((s) => REWARD_EXCLUDED_DIRS.includes(s))) return true;
+  const base = segments[segments.length - 1];
+  if (REWARD_EXCLUDED_BASENAMES.includes(base)) return true;
+  return REWARD_EXCLUDED_EXTENSIONS.some((ext) => base.endsWith(ext));
+}
+
+/**
+ * `git show -U0` 패치에서 사람이 실제로 추가/삭제한 텍스트 바이트(추가+삭제)를 센다.
+ * 파일 전체 크기가 아니라 변경된 줄만 계산하므로, 큰 파일의 한 줄 수정이 파일 크기로
+ * 부풀려지지 않는다. 선행 +/- 1바이트는 제외하고 줄 내용 바이트만 더한다.
+ * 생성/빌드 경로(isGeneratedPath)는 건너뛴다. 바이너리는 +/- 줄이 없어 자연히 0.
+ */
+export function countDiffTextBytes(patch: string): number {
+  let total = 0;
+  let excluded = false;
+  for (const line of patch.split("\n")) {
+    if (line.startsWith("diff --git ")) {
+      // "diff --git a/<old> b/<new>" — 변경 후 경로(b/)로 제외 판정.
+      const match = line.match(/ b\/(.*)$/);
+      excluded = match ? isGeneratedPath(match[1]) : false;
+      continue;
+    }
+    if (excluded) continue;
+    // 파일 헤더(+++/---)와 헝크 헤더(@@)는 변경 내용이 아니므로 제외.
+    if (line.startsWith("+++") || line.startsWith("---") || line.startsWith("@@")) continue;
+    if (line.startsWith("+") || line.startsWith("-")) {
+      total += Buffer.byteLength(line, "utf8") - 1;
+    }
+  }
+  return total;
+}
+
 export async function getCommitByteChanges(
   repoDir: string,
   commitHash: string,
 ): Promise<number> {
   try {
+    // -U0: 컨텍스트 줄 없이 변경 줄만. --format=: 커밋 헤더 제거(패치만).
+    // maxBuffer를 크게 — 큰 커밋 패치가 기본 1MB를 넘으면 throw → 0이 되어 적립 누락.
     const { stdout } = await exec(
       "git",
-      ["diff-tree", "-r", "--root", "--no-commit-id", commitHash],
-      { cwd: repoDir },
+      ["show", commitHash, "-p", "-U0", "--format=", "--no-color"],
+      { cwd: repoDir, maxBuffer: 256 * 1024 * 1024 },
     );
-    if (!stdout.trim()) return 0;
-
-    let totalBytes = 0;
-    const lines = stdout.trim().split("\n");
-
-    for (const line of lines) {
-      // Format: :oldMode newMode oldBlob newBlob status\tpath
-      const match = line.match(/:(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)/);
-      if (!match) continue;
-      const [, , , oldBlob, newBlob] = match;
-
-      const nullHash = "0000000000000000000000000000000000000000";
-
-      let bytes = 0;
-      if (oldBlob === nullHash) {
-        // New file: full size
-        const { stdout: size } = await exec(
-          "git",
-          ["cat-file", "-s", newBlob],
-          { cwd: repoDir },
-        );
-        bytes = parseInt(size.trim(), 10);
-      } else if (newBlob === nullHash) {
-        // Deleted file: old size
-        const { stdout: size } = await exec(
-          "git",
-          ["cat-file", "-s", oldBlob],
-          { cwd: repoDir },
-        );
-        bytes = parseInt(size.trim(), 10);
-      } else {
-        // Modified: max(old, new)
-        const { stdout: oldSize } = await exec(
-          "git",
-          ["cat-file", "-s", oldBlob],
-          { cwd: repoDir },
-        );
-        const { stdout: newSize } = await exec(
-          "git",
-          ["cat-file", "-s", newBlob],
-          { cwd: repoDir },
-        );
-        bytes = Math.max(
-          parseInt(oldSize.trim(), 10),
-          parseInt(newSize.trim(), 10),
-        );
-      }
-
-      totalBytes += bytes;
-    }
-
-    return totalBytes;
+    return countDiffTextBytes(stdout);
   } catch {
     return 0;
   }
