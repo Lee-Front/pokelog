@@ -23,10 +23,10 @@ export async function battleShopCommand() {
   }
 
   const items = res.data.items as Record<string, ShopItem>;
-  const battleMoney = res.data.battleMoney as number;
+  const gameMoney = res.data.gameMoney as number;
 
   console.log("");
-  console.log(`  ${BLD}배틀 상점${R}   ${DIM}배틀머니: ${YEL}${battleMoney} BM${R}`);
+  console.log(`  ${BLD}배틀 상점${R}   ${DIM}게임머니: ${YEL}${gameMoney} BM${R}`);
   console.log("  " + "─".repeat(44));
   for (const [key, item] of Object.entries(items)) {
     const price = `${YEL}${item.price} BM${R}`;
@@ -40,7 +40,7 @@ export async function battleShopCommand() {
 export async function battleBuyCommand(item: string, quantity: number) {
   const res = await apiPost("/api/battle-shop/buy", { item, quantity });
   if (res.ok) {
-    console.log(`${GRN}${item} ${quantity}개 구매 완료! (남은 배틀머니: ${res.data.battleMoney} BM)${R}`);
+    console.log(`${GRN}${item} ${quantity}개 구매 완료! (남은 게임머니: ${res.data.gameMoney} BM)${R}`);
   } else {
     console.error(`오류: ${res.data.error}`);
   }

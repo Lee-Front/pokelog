@@ -127,10 +127,10 @@ export function grantBattleRewards(
   const now = options.now ?? new Date();
 
   const exp = calculateBattleExp(wild, config);
-  const battleMoney = calculateBattleMoney(wild.level, config);
+  const gameMoney = calculateBattleMoney(wild.level, config);
   const drop = rollItemDrop(config, random);
 
-  user.battleMoney += battleMoney;
+  user.gameMoney += gameMoney;
 
   const droppedItems: BattleDroppedItem[] = [];
   if (drop) {
@@ -180,7 +180,7 @@ export function grantBattleRewards(
   const headline = partyExp[0];
   return {
     exp,
-    battleMoney,
+    gameMoney,
     droppedItems,
     leveledUp: headline?.leveledUp ?? false,
     newLevel: headline?.newLevel ?? participants[0]?.level ?? 0,

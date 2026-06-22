@@ -28,7 +28,7 @@ function createUser(id: string, nickname: string, party: OwnedPokemon[], over: P
     account: { id, password: "pw", nickname, createdAt: "2026-04-13T00:00:00.000Z", matchings: {} },
     currentRegion: "default",
     points: 0,
-    battleMoney: 0,
+    gameMoney: 0,
     totalExp: 0,
     combo: { count: 0, lastCommitAt: null },
     encounterCeiling: { accumulatedBytes: 0 },

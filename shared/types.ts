@@ -326,7 +326,7 @@ export interface BattlePartyExp {
 
 export interface BattleRewards {
   exp: number;
-  battleMoney: number;
+  gameMoney: number;
   droppedItems: BattleDroppedItem[];
   leveledUp?: boolean;
   newLevel?: number;
@@ -346,10 +346,10 @@ export interface UserData {
   account: UserAccount;
   currentRegion?: string;
   points: number;
-  // Battle-shop currency, earned from winning wild battles. Kept separate from
+  // Game-money currency, earned from winning wild battles. Kept separate from
   // `points` (commit-earned). Lives at the top level for now; the planned
   // UserData split (#7) will move it into the GameProgress sub-type.
-  battleMoney: number;
+  gameMoney: number;
   totalExp: number;
   combo: UserCombo;
   encounterCeiling: EncounterCeiling;
@@ -400,6 +400,8 @@ export interface ShopItem {
   catchBonus?: number;
   healAmount?: number;
   guaranteedCatch?: boolean;
+  // 카테고리 탭 분류(게임머니 상점 전용): "potion"|"ball"|"special". 포인트 상점은 미지정.
+  category?: string;
 }
 
 export interface BattleDropEntry {
@@ -412,7 +414,7 @@ export interface BattleDropEntry {
 export interface BattleRewardConfig {
   // EXP = floor(baseExpYield * wildLevel / 7) * expMultiplier (main-series yield)
   expMultiplier: number;
-  // battleMoney = floor(wildLevel * moneyPerLevel) + moneyBase
+  // gameMoney = floor(wildLevel * moneyPerLevel) + moneyBase
   moneyPerLevel: number;
   moneyBase: number;
   // Single weighted roll across the table; total chance < 1 means "no drop".

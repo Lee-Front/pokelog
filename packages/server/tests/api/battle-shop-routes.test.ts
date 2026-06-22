@@ -17,7 +17,7 @@ describe("battle shop routes", () => {
     const res = await t.authed(token).get("/api/battle-shop/");
 
     expect(res.status).toBe(200);
-    expect(res.body.battleMoney).toBe(0); // fresh user
+    expect(res.body.gameMoney).toBe(0); // fresh user
     expect(res.body.items).toHaveProperty("super-potion");
     expect(res.body.items["super-potion"].price).toBeGreaterThan(0);
   });
@@ -59,7 +59,7 @@ describe("battle shop routes", () => {
     // Grant battle money directly via the storage layer.
     const { getUser, saveUser } = await import("../../src/storage/user-store.js");
     const user = await getUser(userId);
-    user!.battleMoney = 100;
+    user!.gameMoney = 100;
     await saveUser(user!);
 
     const res = await t.authed(token).post("/api/battle-shop/buy", {
@@ -68,7 +68,7 @@ describe("battle shop routes", () => {
     });
 
     expect(res.status).toBe(200);
-    expect(res.body.battleMoney).toBe(100 - 30 * 2);
+    expect(res.body.gameMoney).toBe(100 - 30 * 2);
     expect(res.body.inventory["super-potion"]).toBe(2);
   });
 
@@ -77,13 +77,13 @@ describe("battle shop routes", () => {
 
     const { getUser, saveUser } = await import("../../src/storage/user-store.js");
     const user = await getUser(userId);
-    user!.battleMoney = 100;
+    user!.gameMoney = 100;
     await saveUser(user!);
 
     const res = await t.authed(token).post("/api/battle-shop/buy", { item: "super-potion" });
 
     expect(res.status).toBe(200);
-    expect(res.body.battleMoney).toBe(100 - 30);
+    expect(res.body.gameMoney).toBe(100 - 30);
     expect(res.body.inventory["super-potion"]).toBe(1);
   });
 
@@ -92,7 +92,7 @@ describe("battle shop routes", () => {
 
     const { getUser, saveUser } = await import("../../src/storage/user-store.js");
     const user = await getUser(userId);
-    user!.battleMoney = 50; // enough for 1 super-potion (30) but not 2
+    user!.gameMoney = 50; // enough for 1 super-potion (30) but not 2
     await saveUser(user!);
 
     const res = await t.authed(token).post("/api/battle-shop/buy", {
@@ -108,7 +108,7 @@ describe("battle shop routes", () => {
 
     const { getUser, saveUser } = await import("../../src/storage/user-store.js");
     const user = await getUser(userId);
-    user!.battleMoney = 1000000;
+    user!.gameMoney = 1000000;
     await saveUser(user!);
 
     const res = await t.authed(token).post("/api/battle-shop/buy", {

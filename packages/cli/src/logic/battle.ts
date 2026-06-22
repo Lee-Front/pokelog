@@ -72,7 +72,7 @@ export function battleRewardLines(rewards: BattleRewards | undefined): string[] 
     lines.push(`${GRN}레벨 ${rewards.newLevel} 달성!${R}`);
   }
   if (rewards.evolvedInto) lines.push(`${GRN}${rewards.evolvedInto}(으)로 진화!${R}`);
-  if (rewards.battleMoney > 0) lines.push(`${YEL}+${rewards.battleMoney} 배틀머니${R}`);
+  if (rewards.gameMoney > 0) lines.push(`${YEL}+${rewards.gameMoney} 게임머니${R}`);
   for (const drop of rewards.droppedItems ?? []) {
     lines.push(`${CYN}${drop.item} ${drop.qty}개 획득!${R}`);
   }

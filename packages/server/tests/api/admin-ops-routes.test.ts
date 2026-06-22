@@ -37,7 +37,7 @@ function makeUser(id: string, overrides: Partial<UserData> = {}): UserData {
     },
     currentRegion: "default",
     points: 0,
-    battleMoney: 0,
+    gameMoney: 0,
     totalExp: 0,
     combo: { count: 0, lastCommitAt: null },
     encounterCeiling: { accumulatedBytes: 0 },
@@ -123,7 +123,7 @@ describe("admin ops + announcement routes", () => {
     await ctx.saveUser(makeUser("snap", {
       points: 42,
       totalExp: 100,
-      battleMoney: 7,
+      gameMoney: 7,
       pokedex: ["pikachu", "eevee"],
       inventory: { pokeball: 3 },
       integrations: [
@@ -154,7 +154,7 @@ describe("admin ops + announcement routes", () => {
 
   // ── 재화 조정 ────────────────────────────────────────────────
   it("POST /users/:id/adjust set/add and clamps negatives to 0", async () => {
-    await ctx.saveUser(makeUser("adj", { points: 100, totalExp: 50, battleMoney: 10 }));
+    await ctx.saveUser(makeUser("adj", { points: 100, totalExp: 50, gameMoney: 10 }));
 
     const setRes = await api(ctx, "POST", "/api/admin/users/adj/adjust", {
       admin: true, body: { setPoints: 500, addTotalExp: 25 },
@@ -163,16 +163,16 @@ describe("admin ops + announcement routes", () => {
     expect(setRes.body.points).toBe(500);
     expect(setRes.body.totalExp).toBe(75);
 
-    // addBattleMoney 음수 → 0 클램프
+    // addGameMoney 음수 → 0 클램프
     const clampRes = await api(ctx, "POST", "/api/admin/users/adj/adjust", {
-      admin: true, body: { addBattleMoney: -9999 },
+      admin: true, body: { addGameMoney: -9999 },
     });
     expect(clampRes.status).toBe(200);
-    expect(clampRes.body.battleMoney).toBe(0);
+    expect(clampRes.body.gameMoney).toBe(0);
 
     const persisted = await ctx.getUser("adj");
     expect(persisted?.points).toBe(500);
-    expect(persisted?.battleMoney).toBe(0);
+    expect(persisted?.gameMoney).toBe(0);
   });
 
   it("POST /users/:id/adjust rejects set+add on the same field", async () => {
@@ -224,7 +224,7 @@ describe("admin ops + announcement routes", () => {
       config: { repoUrl: "https://x/y", token: "T" }, emails: ["e@x.y"],
     } as any;
     await ctx.saveUser(makeUser("reset", {
-      points: 999, totalExp: 999, battleMoney: 50,
+      points: 999, totalExp: 999, gameMoney: 50,
       party: ["uid1"],
       pokemon: [{ uid: "uid1", species: "pikachu", level: 5 } as any],
       storage: [{ uid: "uid2", species: "eevee", level: 5 } as any],
@@ -244,7 +244,7 @@ describe("admin ops + announcement routes", () => {
     // reset
     expect(u?.points).toBe(0);
     expect(u?.totalExp).toBe(0);
-    expect(u?.battleMoney).toBe(0);
+    expect(u?.gameMoney).toBe(0);
     expect(u?.party).toEqual([]);
     expect(u?.pokemon).toEqual([]);
     expect(u?.storage).toEqual([]);

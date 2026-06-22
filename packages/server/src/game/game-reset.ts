@@ -8,7 +8,7 @@ import type { UserData } from "../../../../shared/types.js";
  * 저장한다(포인트/경험치 하락이 의도된 것이므로 잔액역행 경고를 건너뛴다).
  *
  * ── 리셋(게임 진행) ──────────────────────────────────────────────
- *   points, totalExp, battleMoney   — 모든 재화 0
+ *   points, totalExp, gameMoney     — 모든 재화 0
  *   combo                            — 콤보 카운트/마지막 커밋시각 초기화
  *   encounterCeiling                 — 누적 바이트(조우 천장) 0
  *   party, pokemon, storage          — 보유 포켓몬 전부 제거
@@ -33,7 +33,7 @@ import type { UserData } from "../../../../shared/types.js";
 export function resetGameData(user: UserData): void {
   user.points = 0;
   user.totalExp = 0;
-  user.battleMoney = 0;
+  user.gameMoney = 0;
   user.combo = { count: 0, lastCommitAt: null };
   user.encounterCeiling = { accumulatedBytes: 0 };
   user.party = [];

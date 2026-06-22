@@ -376,7 +376,7 @@ adminRoutes.post("/provision", async (req, res) => {
       },
       currentRegion: "default",
       points: 0,
-      battleMoney: 0,
+      gameMoney: 0,
       totalExp: 0,
       combo: { count: 0, lastCommitAt: null },
       encounterCeiling: { accumulatedBytes: 0 },
@@ -416,7 +416,7 @@ adminRoutes.get("/users/:id", async (req, res) => {
       account: { id: user.account.id, nickname: user.account.nickname, createdAt: user.account.createdAt },
       points: user.points,
       totalExp: user.totalExp,
-      battleMoney: user.battleMoney,
+      gameMoney: user.gameMoney,
       currentRegion: user.currentRegion ?? "default",
       party: user.party
         .map((uid) => user.pokemon.find((p) => p.uid === uid))
@@ -449,7 +449,7 @@ adminRoutes.get("/users/:id", async (req, res) => {
   }
 });
 
-// 재화 조정 — points/totalExp/battleMoney 각각 set 또는 add(한 필드당 하나만).
+// 재화 조정 — points/totalExp/gameMoney 각각 set 또는 add(한 필드당 하나만).
 // 결과가 음수면 0으로 클램프. 잔액 하락이 의도된 운영 작업이므로 "admin-adjust"로 저장.
 adminRoutes.post("/users/:id/adjust", async (req, res) => {
   try {
@@ -459,7 +459,7 @@ adminRoutes.post("/users/:id/adjust", async (req, res) => {
     const fields = [
       { name: "Points", target: "points" },
       { name: "TotalExp", target: "totalExp" },
-      { name: "BattleMoney", target: "battleMoney" },
+      { name: "GameMoney", target: "gameMoney" },
     ] as const;
 
     for (const { name, target } of fields) {
@@ -482,7 +482,7 @@ adminRoutes.post("/users/:id/adjust", async (req, res) => {
     }
 
     await saveUser(user, "admin-adjust");
-    res.json({ ok: true, points: user.points, totalExp: user.totalExp, battleMoney: user.battleMoney });
+    res.json({ ok: true, points: user.points, totalExp: user.totalExp, gameMoney: user.gameMoney });
   } catch (err) {
     log.error({ err }, "Admin adjust error");
     res.status(500).json({ error: "서버 오류" });
@@ -693,14 +693,14 @@ adminRoutes.post("/users/:id/reset-game", async (req, res) => {
 // 락으로 직렬화해 폴링 등 다른 쓰기와의 경합을 피한다. 처리/실패 수를 반환.
 adminRoutes.post("/broadcast/reward", async (req, res) => {
   try {
-    const { points, battleMoney, items, pokemon, filter } = req.body ?? {};
+    const { points, gameMoney, items, pokemon, filter } = req.body ?? {};
 
     // 입력 검증 — 존재하지 않는 item/species가 하나라도 있으면 시작 전에 400.
     if (points != null && (typeof points !== "number" || !Number.isFinite(points))) {
       return res.status(400).json({ error: "points는 숫자여야 합니다" });
     }
-    if (battleMoney != null && (typeof battleMoney !== "number" || !Number.isFinite(battleMoney))) {
-      return res.status(400).json({ error: "battleMoney는 숫자여야 합니다" });
+    if (gameMoney != null && (typeof gameMoney !== "number" || !Number.isFinite(gameMoney))) {
+      return res.status(400).json({ error: "gameMoney는 숫자여야 합니다" });
     }
     if (items && typeof items === "object") {
       for (const id of Object.keys(items)) {
@@ -734,7 +734,7 @@ adminRoutes.post("/broadcast/reward", async (req, res) => {
           const user = await getUser(id);
           if (!user) return;
           if (typeof points === "number") user.points = Math.max(0, user.points + points);
-          if (typeof battleMoney === "number") user.battleMoney = Math.max(0, user.battleMoney + battleMoney);
+          if (typeof gameMoney === "number") user.gameMoney = Math.max(0, user.gameMoney + gameMoney);
           if (items && typeof items === "object") {
             for (const [item, qty] of Object.entries(items as Record<string, number>)) {
               if (typeof qty === "number" && qty > 0) incrementItem(user.inventory, item, qty);

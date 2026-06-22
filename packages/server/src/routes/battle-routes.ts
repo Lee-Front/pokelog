@@ -104,7 +104,7 @@ async function finishWin(
     if (member.leveledUp) log.push(`${getDisplaySpeciesName(member.species)}은(는) 레벨 ${member.newLevel}이(가) 되었다!`);
     if (member.evolvedInto) log.push(`${getDisplaySpeciesName(member.species)}(으)로 진화했다!`);
   }
-  if (rewards.battleMoney > 0) log.push(`배틀머니 ${rewards.battleMoney}을(를) 획득했다!`);
+  if (rewards.gameMoney > 0) log.push(`게임머니 ${rewards.gameMoney}을(를) 획득했다!`);
   for (const drop of rewards.droppedItems) {
     log.push(`${drop.item} ${drop.qty}개를 주웠다!`);
   }

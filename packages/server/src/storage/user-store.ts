@@ -446,10 +446,18 @@ function normalizeUserData(user: UserData): UserData {
     );
   }
 
+  // 재화 마이그레이션 — 과거 `battleMoney`를 `gameMoney`로 투명 이관한다.
+  // gameMoney가 아직 없으면(구 저장본) 옛 battleMoney 값을 옮겨오고, 옛 필드는 버린다.
+  // 다음 로드/저장부터는 gameMoney만 남는다.
+  const { battleMoney: legacyBattleMoney, ...userWithoutLegacy } = user as UserData & {
+    battleMoney?: number;
+  };
+  const gameMoney = user.gameMoney ?? legacyBattleMoney ?? 0;
+
   return {
-    ...user,
+    ...userWithoutLegacy,
     currentRegion: user.currentRegion ?? "default",
-    battleMoney: user.battleMoney ?? 0,
+    gameMoney,
     inventory: normalizeInventory(user.inventory),
     party: reconciled.party,
     pokemon: reconciled.pokemon,

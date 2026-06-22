@@ -31,7 +31,7 @@ function createUser(id: string, overrides: Partial<UserData> = {}): UserData {
     account: { id, password: "pw", nickname: id, createdAt: "2026-04-13T00:00:00.000Z", matchings: {} },
     currentRegion: "default",
     points: 100,
-    battleMoney: 0,
+    gameMoney: 0,
     totalExp: 500,
     combo: { count: 0, lastCommitAt: null },
     encounterCeiling: { accumulatedBytes: 0 },

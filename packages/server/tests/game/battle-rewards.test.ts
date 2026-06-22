@@ -26,7 +26,7 @@ function makePartyUser(members: OwnedPokemon[]): UserData {
     account: { id: "u", password: "x", nickname: "U", createdAt: new Date().toISOString(), matchings: {} },
     currentRegion: "default",
     points: 0,
-    battleMoney: 0,
+    gameMoney: 0,
     totalExp: 0,
     combo: { count: 0, lastCommitAt: null },
     encounterCeiling: { accumulatedBytes: 0 },
@@ -118,8 +118,8 @@ describe("grantBattleRewards", () => {
     const expectedExp = calculateBattleExp({ species: "pidgey", level: 10 }, config);
     expect(rewards.exp).toBe(expectedExp);
     expect(winner.exp).toBe(startExp + expectedExp);
-    expect(rewards.battleMoney).toBe(calculateBattleMoney(10, config));
-    expect(user.battleMoney).toBe(rewards.battleMoney);
+    expect(rewards.gameMoney).toBe(calculateBattleMoney(10, config));
+    expect(user.gameMoney).toBe(rewards.gameMoney);
     expect(rewards.droppedItems).toEqual([{ item: "potion", qty: 1 }]);
     expect(user.inventory.potion).toBe(1);
   });

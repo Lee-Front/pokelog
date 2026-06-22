@@ -21,7 +21,7 @@ battleShopRoutes.get("/", async (req, res) => {
     }
 
     const config = await getConfig();
-    res.json({ items: config.battleShop.items, battleMoney: user.battleMoney });
+    res.json({ items: config.battleShop.items, gameMoney: user.gameMoney });
   } catch (err) {
     log.error({ err }, "Battle shop error");
     res.status(500).json({ error: "Failed to load battle shop." });
@@ -55,18 +55,18 @@ battleShopRoutes.post("/buy", async (req, res) => {
       return;
     }
 
-    if (user.battleMoney < totalCost) {
-      res.status(400).json({ error: "Not enough battle money." });
+    if (user.gameMoney < totalCost) {
+      res.status(400).json({ error: "Not enough game money." });
       return;
     }
 
-    user.battleMoney -= totalCost;
+    user.gameMoney -= totalCost;
     incrementItem(user.inventory, item, qty);
     await saveUser(user);
 
     res.json({
       message: `Purchased ${qty} ${shopItem.name}.`,
-      battleMoney: user.battleMoney,
+      gameMoney: user.gameMoney,
       inventory: user.inventory,
     });
   } catch (err) {
