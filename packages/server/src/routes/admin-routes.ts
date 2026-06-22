@@ -15,10 +15,7 @@ import {
 import { pollAllRepos, recomputeUserSerialized } from "../polling/polling-worker.js";
 import { calculateReward } from "../game/reward.js";
 import { judgeCombo, getComboMultiplier } from "../game/combo.js";
-import { selectWildPokemon } from "../game/encounter.js";
-import { createWildPokemon, createPokemon } from "../game/pokemon-factory.js";
-import { getRegion } from "../game/data-loader.js";
-import { createEncounterEvent } from "../game/event-factory.js";
+import { createPokemon } from "../game/pokemon-factory.js";
 import { incrementItem } from "../game/inventory-utils.js";
 import {
   applyLearnedMoves,
@@ -144,10 +141,6 @@ const ALLOWED_CONFIG_PATHS = new Set([
   "rewards.combo.bytesPerMinute",
   "rewards.combo.maxMultiplier",
   "rewards.combo.multipliers",
-  "rewards.encounter.baseChance",
-  "rewards.encounter.ceilingBytes",
-  "rewards.encounter.timeLimitHours",
-  "rewards.encounter.searchCost",
   // 무료 일괄 야생 롤이 한 번에 생성하는 조우 개수(1~50).
   "rewards.encounter.rollCount",
   "meta.serverName",
@@ -388,7 +381,6 @@ adminRoutes.post("/provision", async (req, res) => {
       gameMoney: 0,
       totalExp: 0,
       combo: { count: 0, lastCommitAt: null },
-      encounterCeiling: { accumulatedBytes: 0 },
       party: [starterPokemon.uid],
       pokemon: [starterPokemon],
       eggs: [],
@@ -449,7 +441,6 @@ adminRoutes.get("/users/:id", async (req, res) => {
         status: i.status,
         emails: "emails" in i ? (i.emails ?? []) : [],
       })),
-      encounterCeiling: user.encounterCeiling,
       battleState: user.battleState ? { eventId: user.battleState.eventId, turn: user.battleState.turn } : null,
     });
   } catch (err) {
@@ -973,29 +964,6 @@ adminRoutes.post("/test/commit", async (req, res) => {
       }
     }
 
-    // 조우 판정
-    const { checkEncounter } = await import("../game/encounter.js");
-    const encounterResult = checkEncounter(
-      user.encounterCeiling.accumulatedBytes,
-      bytes,
-      config.rewards.encounter.baseChance,
-      multiplier,
-      config.rewards.encounter.ceilingBytes
-    );
-    user.encounterCeiling.accumulatedBytes = encounterResult.newCeiling;
-
-    let encounterInfo: { species: string; level: number } | null = null;
-    if (encounterResult.encountered) {
-      const regionData = getRegion(currentRegion);
-      const pick = selectWildPokemon(regionData);
-      const wildLevel = pick.level;
-      const wildPokemon = createWildPokemon(pick.species, wildLevel);
-
-      const event = createEncounterEvent(wildPokemon, config.rewards.encounter.timeLimitHours);
-      user.pendingEvents.push(event);
-      encounterInfo = { species: pick.species, level: wildLevel };
-    }
-
     // 로그
     user.log.push({
       type: "reward",
@@ -1013,43 +981,7 @@ adminRoutes.post("/test/commit", async (req, res) => {
     res.json({
       ok: true, exp: reward.exp, points: reward.points,
       combo: user.combo.count, multiplier,
-      encounter: encounterInfo,
     });
-  } catch (err) {
-    log.error({ err }, "Admin route error");
-    res.status(500).json({ error: "서버 오류" });
-  }
-});
-
-// 야생 조우 강제 발생
-adminRoutes.post("/test/encounter", async (req, res) => {
-  try {
-    const { userId, species, level } = req.body;
-    if (!userId) return res.status(400).json({ error: "userId 필요" });
-
-    const user = await getUser(userId);
-    if (!user) return res.status(404).json({ error: "유저 없음" });
-
-    const config = await getConfig();
-
-    // species/level 지정 가능, 미지정 시 랜덤
-    let wildSpecies = species;
-    let wildLevel = level;
-    if (!wildSpecies) {
-      const regionData = getRegion(user.currentRegion ?? "default");
-      const pick = selectWildPokemon(regionData);
-      wildSpecies = pick.species;
-      wildLevel = pick.level;
-    }
-    if (!wildLevel) wildLevel = 5;
-
-    const wildPokemon = createWildPokemon(wildSpecies, wildLevel);
-
-    const event = createEncounterEvent(wildPokemon, config.rewards.encounter.timeLimitHours);
-    user.pendingEvents.push(event);
-    await saveUser(user);
-
-    res.json({ ok: true, event: { id: event.id, species: wildSpecies, level: wildLevel, expiresAt: event.expiresAt } });
   } catch (err) {
     log.error({ err }, "Admin route error");
     res.status(500).json({ error: "서버 오류" });

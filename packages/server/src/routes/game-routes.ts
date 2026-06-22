@@ -28,9 +28,8 @@ gameRoutes.get("/status", async (req: AuthRequest, res: Response) => {
     }
 
     const now = new Date();
-    const pendingCount = user.pendingEvents.filter(
-      (e) => new Date(e.expiresAt) > now,
-    ).length;
+    // 야생 조우는 만료되지 않으므로 대기 이벤트 전체가 곧 활성 개수다.
+    const pendingCount = user.pendingEvents.length;
 
     // Retroactively queue any already-eligible evolutions (e.g. Pokémon stuck at
     // a level past their evolution threshold that never re-level), so the pending
@@ -71,21 +70,10 @@ gameRoutes.get("/events", async (req: AuthRequest, res: Response) => {
       return;
     }
 
-    const now = new Date();
-    const activeEvents = user.pendingEvents.filter(
-      (e) => new Date(e.expiresAt) > now,
-    );
-
-    // 만료된 이벤트 정리
-    if (activeEvents.length !== user.pendingEvents.length) {
-      user.pendingEvents = activeEvents;
-      await saveUser(user);
-    }
-
-    const config = await getConfig();
+    // 야생 조우는 만료되지 않으므로 대기 이벤트를 그대로 내려준다.
     // 응답 시점에 종족 속성(types)을 덧붙인다 — 저장 데이터(WildPokemon)에는 없고,
     // 웹의 속성 필터에만 쓰이므로 마이그레이션 없이 종족 데이터에서 계산한다.
-    const eventsWithTypes = activeEvents.map((e) => ({
+    const eventsWithTypes = user.pendingEvents.map((e) => ({
       ...e,
       pokemon: {
         ...e.pokemon,
@@ -94,8 +82,6 @@ gameRoutes.get("/events", async (req: AuthRequest, res: Response) => {
     }));
     res.json({
       events: eventsWithTypes,
-      // 웹/CLI가 "포인트로 탐색" UI를 그릴 수 있도록 비용과 잔액을 함께 내려준다.
-      searchCost: config.rewards.encounter.searchCost,
       points: user.points,
     });
   } catch (err) {
@@ -143,14 +129,13 @@ gameRoutes.post("/wild/search", async (req: AuthRequest, res: Response) => {
 
     const config = await getConfig();
     const rollCount = config.rewards.encounter.rollCount;
-    const timeLimitHours = config.rewards.encounter.timeLimitHours;
     const regionData = getRegion(user.currentRegion ?? "default");
 
     // rollCount만큼 조우를 생성한다.
     const newBatch = Array.from({ length: rollCount }, () => {
       const pick = selectWildPokemon(regionData);
       const wildPokemon = createWildPokemon(pick.species, pick.level);
-      return createEncounterEvent(wildPokemon, timeLimitHours);
+      return createEncounterEvent(wildPokemon);
     });
 
     // 보드 교체 — 기존 야생 조우는 제거하되 진화/기술배우기 등 다른 pending은 보존한다.

@@ -142,12 +142,6 @@ export const DEFAULT_CONFIG: ServerConfig = {
       maxMultiplier: 1.5,
     },
     encounter: {
-      baseChance: 0.3,
-      ceilingBytes: 5000,
-      timeLimitHours: 168,
-      // 포인트 소비 야생 탐색 비용(레거시). 탐색은 무료 일괄 롤로 바뀌어 더 이상
-      // 게이트가 아니다. 응답에는 정보성으로 남는다.
-      searchCost: 100,
       // 무료 "탐색" 1회가 생성하는 야생 조우 개수(일괄 롤). 보드를 통째로 교체한다.
       rollCount: 12,
     },

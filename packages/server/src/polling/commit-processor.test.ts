@@ -24,22 +24,12 @@ vi.mock("../game/combo.js", () => ({
   getComboMultiplier: vi.fn(),
 }));
 
-vi.mock("../game/encounter.js", () => ({
-  checkEncounter: vi.fn(),
-  selectWildPokemon: vi.fn(),
-}));
-
-vi.mock("../game/pokemon-factory.js", () => ({
-  createWildPokemon: vi.fn(),
-}));
-
 import { processCommit } from "./commit-processor.js";
 import { getUsersForRepoCommit, saveUser } from "../storage/user-store.js";
 import { getConfig } from "../storage/config-store.js";
 import { getCommitByteChanges } from "./git-client.js";
 import { calculateReward } from "../game/reward.js";
 import { judgeCombo, getComboMultiplier } from "../game/combo.js";
-import { checkEncounter } from "../game/encounter.js";
 
 const mockGetUsersForRepoCommit = vi.mocked(getUsersForRepoCommit);
 const mockSaveUser = vi.mocked(saveUser);
@@ -48,7 +38,6 @@ const mockGetBytes = vi.mocked(getCommitByteChanges);
 const mockCalcReward = vi.mocked(calculateReward);
 const mockJudgeCombo = vi.mocked(judgeCombo);
 const mockGetMultiplier = vi.mocked(getComboMultiplier);
-const mockCheckEncounter = vi.mocked(checkEncounter);
 
 function makeCommit(overrides: Partial<CommitInfo> = {}): CommitInfo {
   return {
@@ -73,7 +62,6 @@ function makeUser() {
     points: 100,
     totalExp: 500,
     combo: { count: 0, lastCommitAt: null },
-    encounterCeiling: { accumulatedBytes: 0 },
     party: [],
     pokemon: [],
     eggs: [],
@@ -100,9 +88,7 @@ function makeConfig() {
         maxMultiplier: 3.0,
       },
       encounter: {
-        baseChance: 0.3,
-        ceilingBytes: 5000,
-        timeLimitHours: 24,
+        rollCount: 12,
       },
     },
     shop: { items: {} },
@@ -150,10 +136,6 @@ describe("commit-processor", () => {
     });
     mockGetMultiplier.mockReturnValue(1.2);
     mockCalcReward.mockReturnValue({ exp: 300, points: 60 });
-    mockCheckEncounter.mockReturnValue({
-      encountered: false,
-      newCeiling: 500,
-    });
 
     await processCommit(commit, "/fake/repo", "https://example.com/repo.git");
 
@@ -162,7 +144,6 @@ describe("commit-processor", () => {
     expect(savedUser.points).toBe(160); // 100 + 60
     expect(savedUser.totalExp).toBe(800); // 500 + 300
     expect(savedUser.combo.count).toBe(1);
-    expect(savedUser.encounterCeiling.accumulatedBytes).toBe(500);
     expect(savedUser.log).toHaveLength(1);
     expect(savedUser.log[0].type).toBe("reward");
     expect(savedUser.log[0].bytes).toBe(500);
@@ -186,10 +167,6 @@ describe("commit-processor", () => {
     });
     mockGetMultiplier.mockReturnValue(1);
     mockCalcReward.mockReturnValue({ exp: 100, points: 10 });
-    mockCheckEncounter.mockReturnValue({
-      encountered: false,
-      newCeiling: 100,
-    });
 
     await processCommit(commit, "/fake/repo", "https://example.com/repo.git");
 

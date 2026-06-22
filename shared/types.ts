@@ -87,10 +87,6 @@ export interface UserCombo {
   lastCommitAt: string | null;
 }
 
-export interface EncounterCeiling {
-  accumulatedBytes: number;
-}
-
 export interface PokemonMove {
   id: string;
   pp: number;
@@ -200,7 +196,8 @@ export interface PendingEvent {
   type: "wild_encounter";
   pokemon: WildPokemon;
   createdAt: string;
-  expiresAt: string;
+  // 야생 조우는 더 이상 만료되지 않는다. 과거 저장 데이터 호환을 위해 선택 필드로 남긴다.
+  expiresAt?: string;
 }
 
 export interface PendingEvolutionOption {
@@ -352,7 +349,6 @@ export interface UserData {
   gameMoney: number;
   totalExp: number;
   combo: UserCombo;
-  encounterCeiling: EncounterCeiling;
   party: string[];
   pokemon: OwnedPokemon[];
   eggs: OwnedEgg[];
@@ -387,15 +383,6 @@ export interface ComboConfig {
 }
 
 export interface EncounterConfig {
-  baseChance: number;
-  ceilingBytes: number;
-  timeLimitHours: number;
-  /**
-   * 포인트를 소비해 야생 조우를 즉시 발생시키는 비용.
-   * @deprecated 야생 탐색이 무료 일괄 롤로 바뀌면서 더 이상 탐색을 막지 않는다.
-   *   하위호환을 위해 타입/응답에는 남겨둔다(정보성).
-   */
-  searchCost: number;
   /** 무료 "탐색" 1회가 생성하는 야생 조우 개수(일괄 롤). 기본 12. */
   rollCount: number;
 }

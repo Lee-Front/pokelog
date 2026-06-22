@@ -75,7 +75,7 @@ describe("stale-save overwrite of git accrual (#19)", () => {
           expPerByte: 1,
           pointsPerByte: 1,
           combo: { bytesPerMinute: 1e12, multipliers: [1], maxMultiplier: 1 },
-          encounter: { baseChance: 0, ceilingBytes: 1e12, timeLimitHours: 24 },
+          encounter: { rollCount: 12 },
           integrations: {},
         },
       }),

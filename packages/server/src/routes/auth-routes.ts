@@ -54,7 +54,6 @@ authRoutes.post("/register", async (req: Request, res: Response) => {
       gameMoney: 0,
       totalExp: 0,
       combo: { count: 0, lastCommitAt: null },
-      encounterCeiling: { accumulatedBytes: 0 },
       party: [starterPokemon.uid],
       pokemon: [starterPokemon],
       eggs: [],

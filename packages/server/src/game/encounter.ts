@@ -1,25 +1,5 @@
 import type { RegionData } from "../../../../shared/types.js";
 
-export function checkEncounter(
-  ceiling: number,
-  commitBytes: number,
-  baseChance: number,
-  comboMultiplier: number,
-  ceilingBytes: number
-): { encountered: boolean; newCeiling: number } {
-  const newCeiling = ceiling + commitBytes;
-
-  const effectiveChance = baseChance * comboMultiplier;
-  const probabilityTriggered = Math.random() < effectiveChance;
-  const ceilingTriggered = newCeiling >= ceilingBytes;
-
-  if (probabilityTriggered || ceilingTriggered) {
-    return { encountered: true, newCeiling: 0 };
-  }
-
-  return { encountered: false, newCeiling };
-}
-
 export function selectWildPokemon(
   regionData: RegionData
 ): { species: string; level: number } {

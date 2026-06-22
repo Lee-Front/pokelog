@@ -2,8 +2,6 @@ import { getUsersForRepoCommit, saveUser } from "../storage/user-store.js";
 import { getConfig } from "../storage/config-store.js";
 import { calculateReward } from "../game/reward.js";
 import { judgeCombo, getComboMultiplier } from "../game/combo.js";
-import { checkEncounter, selectWildPokemon } from "../game/encounter.js";
-import { createWildPokemon } from "../game/pokemon-factory.js";
 import {
   applyLearnedMoves,
   buildLevelEvolutionContext,
@@ -14,8 +12,6 @@ import {
 import { calculateStatsForLevel } from "../game/pokemon-stats.js";
 import { getCommitByteChanges } from "./git-client.js";
 import type { CommitInfo } from "./git-client.js";
-import { getRegion } from "../game/data-loader.js";
-import { createEncounterEvent } from "../game/event-factory.js";
 import { clearPendingEvolutionForPokemon, queuePendingEvolution } from "../game/pending-evolution.js";
 import { queuePendingMoveLearns } from "../game/pending-move-learn.js";
 import { getPartyPokemon } from "../game/pokemon-state.js";
@@ -104,25 +100,6 @@ export async function processCommit(
       }
     }
 
-    // Check encounter
-    const encounterResult = checkEncounter(
-      user.encounterCeiling.accumulatedBytes,
-      bytes,
-      config.rewards.encounter.baseChance,
-      multiplier,
-      config.rewards.encounter.ceilingBytes,
-    );
-    user.encounterCeiling.accumulatedBytes = encounterResult.newCeiling;
-
-    if (encounterResult.encountered) {
-      const regionData = getRegion(currentRegion);
-      const wildInfo = selectWildPokemon(regionData);
-      const wildPokemon = createWildPokemon(wildInfo.species, wildInfo.level);
-
-      const event = createEncounterEvent(wildPokemon, config.rewards.encounter.timeLimitHours);
-      user.pendingEvents.push(event);
-    }
-
     // Add log entry (keep max 200)
     user.log.push({
       type: "reward",
@@ -152,12 +129,6 @@ export async function processCommit(
         comboMultiplier: multiplier,
       },
     });
-
-    // Remove expired events
-    const now = Date.now();
-    user.pendingEvents = user.pendingEvents.filter(
-      (e) => new Date(e.expiresAt).getTime() > now,
-    );
 
     await saveUser(user);
   }

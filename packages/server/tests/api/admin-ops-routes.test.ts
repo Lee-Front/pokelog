@@ -232,7 +232,6 @@ describe("admin ops + announcement routes", () => {
       pokedex: ["pikachu"],
       inventory: { pokeball: 9 },
       combo: { count: 5, lastCommitAt: "2020-01-01T00:00:00Z" },
-      encounterCeiling: { accumulatedBytes: 4000 },
       integrations: [integration],
       log: [{ type: "reward", timestamp: "2020-01-01T00:00:00Z" } as any],
     }));
@@ -252,7 +251,6 @@ describe("admin ops + announcement routes", () => {
     expect(u?.pokedex).toEqual([]);
     expect(u?.inventory).toEqual({});
     expect(u?.combo).toEqual({ count: 0, lastCommitAt: null });
-    expect(u?.encounterCeiling.accumulatedBytes).toBe(0);
     // preserve
     expect(u?.account.id).toBe("reset");
     expect(u?.integrations.length).toBe(1);

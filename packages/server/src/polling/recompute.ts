@@ -5,8 +5,6 @@ import { getDataDir } from "../paths.js";
 import { getUser, isGitIntegration, normalizeRepoUrl, saveUser } from "../storage/user-store.js";
 import { calculateReward } from "../game/reward.js";
 import { judgeCombo, getComboMultiplier } from "../game/combo.js";
-import { checkEncounter, selectWildPokemon } from "../game/encounter.js";
-import { createWildPokemon } from "../game/pokemon-factory.js";
 import {
   applyLearnedMoves,
   buildLevelEvolutionContext,
@@ -15,8 +13,6 @@ import {
   getMatchingEvolutionBranches,
 } from "../game/growth.js";
 import { calculateStatsForLevel } from "../game/pokemon-stats.js";
-import { getRegion } from "../game/data-loader.js";
-import { createEncounterEvent } from "../game/event-factory.js";
 import { clearPendingEvolutionForPokemon, queuePendingEvolution } from "../game/pending-evolution.js";
 import { queuePendingMoveLearns } from "../game/pending-move-learn.js";
 import { getPartyPokemon } from "../game/pokemon-state.js";
@@ -154,23 +150,6 @@ function applyCommitReward(
     }
   }
 
-  // Encounter accounting.
-  const encounterResult = checkEncounter(
-    user.encounterCeiling.accumulatedBytes,
-    bytes,
-    config.rewards.encounter.baseChance,
-    multiplier,
-    config.rewards.encounter.ceilingBytes,
-  );
-  user.encounterCeiling.accumulatedBytes = encounterResult.newCeiling;
-  if (encounterResult.encountered) {
-    const regionData = getRegion(currentRegion);
-    const wildInfo = selectWildPokemon(regionData);
-    const wildPokemon = createWildPokemon(wildInfo.species, wildInfo.level);
-    const event = createEncounterEvent(wildPokemon, config.rewards.encounter.timeLimitHours);
-    user.pendingEvents.push(event);
-  }
-
   user.log.push({
     type: "reward",
     commit: commit.hash,
@@ -199,7 +178,7 @@ function applyCommitReward(
  * and this user's own subsequent polls only see genuinely new commits (the tips
  * are unchanged, so no double-count for them either).
  *
- * points/totalExp/combo/encounterCeiling are reset to a clean baseline first;
+ * points/totalExp/combo are reset to a clean baseline first;
  * non-commit points (admin grants, etc.) are intentionally discarded — the tool
  * reconstructs the commit-derived balance only. The single save passes a reason
  * so the saveUser balance-regression guard does not warn on the intended drop.
@@ -217,7 +196,6 @@ export async function recomputeUser(userId: string): Promise<RecomputeResult> {
   user.points = 0;
   user.totalExp = 0;
   user.combo = { count: 0, lastCommitAt: null };
-  user.encounterCeiling = { accumulatedBytes: 0 };
 
   // Collect this user's commits across every git integration repo, deduplicated
   // by commit hash (a commit could appear via two integrations on the same repo)

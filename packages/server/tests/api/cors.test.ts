@@ -29,7 +29,7 @@ async function bootApp(corsAllowedOrigins?: string[]): Promise<{
     rewards: {
       expPerByte: 0.01,
       pointsPerByte: 0.005,
-      encounter: { baseChance: 0.3, ceilingBytes: 1000, timeLimitHours: 168 },
+      encounter: { rollCount: 12 },
     },
   };
   if (corsAllowedOrigins !== undefined) {

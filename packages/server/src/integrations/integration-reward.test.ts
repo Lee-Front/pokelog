@@ -16,7 +16,6 @@ function makeUser(): UserData {
     gameMoney: 0,
     totalExp: 0,
     combo: { count: 0, lastCommitAt: null },
-    encounterCeiling: { accumulatedBytes: 0 },
     party: [],
     pokemon: [],
     eggs: [],

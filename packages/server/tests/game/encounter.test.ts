@@ -1,48 +1,6 @@
-import { describe, it, expect, vi } from "vitest";
-import { checkEncounter, selectWildPokemon } from "../../src/game/encounter.js";
+import { describe, it, expect } from "vitest";
+import { selectWildPokemon } from "../../src/game/encounter.js";
 import type { RegionData } from "../../../../shared/types.js";
-
-describe("checkEncounter", () => {
-  it("accumulates bytes in ceiling", () => {
-    // baseChance=0 so probability never triggers, ceilingBytes very high
-    const result = checkEncounter(0, 100, 0, 1, 10000);
-    expect(result.encountered).toBe(false);
-    expect(result.newCeiling).toBe(100);
-  });
-
-  it("triggers encounter and resets ceiling when ceiling reached", () => {
-    // ceiling=900, add 200 => 1100 >= 1000
-    const result = checkEncounter(900, 200, 0, 1, 1000);
-    expect(result.encountered).toBe(true);
-    expect(result.newCeiling).toBe(0);
-  });
-
-  it("triggers encounter on probability (baseChance=1 guarantees)", () => {
-    const result = checkEncounter(0, 50, 1, 1, 10000);
-    expect(result.encountered).toBe(true);
-    expect(result.newCeiling).toBe(0);
-  });
-
-  it("does not trigger encounter when probability is 0 and ceiling not met", () => {
-    const result = checkEncounter(0, 50, 0, 1, 10000);
-    expect(result.encountered).toBe(false);
-    expect(result.newCeiling).toBe(50);
-  });
-
-  it("combo multiplier boosts base chance", () => {
-    // baseChance=0.4, comboMultiplier=3 => effective chance = 1.2, capped >= 1 always triggers
-    const result = checkEncounter(0, 10, 0.4, 3, 10000);
-    expect(result.encountered).toBe(true);
-    expect(result.newCeiling).toBe(0);
-  });
-
-  it("resets ceiling to 0 on encounter from either trigger", () => {
-    // Both ceiling and probability trigger
-    const result = checkEncounter(990, 100, 1, 1, 1000);
-    expect(result.encountered).toBe(true);
-    expect(result.newCeiling).toBe(0);
-  });
-});
 
 describe("selectWildPokemon", () => {
   const regionData: RegionData = {

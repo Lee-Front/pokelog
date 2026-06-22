@@ -24,38 +24,28 @@ describe("createEncounterEvent", () => {
   });
 
   it("returns an event with an id starting with 'evt-'", () => {
-    const event = createEncounterEvent(makeWild(), 1);
+    const event = createEncounterEvent(makeWild());
     expect(event.id).toMatch(/^evt-/);
   });
 
   it("sets the type to 'wild_encounter'", () => {
-    const event = createEncounterEvent(makeWild(), 1);
+    const event = createEncounterEvent(makeWild());
     expect(event.type).toBe("wild_encounter");
   });
 
   it("passes through the wild pokemon", () => {
     const wild = makeWild();
-    const event = createEncounterEvent(wild, 1);
+    const event = createEncounterEvent(wild);
     expect(event.pokemon).toBe(wild);
   });
 
   it("sets createdAt to the current time", () => {
-    const event = createEncounterEvent(makeWild(), 1);
+    const event = createEncounterEvent(makeWild());
     expect(event.createdAt).toBe("2026-03-15T12:00:00.000Z");
   });
 
-  it("sets expiresAt correctly for 1 hour", () => {
-    const event = createEncounterEvent(makeWild(), 1);
-    expect(event.expiresAt).toBe("2026-03-15T13:00:00.000Z");
-  });
-
-  it("sets expiresAt correctly for 24 hours", () => {
-    const event = createEncounterEvent(makeWild(), 24);
-    expect(event.expiresAt).toBe("2026-03-16T12:00:00.000Z");
-  });
-
-  it("sets expiresAt correctly for fractional hours", () => {
-    const event = createEncounterEvent(makeWild(), 0.5);
-    expect(event.expiresAt).toBe("2026-03-15T12:30:00.000Z");
+  it("does not set an expiry (wild encounters no longer expire)", () => {
+    const event = createEncounterEvent(makeWild());
+    expect(event.expiresAt).toBeUndefined();
   });
 });

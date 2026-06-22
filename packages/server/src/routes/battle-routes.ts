@@ -143,11 +143,6 @@ battleRoutes.post("/start", async (req, res) => {
       return;
     }
 
-    if (new Date(event.expiresAt).getTime() < Date.now()) {
-      res.status(400).json({ error: "이벤트가 만료되었습니다" });
-      return;
-    }
-
     const pokemon = user.pokemon.find((p) => p.uid === pokemonUid);
     if (!pokemon) {
       res.status(404).json({ error: "포켓몬을 찾을 수 없습니다" });

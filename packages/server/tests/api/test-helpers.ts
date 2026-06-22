@@ -29,7 +29,7 @@ export async function setupTestApp() {
       rewards: {
         expPerByte: 0.01,
         pointsPerByte: 0.005,
-        encounter: { baseChance: 0.3, ceilingBytes: 1000, timeLimitHours: 168 },
+        encounter: { rollCount: 12 },
       },
     }),
   );

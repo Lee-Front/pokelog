@@ -10,7 +10,6 @@ import type { UserData } from "../../../../shared/types.js";
  * ── 리셋(게임 진행) ──────────────────────────────────────────────
  *   points, totalExp, gameMoney     — 모든 재화 0
  *   combo                            — 콤보 카운트/마지막 커밋시각 초기화
- *   encounterCeiling                 — 누적 바이트(조우 천장) 0
  *   party, pokemon, storage          — 보유 포켓몬 전부 제거
  *   eggs                             — 보유 알 제거
  *   pokedex                          — 도감 기록 초기화
@@ -35,7 +34,6 @@ export function resetGameData(user: UserData): void {
   user.totalExp = 0;
   user.gameMoney = 0;
   user.combo = { count: 0, lastCommitAt: null };
-  user.encounterCeiling = { accumulatedBytes: 0 };
   user.party = [];
   user.pokemon = [];
   user.storage = [];
