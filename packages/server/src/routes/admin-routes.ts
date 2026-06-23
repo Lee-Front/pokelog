@@ -458,6 +458,54 @@ adminRoutes.get("/users/:id", async (req, res) => {
   }
 });
 
+// git 작성자 이메일 조회 — 커밋 귀속(userMatchesRepoCommit)이 매칭하는 이메일 목록.
+// account.matchings.git이 없으면 빈 배열.
+adminRoutes.get("/users/:id/git-emails", async (req, res) => {
+  try {
+    const user = await getUser(req.params.id);
+    if (!user) return res.status(404).json({ error: "유저 없음" });
+    res.json({ emails: user.account.matchings?.git?.emails ?? [] });
+  } catch (err) {
+    log.error({ err }, "Admin git-emails get error");
+    res.status(500).json({ error: "서버 오류" });
+  }
+});
+
+// git 작성자 이메일 설정 — 운영자가 계정별로 커밋 귀속 이메일을 수동 지정한다.
+// 정규화: 트림·소문자·빈값 제거·중복 제거·'@' 포함(그럴듯한 이메일)만 유지.
+// matchings.git의 형제 필드는 건드리지 않고 .emails만 교체한다(현재 GitMatching은
+// emails 단일 필드이나 구조 보존을 위해 방어적으로 작성).
+adminRoutes.put("/users/:id/git-emails", async (req, res) => {
+  try {
+    const { emails } = req.body ?? {};
+    if (!Array.isArray(emails)) {
+      return res.status(400).json({ error: "emails는 배열이어야 합니다" });
+    }
+
+    const user = await getUser(req.params.id);
+    if (!user) return res.status(404).json({ error: "유저 없음" });
+
+    const normalized = Array.from(
+      new Set(
+        emails
+          .filter((e): e is string => typeof e === "string")
+          .map((e) => e.trim().toLowerCase())
+          .filter((e) => e.length > 0 && e.includes("@"))
+      )
+    );
+
+    user.account.matchings = user.account.matchings ?? {};
+    user.account.matchings.git = user.account.matchings.git ?? { emails: [] };
+    user.account.matchings.git.emails = normalized;
+
+    await saveUser(user);
+    res.json({ ok: true, emails: normalized });
+  } catch (err) {
+    log.error({ err }, "Admin git-emails set error");
+    res.status(500).json({ error: "서버 오류" });
+  }
+});
+
 // 재화 조정 — points/totalExp/gameMoney 각각 set 또는 add(한 필드당 하나만).
 // 결과가 음수면 0으로 클램프. 잔액 하락이 의도된 운영 작업이므로 "admin-adjust"로 저장.
 adminRoutes.post("/users/:id/adjust", async (req, res) => {

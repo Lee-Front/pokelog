@@ -152,6 +152,59 @@ describe("admin ops + announcement routes", () => {
     expect(res.status).toBe(404);
   });
 
+  // ── git 작성자 이메일 ─────────────────────────────────────────
+  it("GET /users/:id/git-emails returns [] when no matching set", async () => {
+    await ctx.saveUser(makeUser("ge0"));
+    const res = await api(ctx, "GET", "/api/admin/users/ge0/git-emails", { admin: true });
+    expect(res.status).toBe(200);
+    expect(res.body.emails).toEqual([]);
+  });
+
+  it("GET /users/:id/git-emails returns existing matchings.git.emails", async () => {
+    await ctx.saveUser(makeUser("ge1", { account: {
+      id: "ge1", password: "x", nickname: "ge1", createdAt: new Date().toISOString(),
+      matchings: { git: { emails: ["dev@corp.example"] } },
+    } }));
+    const res = await api(ctx, "GET", "/api/admin/users/ge1/git-emails", { admin: true });
+    expect(res.status).toBe(200);
+    expect(res.body.emails).toEqual(["dev@corp.example"]);
+  });
+
+  it("GET /users/:id/git-emails 404 for unknown", async () => {
+    const res = await api(ctx, "GET", "/api/admin/users/nope/git-emails", { admin: true });
+    expect(res.status).toBe(404);
+  });
+
+  it("PUT /users/:id/git-emails normalizes (trim/lowercase/dedupe/@-filter) and persists", async () => {
+    await ctx.saveUser(makeUser("ge2"));
+    const res = await api(ctx, "PUT", "/api/admin/users/ge2/git-emails", {
+      admin: true,
+      body: { emails: ["  Dev@Corp.Example ", "dev@corp.example", "", "not-an-email", "A@B.C"] },
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+    // 소문자·트림·중복제거 + '@' 없는 항목/빈문자 제거
+    expect(res.body.emails).toEqual(["dev@corp.example", "a@b.c"]);
+    // 디스크에도 account.matchings.git.emails로 저장됨
+    const stored = await ctx.getUser("ge2");
+    expect(stored?.account.matchings.git?.emails).toEqual(["dev@corp.example", "a@b.c"]);
+  });
+
+  it("PUT /users/:id/git-emails 400 when emails is not an array", async () => {
+    await ctx.saveUser(makeUser("ge3"));
+    const res = await api(ctx, "PUT", "/api/admin/users/ge3/git-emails", {
+      admin: true, body: { emails: "x@y.z" },
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it("PUT /users/:id/git-emails 404 for unknown", async () => {
+    const res = await api(ctx, "PUT", "/api/admin/users/nope/git-emails", {
+      admin: true, body: { emails: [] },
+    });
+    expect(res.status).toBe(404);
+  });
+
   // ── 재화 조정 ────────────────────────────────────────────────
   it("POST /users/:id/adjust set/add and clamps negatives to 0", async () => {
     await ctx.saveUser(makeUser("adj", { points: 100, totalExp: 50, gameMoney: 10 }));
