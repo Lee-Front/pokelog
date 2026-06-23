@@ -3,7 +3,7 @@ import type { Response } from "express";
 import { authMiddleware, type AuthRequest } from "../middleware/auth-middleware.js";
 import { getUser, saveUser } from "../storage/user-store.js";
 import { getConfig } from "../storage/config-store.js";
-import { getAllSpecies, createWildPokemon } from "../game/pokemon-factory.js";
+import { getAllSpecies, createWildPokemon, createPokemon } from "../game/pokemon-factory.js";
 import { selectFromEncounters, splitEncounters } from "../game/encounter.js";
 import { createEncounterEvent } from "../game/event-factory.js";
 import { getRegion, getRegionNames, getSpeciesByName } from "../game/data-loader.js";
@@ -18,6 +18,44 @@ const MAX_PARTY_SIZE = 6;
 
 export const gameRoutes = Router();
 gameRoutes.use(authMiddleware);
+
+const VALID_STARTERS = ["bulbasaur", "charmander", "squirtle"];
+
+// 스타터 선택 — 게임 리셋(또는 미초기화) 등으로 포켓몬이 0마리인 계정만 스타터를 받는다.
+// 가입과 동일하게 Lv.5 스타터 + 몬스터볼 5개를 지급하고 도감에 등록한다(멱등: 이미 보유 시 거부).
+gameRoutes.post("/starter", async (req: AuthRequest, res: Response) => {
+  try {
+    const user = await getUser(req.userId!);
+    if (!user) {
+      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+      return;
+    }
+
+    const starter = typeof req.body?.starter === "string" ? req.body.starter : "";
+    if (!VALID_STARTERS.includes(starter)) {
+      res.status(400).json({ error: "올바른 스타터를 선택해주세요 (bulbasaur, charmander, squirtle)" });
+      return;
+    }
+
+    // 이미 포켓몬이 있으면 스타터를 다시 줄 수 없다(중복 지급 방지).
+    if ((user.pokemon?.length ?? 0) > 0 || (user.party?.length ?? 0) > 0) {
+      res.status(400).json({ error: "이미 포켓몬을 보유하고 있어 스타터를 받을 수 없습니다." });
+      return;
+    }
+
+    const starterPokemon = createPokemon(starter, 5);
+    user.pokemon = [starterPokemon];
+    user.party = [starterPokemon.uid];
+    if (!user.pokedex.includes(starter)) user.pokedex.push(starter);
+    user.inventory.pokeball = (user.inventory.pokeball ?? 0) + 5;
+
+    await saveUser(user);
+    res.json({ ok: true, pokemon: starterPokemon });
+  } catch (err) {
+    log.error({ err }, "Starter selection error");
+    res.status(500).json({ error: "서버 오류가 발생했습니다" });
+  }
+});
 
 gameRoutes.get("/status", async (req: AuthRequest, res: Response) => {
   try {
