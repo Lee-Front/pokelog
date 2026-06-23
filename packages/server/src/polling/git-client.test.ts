@@ -8,6 +8,7 @@ import {
   getNewCommits,
   getCommitByteChanges,
   getLatestHash,
+  getRepoAuthors,
   listAuthorEmails,
   resolveRepoUrl,
   testRepoAccess,
@@ -121,6 +122,59 @@ describe("git-client", () => {
     expect(emails).toContainEqual({ email: "other@example.com", count: 1 });
     // restore the original author for any later-added tests sharing this repo
     await exec("git", ["config", "user.email", "test@example.com"], { cwd: repoDir });
+  });
+
+  it("getRepoAuthors extracts distinct authors with names and counts", async () => {
+    // 이 repo에는 test@example.com 커밋 2개(name: Test User)와
+    // other@example.com 커밋 1개(name: Other User)가 있다(위 테스트가 추가).
+    const authors = await getRepoAuthors(repoDir);
+    const byEmail = new Map(authors.map((a) => [a.email, a]));
+    expect(byEmail.get("test@example.com")).toEqual({
+      email: "test@example.com",
+      name: "Test User",
+      count: 2,
+    });
+    expect(byEmail.get("other@example.com")).toEqual({
+      email: "other@example.com",
+      name: "Other User",
+      count: 1,
+    });
+  });
+
+  it("getRepoAuthors lowercases emails and dedupes case variants", async () => {
+    // 같은 사람이 대문자 이메일로 커밋해도 소문자로 합쳐져야 한다.
+    await exec("git", ["config", "user.email", "Mixed@Example.com"], { cwd: repoDir });
+    await exec("git", ["config", "user.name", "Mixed Case"], { cwd: repoDir });
+    const file3 = path.join(repoDir, "third.txt");
+    await fs.writeFile(file3, "from mixed\n");
+    await exec("git", ["add", "third.txt"], { cwd: repoDir });
+    await exec("git", ["commit", "-m", "mixed case commit"], { cwd: repoDir });
+    await exec("git", ["config", "user.email", "mixed@example.com"], { cwd: repoDir });
+    const file4 = path.join(repoDir, "fourth.txt");
+    await fs.writeFile(file4, "from mixed lower\n");
+    await exec("git", ["add", "fourth.txt"], { cwd: repoDir });
+    await exec("git", ["commit", "-m", "mixed lower commit"], { cwd: repoDir });
+
+    const authors = await getRepoAuthors(repoDir);
+    const mixed = authors.find((a) => a.email === "mixed@example.com");
+    expect(mixed).toBeDefined();
+    expect(mixed!.count).toBe(2);
+    // 대문자 변형이 별도 항목으로 남으면 안 된다.
+    expect(authors.filter((a) => a.email.toLowerCase() === "mixed@example.com")).toHaveLength(1);
+
+    // restore the original author
+    await exec("git", ["config", "user.email", "test@example.com"], { cwd: repoDir });
+    await exec("git", ["config", "user.name", "Test User"], { cwd: repoDir });
+  });
+
+  it("getRepoAuthors returns [] for a non-git directory", async () => {
+    const nonGit = path.join(os.tmpdir(), `pokelog-nongit-${Date.now()}`);
+    await fs.mkdir(nonGit, { recursive: true });
+    try {
+      expect(await getRepoAuthors(nonGit)).toEqual([]);
+    } finally {
+      await fs.rm(nonGit, { recursive: true, force: true });
+    }
   });
 });
 

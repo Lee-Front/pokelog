@@ -372,6 +372,59 @@ export async function listAuthorEmails(
     .sort((a, b) => b.count - a.count);
 }
 
+/**
+ * 한 bare clone 디렉터리에서 모든 브랜치의 작성자(이메일+이름)를 추출한다.
+ * `git -C <repoDir> log --all --format=%ae\x1f%an` 출력을 유닛 구분자(\x1f)로
+ * 갈라 이메일(소문자)별로 집계한다. 대표 이름은 가장 많이 등장한 비어있지 않은
+ * 이름을 고른다. 운영 UI(계정 배부)에서 git 작성자 후보 목록으로 쓴다.
+ *
+ * 어떤 이유로든 실패(디렉터리가 git repo가 아님 등)하면 [] 반환으로 관용 처리한다.
+ * 히스토리가 커 기본 maxBuffer를 넘길 수 있으므로 64MB로 키운다.
+ */
+export async function getRepoAuthors(
+  repoDir: string,
+): Promise<Array<{ email: string; name: string; count: number }>> {
+  try {
+    const { stdout } = await exec(
+      "git",
+      ["log", "--all", "--format=%ae\x1f%an"],
+      { cwd: repoDir, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
+    );
+    // 이메일(소문자)별 집계: 커밋 수 + 이름별 빈도(대표 이름 선정용).
+    const agg = new Map<string, { count: number; names: Map<string, number> }>();
+    for (const line of stdout.split("\n")) {
+      if (!line) continue;
+      const sep = line.indexOf("\x1f");
+      if (sep < 0) continue;
+      const rawEmail = line.slice(0, sep).trim();
+      const name = line.slice(sep + 1).trim();
+      if (!rawEmail) continue;
+      const email = rawEmail.toLowerCase();
+      let entry = agg.get(email);
+      if (!entry) {
+        entry = { count: 0, names: new Map() };
+        agg.set(email, entry);
+      }
+      entry.count += 1;
+      if (name) entry.names.set(name, (entry.names.get(name) ?? 0) + 1);
+    }
+    return [...agg.entries()].map(([email, { count, names }]) => {
+      // 대표 이름 = 가장 빈도 높은 비어있지 않은 이름(없으면 "").
+      let bestName = "";
+      let bestCount = 0;
+      for (const [name, n] of names) {
+        if (n > bestCount) {
+          bestName = name;
+          bestCount = n;
+        }
+      }
+      return { email, name: bestName, count };
+    });
+  } catch {
+    return [];
+  }
+}
+
 /** Get the latest commit hash on a branch */
 export async function getLatestHash(
   repoDir: string,

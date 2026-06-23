@@ -1,5 +1,9 @@
 import { Router } from "express";
 import crypto from "node:crypto";
+import path from "node:path";
+import fs from "node:fs/promises";
+import { getDataDir } from "../paths.js";
+import { getRepoAuthors } from "../polling/git-client.js";
 import { getConfig, saveConfig } from "../storage/config-store.js";
 import { getUser, saveUser, getAllUsers, deleteUser } from "../storage/user-store.js";
 import { hashPassword, issueToken } from "../auth/auth.js";
@@ -454,6 +458,87 @@ adminRoutes.get("/users/:id", async (req, res) => {
     });
   } catch (err) {
     log.error({ err }, "Admin user snapshot error");
+    res.status(500).json({ error: "서버 오류" });
+  }
+});
+
+// ========== git 작성자 후보(연동된 repo 클론에서 스크랩) ==========
+
+// 모든 bare clone을 매 요청마다 스캔하는 건 비싸므로 모듈 전역에 짧은 TTL 캐시를
+// 둔다. 키는 없음(전역) — 운영자가 계정 배부 화면을 열 때 잠깐 쓰는 후보 목록이라
+// 5분이면 충분하다.
+interface CachedAuthors {
+  data: Array<{ email: string; name: string; count: number; repos: number }>;
+  expiresAt: number;
+}
+let gitAuthorsCache: CachedAuthors | null = null;
+const GIT_AUTHORS_TTL_MS = 5 * 60 * 1000;
+
+// pokelog-data/repos/ 아래의 bare clone 디렉터리들을 훑어 작성자 이메일을 합친다.
+// 각 디렉터리에서 getRepoAuthors로 (email,name,count)를 얻고, 이메일(소문자)별로
+// count를 합산하면서 그 이메일이 등장한 repo 수(repos)도 센다. count 내림차순 정렬.
+async function scanGitAuthors(): Promise<CachedAuthors["data"]> {
+  const reposDir = path.join(getDataDir(), "repos");
+  let names: string[];
+  try {
+    names = await fs.readdir(reposDir);
+  } catch {
+    // repos 디렉터리 자체가 없으면(아직 폴링 전) 후보 없음.
+    return [];
+  }
+
+  // email(소문자) → 합산 정보. name은 가장 큰 단일 repo count를 낸 이름으로 유지.
+  const merged = new Map<
+    string,
+    { name: string; nameCount: number; count: number; repos: number }
+  >();
+
+  for (const name of names) {
+    const repoDir = path.join(reposDir, name);
+    // 디렉터리가 아니거나 bare repo가 아니면(HEAD 없음) 건너뛴다. stat + HEAD 접근
+    // 둘 다 실패를 관용 처리한다.
+    try {
+      const stat = await fs.stat(repoDir);
+      if (!stat.isDirectory()) continue;
+      await fs.access(path.join(repoDir, "HEAD"));
+    } catch {
+      continue;
+    }
+    const authors = await getRepoAuthors(repoDir);
+    for (const a of authors) {
+      const existing = merged.get(a.email);
+      if (!existing) {
+        merged.set(a.email, { name: a.name, nameCount: a.count, count: a.count, repos: 1 });
+      } else {
+        existing.count += a.count;
+        existing.repos += 1;
+        // 더 많은 커밋을 낸 repo의 이름을 대표 이름으로 채택.
+        if (a.name && a.count > existing.nameCount) {
+          existing.name = a.name;
+          existing.nameCount = a.count;
+        }
+      }
+    }
+  }
+
+  return [...merged.entries()]
+    .map(([email, { name, count, repos }]) => ({ email, name, count, repos }))
+    .sort((a, b) => b.count - a.count);
+}
+
+// 연동(폴링)된 repo 클론에서 추출한 git 작성자 후보 목록. 운영자가 계정 배부 화면에서
+// 사람별 이메일을 손으로 치지 않고 골라 쓰도록 surface한다. 결과는 5분 캐시.
+adminRoutes.get("/git-authors", async (_req, res) => {
+  try {
+    const now = Date.now();
+    if (gitAuthorsCache && gitAuthorsCache.expiresAt > now) {
+      return res.json({ authors: gitAuthorsCache.data });
+    }
+    const data = await scanGitAuthors();
+    gitAuthorsCache = { data, expiresAt: now + GIT_AUTHORS_TTL_MS };
+    res.json({ authors: data });
+  } catch (err) {
+    log.error({ err }, "Admin git-authors error");
     res.status(500).json({ error: "서버 오류" });
   }
 });
