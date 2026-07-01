@@ -33,6 +33,13 @@ import { childLogger } from "../logger.js";
 
 const log = childLogger("battle-routes");
 
+// 테라스탈/Z기술 발동 임시 비활성화. 두 기능 모두 docs/pokemon-mechanics-architecture.md
+// 에는 "still deferred"로 남아 있는데도, 아이템/자격 게이트 없이(단순화 MVP) 먼저 들어가
+// 어떤 포켓몬이든 배틀당 1회씩 쓸 수 있게 되어 있었다(문서-구현 불일치). 메가/거다이맥스처럼
+// 제대로 된 자격 게이트(아이템 등)를 설계하기 전까지 발동 자체를 막는다.
+const TERASTAL_ENABLED = false;
+const Z_MOVE_ENABLED = false;
+
 /** 시스템 활동 로그: 전투 종료 기록 (result + 야생 종/레벨 + 턴 수). */
 function logBattleEnd(
   userId: string,
@@ -261,6 +268,7 @@ async function handleFight(
   // teraType은 개체의 teraType, 없으면 종 1차 타입으로 기본값. 스탯은 안 바뀌고 타이핑만 바뀐다.
   const terastal = data?.terastal as boolean | undefined;
   if (terastal === true) {
+    if (!TERASTAL_ENABLED) { res.status(400).json({ error: "테라스탈은 현재 비활성화된 기능입니다" }); return; }
     if (battle.playerTerastallized) { res.status(400).json({ error: "이번 배틀에서 이미 테라스탈했습니다" }); return; }
     const primaryType = getSpeciesByName(myPokemon.species)?.types?.[0];
     const teraType = myPokemon.teraType ?? primaryType;
@@ -278,6 +286,7 @@ async function handleFight(
   // 공유 무브 데이터를 변형하지 않도록 얕은 복제본으로 위력을 덮어쓴다.
   const zmove = data?.zmove as boolean | undefined;
   if (zmove === true) {
+    if (!Z_MOVE_ENABLED) { res.status(400).json({ error: "Z기술은 현재 비활성화된 기능입니다" }); return; }
     if (battle.zMoveUsed) { res.status(400).json({ error: "이번 배틀에서 이미 Z기술을 사용했습니다" }); return; }
     if (moveData.category === "status" || moveData.power <= 0) {
       res.status(400).json({ error: "Z기술은 공격기에만 쓸 수 있습니다" }); return;
