@@ -412,13 +412,16 @@ async function handleCatch(
 
   const config = await getConfig();
   const ballItem = config.shop.items[ballType];
-  const catchBonus = ballItem?.catchBonus ?? 0;
+  // config의 catchBonus는 몬스터볼(=1.0)을 기준으로 한 가산 보너스다(pokeball 0, great 0.2, ultra 0.35).
+  // 포획 공식(capture.ts)은 볼 배수를 기대하므로 1을 더해 배수로 변환한다. 그래야 HP를 깎을수록
+  // 포획률이 오르는 (1 - hp/maxHp) 항이 실제로 반영된다(변환 없이 0을 넘기면 몬스터볼은 HP 무관 고정 확률).
+  const ballCatchMultiplier = 1 + (ballItem?.catchBonus ?? 0);
   const guaranteedCatch = ballItem?.guaranteedCatch ?? false;
 
   decrementItem(user.inventory, ballType);
 
   const baseCatchRate = getCatchRate(battle.wild.species);
-  const caught = guaranteedCatch || attemptCapture(catchBonus, battle.wild.hp, battle.wild.maxHp, baseCatchRate);
+  const caught = guaranteedCatch || attemptCapture(ballCatchMultiplier, battle.wild.hp, battle.wild.maxHp, baseCatchRate);
 
   if (caught) {
     log.push(`야생 ${getDisplaySpeciesName(battle.wild.species)}을(를) 잡았다!`);
