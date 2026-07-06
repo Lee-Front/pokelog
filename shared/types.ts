@@ -160,6 +160,12 @@ export interface OwnedPokemon {
   // 테라스탈 시 변경되는 개체의 테라스탈 타입(영문 슬러그). 미설정이면 테라스탈 시점에
   // 종 1차 타입으로 기본값 처리. 영속 개체 속성일 뿐, 전투 중 효과는 BattleState에 담긴다.
   teraType?: string;
+  // ── 계산 전용(비영속) ──────────────────────────────────────────────
+  // 목록 응답(GET /game/party·/game/storage) 직전 매핑에서만 부착한다. saveUser 저장
+  // 경로엔 절대 포함 금지 — 저장 객체(user.pokemon/user.storage)에 직접 달지 말고,
+  // 응답용 스프레드 복제본에만 얹는다. 진화 가능 여부와 선택지를 서버가 계산해 내려준다.
+  evolutionAvailable?: boolean;
+  evolutionOptions?: PendingEvolutionOption[];
 }
 
 export type EggTierId = "common" | "rare" | "legend";
@@ -413,9 +419,16 @@ export interface BattleDropEntry {
 export interface BattleRewardConfig {
   // EXP = floor(baseExpYield * wildLevel / 7) * expMultiplier (main-series yield)
   expMultiplier: number;
+  // 미참여(벤치) 파티원 EXP 분배 비율 0~1. 본가 학습장치식 — 참여 생존자는 풀 EXP,
+  // 벤치 생존자는 floor(풀 EXP * 이 비율). 0이면 벤치 분배 없음(참여자만 EXP).
+  expShareRatio: number;
   // gameMoney = floor(wildLevel * moneyPerLevel) + moneyBase
   moneyPerLevel: number;
   moneyBase: number;
+  // 야생 레벨을 파티 최고 레벨 기준으로 스케일링할지 여부. 끄면 지역 levelRange 균등 롤(종 자연 레벨).
+  wildLevelScaling: boolean;
+  // 스케일링 시 파티 최고 레벨에 더해지는 편차 폭(±). 예: 3이면 partyMax-3 ~ partyMax+3.
+  wildLevelVariance: number;
   // Single weighted roll across the table; total chance < 1 means "no drop".
   dropTable: BattleDropEntry[];
 }

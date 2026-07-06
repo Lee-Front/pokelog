@@ -175,8 +175,13 @@ export const DEFAULT_CONFIG: ServerConfig = {
   // id(poke-ball 등)로 주면 전투 가방·catch/heal이 인식 못 해 죽은 키가 된다.
   battle: {
     expMultiplier: 1.0,
+    // 벤치(미참여) 생존 파티원에게 풀 EXP의 절반을 분배(본가 학습장치식 기본값).
+    expShareRatio: 0.5,
     moneyPerLevel: 2,
     moneyBase: 3,
+    // 야생 레벨을 파티 최고 레벨 ±wildLevelVariance로 스케일링(기본 켜짐, 편차 ±3).
+    wildLevelScaling: true,
+    wildLevelVariance: 3,
     dropTable: [
       { item: "potion", chance: 0.08, min: 1, max: 1 },
       { item: "superPotion", chance: 0.03, min: 1, max: 1 },

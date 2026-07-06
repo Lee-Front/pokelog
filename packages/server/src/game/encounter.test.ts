@@ -105,3 +105,51 @@ describe("legendary split + gated injection", () => {
     expect(batch.filter((s) => !isLeg(s)).length).toBe(12);
   });
 });
+
+describe("wild level party scaling", () => {
+  // 단일 엔트리 지역 — 가중 추첨은 항상 pidgey를 뽑고, 레벨만 스케일링 로직을 탄다.
+  // 주입 random은 상수라 (가중 추첨 1회 소비 후) rollEntry의 레벨 롤도 같은 값을 받는다.
+  const single: RegionData = {
+    name: "test",
+    encounters: [{ species: "pidgey", weight: 1, levelRange: [4, 8] }],
+  };
+
+  it("scales level to partyMax ± variance (delta from the level roll)", () => {
+    // variance 3 → 2*3+1=7. random 0 → delta = floor(0*7)-3 = -3 → 40-3 = 37.
+    const low = selectFromEncounters(single.encounters, () => 0, { partyMaxLevel: 40, variance: 3 });
+    expect(low.level).toBe(37);
+    // random 0.999 → delta = floor(0.999*7)-3 = 6-3 = 3 → 40+3 = 43.
+    const high = selectFromEncounters(single.encounters, () => 0.999, { partyMaxLevel: 40, variance: 3 });
+    expect(high.level).toBe(43);
+  });
+
+  it("clamps up to the entry minimum when partyMax - variance is below it", () => {
+    // partyMax 5, variance 3, random 0 → 5-3 = 2, but entryMin is 4 → clamp to 4.
+    const pick = selectFromEncounters(single.encounters, () => 0, { partyMaxLevel: 5, variance: 3 });
+    expect(pick.level).toBe(4);
+  });
+
+  it("clamps down to the level ceiling (100)", () => {
+    // partyMax 100, variance 3, random 0.999 → 100+3 = 103 → clamp to 100.
+    const pick = selectFromEncounters(single.encounters, () => 0.999, { partyMaxLevel: 100, variance: 3 });
+    expect(pick.level).toBe(100);
+  });
+
+  it("falls back to the species-natural levelRange when partyMaxLevel is 0", () => {
+    // partyMaxLevel 0 → 스케일링 비활성, 균등 롤. random 0 → levelRange 하한(4).
+    const pick = selectFromEncounters(single.encounters, () => 0, { partyMaxLevel: 0, variance: 3 });
+    expect(pick.level).toBe(4);
+  });
+
+  it("falls back to levelRange when no scaling is provided (flag off)", () => {
+    // 스케일링 미지정 → 균등 롤. random 0.999 → levelRange 상한(8).
+    const pick = selectFromEncounters(single.encounters, () => 0.999);
+    expect(pick.level).toBe(8);
+  });
+
+  it("threads scaling through selectWildPokemon", () => {
+    // variance 2, random 0 → delta -2 → 50-2 = 48.
+    const pick = selectWildPokemon(single, () => 0, { partyMaxLevel: 50, variance: 2 });
+    expect(pick.level).toBe(48);
+  });
+});

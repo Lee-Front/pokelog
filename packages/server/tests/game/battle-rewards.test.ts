@@ -11,9 +11,11 @@ import type { BattleRewardConfig, OwnedPokemon, UserData } from "../../../../sha
 
 const config: BattleRewardConfig = {
   expMultiplier: 1.0,
-  benchExpShareRatio: 0.5,
+  expShareRatio: 0.5,
   moneyPerLevel: 2,
   moneyBase: 3,
+  wildLevelScaling: true,
+  wildLevelVariance: 3,
   dropTable: [
     { item: "potion", chance: 0.08, min: 1, max: 1 },
     { item: "super-potion", chance: 0.03, min: 1, max: 1 },
@@ -170,15 +172,17 @@ describe("grantBattleRewards participant EXP (classic, gen-6+)", () => {
     expect(rewards.partyExp?.[1]).toMatchObject({ uid: p2.uid, exp: fullExp });
   });
 
-  it("single-participant battle behaves as before (only that one)", () => {
+  it("single-pokemon party yields only that one (no bench to share with)", () => {
+    // 파티가 한 마리뿐이면 벤치가 없어 Exp Share가 적용될 대상이 없다 — 종전과 동일하게
+    // 그 한 마리만 풀 EXP를 받는다. (벤치 생존자 분배는 아래 Exp Share describe에서 검증.)
     const solo = createPokemon("charizard", 40);
-    const bench = createPokemon("blastoise", 40); // 파티엔 있지만 미참여
-    const startBench = bench.exp;
-    const user = makePartyUser([solo, bench]);
+    const start = solo.exp;
+    const user = makePartyUser([solo]);
 
     const rewards = grantBattleRewards(user, [solo], wild, config, opts);
 
-    expect(bench.exp).toBe(startBench); // 미참여 → 0
+    const fullExp = calculateBattleExp(wild, config);
+    expect(solo.exp).toBe(start + fullExp);
     expect(rewards.partyExp).toHaveLength(1);
     expect(rewards.partyExp?.[0].uid).toBe(solo.uid);
   });
@@ -211,5 +215,64 @@ describe("grantBattleRewards participant EXP (classic, gen-6+)", () => {
       expect(entry?.newLevel).toBeGreaterThan(3);
       expect(p.level).toBe(entry?.newLevel);
     }
+  });
+});
+
+describe("grantBattleRewards Exp Share (benched party members)", () => {
+  const now = new Date("2026-01-01T12:00:00Z");
+  const wild = { species: "pidgey", level: 10 } as const;
+  const opts = { random: () => 0.99, now }; // no drop, no pokerus
+
+  it("gives benched survivors floor(exp*ratio), participants full, and fainted 0", () => {
+    const active = createPokemon("charizard", 40); // 참여·생존 → 풀 EXP
+    const benchAlive = createPokemon("blastoise", 40); // 벤치·생존 → 분배분
+    const benchFainted = createPokemon("venusaur", 40); // 벤치·기절 → 0
+    benchFainted.hp = 0;
+    const startActive = active.exp;
+    const startBenchAlive = benchAlive.exp;
+    const startBenchFainted = benchFainted.exp;
+    const user = makePartyUser([active, benchAlive, benchFainted]);
+
+    const rewards = grantBattleRewards(user, [active], wild, config, opts);
+
+    const fullExp = calculateBattleExp(wild, config);
+    const sharedExp = Math.floor(fullExp * config.expShareRatio);
+    expect(sharedExp).toBeGreaterThan(0);
+
+    expect(active.exp).toBe(startActive + fullExp); // 참여 생존자 = 풀
+    expect(benchAlive.exp).toBe(startBenchAlive + sharedExp); // 벤치 생존자 = floor(full*ratio)
+    expect(benchFainted.exp).toBe(startBenchFainted); // 벤치 기절 = 0
+
+    // partyExp: 참여자 먼저(헤드라인 유지), 벤치 생존자는 뒤에. 벤치 기절자는 제외.
+    expect(rewards.partyExp).toHaveLength(2);
+    expect(rewards.partyExp?.[0]).toMatchObject({ uid: active.uid, exp: fullExp });
+    expect(rewards.partyExp?.[1]).toMatchObject({ uid: benchAlive.uid, exp: sharedExp });
+    expect(rewards.partyExp?.some((e) => e.uid === benchFainted.uid)).toBe(false);
+  });
+
+  it("shares nothing when expShareRatio is 0 (participants only)", () => {
+    const active = createPokemon("charizard", 40);
+    const bench = createPokemon("blastoise", 40);
+    const startBench = bench.exp;
+    const user = makePartyUser([active, bench]);
+    const noShare = { ...config, expShareRatio: 0 };
+
+    const rewards = grantBattleRewards(user, [active], wild, noShare, opts);
+
+    expect(bench.exp).toBe(startBench); // 분배 없음
+    expect(rewards.partyExp).toHaveLength(1);
+    expect(rewards.partyExp?.[0].uid).toBe(active.uid);
+  });
+
+  it("never sets evolvedInto (auto-evolution removed) even on a level-up", () => {
+    const p = createPokemon("caterpie", 3);
+    const user = makePartyUser([p]);
+    const bigExpConfig = { ...config, expMultiplier: 1000 };
+
+    const rewards = grantBattleRewards(user, [p], { species: "charizard", level: 50 }, bigExpConfig, opts);
+
+    // 레벨업은 일어나되(진화 임계 통과 가능) 자동 진화는 하지 않는다.
+    expect(rewards.partyExp?.[0]?.evolvedInto).toBeNull();
+    expect(rewards.evolvedInto).toBeNull();
   });
 });

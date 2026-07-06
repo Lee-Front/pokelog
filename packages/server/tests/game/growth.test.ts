@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  applyExpToPokemon,
   applyLearnedMoves,
   calculateStatsForLevel,
   buildLevelEvolutionContext,
@@ -388,5 +389,34 @@ describe("buildLevelEvolutionContext", () => {
     expect(context.partyTypes).toContain("dark");
     expect(context.attack).toBe(30);
     expect(context.defense).toBe(20);
+  });
+});
+
+describe("applyExpToPokemon (no auto-evolution / no queuing)", () => {
+  it("levels a charmander past its evolution threshold WITHOUT changing species", () => {
+    // charmander는 레벨 16에 charmeleon으로 진화하지만, applyExpToPokemon은 더 이상 진화시키지 않는다.
+    const charmander = createOwnedPokemon({ species: "charmander", level: 15, exp: getExpForLevel(15) });
+    const gained = getExpForLevel(20) - getExpForLevel(15);
+
+    const result = applyExpToPokemon(charmander, gained, { party: [charmander] });
+
+    expect(result.leveled).toBe(true);
+    expect(result.newLevel).toBe(20);
+    // 종은 그대로 — 자동 진화 없음.
+    expect(charmander.species).toBe("charmander");
+    // 반환 결과에서도 진화 필드가 제거됐다(evolvedBranch/pendingBranches 없음).
+    expect(result).not.toHaveProperty("evolvedBranch");
+    expect(result).not.toHaveProperty("pendingBranches");
+  });
+
+  it("still recalculates stats and reports learned moves on level-up", () => {
+    const charmander = createOwnedPokemon({ species: "charmander", level: 15, exp: getExpForLevel(15) });
+    const before = charmander.maxHp;
+
+    const result = applyExpToPokemon(charmander, getExpForLevel(18) - getExpForLevel(15), { party: [charmander] });
+
+    expect(result.leveled).toBe(true);
+    expect(charmander.level).toBe(18);
+    expect(charmander.maxHp).toBeGreaterThan(before); // 스탯 재계산은 유지된다.
   });
 });

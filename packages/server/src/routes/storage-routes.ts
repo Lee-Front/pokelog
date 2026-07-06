@@ -2,6 +2,7 @@ import { Router } from "express";
 import type { Response } from "express";
 import { authMiddleware, type AuthRequest } from "../middleware/auth-middleware.js";
 import { getUser, saveUser } from "../storage/user-store.js";
+import { getAvailableEvolutionOptions } from "../game/pending-evolution.js";
 import { childLogger } from "../logger.js";
 const log = childLogger("storage-routes");
 
@@ -19,7 +20,14 @@ storageRoutes.get("/storage", async (req: AuthRequest, res: Response) => {
       return;
     }
 
-    res.json({ storage: user.storage });
+    const region = user.currentRegion ?? "default";
+    // 계산 전용(비영속) 진화 가능 여부/선택지를 응답용 스프레드 복제본에만 부착한다(저장 객체 불변).
+    const withEvolution = user.storage.map((p) => {
+      const options = getAvailableEvolutionOptions(user, p, { region });
+      return { ...p, evolutionAvailable: options.length > 0, evolutionOptions: options };
+    });
+
+    res.json({ storage: withEvolution });
   } catch (err) {
     log.error({ err }, "Storage error");
     res.status(500).json({ error: "서버 오류가 발생했습니다" });

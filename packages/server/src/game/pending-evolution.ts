@@ -65,49 +65,26 @@ export function queuePendingEvolution(
 }
 
 /**
- * Retroactively queue pending evolutions for Pokémon that are ALREADY eligible
- * but never re-level (so the level-up evolution path in growth.ts never fires
- * for them) — e.g. level-100 base forms caught under the old party-scaling.
- *
- * Uses the SAME matching logic as the level-up path, so only genuinely-eligible
- * evolutions are offered; item/trade evolutions won't match here (no usedItem/
- * trade context) and are correctly excluded. This only QUEUES pending choices —
- * it never auto-transforms — so the player confirms via /evolutions/resolve.
- *
- * Returns the number of newly queued pending evolutions.
+ * 특정 포켓몬이 지금 진화 가능한 분기 옵션을 계산해 반환한다(온디맨드 진화용). 레벨업
+ * 자동 진화/큐잉을 없앤 대신, 목록/상세 응답과 evolve 엔드포인트가 이 함수로 "지금 가능한"
+ * 진화지를 그때그때 계산한다. 레벨업 경로와 동일한 매칭 로직(getMatchingEvolutionBranches)을
+ * 쓰므로:
+ *  - item-use 조건이 없으므로 아이템 진화는 자연히 제외된다(아이템 진화는 가방에서 처리).
+ *    트레이드 진화도 trigger 미지원으로 매칭되지 않는다.
+ *  - 대상 종이 species.json에 없는 깨진 분기(예: applin→dipplin)도 이미 필터되어 제외된다.
  */
-export function syncEligibleEvolutions(
+export function getAvailableEvolutionOptions(
   user: UserData,
+  pokemon: OwnedPokemon,
   opts: { now?: Date; region?: string } = {},
-): number {
-  // 존재하지 않는 대상 종으로 잘못 쌓였던 깨진 pending을 순회 전에 먼저 정리한다. 그래야
-  // 큐 맨 앞에 박혀 뒤의 정상 진화까지 막던 항목이 사라지고, 아래 handledUids도 정확해진다.
-  const pruned = prunePendingEvolutions(user);
-
+): PendingEvolutionOption[] {
   const party = getPartyPokemon(user);
-  const handledUids = new Set((user.pendingEvolutions ?? []).map((p) => p.pokemonUid));
-
-  let queued = 0;
-  for (const mon of [...user.pokemon, ...user.storage]) {
-    if (handledUids.has(mon.uid)) {
-      continue;
-    }
-
-    const branches = getMatchingEvolutionBranches(mon.species, {
-      level: mon.level,
-      ...buildLevelEvolutionContext(mon, party, { now: opts.now, region: opts.region }),
-    });
-
-    if (branches.length >= 1) {
-      queuePendingEvolution(user, mon, branches);
-      handledUids.add(mon.uid);
-      queued++;
-    }
-  }
-
-  // prune + queue 총 변경 수를 반환한다 — 호출부(/status)가 이 값 > 0일 때 saveUser 하므로,
-  // 큐잉이 0이고 정리만 일어난 경우에도 정리 결과가 반드시 저장된다.
-  return pruned + queued;
+  const region = opts.region ?? user.currentRegion ?? "default";
+  const branches = getMatchingEvolutionBranches(pokemon.species, {
+    level: pokemon.level,
+    ...buildLevelEvolutionContext(pokemon, party, { now: opts.now, region }),
+  });
+  return branches.map(buildOption);
 }
 
 /**

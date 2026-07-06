@@ -8,7 +8,7 @@ import { selectFromEncounters, splitEncounters } from "../game/encounter.js";
 import { createEncounterEvent } from "../game/event-factory.js";
 import { getRegion, getRegionNames, getSpeciesByName } from "../game/data-loader.js";
 import { buildLevelEvolutionContext, getEvolutionBranchDiagnostics } from "../game/growth.js";
-import { syncEligibleEvolutions } from "../game/pending-evolution.js";
+import { getAvailableEvolutionOptions, prunePendingEvolutions } from "../game/pending-evolution.js";
 import { findPokemonByUid, getPartyPokemon } from "../game/pokemon-state.js";
 import { getAnnouncements } from "../storage/announcement-store.js";
 import { childLogger } from "../logger.js";
@@ -69,16 +69,11 @@ gameRoutes.get("/status", async (req: AuthRequest, res: Response) => {
     // 야생 조우는 만료되지 않으므로 대기 이벤트 전체가 곧 활성 개수다.
     const pendingCount = user.pendingEvents.length;
 
-    // Retroactively queue any already-eligible evolutions (e.g. Pokémon stuck at
-    // a level past their evolution threshold that never re-level), and prune any
-    // broken pending evolutions that were wrongly queued for non-existent target
-    // species. The return value is the total number of changes (pruned + queued),
-    // so we persist whenever anything was queued OR pruned.
-    const changedEvolutions = syncEligibleEvolutions(user, {
-      now,
-      region: user.currentRegion ?? "default",
-    });
-    if (changedEvolutions > 0) {
+    // 더 이상 진화를 자동으로 큐잉하지 않는다 — 진화는 플레이어가 목록/상세에서 명시적으로
+    // 요청하는 온디맨드 경로(POST /game/pokemon/:uid/evolve)로 옮겼다. 다만 과거 자동 큐잉으로
+    // 존재하지 않는 대상 종에 잘못 쌓였던 기존 유저의 잔여 pending만 여기서 마이그레이션 삼아 정리한다.
+    const prunedCount = prunePendingEvolutions(user);
+    if (prunedCount > 0) {
       await saveUser(user);
     }
 
@@ -171,19 +166,29 @@ gameRoutes.post("/wild/search", async (req: AuthRequest, res: Response) => {
     const rollCount = config.rewards.encounter.rollCount;
     const regionData = getRegion(user.currentRegion ?? "default");
 
+    // 야생 레벨 파티 스케일링 — 파티 최고 레벨 기준 ±variance로 뽑는다(플래그 켜짐 + 파티 보유 시).
+    // 종 선택은 그대로(가중 추첨)이고 레벨만 스케일된다. 파티가 비었으면 undefined로 둬서 지역
+    // levelRange 균등 롤(종 자연 레벨대)로 폴백한다.
+    const party = getPartyPokemon(user);
+    const partyMaxLevel = party.reduce((max, p) => Math.max(max, p.level), 0);
+    const scaling = config.battle.wildLevelScaling && partyMaxLevel > 0
+      ? { partyMaxLevel, variance: config.battle.wildLevelVariance }
+      : undefined;
+
     // 전설/환상은 일반 가중 추첨에서 제외한다 — 일반 풀에서만 rollCount 배치를 뽑는다.
     const { normal: normalPool, legendary: legendaryPool } = splitEncounters(regionData);
 
     // rollCount만큼 일반 조우를 생성한다.
     const newBatch = Array.from({ length: rollCount }, () => {
-      const pick = selectFromEncounters(normalPool);
+      const pick = selectFromEncounters(normalPool, Math.random, scaling);
       const wildPokemon = createWildPokemon(pick.species, pick.level);
       return createEncounterEvent(wildPokemon);
     });
 
     // 게이팅된 전설 주입 — 롤 1회당 확률적으로 슬롯 하나를 지역 전설로 교체한다(최대 1마리, 쿨다운 없음).
+    // 전설도 레벨은 스케일되지만 자기 levelRange[0] 하한으로 클램프돼 밴드 아래로는 내려가지 않는다.
     if (legendaryPool.length && Math.random() < config.rewards.encounter.wildLegendaryChance) {
-      const pick = selectFromEncounters(legendaryPool);
+      const pick = selectFromEncounters(legendaryPool, Math.random, scaling);
       const legendary = createEncounterEvent(createWildPokemon(pick.species, pick.level));
       const slot = Math.floor(Math.random() * newBatch.length);
       newBatch[slot] = legendary;
@@ -249,9 +254,16 @@ gameRoutes.get("/party", async (req: AuthRequest, res: Response) => {
       return;
     }
 
-    const partyPokemon = getPartyPokemon(user);
+    const party = getPartyPokemon(user);
+    const region = user.currentRegion ?? "default";
+    // 계산 전용(비영속) 진화 가능 여부/선택지를 부착한다. 저장 객체를 변형하지 않도록 반드시
+    // 스프레드 복제본에만 얹는다(user.pokemon 참조를 직접 건드리면 saveUser에 새 필드가 샌다).
+    const withEvolution = party.map((p) => {
+      const options = getAvailableEvolutionOptions(user, p, { region });
+      return { ...p, evolutionAvailable: options.length > 0, evolutionOptions: options };
+    });
 
-    res.json({ party: partyPokemon });
+    res.json({ party: withEvolution });
   } catch (err) {
     log.error({ err }, "Party error");
     res.status(500).json({ error: "서버 오류가 발생했습니다" });

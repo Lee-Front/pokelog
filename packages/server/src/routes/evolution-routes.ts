@@ -3,7 +3,12 @@ import type { Response } from "express";
 import { authMiddleware, type AuthRequest } from "../middleware/auth-middleware.js";
 import { getUser, saveUser } from "../storage/user-store.js";
 import { getSpeciesByName } from "../game/data-loader.js";
-import { resolvePendingEvolutionChoice } from "../game/pending-evolution.js";
+import {
+  clearPendingEvolutionForPokemon,
+  getAvailableEvolutionOptions,
+  resolvePendingEvolutionChoice,
+} from "../game/pending-evolution.js";
+import { evolvePokemon } from "../game/growth.js";
 import { applyFormChange, getAvailableForms, getFormChangeRules, hasFormChangeRules } from "../game/form-change.js";
 import { GameRuleError } from "../game/game-errors.js";
 import { buildStats } from "../game/pokemon-stats.js";
@@ -65,6 +70,44 @@ evolutionRoutes.post("/evolutions/resolve", async (req: AuthRequest, res: Respon
 
     log.error({ err }, "Resolve evolution error");
     res.status(500).json({ error: "Failed to resolve pending evolution." });
+  }
+});
+
+// 온디맨드 진화 — 플레이어가 목록/상세에서 "지금 가능한" 진화지(branchId)를 골라 요청한다.
+// 레벨업 자동 진화를 대체한다. getAvailableEvolutionOptions로 조건 충족을 재검증한 뒤 진화시키고,
+// 연쇄진화 UX를 위해 진화 직후 다시 가능해진 옵션을 비영속으로 부착해 내려준다.
+evolutionRoutes.post("/pokemon/:uid/evolve", async (req: AuthRequest, res: Response) => {
+  try {
+    const { branchId } = req.body ?? {};
+    if (!branchId || typeof branchId !== "string") {
+      res.status(400).json({ error: "branchId가 필요합니다." });
+      return;
+    }
+    const user = await getUser(req.userId!);
+    if (!user) { res.status(404).json({ error: "사용자를 찾을 수 없습니다." }); return; }
+    const pokemon = findPokemonByUid(user, req.params.uid);
+    if (!pokemon) { res.status(404).json({ error: "포켓몬을 찾을 수 없습니다." }); return; }
+    const region = user.currentRegion ?? "default";
+    const options = getAvailableEvolutionOptions(user, pokemon, { region });
+    const option = options.find((o) => o.branchId === branchId);
+    if (!option) {
+      throw new GameRuleError("진화 조건을 충족하지 않습니다.", 400);
+    }
+    const sourceName = getSpeciesByName(pokemon.species)?.name ?? pokemon.species;
+    evolvePokemon(pokemon, option.targetSpecies, option.targetVariantId ?? null); // 스탯 재계산 포함
+    if (!user.pokedex.includes(option.targetSpecies)) user.pokedex.push(option.targetSpecies);
+    clearPendingEvolutionForPokemon(user, pokemon.uid); // 잔여 pending 정리
+    await saveUser(user);
+    // 연쇄진화 UX: 진화 후 다시 가능 옵션 계산해 비영속으로 부착
+    const nextOptions = getAvailableEvolutionOptions(user, pokemon, { region });
+    res.json({
+      message: `${sourceName}이(가) ${option.targetName}(으)로 진화했습니다.`,
+      pokemon: { ...pokemon, evolutionAvailable: nextOptions.length > 0, evolutionOptions: nextOptions },
+    });
+  } catch (err) {
+    if (err instanceof GameRuleError) { res.status(err.status).json({ error: err.message }); return; }
+    log.error({ err }, "Evolve error");
+    res.status(500).json({ error: "서버 오류가 발생했습니다" });
   }
 });
 

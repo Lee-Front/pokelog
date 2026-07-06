@@ -33,18 +33,14 @@ export interface ApplyExpResult {
   learnedMoves: string[];
   /** 4개 한도를 넘겨 자동으로 못 배운 기술 id들 — 플레이어 결정(잊기/안배우기) 대기 대상. */
   pendingMoveLearns: string[];
-  /** Single matching evolution branch that was applied immediately. */
-  evolvedBranch: EvolutionBranch | null;
-  /** Multiple matching branches that require a pending player choice. */
-  pendingBranches: EvolutionBranch[];
 }
 
 /**
- * Apply EXP to a single Pokemon and resolve all downstream growth effects:
- * level-up, learned moves, stat recalculation, and evolution branch matching.
- * Mutates `pokemon` in place. Evolution side effects that touch the owning user
- * (pokedex updates, queuing a pending-evolution choice) are returned to the
- * caller rather than applied here, so this stays free of user/storage deps.
+ * Apply EXP to a single Pokemon and resolve level-up growth effects:
+ * level-up, learned moves, and stat recalculation. Mutates `pokemon` in place.
+ * 진화는 더 이상 여기서 처리하지 않는다 — 레벨업 자동 진화/큐잉을 제거하고, 진화는
+ * 플레이어가 명시적으로 요청하는 온디맨드 경로(POST /game/pokemon/:uid/evolve)로 옮겼다.
+ * 따라서 `context`는 하위호환을 위해 시그니처에만 남겨두고 내부에선 쓰지 않는다.
  *
  * Shared by the commit reward path and the battle reward path.
  */
@@ -58,8 +54,6 @@ export function applyExpToPokemon(
     newLevel: pokemon.level,
     learnedMoves: [],
     pendingMoveLearns: [],
-    evolvedBranch: null,
-    pendingBranches: [],
   };
 
   if (exp <= 0) return result;
@@ -79,22 +73,6 @@ export function applyExpToPokemon(
   pokemon.maxHp = newStats.maxHp;
   pokemon.hp = Math.min(pokemon.hp, pokemon.maxHp);
   pokemon.stats = newStats.stats;
-
-  const matchingBranches = getMatchingEvolutionBranches(pokemon.species, {
-    level: levelUp.newLevel,
-    ...buildLevelEvolutionContext(pokemon, context.party, {
-      now: context.now,
-      region: context.region,
-    }),
-  });
-
-  if (matchingBranches.length === 1) {
-    const branch = matchingBranches[0];
-    evolvePokemon(pokemon, branch.targetSpecies, branch.targetVariantId);
-    result.evolvedBranch = branch;
-  } else if (matchingBranches.length > 1) {
-    result.pendingBranches = matchingBranches;
-  }
 
   return result;
 }

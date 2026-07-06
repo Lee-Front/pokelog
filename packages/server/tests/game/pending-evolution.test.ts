@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { EvolutionBranch, UserData } from "../../../../shared/types.js";
 import { createPokemon } from "../../src/game/pokemon-factory.js";
 import {
+  getAvailableEvolutionOptions,
   prunePendingEvolutions,
   queuePendingEvolution,
   resolvePendingEvolutionChoice,
@@ -191,5 +192,23 @@ describe("prunePendingEvolutions", () => {
     const removed = prunePendingEvolutions(user);
     expect(removed).toBe(0);
     expect(user.pendingEvolutions).toHaveLength(0);
+  });
+});
+
+describe("getAvailableEvolutionOptions", () => {
+  it("returns matching level-up branch options (branchId/targetSpecies/targetName) for an eligible pokemon", () => {
+    const user = createUserData();
+    const charmander = createPokemon("charmander", 16);
+    user.party = [charmander.uid];
+    user.pokemon = [charmander];
+
+    const options = getAvailableEvolutionOptions(user, charmander, {});
+
+    const charmeleon = options.find((o) => o.targetSpecies === "charmeleon");
+    expect(charmeleon).toBeDefined();
+    expect(charmeleon?.branchId).toBeTruthy();
+    expect(charmeleon?.targetName).toBeTruthy();
+    // 순수 계산 — pending을 만들지 않는다.
+    expect(user.pendingEvolutions ?? []).toHaveLength(0);
   });
 });

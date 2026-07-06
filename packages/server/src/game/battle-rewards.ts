@@ -4,7 +4,6 @@ import { getEvYield, applyEvGain, emptyEvs } from "./evs.js";
 import { buildStatsForPokemon } from "./pokemon-stats.js";
 import { incrementItem } from "./inventory-utils.js";
 import { getPartyPokemon } from "./pokemon-state.js";
-import { clearPendingEvolutionForPokemon, queuePendingEvolution } from "./pending-evolution.js";
 import { queuePendingMoveLearns } from "./pending-move-learn.js";
 import type {
   BattleDroppedItem,
@@ -64,9 +63,11 @@ export function rollItemDrop(
 }
 
 /**
- * Apply `exp` to a single party member and resolve the user-level evolution
- * side-effects (pokedex updates / pending-evolution queue), mutating both the
- * Pokemon and `user`. Returns the per-Pokemon exp summary for the response.
+ * Apply `exp` to a single party member, mutating both the Pokemon and `user`
+ * (queuing any pending move-learn choices). Returns the per-Pokemon exp summary
+ * for the response. 레벨업 자동 진화는 제거됐다 — 진화는 플레이어가 명시적으로
+ * 요청하는 온디맨드 경로로 옮겼으므로 여기선 pokedex/pending을 건드리지 않고,
+ * evolvedInto는 항상 null이다(포털 호환을 위해 필드 자체는 유지).
  */
 function grantExpToMember(
   user: UserData,
@@ -81,17 +82,6 @@ function grantExpToMember(
     region: user.currentRegion ?? "default",
   });
 
-  let evolvedInto: string | null = null;
-  if (expResult.evolvedBranch) {
-    clearPendingEvolutionForPokemon(user, pokemon.uid);
-    evolvedInto = expResult.evolvedBranch.targetSpecies;
-    if (!user.pokedex.includes(evolvedInto)) {
-      user.pokedex.push(evolvedInto);
-    }
-  } else if (expResult.pendingBranches.length > 0) {
-    queuePendingEvolution(user, pokemon, expResult.pendingBranches);
-  }
-
   // 4개 한도를 넘겨 자동으로 못 배운 기술은 대기에 쌓아 플레이어가 결정하게 한다.
   if (expResult.pendingMoveLearns.length > 0) {
     queuePendingMoveLearns(user, pokemon.uid, expResult.pendingMoveLearns);
@@ -103,7 +93,7 @@ function grantExpToMember(
     exp,
     leveledUp: expResult.leveled,
     newLevel: expResult.newLevel,
-    evolvedInto,
+    evolvedInto: null,
   };
 }
 
@@ -164,6 +154,24 @@ export function grantBattleRewards(
       member.stats = recomputed.stats;
     }
     partyExp.push(summary);
+  }
+
+  // Exp Share(본가 학습장치식) — 미참여(벤치) 생존 파티원에게 풀 EXP의 shareRatio 배를 준다.
+  // 참여자는 위에서 풀 EXP를 받았고, 벤치원은 EV/포켓루스 없이 EXP만 받는다(기절·참여자는 제외).
+  // applyExpToPokemon이 레벨업 시 스탯을 재계산하므로 참여자용 EV 재계산 블록은 필요 없다.
+  // RNG를 전혀 쓰지 않으므로 아래 포켓루스 롤의 시퀀스를 교란하지 않고, 요약도 참여자 뒤에 붙어
+  // partyExp[0](헤드라인)은 여전히 첫 참여자로 유지된다.
+  const shareRatio = config.expShareRatio ?? 0.5;
+  if (shareRatio > 0 && exp > 0) {
+    const participantUids = new Set(participants.map((p) => p.uid));
+    const sharedExp = Math.floor(exp * shareRatio);
+    if (sharedExp > 0) {
+      for (const member of party) {
+        if (participantUids.has(member.uid) || member.hp <= 0) continue;
+        const summary = grantExpToMember(user, member, sharedExp, party, now);
+        partyExp.push(summary);
+      }
+    }
   }
 
   // 포켓루스 감염 — 승리 후 낮은 확률로 미감염 생존 참여자 1마리를 감염시킨다.
