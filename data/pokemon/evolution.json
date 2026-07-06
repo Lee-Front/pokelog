@@ -90,6 +90,9 @@
   "ampharos": {
     "branches": []
   },
+  "annihilape": {
+    "branches": []
+  },
   "anorith": {
     "branches": [
       {
@@ -138,9 +141,14 @@
       {
         "id": "applin-dipplin-1",
         "targetSpecies": "dipplin",
-        "trigger": "other",
-        "conditions": [],
-        "consumeItem": null
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "syrupy-apple"
+          }
+        ],
+        "consumeItem": "syrupy-apple"
       }
     ]
   },
@@ -154,6 +162,9 @@
     "branches": []
   },
   "arceus": {
+    "branches": []
+  },
+  "archaludon": {
     "branches": []
   },
   "archen": {
@@ -474,9 +485,14 @@
       {
         "id": "bisharp-kingambit-1",
         "targetSpecies": "kingambit",
-        "trigger": "other",
-        "conditions": [],
-        "consumeItem": null
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "leaders-crest"
+          }
+        ],
+        "consumeItem": "leaders-crest"
       }
     ]
   },
@@ -1198,6 +1214,9 @@
       }
     ]
   },
+  "clodsire": {
+    "branches": []
+  },
   "cloyster": {
     "branches": []
   },
@@ -1728,6 +1747,9 @@
       }
     ]
   },
+  "dipplin": {
+    "branches": []
+  },
   "ditto": {
     "branches": []
   },
@@ -1962,6 +1984,9 @@
       }
     ]
   },
+  "dudunsparce": {
+    "branches": []
+  },
   "dugtrio": {
     "branches": []
   },
@@ -2002,9 +2027,14 @@
       {
         "id": "duraludon-archaludon-1",
         "targetSpecies": "archaludon",
-        "trigger": "other",
-        "conditions": [],
-        "consumeItem": null
+        "trigger": "use-item",
+        "conditions": [
+          {
+            "type": "item-use",
+            "item": "metal-alloy"
+          }
+        ],
+        "consumeItem": "metal-alloy"
       }
     ]
   },
@@ -2455,6 +2485,9 @@
         "consumeItem": null
       }
     ]
+  },
+  "farigiraf": {
+    "branches": []
   },
   "fearow": {
     "branches": []
@@ -3728,6 +3761,9 @@
     "branches": []
   },
   "keldeo": {
+    "branches": []
+  },
+  "kingambit": {
     "branches": []
   },
   "kingdra": {

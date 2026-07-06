@@ -129,6 +129,31 @@ describe("useInventoryItem", () => {
     expect(user.inventory.protein).toBe(1);
   });
 
+  it("evolves the new Gen-9 item lines (applin→dipplin, duraludon→archaludon, bisharp→kingambit)", () => {
+    const cases = [
+      { from: "applin", item: "syrupy-apple", to: "dipplin" },
+      { from: "duraludon", item: "metal-alloy", to: "archaludon" },
+      { from: "bisharp", item: "leaders-crest", to: "kingambit" },
+    ];
+
+    for (const { from, item, to } of cases) {
+      const user = createUserData();
+      const pokemon = createPokemon(from, 40);
+      user.party = [pokemon.uid];
+      user.pokemon = [pokemon];
+      user.pokedex = [from];
+      user.inventory = { [item]: 1 };
+
+      const result = useInventoryItem(user, item, pokemon.uid);
+
+      expect(result.kind, `${from} + ${item}`).toBe("evolution");
+      expect(result.previousSpecies).toBe(from);
+      expect(pokemon.species).toBe(to);
+      expect(user.inventory[item]).toBeUndefined();
+      expect(user.pokedex).toContain(to);
+    }
+  });
+
   it("rejects a vitamin when the 510 total is already reached", () => {
     const user = createUserData();
     const pokemon = createPokemon("pikachu", 50);

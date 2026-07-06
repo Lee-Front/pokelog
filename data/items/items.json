@@ -406,6 +406,13 @@
     "shortEffect": ""
   },
   {
+    "id": "leaders-crest",
+    "name": "대장의 증표",
+    "category": "evolution",
+    "cost": 3000,
+    "shortEffect": ""
+  },
+  {
     "id": "leaf-stone",
     "name": "리프의돌",
     "category": "evolution",
@@ -508,6 +515,13 @@
     "name": "멘탈허브",
     "category": "held-items",
     "cost": 4000,
+    "shortEffect": ""
+  },
+  {
+    "id": "metal-alloy",
+    "name": "합금덩이",
+    "category": "evolution",
+    "cost": 3000,
     "shortEffect": ""
   },
   {
@@ -851,6 +865,13 @@
     "name": "하트스위트",
     "category": "healing",
     "cost": 3000,
+    "shortEffect": ""
+  },
+  {
+    "id": "syrupy-apple",
+    "name": "꿀맛사과",
+    "category": "evolution",
+    "cost": 2200,
     "shortEffect": ""
   },
   {

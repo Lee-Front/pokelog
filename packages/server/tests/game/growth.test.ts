@@ -178,6 +178,15 @@ describe("checkEvolution", () => {
     expect(checkEvolution("aipom", 32, {
       knownMoveIds: ["double-hit"],
     })).toBe("ambipom");
+
+    // 신규 Gen-9 known-move 진화: 대상 종이 species.json에 추가되어 매칭된다.
+    expect(checkEvolution("dunsparce", 30, {
+      knownMoveIds: ["hyper-drill"],
+    })).toBe("dudunsparce");
+
+    expect(checkEvolution("girafarig", 30, {
+      knownMoveIds: ["twin-beam"],
+    })).toBe("farigiraf");
   });
 
   it("supports stat comparison evolution conditions", () => {
@@ -272,13 +281,29 @@ describe("checkEvolution", () => {
   });
 
   it("supports move-usage evolution conditions when usage counters are present", () => {
+    // primeape-annihilape-1: 이동 사용(min_move_count=20, rage-fist) 조건을 충족하고
+    // 대상 종 annihilape가 이제 species.json에 존재하므로 진화가 정상적으로 매칭된다.
     expect(checkEvolution("primeape", 35, {
       moveUsageCounts: { "rage-fist": 20 },
     })).toBe("annihilape");
 
+    // 사용 횟수가 임계값(20) 미만이면 조건을 만족하지 못해 매칭되지 않는다.
+    expect(checkEvolution("primeape", 35, {
+      moveUsageCounts: { "rage-fist": 19 },
+    })).toBeNull();
+
+    // 대상 종(wyrdeer)이 존재하는 이동 사용 진화는 정상적으로 매칭된다.
     expect(checkEvolution("stantler", 35, {
       moveUsageCounts: { "psyshield-bash": 20 },
     })).toBe("wyrdeer");
+  });
+
+  it("offers clodsire alongside quagsire as a wooper level-20 evolution option", () => {
+    // clodsire가 species.json에 추가되어, 안전 필터가 더 이상 이 분기를 제외하지 않는다.
+    const branches = getMatchingEvolutionBranches("wooper", { level: 20 });
+    const targets = branches.map((branch) => branch.targetSpecies);
+    expect(targets).toContain("quagsire");
+    expect(targets).toContain("clodsire");
   });
 
   it("supports remaining project-specific extra evolution substitutes", () => {

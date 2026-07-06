@@ -1,4 +1,5 @@
 import { getMoveById, getSpeciesByName, getEvolutions, getVariantById } from "./data-loader.js";
+import { GameRuleError } from "./game-errors.js";
 import { getDamageTakenTotal } from "./battle-progress.js";
 import { getMoveUsageCount } from "./move-usage.js";
 import { calculateStatsForLevel } from "./pokemon-stats.js";
@@ -190,7 +191,8 @@ function resolveEvolutionAbilityId(species: string, currentAbilityId: string | n
 export function evolvePokemon(pokemon: OwnedPokemon, targetSpecies: string, targetVariantId?: string | null): OwnedPokemon {
   const targetSpeciesData = getSpeciesByName(targetSpecies);
   if (!targetSpeciesData) {
-    throw new Error(`Unknown evolution target: ${targetSpecies}`);
+    // GameRuleError로 던져 아이템 진화·resolve 라우트가 500 대신 깔끔한 4xx를 반환하게 한다.
+    throw new GameRuleError(`진화 대상 종을 찾을 수 없습니다: ${targetSpecies}`);
   }
 
   pokemon.species = targetSpecies;
@@ -673,7 +675,12 @@ export function getMatchingEvolutionBranches(species: string, context: Evolution
     return [];
   }
 
-  return evo.branches.filter((branch) => branchMatches(branch, context));
+  // 대상 종이 데이터(species.json)에 존재하지 않는 분기는 애초에 진화가 불가능하므로 제외한다
+  // (예: applin→dipplin). 이런 분기가 매칭되면 존재하지 않는 종으로의 pending 진화가 잘못
+  // 큐잉되고, resolve 시 evolvePokemon이 예외를 던져 진화 UI 전체가 막힌다.
+  return evo.branches.filter(
+    (branch) => getSpeciesByName(branch.targetSpecies) != null && branchMatches(branch, context),
+  );
 }
 
 export function resolveEvolution(species: string, context: EvolutionCheckContext): EvolutionBranch | null {

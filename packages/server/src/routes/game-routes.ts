@@ -70,13 +70,15 @@ gameRoutes.get("/status", async (req: AuthRequest, res: Response) => {
     const pendingCount = user.pendingEvents.length;
 
     // Retroactively queue any already-eligible evolutions (e.g. Pokémon stuck at
-    // a level past their evolution threshold that never re-level), so the pending
-    // count below reflects them. Only writes when something was newly queued.
-    const queuedEvolutions = syncEligibleEvolutions(user, {
+    // a level past their evolution threshold that never re-level), and prune any
+    // broken pending evolutions that were wrongly queued for non-existent target
+    // species. The return value is the total number of changes (pruned + queued),
+    // so we persist whenever anything was queued OR pruned.
+    const changedEvolutions = syncEligibleEvolutions(user, {
       now,
       region: user.currentRegion ?? "default",
     });
-    if (queuedEvolutions > 0) {
+    if (changedEvolutions > 0) {
       await saveUser(user);
     }
 

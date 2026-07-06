@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { UserData } from "../../../../shared/types.js";
 import { createPokemon } from "../../src/game/pokemon-factory.js";
 import { syncEligibleEvolutions } from "../../src/game/pending-evolution.js";
+import { getMatchingEvolutionBranches } from "../../src/game/growth.js";
 
 function createUserData(): UserData {
   return {
@@ -125,5 +126,31 @@ describe("syncEligibleEvolutions", () => {
     expect(first).toBe(1);
     expect(second).toBe(0);
     expect(user.pendingEvolutions).toHaveLength(1);
+  });
+
+  it("does not queue a pending evolution whose only matching branch targets a non-existent species", () => {
+    // applin의 applin-dipplin-1 분기(trigger:"other", conditions:[])는 어떤 레벨에서도
+    // branchMatches를 통과하지만, 대상 종 dipplin이 species.json에 없어 큐잉되면 안 된다.
+    const user = createUserData();
+    const applin = createPokemon("applin", 20);
+    user.party = [applin.uid];
+    user.pokemon = [applin];
+
+    const queued = syncEligibleEvolutions(user, {});
+
+    expect(queued).toBe(0);
+    expect(user.pendingEvolutions).toHaveLength(0);
+  });
+});
+
+describe("getMatchingEvolutionBranches non-existent target filtering", () => {
+  it("excludes branches whose target species does not exist (applin -> dipplin)", () => {
+    const branches = getMatchingEvolutionBranches("applin", { level: 20 });
+    expect(branches.map((branch) => branch.targetSpecies)).not.toContain("dipplin");
+  });
+
+  it("still returns valid level-up branches for a normal species (charmander -> charmeleon)", () => {
+    const branches = getMatchingEvolutionBranches("charmander", { level: 100 });
+    expect(branches.map((branch) => branch.targetSpecies)).toContain("charmeleon");
   });
 });

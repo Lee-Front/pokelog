@@ -32,9 +32,9 @@ function buildSpeciesLookup(): Set<string> {
 }
 
 describe("QA: Data Integrity", () => {
-  it("A1: species.json has 905 entries with all SpeciesData fields", () => {
+  it("A1: species.json has 912 entries with all SpeciesData fields", () => {
     const species = getSpecies();
-    expect(species).toHaveLength(905);
+    expect(species).toHaveLength(912);
 
     const baseStatKeys = ["hp", "attack", "defense", "spAttack", "spDefense", "speed"];
 
@@ -127,17 +127,10 @@ describe("QA: Data Integrity", () => {
       }
     }
 
-    // Gen-9+ species not in our gen-8 dataset — known and expected
-    const GEN9_EVOLUTION_TARGETS = new Set([
-      "annihilape", "archaludon", "clodsire", "dipplin",
-      "dudunsparce", "farigiraf", "kingambit",
-    ]);
-
-    const unexpectedMissing = missing.filter(ref => {
-      const target = ref.split(" -> ")[1];
-      return !GEN9_EVOLUTION_TARGETS.has(target);
-    });
-    expect(unexpectedMissing, "Unexpected missing evolution targets: " + unexpectedMissing.join(", ")).toHaveLength(0);
+    // The Gen-9 evolution targets (annihilape, archaludon, clodsire, dipplin,
+    // dudunsparce, farigiraf, kingambit) are now present in species.json, so no
+    // targetSpecies should be missing anymore.
+    expect(missing, "Missing evolution targets: " + missing.join(", ")).toHaveLength(0);
   });
 
   it("A4: every species has an evolution entry and vice versa", () => {
