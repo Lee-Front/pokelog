@@ -536,6 +536,9 @@ export interface ServerConfig {
   // 기술 기억 도우미(Move Reminder) 1회 비용(게임머니). 종의 레벨업 학습표 기술을 레벨 무관하게
   // 다시 배울 때 차감한다. 운영자가 /admin에서 튜닝(기본 300).
   moveRelearnCost: number;
+  // 기술 가르침 도우미(Move Tutor) 1회 비용(게임머니). 종의 TM/교배/가르침 학습표 기술을
+  // 가르칠 때 차감한다. 프리미엄/커버리지 기술이라 재학습보다 비싸다. 운영자가 /admin에서 튜닝(기본 800).
+  moveTeachCost: number;
   pvp: PvpConfig;
 }
 

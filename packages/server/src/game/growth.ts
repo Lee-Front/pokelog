@@ -208,24 +208,27 @@ export function getRelearnableMoves(pokemon: OwnedPokemon): string[] {
 }
 
 /**
- * 기술 기억 도우미 실행 — pokemon이 moveId를 다시 배우도록 pokemon.moves(및 user.gameMoney)를
- * 변형한다. 순수 로직만 담당하고 저장은 호출부(라우트)가 한다.
- *  - moveId가 재학습 풀에 없으면(무효/이미 앎) GameRuleError(400).
+ * 기술 학습 공통 로직 — 기술 기억(relearn)·기술 가르침(teach)이 공유한다. 각자의 학습 가능 풀(pool)만
+ * 다르고 이후 절차(검증·슬롯 처리·게임머니 차감)는 동일하다. pokemon.moves(및 user.gameMoney)를
+ * 변형하며, 저장은 호출부(라우트)가 한다.
+ *  - moveId가 pool에 없으면(무효/이미 앎) GameRuleError(400) — 사유 메시지는 notInPoolMessage.
  *  - 게임머니가 cost보다 적으면 GameRuleError(400).
  *  - 기술이 4개 미만이면 새 슬롯을 추가.
  *  - 4개면 forgetMoveId(현재 아는 기술 중 하나)가 필요 — 없거나 잘못되면 GameRuleError(400).
  *    해당 슬롯을 제자리에서 교체해 슬롯 순서를 유지한다.
  *  - 마지막으로 cost만큼 게임머니를 차감.
  */
-export function applyMoveRelearn(
+function applyMoveLearnFromPool(
   user: { gameMoney: number },
   pokemon: OwnedPokemon,
+  pool: string[],
   moveId: string,
   cost: number,
-  forgetMoveId?: string | null,
+  forgetMoveId: string | null | undefined,
+  notInPoolMessage: string,
 ): void {
-  if (!getRelearnableMoves(pokemon).includes(moveId)) {
-    throw new GameRuleError("다시 배울 수 없는 기술입니다.", 400);
+  if (!pool.includes(moveId)) {
+    throw new GameRuleError(notInPoolMessage, 400);
   }
   if (user.gameMoney < cost) {
     throw new GameRuleError("게임머니가 부족합니다", 400);
@@ -242,6 +245,85 @@ export function applyMoveRelearn(
   }
 
   user.gameMoney -= cost;
+}
+
+/**
+ * 기술 기억 도우미 실행 — pokemon이 moveId를 다시 배우도록 pokemon.moves(및 user.gameMoney)를
+ * 변형한다. 재학습 풀(getRelearnableMoves)로 검증하는 것 외에는 applyMoveLearnFromPool과 동일하다.
+ */
+export function applyMoveRelearn(
+  user: { gameMoney: number },
+  pokemon: OwnedPokemon,
+  moveId: string,
+  cost: number,
+  forgetMoveId?: string | null,
+): void {
+  applyMoveLearnFromPool(
+    user,
+    pokemon,
+    getRelearnableMoves(pokemon),
+    moveId,
+    cost,
+    forgetMoveId,
+    "다시 배울 수 없는 기술입니다.",
+  );
+}
+
+// ── 기술 가르침 도우미 (Move Tutor) — TM/교배/가르침 학습 ──
+// 기술 기억(Move Reminder)이 레벨업 학습표만 다루는 것과 달리, 이 도우미는 종의 TM(learnset.tm)·
+// 기술가르침(learnset.tutor)·교배(learnset.egg) 학습표에 있는 기술을 게임머니로 가르친다. 레벨업
+// 풀로는 닿지 못하던 커버리지/프리미엄 기술을 확보해 팀빌딩 깊이를 여는 용도(레벨 무관).
+
+/**
+ * 가르칠 수 있는 기술 풀 — 종의 tm·tutor·egg 학습표를 합집합(중복 제거)한 뒤,
+ *  - 이미 알고 있는 기술과
+ *  - getMoveById로 해석되지 않는(무효/미구현) id
+ * 를 제외한 목록. tm → tutor → egg 순서로 처음 등장 순서를 유지한다.
+ * (레벨업 전용 기술은 기술 기억 도우미의 몫이므로 여기서 다루지 않는다.)
+ */
+export function getTeachableMoves(pokemon: OwnedPokemon): string[] {
+  const speciesData = getSpeciesByName(pokemon.species);
+  if (!speciesData) return [];
+
+  const known = new Set(pokemon.moves.map((move) => move.id));
+  const seen = new Set<string>();
+  const pool: string[] = [];
+
+  const source = [
+    ...speciesData.learnset.tm,
+    ...speciesData.learnset.tutor,
+    ...speciesData.learnset.egg,
+  ];
+  for (const moveId of source) {
+    if (known.has(moveId) || seen.has(moveId)) continue;
+    if (!getMoveById(moveId)) continue; // 데이터에 없는 기술 id는 건너뛴다
+    seen.add(moveId);
+    pool.push(moveId);
+  }
+
+  return pool;
+}
+
+/**
+ * 기술 가르침 도우미 실행 — pokemon이 moveId를 배우도록 pokemon.moves(및 user.gameMoney)를 변형한다.
+ * 가르침 풀(getTeachableMoves)로 검증하는 것 외에는 applyMoveLearnFromPool과 동일하다.
+ */
+export function applyMoveTeach(
+  user: { gameMoney: number },
+  pokemon: OwnedPokemon,
+  moveId: string,
+  cost: number,
+  forgetMoveId?: string | null,
+): void {
+  applyMoveLearnFromPool(
+    user,
+    pokemon,
+    getTeachableMoves(pokemon),
+    moveId,
+    cost,
+    forgetMoveId,
+    "가르칠 수 없는 기술입니다.",
+  );
 }
 
 function resolveEvolutionAbilityId(species: string, currentAbilityId: string | null | undefined): string | null {
