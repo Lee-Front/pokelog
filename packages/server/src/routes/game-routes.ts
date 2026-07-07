@@ -1,5 +1,6 @@
 import { Router } from "express";
 import type { Response } from "express";
+import crypto from "node:crypto";
 import { authMiddleware, type AuthRequest } from "../middleware/auth-middleware.js";
 import { getUser, saveUser } from "../storage/user-store.js";
 import { getConfig } from "../storage/config-store.js";
@@ -14,6 +15,12 @@ import { GameRuleError } from "../game/game-errors.js";
 import { getAnnouncements } from "../storage/announcement-store.js";
 import { evaluateAchievements } from "../game/achievements.js";
 import { getStats } from "../storage/pvp-stats-store.js";
+import { buildBossWild, getCurrentBoss, getIsoWeek } from "../game/weekly-boss.js";
+import { defaultStatStages } from "../game/battle.js";
+import { applySwitchInAbilities } from "../game/abilities.js";
+import { checkPrimalReversion, getTransformedStats } from "../game/battle-transformations.js";
+import { appendEvent } from "../storage/event-log.js";
+import type { BattleState } from "../../../../shared/types.js";
 import { childLogger } from "../logger.js";
 const log = childLogger("game-routes");
 
@@ -206,6 +213,136 @@ gameRoutes.post("/wild/search", async (req: AuthRequest, res: Response) => {
     res.status(200).json({ events: newBatch, count: newBatch.length });
   } catch (err) {
     log.error({ err }, "Wild search error");
+    res.status(500).json({ error: "서버 오류가 발생했습니다" });
+  }
+});
+
+// 주간보스 정보 — 이번 주 보스 정의(표시용) + 이번 주 처치 여부(bossDefeat 가드) + 주 인덱스.
+// 포털 /pokelog/boss 화면이 이 응답으로 보스 카드(아트·기술·특성·지닌물건·보상·공략)를 그린다.
+gameRoutes.get("/boss", async (req: AuthRequest, res: Response) => {
+  try {
+    const user = await getUser(req.userId!);
+    if (!user) {
+      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+      return;
+    }
+
+    const now = new Date();
+    const week = getIsoWeek(now);
+    const boss = getCurrentBoss(now);
+    const defeatedThisWeek =
+      user.bossDefeat?.week === week && user.bossDefeat?.bossId === boss.id;
+
+    res.json({
+      boss: {
+        id: boss.id,
+        name: boss.name,
+        description: boss.description,
+        gimmick: boss.gimmick,
+        species: boss.species,
+        variantId: boss.variantId ?? null,
+        level: boss.level,
+        moves: boss.moves,
+        ability: boss.ability ?? null,
+        heldItem: boss.heldItem ?? null,
+        reward: {
+          points: boss.reward.points,
+          gameMoney: boss.reward.gameMoney,
+          item: boss.reward.item ?? null,
+        },
+      },
+      defeatedThisWeek,
+      week,
+    });
+  } catch (err) {
+    log.error({ err }, "Boss info error");
+    res.status(500).json({ error: "서버 오류가 발생했습니다" });
+  }
+});
+
+// 주간보스 전투 시작 — 야생 전투 진입과 동일한 battleState 메커니즘을 쓴다. 이미 진행 중인 전투가
+// 있으면 거부(야생 전투를 덮어쓰지 않도록), 파티에서 살아있는 리드를 자동 선택해 boss를 wild로
+// 세팅하고 isBoss/bossId를 찍어 저장한다. 응답의 battleState로 포털 전투 화면이 바로 이어진다.
+gameRoutes.post("/boss/start", async (req: AuthRequest, res: Response) => {
+  try {
+    const user = await getUser(req.userId!);
+    if (!user) {
+      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+      return;
+    }
+
+    if (user.battleState) {
+      res.status(400).json({ error: "이미 진행 중인 전투가 있습니다" });
+      return;
+    }
+
+    const party = getPartyPokemon(user);
+    const lead = party.find((p) => p.hp > 0);
+    if (!lead) {
+      res.status(400).json({ error: "전투에 내보낼 수 있는 포켓몬이 없습니다" });
+      return;
+    }
+
+    const now = new Date();
+    const boss = getCurrentBoss(now);
+    const wild = buildBossWild(boss);
+
+    const battleState: BattleState = {
+      // 야생 조우처럼 pendingEvent를 참조하지 않는 합성 eventId(finishWin/handleRun의 pendingEvents
+      // 필터는 no-op). 보스별·주별로 유일하게 만든다.
+      eventId: `boss-${boss.id}-${getIsoWeek(now)}-${crypto.randomUUID()}`,
+      myPokemonUid: lead.uid,
+      participantUids: [lead.uid],
+      turn: 0,
+      wild,
+      isBoss: true,
+      bossId: boss.id,
+      playerStatStages: defaultStatStages(),
+      wildStatStages: defaultStatStages(),
+      playerVolatile: [],
+      wildVolatile: [],
+    };
+
+    // 리드의 원시회귀(그란돈/가이오가 등) — 야생전 /battle/start와 동일하게 처리.
+    const primalForm = checkPrimalReversion(lead);
+    if (primalForm) {
+      battleState.playerBattleForm = primalForm;
+      battleState.transformationType = "primal";
+      const transformed = getTransformedStats(lead, primalForm);
+      lead.stats = transformed.stats;
+      lead.maxHp = transformed.maxHp;
+      lead.hp = Math.min(lead.hp, lead.maxHp);
+    }
+
+    const startLog: string[] = [`주간보스 ${boss.name}이(가) 나타났다!`];
+    // 스위치인 특성(위협·날씨/필드 세터 등): 야생전 시작과 동일하게 양측 등장 효과를 적용한다.
+    // 보스의 drizzle/drought/sand-stream/snow-warning 등이 여기서 날씨를 세팅한다.
+    battleState.wildStatStages = applySwitchInAbilities(
+      battleState, "player", lead, battleState.wildStatStages!, startLog,
+    );
+    battleState.playerStatStages = applySwitchInAbilities(
+      battleState, "wild", wild, battleState.playerStatStages!, startLog,
+    );
+
+    // 보스 종도 영구 "만난적(seen)"에 기록한다.
+    const seenList = user.seenSpecies ?? (user.seenSpecies = []);
+    if (!seenList.includes(wild.species)) seenList.push(wild.species);
+
+    user.battleState = battleState;
+    await saveUser(user);
+    void appendEvent({
+      type: "battle_start",
+      userId: user.account.id,
+      detail: {
+        boss: boss.id,
+        wildSpecies: wild.species,
+        wildLevel: wild.level,
+        myPokemonUid: lead.uid,
+      },
+    });
+    res.json({ battleState, log: startLog });
+  } catch (err) {
+    log.error({ err }, "Boss start error");
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
   }
 });

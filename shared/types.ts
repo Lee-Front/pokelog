@@ -305,6 +305,11 @@ export interface BattleState {
   // 야생이 선공해 풀죽음(flinch)을 유발했는지 알리는 1턴짜리 임시 플래그.
   // doWildAttackAndCheck가 설정하고, 야생 선공 분기에서 소비 즉시 해제한다(영속 저장 안 함).
   playerFlinched?: boolean;
+  // 주간보스 전투 표식. isBoss=true면 이 전투의 wild가 주간보스(단일 강력 개체)다 — finishWin이
+  // 주(ISO week)당 1회 보상 지급 훅을 태우고 handleCatch를 차단한다. 야생 로직(공격/교체/아이템)은
+  // 그대로 재사용된다. bossId는 시작 시점 주간보스의 id로, 보상 지급 가드에 쓰인다.
+  isBoss?: boolean;
+  bossId?: string;
 }
 
 /**
@@ -392,6 +397,10 @@ export interface UserData {
   // 지연 평가하며, 여기에 없으면서 조건을 충족한 업적만 evaluateAchievements가 보상을 지급하고
   // 이 배열에 추가한다. 구 저장본 호환을 위해 선택 필드 — normalizeUserData가 []로 정규화한다.
   completedAchievements?: string[];
+  // 주간보스 처치 기록 — 주(ISO week)당 1회 보상 지급 멱등 가드. finishWin의 보스 훅이 여기 week가
+  // 현재 주와 다르거나(또는 없음) bossId가 다를 때만 보상을 지급하고 { week, bossId }로 갱신한다.
+  // 구 저장본은 미설정(undefined) — normalize는 그대로 통과시킨다(스프레드 보존, 후방호환).
+  bossDefeat?: { week: number; bossId: string };
 }
 
 // === Config ===

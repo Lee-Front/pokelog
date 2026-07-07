@@ -12,6 +12,7 @@ import type { BattleHpFrame, BattleState, MoveData, OwnedPokemon, UserData } fro
 import { decrementItem, healPokemon, resolveShopItem, applyStatusCure } from "../game/inventory-utils.js";
 import { recordMoveUsage } from "../game/move-usage.js";
 import { grantBattleRewards } from "../game/battle-rewards.js";
+import { BOSSES, getCurrentBoss, getIsoWeek, grantBossRewardOnce, type BossReward } from "../game/weekly-boss.js";
 import { getDisplaySpeciesName } from "../game/pokemon-state.js";
 import { checkTurnForm } from "../game/battle-forms.js";
 import {
@@ -107,7 +108,9 @@ async function finishWin(
     participants.push(p);
   }
 
-  const rewards = grantBattleRewards(user, participants, wild, config.battle);
+  // 보스전은 경험치·EV·Exp Share는 그대로 주되(진짜 전투) 야생 상금/드랍(spoils)은 주지 않는다 —
+  // 헤드라인은 주 1회 보스 보상이다(아래 boss 훅). 일반 야생전은 종전대로 spoils 포함.
+  const rewards = grantBattleRewards(user, participants, wild, config.battle, { includeSpoils: !battle.isBoss });
 
   // 참여 포켓몬별 EXP/레벨업/진화 로그(살아있는 참여자만 rewards.partyExp에 들어온다).
   for (const member of rewards.partyExp ?? []) {
@@ -120,6 +123,35 @@ async function finishWin(
     log.push(`${drop.item} ${drop.qty}개를 주웠다!`);
   }
 
+  // 주간보스 처치 훅 — 주(ISO week)당 1회 보상 지급. 이미 이번 주에 처치했다면(멱등 가드)
+  // 재지급하지 않고 "이미 수령" 안내만 남긴다. 응답에 boss 요약을 실어 클라가 처치를 인지한다.
+  let bossSummary: { defeated: true; reward: BossReward | null; alreadyClaimed: boolean } | undefined;
+  if (battle.isBoss && battle.bossId) {
+    const now = new Date();
+    const week = getIsoWeek(now);
+    const boss = getCurrentBoss(now);
+    // 실제로 싸운 보스 이름으로 처치 로그를 남긴다(주 경계 롤오버 시 현재 보스와 다를 수 있음).
+    const foughtBoss = BOSSES.find((b) => b.id === battle.bossId) ?? boss;
+    log.push(`주간보스 ${foughtBoss.name}을(를) 쓰러뜨렸다!`);
+    // 진행 중이던 보스가 현재 주 보스와 다르면(주 경계에서 로테이션이 바뀐 경우) 보상 없이 처치만 인정.
+    if (boss.id === battle.bossId) {
+      const grant = grantBossRewardOnce(user, boss, week);
+      if (grant.granted) {
+        log.push("보스 처치 보상을 획득했다!");
+        if (grant.reward.points > 0) log.push(`포인트 ${grant.reward.points}을(를) 획득했다!`);
+        if (grant.reward.gameMoney > 0) log.push(`게임머니 ${grant.reward.gameMoney}을(를) 획득했다!`);
+        if (grant.reward.item && grant.reward.item.qty > 0) {
+          log.push(`${grant.reward.item.id} ${grant.reward.item.qty}개를 획득했다!`);
+        }
+      } else {
+        log.push("이번 주에는 이미 보스 보상을 받았습니다.");
+      }
+      bossSummary = { defeated: true, reward: grant.granted ? grant.reward : null, alreadyClaimed: grant.alreadyDefeated };
+    } else {
+      bossSummary = { defeated: true, reward: null, alreadyClaimed: false };
+    }
+  }
+
   await saveUser(user);
   logBattleEnd(user.account.id, battle, "win");
   res.json({
@@ -127,6 +159,7 @@ async function finishWin(
     battleState: null,
     result: "win",
     rewards,
+    boss: bossSummary,
     transformationType: wonTransformationType,
     playerBattleForm: wonPlayerBattleForm,
     hpFrames,
@@ -422,6 +455,9 @@ async function handleCatch(
   user: UserData, myPokemon: OwnedPokemon, battle: BattleState,
   data: Record<string, unknown>, log: string[], res: Response,
 ) {
+  // 주간보스는 잡을 수 없다 — 볼을 소모하지 않고 즉시 거부(턴도 소비하지 않는다).
+  if (battle.isBoss) { res.status(400).json({ error: "보스는 잡을 수 없다!" }); return; }
+
   const ballType = typeof data?.ball === "string" ? data.ball : "pokeball";
 
   if (!user.inventory[ballType] || user.inventory[ballType] <= 0) {
