@@ -419,8 +419,11 @@ export interface ShopItem {
   catchBonus?: number;
   healAmount?: number;
   guaranteedCatch?: boolean;
-  // 카테고리 탭 분류(게임머니 상점 전용): "potion"|"ball"|"special". 포인트 상점은 미지정.
+  // 카테고리 탭 분류(게임머니 상점 전용): "potion"|"ball"|"special"|"held-items". 포인트 상점은 미지정.
   category?: string;
+  // 상태이상 치료 아이템 표식 — 특정 PrimaryStatus 값(예: "poison") 또는 "all"(만능치료).
+  // 지정 시 /shop/use·전투 handleItem이 해당 상태이상을 회복한다(healAmount와 배타적으로 쓴다).
+  curesStatus?: string;
 }
 
 export interface BattleDropEntry {

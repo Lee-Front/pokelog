@@ -9,7 +9,7 @@ import { wildPokemonToOwned } from "../game/pokemon-factory.js";
 import { getMoveById, getSpeciesByName } from "../game/data-loader.js";
 import { getZPower } from "../game/z-moves.js";
 import type { BattleHpFrame, BattleState, MoveData, OwnedPokemon, UserData } from "../../../../shared/types.js";
-import { decrementItem, healPokemon, resolveShopItem } from "../game/inventory-utils.js";
+import { decrementItem, healPokemon, resolveShopItem, applyStatusCure } from "../game/inventory-utils.js";
 import { recordMoveUsage } from "../game/move-usage.js";
 import { grantBattleRewards } from "../game/battle-rewards.js";
 import { getDisplaySpeciesName } from "../game/pokemon-state.js";
@@ -514,7 +514,8 @@ async function handleItem(
   const config = await getConfig();
   // 회복약이 battleShop으로 이동했으므로 두 카탈로그를 조회해야 전투 중 회복약 사용이 된다.
   const shopItem = resolveShopItem(config, itemId);
-  if (!shopItem || !shopItem.healAmount) {
+  // 전투에서 쓸 수 있는 아이템: 회복약(healAmount) 또는 상태이상 치료제(curesStatus).
+  if (!shopItem || (!shopItem.healAmount && !shopItem.curesStatus)) {
     res.status(400).json({ error: "전투에서 사용할 수 없는 아이템입니다" });
     return;
   }
@@ -527,9 +528,19 @@ async function handleItem(
   const target = user.pokemon.find((p) => p.uid === targetUid);
   if (!target) { res.status(404).json({ error: "포켓몬을 찾을 수 없습니다" }); return; }
 
-  decrementItem(user.inventory, itemId);
-  healPokemon(target, shopItem.healAmount);
-  log.push(`${shopItem.name}을(를) 사용했다! HP가 ${shopItem.healAmount} 회복되었다!`);
+  if (shopItem.curesStatus) {
+    // 상태이상 치료제 — 대상 상태이상을 회복. 대상 상태가 없으면 소모·턴소비 없이 거부한다.
+    if (!applyStatusCure(target, shopItem.curesStatus)) {
+      res.status(400).json({ error: "치료할 상태이상이 없습니다" });
+      return;
+    }
+    decrementItem(user.inventory, itemId);
+    log.push(`${shopItem.name}을(를) 사용했다! 상태이상이 회복되었다!`);
+  } else {
+    decrementItem(user.inventory, itemId);
+    healPokemon(target, shopItem.healAmount);
+    log.push(`${shopItem.name}을(를) 사용했다! HP가 ${shopItem.healAmount} 회복되었다!`);
+  }
 
   const wildResult = await doWildAttackAndCheck(user, myPokemon, battle, log);
   if (wildResult) { sendFaintedResponse(res, wildResult, user.account.id, battle); return; }

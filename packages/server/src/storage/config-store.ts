@@ -115,6 +115,40 @@ const DEFAULT_GMAX_SHOP_ITEMS = {
   "max-soup": { name: "Max Soup", price: 500, category: "special" },
 } satisfies ServerConfig["shop"]["items"];
 
+// 상태이상 치료 아이템 — 게임머니 상점 "물약(potion)" 카테고리. curesStatus가 회복 대상
+// PrimaryStatus(또는 "all"=만능치료)다. /shop/use(비전투)와 전투 handleItem 양쪽에서 소모한다.
+// full-heal은 값이 조금 높고, 나머지 단일 치료제는 저렴하게 둔다.
+const DEFAULT_STATUS_CURE_SHOP_ITEMS = {
+  antidote: { name: "Antidote", price: 10, category: "potion", curesStatus: "poison" },
+  "paralyze-heal": { name: "Paralyze Heal", price: 10, category: "potion", curesStatus: "paralysis" },
+  "burn-heal": { name: "Burn Heal", price: 10, category: "potion", curesStatus: "burn" },
+  "ice-heal": { name: "Ice Heal", price: 10, category: "potion", curesStatus: "freeze" },
+  awakening: { name: "Awakening", price: 10, category: "potion", curesStatus: "sleep" },
+  "full-heal": { name: "Full Heal", price: 40, category: "potion", curesStatus: "all" },
+} satisfies ServerConfig["shop"]["items"];
+
+// 지닌물건(held item) — 전투효과는 held-item-battle.ts가 이미 구현하지만 지금껏 어떤 경로로도
+// 획득할 수 없었다. 게임머니 상점 "지닌물건(held-items)" 카테고리로 판매해 장착 흐름
+// (held-item-usage.ts·포털 장착 UI)이 이들을 공급받게 한다. 효과 로직은 손대지 않고 획득 경로만
+// 추가한다. id는 held-item-battle.ts가 참조하는 값과 정확히 일치시켜야 효과가 붙는다.
+const DEFAULT_HELD_ITEM_SHOP_ITEMS = {
+  leftovers: { name: "Leftovers", price: 800, category: "held-items" },
+  "life-orb": { name: "Life Orb", price: 800, category: "held-items" },
+  "focus-sash": { name: "Focus Sash", price: 600, category: "held-items" },
+  "focus-band": { name: "Focus Band", price: 400, category: "held-items" },
+  "assault-vest": { name: "Assault Vest", price: 500, category: "held-items" },
+  "muscle-band": { name: "Muscle Band", price: 400, category: "held-items" },
+  "wise-glasses": { name: "Wise Glasses", price: 400, category: "held-items" },
+  "expert-belt": { name: "Expert Belt", price: 500, category: "held-items" },
+  "quick-claw": { name: "Quick Claw", price: 400, category: "held-items" },
+  "berry-juice": { name: "Berry Juice", price: 300, category: "held-items" },
+} satisfies ServerConfig["shop"]["items"];
+
+// 교환의끈(linking-cord) — 2인 교환 없이 혼자서 교환진화를 발동하는 특수아이템(special 탭).
+const DEFAULT_TRADE_ITEM_SHOP_ITEMS = {
+  "linking-cord": { name: "Linking Cord", price: 3000, category: "special" },
+} satisfies ServerConfig["shop"]["items"];
+
 export const DEFAULT_CONFIG: ServerConfig = {
   server: { port: 3000, corsAllowedOrigins: [] },
   meta: {
@@ -187,6 +221,12 @@ export const DEFAULT_CONFIG: ServerConfig = {
       { item: "superPotion", chance: 0.03, min: 1, max: 1 },
       { item: "pokeball", chance: 0.05, min: 1, max: 1 },
       { item: "greatball", chance: 0.015, min: 1, max: 1 },
+      // 상태이상 치료제 소량 드랍(주 획득 경로는 상점).
+      { item: "antidote", chance: 0.02, min: 1, max: 1 },
+      { item: "paralyze-heal", chance: 0.02, min: 1, max: 1 },
+      // 지닌물건 희귀 드랍(먹다남은음식·기합의띠).
+      { item: "leftovers", chance: 0.005, min: 1, max: 1 },
+      { item: "focus-sash", chance: 0.005, min: 1, max: 1 },
     ],
   },
   // 게임머니 상점(야생 전투로 버는 gameMoney 재화) — 포털에서 카테고리 탭으로 노출한다:
@@ -200,16 +240,21 @@ export const DEFAULT_CONFIG: ServerConfig = {
       potion: { name: "Potion", price: 8, healAmount: 20, category: "potion" },
       superPotion: { name: "Super Potion", price: 30, healAmount: 50, category: "potion" },
       hyperPotion: { name: "Hyper Potion", price: 60, healAmount: 120, category: "potion" },
+      // 상태이상 치료제(potion 탭) — 독/마비/화상/얼음/잠듦 개별 + 만능치료제
+      ...DEFAULT_STATUS_CURE_SHOP_ITEMS,
       // 몬스터볼(ball)
       pokeball: { name: "Poke Ball", price: 10, catchBonus: 0, category: "ball" },
       safariball: { name: "Safari Ball", price: 20, catchBonus: 0.1, category: "ball" },
       greatball: { name: "Great Ball", price: 25, catchBonus: 0.2, category: "ball" },
       ultraball: { name: "Ultra Ball", price: 70, catchBonus: 0.35, category: "ball" },
-      // 특수아이템(special) — 진화의돌/지닌진화/메가스톤/키스톤/거다이
+      // 특수아이템(special) — 진화의돌/지닌진화/메가스톤/키스톤/거다이/교환의끈
       ...DEFAULT_EVOLUTION_SHOP_ITEMS,
       ...DEFAULT_HELD_EVOLUTION_SHOP_ITEMS,
       ...DEFAULT_MEGA_SHOP_ITEMS,
       ...DEFAULT_GMAX_SHOP_ITEMS,
+      ...DEFAULT_TRADE_ITEM_SHOP_ITEMS,
+      // 지닌물건(held-items) — 전투효과 보유 아이템(장착 전용)
+      ...DEFAULT_HELD_ITEM_SHOP_ITEMS,
     },
   },
   // 알 가챠 기본값 — 단일 풀 + 티어별 등급 버킷 등장확률. legendary/rare 확률만 노브이고

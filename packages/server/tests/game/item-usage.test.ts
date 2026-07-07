@@ -166,4 +166,100 @@ describe("useInventoryItem", () => {
     expect(() => useInventoryItem(user, "iron", pokemon.uid)).toThrow(ItemUseError);
     expect(user.inventory.iron).toBe(1);
   });
+
+  it("cures the matching status condition and consumes the cure item", () => {
+    const user = createUserData();
+    const pokemon = createPokemon("pikachu", 20);
+    pokemon.statusCondition = "poison";
+
+    user.party = [pokemon.uid];
+    user.pokemon = [pokemon];
+    user.inventory = { antidote: 1 };
+
+    const antidote: ShopItem = { name: "Antidote", price: 10, category: "potion", curesStatus: "poison" };
+    const result = useInventoryItem(user, "antidote", pokemon.uid, antidote);
+
+    expect(result.kind).toBe("status-cure");
+    expect(pokemon.statusCondition).toBeNull();
+    expect(user.inventory.antidote).toBeUndefined();
+  });
+
+  it("rejects a cure item when the status does not match (and keeps the item)", () => {
+    const user = createUserData();
+    const pokemon = createPokemon("pikachu", 20);
+    pokemon.statusCondition = "burn";
+
+    user.party = [pokemon.uid];
+    user.pokemon = [pokemon];
+    user.inventory = { antidote: 1 };
+
+    const antidote: ShopItem = { name: "Antidote", price: 10, category: "potion", curesStatus: "poison" };
+
+    expect(() => useInventoryItem(user, "antidote", pokemon.uid, antidote)).toThrow(ItemUseError);
+    expect(pokemon.statusCondition).toBe("burn");
+    expect(user.inventory.antidote).toBe(1);
+  });
+
+  it("rejects a cure item when the pokemon has no status condition", () => {
+    const user = createUserData();
+    const pokemon = createPokemon("pikachu", 20);
+    pokemon.statusCondition = null;
+
+    user.party = [pokemon.uid];
+    user.pokemon = [pokemon];
+    user.inventory = { "full-heal": 1 };
+
+    const fullHeal: ShopItem = { name: "Full Heal", price: 40, category: "potion", curesStatus: "all" };
+
+    expect(() => useInventoryItem(user, "full-heal", pokemon.uid, fullHeal)).toThrow(ItemUseError);
+    expect(user.inventory["full-heal"]).toBe(1);
+  });
+
+  it("full-heal cures any status condition", () => {
+    const user = createUserData();
+    const pokemon = createPokemon("pikachu", 20);
+    pokemon.statusCondition = "paralysis";
+
+    user.party = [pokemon.uid];
+    user.pokemon = [pokemon];
+    user.inventory = { "full-heal": 1 };
+
+    const fullHeal: ShopItem = { name: "Full Heal", price: 40, category: "potion", curesStatus: "all" };
+    const result = useInventoryItem(user, "full-heal", pokemon.uid, fullHeal);
+
+    expect(result.kind).toBe("status-cure");
+    expect(pokemon.statusCondition).toBeNull();
+    expect(user.inventory["full-heal"]).toBeUndefined();
+  });
+
+  it("linking-cord triggers a trade evolution (machoke → machamp) and updates pokedex", () => {
+    const user = createUserData();
+    const pokemon = createPokemon("machoke", 40);
+
+    user.party = [pokemon.uid];
+    user.pokemon = [pokemon];
+    user.pokedex = ["machoke"];
+    user.inventory = { "linking-cord": 1 };
+
+    const result = useInventoryItem(user, "linking-cord", pokemon.uid);
+
+    expect(result.kind).toBe("evolution");
+    expect(result.previousSpecies).toBe("machoke");
+    expect(pokemon.species).toBe("machamp");
+    expect(user.inventory["linking-cord"]).toBeUndefined();
+    expect(user.pokedex).toContain("machamp");
+  });
+
+  it("linking-cord rejects a pokemon with no trade evolution", () => {
+    const user = createUserData();
+    const pokemon = createPokemon("pikachu", 40);
+
+    user.party = [pokemon.uid];
+    user.pokemon = [pokemon];
+    user.inventory = { "linking-cord": 1 };
+
+    expect(() => useInventoryItem(user, "linking-cord", pokemon.uid)).toThrow(ItemUseError);
+    expect(pokemon.species).toBe("pikachu");
+    expect(user.inventory["linking-cord"]).toBe(1);
+  });
 });

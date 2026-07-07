@@ -44,7 +44,7 @@
   {
     "id": "berry-juice",
     "name": "나무열매쥬스",
-    "category": "healing",
+    "category": "held-items",
     "cost": 200,
     "shortEffect": ""
   },
@@ -1426,5 +1426,54 @@
     "category": "vitamins",
     "cost": 3000,
     "shortEffect": "HP 노력치가 오른다."
+  },
+  {
+    "id": "antidote",
+    "name": "해독제",
+    "category": "healing",
+    "cost": 100,
+    "shortEffect": "독 상태를 회복한다."
+  },
+  {
+    "id": "paralyze-heal",
+    "name": "마비치료제",
+    "category": "healing",
+    "cost": 100,
+    "shortEffect": "마비 상태를 회복한다."
+  },
+  {
+    "id": "burn-heal",
+    "name": "화상치료제",
+    "category": "healing",
+    "cost": 100,
+    "shortEffect": "화상 상태를 회복한다."
+  },
+  {
+    "id": "ice-heal",
+    "name": "해빙제",
+    "category": "healing",
+    "cost": 100,
+    "shortEffect": "얼음 상태를 회복한다."
+  },
+  {
+    "id": "awakening",
+    "name": "잠깨는약",
+    "category": "healing",
+    "cost": 100,
+    "shortEffect": "잠듦 상태를 회복한다."
+  },
+  {
+    "id": "full-heal",
+    "name": "만능치료제",
+    "category": "healing",
+    "cost": 300,
+    "shortEffect": "모든 상태이상을 회복한다."
+  },
+  {
+    "id": "linking-cord",
+    "name": "교환의끈",
+    "category": "evolution",
+    "cost": 3000,
+    "shortEffect": "교환으로 진화하는 포켓몬을 진화시킨다."
   }
 ]

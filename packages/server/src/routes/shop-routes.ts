@@ -110,6 +110,21 @@ shopRoutes.post("/use", async (req, res) => {
       return;
     }
 
+    if (result.kind === "status-cure") {
+      res.json({
+        kind: result.kind,
+        message: `${result.itemName} used successfully.`,
+        pokemon: {
+          uid: result.pokemon.uid,
+          hp: result.pokemon.hp,
+          maxHp: result.pokemon.maxHp,
+          statusCondition: result.pokemon.statusCondition ?? null,
+        },
+        inventory: user.inventory,
+      });
+      return;
+    }
+
     if (result.kind === "gmax-factor") {
       res.json({
         kind: result.kind,
