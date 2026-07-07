@@ -135,6 +135,18 @@ shopRoutes.post("/use", async (req, res) => {
       return;
     }
 
+    // 특성 변경(특성캡슐/특성패치) — item-usage가 만든 안내 메시지와 바뀐 특성을 그대로 전달한다.
+    if (result.kind === "ability") {
+      res.json({
+        kind: result.kind,
+        message: result.message ?? `${result.itemName} used successfully.`,
+        abilityId: result.abilityId ?? null,
+        pokemon: result.pokemon,
+        inventory: user.inventory,
+      });
+      return;
+    }
+
     res.json({
       kind: result.kind,
       message: `${result.previousSpecies} evolved into ${result.pokemon.species} using ${result.itemName}.`,

@@ -1,5 +1,5 @@
 import type { OwnedPokemon, ShopItem, UserData } from "../../../../shared/types.js";
-import { getItems, getVariants } from "./data-loader.js";
+import { getItems, getVariants, getSpeciesByName, getAbilities } from "./data-loader.js";
 import { GameRuleError } from "./game-errors.js";
 import { evolvePokemon, getEvolutionItemUseTarget, getEvolutionBranches, resolveTradeEvolution } from "./growth.js";
 import { applyEvGain, emptyEvs, EV_STAT_MAX, EV_TOTAL_MAX, EV_STAT_KEYS, VITAMIN_STAT } from "./evs.js";
@@ -11,11 +11,14 @@ import { getDisplaySpeciesName } from "./pokemon-state.js";
 export { GameRuleError as ItemUseError };
 
 export interface ItemUseResult {
-  kind: "healing" | "status-cure" | "evolution" | "gmax-factor" | "vitamin";
+  kind: "healing" | "status-cure" | "evolution" | "gmax-factor" | "vitamin" | "ability";
   item: string;
   itemName: string;
   pokemon: OwnedPokemon;
   previousSpecies?: string;
+  // 특성 변경(특성캡슐/특성패치) 결과 — 바뀐 특성 id와 안내 메시지.
+  abilityId?: string | null;
+  message?: string;
 }
 
 function getItemDisplayName(item: string, shopItem?: ShopItem): string {
@@ -32,6 +35,15 @@ function getPokemonDisplayName(pokemon: OwnedPokemon): string {
   }
 
   return getDisplaySpeciesName(pokemon.species);
+}
+
+// 특성 표시명(한글) — abilities.json에서 id로 조회하고, 없으면 id를 그대로 쓴다.
+function getAbilityDisplayName(abilityId: string | null | undefined): string {
+  if (!abilityId) {
+    return "특성";
+  }
+
+  return getAbilities().find((entry) => entry.id === abilityId)?.name ?? abilityId;
 }
 
 export function useInventoryItem(
@@ -149,6 +161,56 @@ export function useInventoryItem(
       item,
       itemName,
       pokemon,
+    };
+  }
+
+  // 특성캡슐(ability-capsule) — 일반 특성이 2개 이상인 종에서 현재 특성을 "다른" 일반 특성으로
+  // 교체한다(normal[0]↔normal[1] 토글). 현재 특성이 normal[0]이면 normal[1]로, 그 외(다른 일반/
+  // 숨은특성/미설정)면 normal[0]으로 되돌린다. 일반 특성이 2개 미만이면 바꿀 대상이 없으므로
+  // 소모 없이 거부한다(본가와 동일하게 숨은 특성은 대상에서 제외).
+  if (item === "ability-capsule") {
+    const normalAbilities = getSpeciesByName(pokemon.species)?.abilities?.normal ?? [];
+    if (normalAbilities.length < 2) {
+      throw new GameRuleError("효과가 없는 것 같다.", 400);
+    }
+
+    const nextAbilityId =
+      pokemon.abilityId === normalAbilities[0] ? normalAbilities[1] : normalAbilities[0];
+    pokemon.abilityId = nextAbilityId;
+    decrementItem(user.inventory, item);
+
+    return {
+      kind: "ability",
+      item,
+      itemName,
+      pokemon,
+      abilityId: nextAbilityId,
+      message: `${getPokemonDisplayName(pokemon)}의 특성이 ${getAbilityDisplayName(nextAbilityId)}(으)로 바뀌었다!`,
+    };
+  }
+
+  // 특성패치(ability-patch) — 숨은 특성이 있는 종에서 일반 특성↔숨은 특성을 토글한다. 현재 특성이
+  // 숨은 특성이면 normal[0]으로 되돌리고, 아니면 숨은 특성으로 바꾼다. 숨은 특성이 없으면
+  // 소모 없이 거부한다.
+  if (item === "ability-patch") {
+    const abilities = getSpeciesByName(pokemon.species)?.abilities;
+    const hiddenAbility = abilities?.hidden;
+    if (!hiddenAbility) {
+      throw new GameRuleError("효과가 없는 것 같다.", 400);
+    }
+
+    const nextAbilityId =
+      pokemon.abilityId === hiddenAbility ? (abilities.normal[0] ?? null) : hiddenAbility;
+    pokemon.abilityId = nextAbilityId;
+    decrementItem(user.inventory, item);
+
+    return {
+      kind: "ability",
+      item,
+      itemName,
+      pokemon,
+      abilityId: nextAbilityId,
+      message: `${getPokemonDisplayName(pokemon)}의 특성이 ${getAbilityDisplayName(nextAbilityId)}(으)로 바뀌었다!`,
     };
   }
 

@@ -149,6 +149,13 @@ const DEFAULT_TRADE_ITEM_SHOP_ITEMS = {
   "linking-cord": { name: "Linking Cord", price: 3000, category: "special" },
 } satisfies ServerConfig["shop"]["items"];
 
+// 특성 변경 아이템 — 특성캡슐(일반 특성 2종을 서로 교체) + 특성패치(일반↔숨은 특성 토글).
+// 게임머니 상점 "특수아이템(special)" 카테고리. 다가올 고난도 주간 보스 대비 특성 다양성 확보용.
+const DEFAULT_ABILITY_SHOP_ITEMS = {
+  "ability-capsule": { name: "특성캡슐", price: 2000, category: "special" },
+  "ability-patch": { name: "특성패치", price: 5000, category: "special" },
+} satisfies ServerConfig["shop"]["items"];
+
 export const DEFAULT_CONFIG: ServerConfig = {
   server: { port: 3000, corsAllowedOrigins: [] },
   meta: {
@@ -253,6 +260,7 @@ export const DEFAULT_CONFIG: ServerConfig = {
       ...DEFAULT_MEGA_SHOP_ITEMS,
       ...DEFAULT_GMAX_SHOP_ITEMS,
       ...DEFAULT_TRADE_ITEM_SHOP_ITEMS,
+      ...DEFAULT_ABILITY_SHOP_ITEMS,
       // 지닌물건(held-items) — 전투효과 보유 아이템(장착 전용)
       ...DEFAULT_HELD_ITEM_SHOP_ITEMS,
     },

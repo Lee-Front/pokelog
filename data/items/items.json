@@ -1,5 +1,19 @@
 [
   {
+    "id": "ability-capsule",
+    "name": "특성캡슐",
+    "category": "evolution",
+    "cost": 2000,
+    "shortEffect": "일반 특성이 2개인 포켓몬의 특성을 다른 일반 특성으로 바꾼다."
+  },
+  {
+    "id": "ability-patch",
+    "name": "특성패치",
+    "category": "evolution",
+    "cost": 5000,
+    "shortEffect": "포켓몬의 특성을 숨겨진 특성으로 바꾼다(다시 쓰면 되돌린다)."
+  },
+  {
     "id": "ability-shield",
     "name": "Ability Shield",
     "category": "held-items",

@@ -48,6 +48,19 @@ function pickRandomNature(): string {
     : "hardy";
 }
 
+/**
+ * 생성 시 일반 특성(abilities.normal) 중 하나를 균등 확률로 고른다. 숨은 특성(hidden)은
+ * 생성 시 뽑지 않는다(본가식 — 숨은 특성은 특성패치로만 도달). 항목이 0개면 null,
+ * 1개면 그 값, 2개 이상이면 무작위 1개를 반환한다.
+ */
+export function pickAbilityId(speciesData: SpeciesData): string | null {
+  const normal = speciesData.abilities?.normal;
+  if (!normal || normal.length === 0) {
+    return null;
+  }
+  return normal[Math.floor(Math.random() * normal.length)];
+}
+
 export { buildStats } from "./pokemon-stats.js";
 
 export function createPokemon(species: string, level: number): OwnedPokemon {
@@ -81,7 +94,8 @@ export function createPokemon(species: string, level: number): OwnedPokemon {
     gender: resolvePokemonGender(speciesData.genderRate, Math.random()),
     friendship: speciesData.baseHappiness ?? 70,
     heldItem: null,
-    abilityId: speciesData.abilities?.normal[0] ?? null,
+    // 생성 시 일반 특성 중 무작위 1개(균등). 숨은 특성은 특성패치로만.
+    abilityId: pickAbilityId(speciesData),
     moveUsageCounts: {},
     damageTakenTotal: 0,
     nature,
@@ -111,7 +125,8 @@ export function createWildPokemon(species: string, level: number): WildPokemon {
     moves,
     nature,
     gender: resolvePokemonGender(speciesData.genderRate, Math.random()),
-    ability: speciesData.abilities?.normal[0] ?? undefined,
+    // 야생도 일반 특성 중 무작위 1개(균등). 숨은 특성은 특성패치로만.
+    ability: pickAbilityId(speciesData) ?? undefined,
     isShiny: Math.random() < getShinyRate(),
   };
 }
@@ -138,7 +153,8 @@ export function wildPokemonToOwned(wild: WildPokemon): OwnedPokemon {
     gender: wild.gender ?? null,
     friendship: speciesData?.baseHappiness ?? 70,
     heldItem: null,
-    abilityId: wild.ability ?? speciesData?.abilities?.normal[0] ?? null,
+    // 포획 개체는 야생이 이미 정한 특성을 물려받고, 레거시 야생(ability 없음)만 무작위로 폴백한다.
+    abilityId: wild.ability ?? (speciesData ? pickAbilityId(speciesData) : null),
     moveUsageCounts: {},
     damageTakenTotal: 0,
     nature: wild.nature ?? "hardy",
