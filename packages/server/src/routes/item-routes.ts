@@ -3,7 +3,7 @@ import type { Response } from "express";
 import { authMiddleware, type AuthRequest } from "../middleware/auth-middleware.js";
 import { getUser, saveUser } from "../storage/user-store.js";
 import { getConfig } from "../storage/config-store.js";
-import { healPokemon } from "../game/inventory-utils.js";
+import { healPokemon, resolveShopItem } from "../game/inventory-utils.js";
 import { equipHeldItem, unequipHeldItem } from "../game/held-item-usage.js";
 import { buildInventoryCatalogEntry } from "../game/inventory-catalog.js";
 import { GameRuleError } from "../game/game-errors.js";
@@ -27,7 +27,8 @@ itemRoutes.get("/inventory", async (req: AuthRequest, res: Response) => {
     const catalog = Object.fromEntries(
       Object.keys(user.inventory).map((itemId) => [
         itemId,
-        buildInventoryCatalogEntry(itemId, config.shop.items[itemId]),
+        // 볼·회복약이 battleShop으로 이동했으므로 두 카탈로그를 조회해야 가방에 이름/카테고리가 뜬다.
+        buildInventoryCatalogEntry(itemId, resolveShopItem(config, itemId)),
       ]),
     );
 

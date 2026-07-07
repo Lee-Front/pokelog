@@ -111,14 +111,17 @@ export function grantBattleRewards(
   participants: OwnedPokemon[],
   wild: Pick<WildPokemon, "species" | "level">,
   config: BattleRewardConfig,
-  options: { now?: Date; random?: () => number } = {},
+  options: { now?: Date; random?: () => number; includeSpoils?: boolean } = {},
 ): BattleRewards {
   const random = options.random ?? Math.random;
   const now = options.now ?? new Date();
+  // 포획 승리(includeSpoils:false)는 경험치·EV·Exp Share는 주되 상금/드랍(spoils)은 주지 않는다
+  // (본가: 잡으면 상금 없음). 기본 true — 격파(KO) 경로의 동작은 그대로 유지된다.
+  const includeSpoils = options.includeSpoils ?? true;
 
   const exp = calculateBattleExp(wild, config);
-  const gameMoney = calculateBattleMoney(wild.level, config);
-  const drop = rollItemDrop(config, random);
+  const gameMoney = includeSpoils ? calculateBattleMoney(wild.level, config) : 0;
+  const drop = includeSpoils ? rollItemDrop(config, random) : null;
 
   user.gameMoney += gameMoney;
 

@@ -25,7 +25,7 @@ import {
   type EngineSide, type Rng, type ItemLookup, type RoundOutcome, defaultRng,
 } from "./pvp-engine.js";
 import { saveUser } from "../storage/user-store.js";
-import { decrementItem, isBattleUsableItem } from "./inventory-utils.js";
+import { decrementItem, isBattleUsableItem, resolveShopItem } from "./inventory-utils.js";
 import {
   lockStake, normalizeStakeSpec, normalizeDemand, buildOpponentStakeFromDemand,
   settleMatch,
@@ -406,7 +406,8 @@ export async function submitAction(
 /** config.shop.items 기반 ItemLookup — 전투 사용가능(healAmount) 아이템만 노출. */
 function buildItemLookup(config: ServerConfig): ItemLookup {
   return (itemId: string) => {
-    const item = config.shop.items[itemId];
+    // 회복약이 battleShop으로 이동했으므로 두 카탈로그를 조회한다(PvP 전투 중 회복약 사용).
+    const item = resolveShopItem(config, itemId);
     if (!isBattleUsableItem(item)) return undefined;
     return { name: item.name, healAmount: item.healAmount };
   };

@@ -14,6 +14,7 @@ import { testIntegrationConnection } from "../integrations/provider-tests.js";
 import { pollUserIntegrations, getRepoAuthorEmails } from "../polling/polling-worker.js";
 import { redactUrlCredentials } from "../polling/git-client.js";
 import { authMiddleware, type AuthRequest } from "../middleware/auth-middleware.js";
+import { getAvailableEvolutionOptions } from "../game/pending-evolution.js";
 import { getSyncState, saveSyncState } from "../storage/sync-state-store.js";
 import {
   getAllUsers,
@@ -40,7 +41,14 @@ userRoutes.get("/profile", async (req: AuthRequest, res: Response) => {
     }
 
     const { password, ...accountWithoutPassword } = user.account;
-    res.json({ ...user, account: accountWithoutPassword });
+    // 파티(user.pokemon)에 계산 전용 진화 필드를 부착 — 파티 카드 '진화 가능' 뱃지와 진화 모달이
+    // /game/party 처럼 동작하게 한다(스프레드 복제본만; 저장 객체 변형 금지). 파티는 최대 6마리라 저렴.
+    const region = user.currentRegion ?? "default";
+    const pokemon = user.pokemon.map((p) => {
+      const options = getAvailableEvolutionOptions(user, p, { region });
+      return { ...p, evolutionAvailable: options.length > 0, evolutionOptions: options };
+    });
+    res.json({ ...user, pokemon, account: accountWithoutPassword });
   } catch (err) {
     log.error({ err }, "Profile error");
     res.status(500).json({ error: "프로필을 불러오지 못했습니다" });

@@ -9,11 +9,9 @@ import { wildPokemonToOwned } from "../game/pokemon-factory.js";
 import { getMoveById, getSpeciesByName } from "../game/data-loader.js";
 import { getZPower } from "../game/z-moves.js";
 import type { BattleState, MoveData, OwnedPokemon, UserData } from "../../../../shared/types.js";
-import { decrementItem, healPokemon } from "../game/inventory-utils.js";
+import { decrementItem, healPokemon, resolveShopItem } from "../game/inventory-utils.js";
 import { recordMoveUsage } from "../game/move-usage.js";
 import { grantBattleRewards } from "../game/battle-rewards.js";
-import { getEvYield, applyEvGain, emptyEvs } from "../game/evs.js";
-import { buildStatsForPokemon } from "../game/pokemon-stats.js";
 import { getDisplaySpeciesName } from "../game/pokemon-state.js";
 import { checkTurnForm } from "../game/battle-forms.js";
 import {
@@ -411,7 +409,9 @@ async function handleCatch(
   }
 
   const config = await getConfig();
-  const ballItem = config.shop.items[ballType];
+  // 볼(pokeball/greatball/ultraball/safariball)은 battleShop으로 이동했으므로 두 카탈로그를 조회한다.
+  // (예전엔 shop.items만 봐서 마스터볼 외 볼의 catchBonus/guaranteedCatch가 먹지 않았다.)
+  const ballItem = resolveShopItem(config, ballType);
   // config의 catchBonus는 몬스터볼(=1.0)을 기준으로 한 가산 보너스다(pokeball 0, great 0.2, ultra 0.35).
   // 포획 공식(capture.ts)은 볼 배수를 기대하므로 1을 더해 배수로 변환한다. 그래야 HP를 깎을수록
   // 포획률이 오르는 (1 - hp/maxHp) 항이 실제로 반영된다(변환 없이 0을 넘기면 몬스터볼은 HP 무관 고정 확률).
@@ -427,6 +427,32 @@ async function handleCatch(
     log.push(`야생 ${getDisplaySpeciesName(battle.wild.species)}을(를) 잡았다!`);
     const newPokemon = wildPokemonToOwned(battle.wild);
 
+    // 포획도 격파(finishWin)와 동일하게 경험치·EV·Exp Share를 지급한다(본가 6세대+ 규칙).
+    // 단 상금/드랍(spoils)은 없다 — includeSpoils:false. 방금 잡은 개체가 Exp Share 대상에
+    // 끼지 않도록, 파티에 넣기 '전에' 보상을 계산한다. 참여자 구성은 finishWin과 동일
+    // (현재 출전 개체 + participantUids, 중복 제거; grantBattleRewards가 기절 개체는 제외).
+    const seen = new Set<string>([myPokemon.uid]);
+    const participants: OwnedPokemon[] = [myPokemon];
+    for (const uid of battle.participantUids ?? []) {
+      if (seen.has(uid)) continue;
+      const p = user.pokemon.find((x) => x.uid === uid);
+      if (!p) continue;
+      seen.add(uid);
+      participants.push(p);
+    }
+    const rewards = grantBattleRewards(
+      user,
+      participants,
+      { species: battle.wild.species, level: battle.wild.level },
+      config.battle,
+      { includeSpoils: false },
+    );
+    for (const member of rewards.partyExp ?? []) {
+      if (member.exp > 0) log.push(`${getDisplaySpeciesName(member.species)}은(는) ${member.exp} 경험치를 얻었다!`);
+      if (member.leveledUp) log.push(`${getDisplaySpeciesName(member.species)}은(는) 레벨 ${member.newLevel}이(가) 되었다!`);
+    }
+
+    // 보상 계산 후에 잡은 포켓몬을 파티/보관함에 넣는다.
     if (user.party.length < 6) {
       user.pokemon.push(newPokemon);
       user.party.push(newPokemon.uid);
@@ -438,30 +464,12 @@ async function handleCatch(
       user.pokedex.push(battle.wild.species);
     }
 
-    // 포획 보상 EV — 잡은 야생 종의 수확량을 현재 출전 중인 개체에게 적립한다(살아있을 때만).
-    // 포켓루스 감염 개체는 2배. 적립 후 스탯을 재계산하되 현재 HP는 보존(클램프).
-    if (myPokemon.hp > 0) {
-      const baseYield = getEvYield(battle.wild.species);
-      const mult = myPokemon.pokerus ? 2 : 1;
-      const evGain =
-        mult === 1
-          ? baseYield
-          : Object.fromEntries(
-              Object.entries(baseYield).map(([key, value]) => [key, (value ?? 0) * mult]),
-            );
-      myPokemon.evs = applyEvGain(myPokemon.evs ?? emptyEvs(), evGain);
-      const recomputed = buildStatsForPokemon(myPokemon);
-      myPokemon.maxHp = recomputed.maxHp;
-      myPokemon.hp = Math.min(myPokemon.hp, myPokemon.maxHp);
-      myPokemon.stats = recomputed.stats;
-    }
-
     user.pendingEvents = user.pendingEvents.filter((e) => e.id !== battle.eventId);
     revertBattleForms(battle, myPokemon);
     user.battleState = null;
     await saveUser(user);
     logBattleEnd(user.account.id, battle, "caught");
-    res.json({ log, battleState: null, result: "caught", pokemon: newPokemon });
+    res.json({ log, battleState: null, result: "caught", pokemon: newPokemon, rewards });
     return;
   }
 
@@ -483,7 +491,8 @@ async function handleItem(
   if (typeof itemId !== "string") { res.status(400).json({ error: "사용할 아이템을 선택해주세요" }); return; }
 
   const config = await getConfig();
-  const shopItem = config.shop.items[itemId];
+  // 회복약이 battleShop으로 이동했으므로 두 카탈로그를 조회해야 전투 중 회복약 사용이 된다.
+  const shopItem = resolveShopItem(config, itemId);
   if (!shopItem || !shopItem.healAmount) {
     res.status(400).json({ error: "전투에서 사용할 수 없는 아이템입니다" });
     return;

@@ -88,11 +88,9 @@ describe("shop + item usage", () => {
     const { token, userId } = await t.registerAndLogin();
     const api = t.authed(token);
 
-    // Give user enough points via admin API and buy a potion
-    await t.admin().post("/api/admin/test/give-points", { userId, amount: 10000 });
-
-    const buy = await api.post("/api/shop/buy", { item: "potion", quantity: 1 });
-    expect(buy.status).toBe(200);
+    // 회복약(potion)은 게임머니 상점(battleShop) 아이템이므로 admin give-item으로 지급한다.
+    // (핵심 검증은 /shop/use — battleShop 아이템도 인식해 회복돼야 한다: resolveShopItem 폴백.)
+    await t.admin().post("/api/admin/test/give-item", { userId, item: "potion", quantity: 1 });
 
     // Damage the pokemon by setting HP to 1 via file manipulation
     const partyRes = await api.get("/api/game/party");

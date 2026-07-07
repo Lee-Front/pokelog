@@ -145,6 +145,30 @@ describe("grantBattleRewards", () => {
     expect(winner.level).toBe(rewards.newLevel);
     expect(rewards.droppedItems).toEqual([]);
   });
+
+  it("includeSpoils:false grants exp but no money/drops (capture path)", () => {
+    const winner = createPokemon("charizard", 40); // 레벨업이 안 나게 충분히 높은 레벨
+    const startExp = winner.exp;
+    const user = makeUser(winner);
+    user.gameMoney = 100;
+
+    const rewards = grantBattleRewards(
+      user,
+      [winner],
+      { species: "pidgey", level: 10 },
+      config,
+      // random:0 이면 원래 드랍이 나오는 롤 — includeSpoils:false면 그래도 드랍이 없어야 한다.
+      { random: () => 0, now: new Date("2026-01-01T12:00:00Z"), includeSpoils: false },
+    );
+
+    const expectedExp = calculateBattleExp({ species: "pidgey", level: 10 }, config);
+    expect(rewards.exp).toBe(expectedExp); // 경험치는 격파(KO)와 동일
+    expect(winner.exp).toBe(startExp + expectedExp);
+    expect(rewards.gameMoney).toBe(0); // 상금 없음
+    expect(user.gameMoney).toBe(100); // 유저 게임머니 불변
+    expect(rewards.droppedItems).toEqual([]); // 드랍 없음
+    expect(user.inventory.potion).toBeUndefined();
+  });
 });
 
 describe("grantBattleRewards participant EXP (classic, gen-6+)", () => {

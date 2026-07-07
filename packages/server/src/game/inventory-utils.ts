@@ -1,4 +1,4 @@
-import type { OwnedPokemon, PvpCombatant, ShopItem } from "../../../../shared/types.js";
+import type { OwnedPokemon, PvpCombatant, ServerConfig, ShopItem } from "../../../../shared/types.js";
 
 export function decrementItem(inventory: Record<string, number>, item: string, qty = 1): void {
   inventory[item] = (inventory[item] || 0) - qty;
@@ -7,6 +7,15 @@ export function decrementItem(inventory: Record<string, number>, item: string, q
 
 export function incrementItem(inventory: Record<string, number>, item: string, qty = 1): void {
   inventory[item] = (inventory[item] || 0) + qty;
+}
+
+/**
+ * 아이템 메타(ShopItem)를 두 상점 카탈로그에서 해석한다. 포인트 상점(shop.items)을 먼저 보고,
+ * 없으면 게임머니 상점(battleShop.items)으로 폴백한다. 볼·회복약·진화/메가 아이템이 battleShop으로
+ * 이동했으므로, 인벤토리 아이템 조회는 반드시 두 카탈로그를 모두 봐야 한다(한쪽만 보면 죽은 키가 된다).
+ */
+export function resolveShopItem(config: ServerConfig, itemId: string): ShopItem | undefined {
+  return config.shop.items[itemId] ?? config.battleShop.items[itemId];
 }
 
 export function healPokemon(pokemon: OwnedPokemon, amount?: number): void {

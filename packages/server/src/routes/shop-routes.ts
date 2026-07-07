@@ -3,7 +3,7 @@ import type { AuthRequest } from "../middleware/auth-middleware.js";
 import { getUser, saveUser } from "../storage/user-store.js";
 import { getConfig } from "../storage/config-store.js";
 import { authMiddleware } from "../middleware/auth-middleware.js";
-import { incrementItem } from "../game/inventory-utils.js";
+import { incrementItem, resolveShopItem } from "../game/inventory-utils.js";
 import { useInventoryItem } from "../game/item-usage.js";
 import { GameRuleError } from "../game/game-errors.js";
 import { childLogger } from "../logger.js";
@@ -88,7 +88,8 @@ shopRoutes.post("/use", async (req, res) => {
     }
 
     const config = await getConfig();
-    const shopItem = config.shop.items[item];
+    // 회복약 등은 게임머니 상점(battleShop)으로 이동했으므로 두 카탈로그를 모두 조회한다.
+    const shopItem = resolveShopItem(config, item);
 
     const user = await getUser(userId!);
     if (!user) {

@@ -321,16 +321,22 @@ gameRoutes.get("/pokemon/:uid", async (req: AuthRequest, res: Response) => {
     }
 
     const activeParty = getPartyPokemon(user);
+    const region = user.currentRegion ?? "default";
+    // 파티에서 연 상세 모달에서도 진화 버튼이 뜨도록, /party·/storage와 동일하게 계산 전용
+    // 진화 필드를 부착한다(스프레드 복제본만 — 저장 객체 변형 금지). 진화 후 재조회 시에도
+    // 진화한 폼의 최신 선택지가 실려 체인 진화가 파티 모달에서 이어진다.
+    const evolutionOptions = getAvailableEvolutionOptions(user, pokemon, { region });
     // getEvolutionBranchDiagnostics already resolves a variant-aware targetName
     // (the form's name when a branch evolves into a variant), so use it directly.
     const evolutionPreview = getEvolutionBranchDiagnostics(pokemon.species, {
       level: pokemon.level,
-      ...buildLevelEvolutionContext(pokemon, activeParty, {
-        region: user.currentRegion ?? "default",
-      }),
+      ...buildLevelEvolutionContext(pokemon, activeParty, { region }),
     });
 
-    res.json({ pokemon, evolutionPreview });
+    res.json({
+      pokemon: { ...pokemon, evolutionAvailable: evolutionOptions.length > 0, evolutionOptions },
+      evolutionPreview,
+    });
   } catch (err) {
     log.error({ err }, "Pokemon detail error");
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
