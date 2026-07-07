@@ -11,6 +11,7 @@ import {
   getEvolutionBranches,
   getEvolutionItemUseTarget,
   getExpForLevel,
+  getExpForLevelInGroup,
   gainFriendshipFromBattle,
   MAX_FRIENDSHIP,
 } from "../../src/game/growth.js";
@@ -60,15 +61,17 @@ describe("checkLevelUp", () => {
   });
 
   it("can level up multiple times at once", () => {
+    // charmander는 medium-slow 곡선 — 누적 exp 1000이면 레벨 12까지 오른다(세제곱 곡선의 10이 아님).
     const result = checkLevelUp(createOwnedPokemon({ exp: 1000 }));
     expect(result.leveled).toBe(true);
-    expect(result.newLevel).toBe(10);
+    expect(result.newLevel).toBe(12);
   });
 
   it("reports moves learned at gained levels", () => {
+    // charmander(medium-slow) 레벨 4 도달 임계치까지 채워 레벨업 시 배우는 기술을 검증.
     const result = checkLevelUp(createOwnedPokemon({
       level: 3,
-      exp: 64,
+      exp: getExpForLevelInGroup("medium-slow", 4),
       moves: [{ id: "scratch", pp: 35, maxPp: 35 }],
     }));
 
@@ -397,8 +400,9 @@ describe("buildLevelEvolutionContext", () => {
 describe("applyExpToPokemon (no auto-evolution / no queuing)", () => {
   it("levels a charmander past its evolution threshold WITHOUT changing species", () => {
     // charmander는 레벨 16에 charmeleon으로 진화하지만, applyExpToPokemon은 더 이상 진화시키지 않는다.
-    const charmander = createOwnedPokemon({ species: "charmander", level: 15, exp: getExpForLevel(15) });
-    const gained = getExpForLevel(20) - getExpForLevel(15);
+    // charmander는 medium-slow 곡선이므로 씨딩/획득 exp도 해당 곡선 기준으로 계산한다.
+    const charmander = createOwnedPokemon({ species: "charmander", level: 15, exp: getExpForLevelInGroup("medium-slow", 15) });
+    const gained = getExpForLevelInGroup("medium-slow", 20) - getExpForLevelInGroup("medium-slow", 15);
 
     const result = applyExpToPokemon(charmander, gained, { party: [charmander] });
 
@@ -412,10 +416,10 @@ describe("applyExpToPokemon (no auto-evolution / no queuing)", () => {
   });
 
   it("still recalculates stats and reports learned moves on level-up", () => {
-    const charmander = createOwnedPokemon({ species: "charmander", level: 15, exp: getExpForLevel(15) });
+    const charmander = createOwnedPokemon({ species: "charmander", level: 15, exp: getExpForLevelInGroup("medium-slow", 15) });
     const before = charmander.maxHp;
 
-    const result = applyExpToPokemon(charmander, getExpForLevel(18) - getExpForLevel(15), { party: [charmander] });
+    const result = applyExpToPokemon(charmander, getExpForLevelInGroup("medium-slow", 18) - getExpForLevelInGroup("medium-slow", 15), { party: [charmander] });
 
     expect(result.leveled).toBe(true);
     expect(charmander.level).toBe(18);
@@ -425,22 +429,23 @@ describe("applyExpToPokemon (no auto-evolution / no queuing)", () => {
 
 describe("친밀도(friendship) 누적 — 친밀도 진화 도달용", () => {
   it("레벨업 시 친밀도가 티어별로 오른다(<100 → 레벨당 +5)", () => {
-    // 15→18(3레벨), friendship 70에서 매 레벨 +5 → 85.
-    const mon = createOwnedPokemon({ species: "charmander", level: 15, exp: getExpForLevel(15), friendship: 70 });
-    applyExpToPokemon(mon, getExpForLevel(18) - getExpForLevel(15), { party: [mon] });
+    // 15→18(3레벨), friendship 70에서 매 레벨 +5 → 85. charmander는 medium-slow 곡선.
+    const mon = createOwnedPokemon({ species: "charmander", level: 15, exp: getExpForLevelInGroup("medium-slow", 15), friendship: 70 });
+    applyExpToPokemon(mon, getExpForLevelInGroup("medium-slow", 18) - getExpForLevelInGroup("medium-slow", 15), { party: [mon] });
     expect(mon.level).toBe(18);
     expect(mon.friendship).toBe(85);
   });
 
   it("친밀도 티어 경계를 넘기며 오른다(<100 +5 → 100~199 +3)", () => {
-    // 96 → 101(+5) → 104(+3) → 107(+3).
-    const mon = createOwnedPokemon({ species: "charmander", level: 15, exp: getExpForLevel(15), friendship: 96 });
-    applyExpToPokemon(mon, getExpForLevel(18) - getExpForLevel(15), { party: [mon] });
+    // 96 → 101(+5) → 104(+3) → 107(+3). charmander는 medium-slow 곡선(15→18, 3레벨).
+    const mon = createOwnedPokemon({ species: "charmander", level: 15, exp: getExpForLevelInGroup("medium-slow", 15), friendship: 96 });
+    applyExpToPokemon(mon, getExpForLevelInGroup("medium-slow", 18) - getExpForLevelInGroup("medium-slow", 15), { party: [mon] });
     expect(mon.friendship).toBe(107);
   });
 
   it("레벨업이 없으면 친밀도는 그대로다", () => {
-    const mon = createOwnedPokemon({ species: "charmander", level: 15, exp: getExpForLevel(15), friendship: 70 });
+    // 현재 레벨 임계치(medium-slow)에서 exp +1만으론 레벨업하지 않는다 → 친밀도 불변.
+    const mon = createOwnedPokemon({ species: "charmander", level: 15, exp: getExpForLevelInGroup("medium-slow", 15), friendship: 70 });
     applyExpToPokemon(mon, 1, { party: [mon] });
     expect(mon.friendship).toBe(70);
   });

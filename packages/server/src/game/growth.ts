@@ -23,8 +23,53 @@ const LOCATION_REGION_ALIASES: Record<string, string[]> = {
 
 const RAIN_REGION_SUBSTITUTES = new Set(["kalos", "hisui"]);
 
+// 레거시 medium(세제곱) 별칭 — 하위호환/테스트용. 실제 레벨링·씨딩은
+// getExpForLevelInGroup(group, level)을 쓴다. level**3 이므로 level≥2 구간에서
+// getExpForLevelInGroup("medium", level)과 동일하다(레벨1만 1 vs 0으로 다름).
 export function getExpForLevel(level: number): number {
   return level ** 3;
+}
+
+/**
+ * 종별 성장곡선(본가 6종)에 따른 "레벨 n 도달에 필요한 누적 경험치".
+ * 모든 결과는 정수(각 식마다 floor). level ≤ 1 이면 0(모든 그룹 공통).
+ * 알 수 없는/누락 그룹은 medium(n³)으로 폴백한다.
+ *
+ *  - medium:                          n³
+ *  - fast:                            floor(4·n³ / 5)
+ *  - slow:                            floor(5·n³ / 4)
+ *  - medium-slow:                     floor(6·n³/5 − 15·n² + 100·n − 140)
+ *  - slow-then-very-fast (Erratic):   구간별(n≤50 / 51~68 / 69~98 / 99~100)
+ *  - fast-then-very-slow (Fluctuating): 구간별(n≤15 / 16~36 / 37~100)
+ */
+export function getExpForLevelInGroup(group: string, level: number): number {
+  if (level <= 1) return 0;
+  const n = level;
+  switch (group) {
+    case "fast":
+      return Math.floor((4 * n ** 3) / 5);
+    case "slow":
+      return Math.floor((5 * n ** 3) / 4);
+    case "medium-slow":
+      return Math.floor((6 * n ** 3) / 5 - 15 * n ** 2 + 100 * n - 140);
+    case "slow-then-very-fast": // Erratic
+      if (n <= 50) return Math.floor((n ** 3 * (100 - n)) / 50);
+      if (n <= 68) return Math.floor((n ** 3 * (150 - n)) / 100);
+      if (n <= 98) return Math.floor((n ** 3 * Math.floor((1911 - 10 * n) / 3)) / 500);
+      return Math.floor((n ** 3 * (160 - n)) / 100);
+    case "fast-then-very-slow": // Fluctuating
+      if (n <= 15) return Math.floor((n ** 3 * (Math.floor((n + 1) / 3) + 24)) / 50);
+      if (n <= 36) return Math.floor((n ** 3 * (n + 14)) / 50);
+      return Math.floor((n ** 3 * (Math.floor(n / 2) + 32)) / 50);
+    case "medium":
+    default:
+      return n ** 3;
+  }
+}
+
+/** 종의 성장곡선 그룹 — species.json expGroup. 미상/누락이면 medium 폴백. */
+export function getSpeciesExpGroup(species: string): string {
+  return getSpeciesByName(species)?.expGroup ?? "medium";
 }
 
 // ── 친밀도(friendship) 누적 — 친밀도 진화(이브이/골뱃/피츄/리오르 등, 임계 160) 도달용 ──
@@ -112,11 +157,20 @@ export function checkLevelUp(pokemon: OwnedPokemon): {
   newMoves: string[];
 } {
   const speciesData = getSpeciesByName(pokemon.species);
+  const expGroup = speciesData?.expGroup ?? "medium";
+
+  // 마이그레이션 방어 클램프(위로만) — 성장곡선 변경으로 저장 exp가 현재 레벨의 새 임계치
+  // 아래로 떨어진 개체(예: 예전 세제곱 곡선으로 쌓인 slow종)를 끌어올린다. 이렇게 하면
+  // exp바가 음수/빈칸이 되거나 레벨업이 멈추지 않는다. 임계치 초과분은 절대 깎지 않는다.
+  const levelFloor = getExpForLevelInGroup(expGroup, pokemon.level);
+  if (pokemon.exp < levelFloor) {
+    pokemon.exp = levelFloor;
+  }
 
   let currentLevel = pokemon.level;
   const newMoves: string[] = [];
 
-  while (currentLevel < 100 && pokemon.exp >= getExpForLevel(currentLevel + 1)) {
+  while (currentLevel < 100 && pokemon.exp >= getExpForLevelInGroup(expGroup, currentLevel + 1)) {
     currentLevel++;
 
     // Check learnset for moves at this level

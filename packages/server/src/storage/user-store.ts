@@ -4,7 +4,7 @@ import { readJson, writeJson } from "./json-store.js";
 import type { GitIntegration, Integration, OwnedPokemon, UserData } from "../../../../shared/types.js";
 import { getDataDir } from "../paths.js";
 import { getSpeciesByName } from "../game/data-loader.js";
-import { getExpForLevel } from "../game/growth.js";
+import { getExpForLevelInGroup } from "../game/growth.js";
 import { seededIvs } from "../game/ivs.js";
 import { emptyEvs } from "../game/evs.js";
 import { calculateStatsForLevel } from "../game/pokemon-stats.js";
@@ -191,7 +191,7 @@ function normalizeIntegration(integration: Integration): Integration {
   };
 }
 
-function normalizeOwnedPokemon(pokemon: OwnedPokemon): OwnedPokemon {
+export function normalizeOwnedPokemon(pokemon: OwnedPokemon): OwnedPokemon {
   const species = getSpeciesByName(pokemon.species);
   const gender = pokemon.gender ?? resolvePokemonGender(
     species?.genderRate,
@@ -233,10 +233,11 @@ function normalizeOwnedPokemon(pokemon: OwnedPokemon): OwnedPokemon {
     maxHp,
     stats,
     hp,
-    // 레벨에 맞는 최소 누적 경험치 보정 — 과거 createPokemon이 exp:0으로 생성한 개체는
-    // 레벨>1이어도 exp가 0이라 사실상 레벨업이 막혀 있었다. 현재 레벨 임계치 미만이면 끌어올린다
-    // (이미 진행 중인 exp는 max로 보존, 스푸리어스 레벨업 없음).
-    exp: Math.max(pokemon.exp ?? 0, getExpForLevel(pokemon.level)),
+    // 레벨에 맞는 최소 누적 경험치 보정(위로만 클램프) — 과거 exp:0 개체나, 성장곡선이
+    // 종별(expGroup)로 바뀌며 저장 exp가 현재 레벨의 새 임계치 아래로 내려간 개체를 끌어올린다.
+    // 임계치 아래로 떨어지는 일은 곡선 변경 때만 생기므로 위로만 올린다(초과분은 max로 보존 →
+    // 정상 레벨업 루프가 처리, 스푸리어스 강등/음수 exp바 없음).
+    exp: Math.max(pokemon.exp ?? 0, getExpForLevelInGroup(species?.expGroup ?? "medium", pokemon.level)),
     friendship: pokemon.friendship ?? 70,
     heldItem: pokemon.heldItem ?? null,
     abilityId: pokemon.abilityId ?? null,

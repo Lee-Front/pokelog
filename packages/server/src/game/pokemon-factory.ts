@@ -5,7 +5,7 @@ import { resolvePokemonGender } from "./pokemon-gender.js";
 import { buildStats } from "./pokemon-stats.js";
 import { resolveSpeciesOrVariant } from "./pokemon-state.js";
 import { getShinyRate } from "./shiny.js";
-import { getExpForLevel } from "./growth.js";
+import { getExpForLevelInGroup } from "./growth.js";
 import { randomIvs } from "./ivs.js";
 import { emptyEvs } from "./evs.js";
 
@@ -81,9 +81,9 @@ export function createPokemon(species: string, level: number): OwnedPokemon {
     variantId,
     nickname: null,
     level,
-    // 레벨에 맞는 누적 경험치로 초기화(본가식). 0으로 두면 레벨>1 개체가 다음 레벨
-    // 임계치(level**3)에 한참 못 미쳐 사실상 레벨이 오르지 않는다.
-    exp: getExpForLevel(level),
+    // 레벨에 맞는 누적 경험치로 초기화(본가식, 종별 성장곡선). 0으로 두면 레벨>1 개체가
+    // 다음 레벨 임계치에 한참 못 미쳐 사실상 레벨이 오르지 않는다.
+    exp: getExpForLevelInGroup(speciesData.expGroup, level),
     hp: maxHp,
     maxHp,
     stats,
@@ -139,7 +139,7 @@ export function wildPokemonToOwned(wild: WildPokemon): OwnedPokemon {
     variantId: wild.variantId ?? null,
     nickname: null,
     level: wild.level,
-    exp: getExpForLevel(wild.level),
+    exp: getExpForLevelInGroup(speciesData?.expGroup ?? "medium", wild.level),
     hp: wild.hp,
     maxHp: wild.maxHp,
     stats: { ...wild.stats },
