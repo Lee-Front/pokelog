@@ -11,6 +11,8 @@ import {
   getEvolutionBranches,
   getEvolutionItemUseTarget,
   getExpForLevel,
+  gainFriendshipFromBattle,
+  MAX_FRIENDSHIP,
 } from "../../src/game/growth.js";
 import type { OwnedPokemon } from "../../../../shared/types.js";
 
@@ -418,5 +420,41 @@ describe("applyExpToPokemon (no auto-evolution / no queuing)", () => {
     expect(result.leveled).toBe(true);
     expect(charmander.level).toBe(18);
     expect(charmander.maxHp).toBeGreaterThan(before); // 스탯 재계산은 유지된다.
+  });
+});
+
+describe("친밀도(friendship) 누적 — 친밀도 진화 도달용", () => {
+  it("레벨업 시 친밀도가 티어별로 오른다(<100 → 레벨당 +5)", () => {
+    // 15→18(3레벨), friendship 70에서 매 레벨 +5 → 85.
+    const mon = createOwnedPokemon({ species: "charmander", level: 15, exp: getExpForLevel(15), friendship: 70 });
+    applyExpToPokemon(mon, getExpForLevel(18) - getExpForLevel(15), { party: [mon] });
+    expect(mon.level).toBe(18);
+    expect(mon.friendship).toBe(85);
+  });
+
+  it("친밀도 티어 경계를 넘기며 오른다(<100 +5 → 100~199 +3)", () => {
+    // 96 → 101(+5) → 104(+3) → 107(+3).
+    const mon = createOwnedPokemon({ species: "charmander", level: 15, exp: getExpForLevel(15), friendship: 96 });
+    applyExpToPokemon(mon, getExpForLevel(18) - getExpForLevel(15), { party: [mon] });
+    expect(mon.friendship).toBe(107);
+  });
+
+  it("레벨업이 없으면 친밀도는 그대로다", () => {
+    const mon = createOwnedPokemon({ species: "charmander", level: 15, exp: getExpForLevel(15), friendship: 70 });
+    applyExpToPokemon(mon, 1, { party: [mon] });
+    expect(mon.friendship).toBe(70);
+  });
+
+  it("전투 참여 시 친밀도 +2", () => {
+    const mon = createOwnedPokemon({ friendship: 100 });
+    gainFriendshipFromBattle(mon);
+    expect(mon.friendship).toBe(102);
+  });
+
+  it("친밀도는 상한(255)을 넘지 않는다", () => {
+    const mon = createOwnedPokemon({ friendship: 254 });
+    gainFriendshipFromBattle(mon);
+    expect(mon.friendship).toBe(MAX_FRIENDSHIP);
+    expect(mon.friendship).toBe(255);
   });
 });

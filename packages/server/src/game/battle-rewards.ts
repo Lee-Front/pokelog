@@ -1,5 +1,5 @@
 import { getSpeciesByName } from "./data-loader.js";
-import { applyExpToPokemon } from "./growth.js";
+import { applyExpToPokemon, gainFriendshipFromBattle } from "./growth.js";
 import { getEvYield, applyEvGain, emptyEvs } from "./evs.js";
 import { buildStatsForPokemon } from "./pokemon-stats.js";
 import { incrementItem } from "./inventory-utils.js";
@@ -137,6 +137,8 @@ export function grantBattleRewards(
   const partyExp: BattlePartyExp[] = [];
   for (const member of participants) {
     if (member.hp <= 0) continue;
+    // 전투 참여(출전) 친밀도 +2 — 레벨업 친밀도(applyExpToPokemon)와 별개 소스. 친밀도 진화용.
+    gainFriendshipFromBattle(member);
     // 격파한 야생에서 EV를 먼저 적립한다(레벨업이 나면 재계산에 자연히 반영되도록).
     // 포켓루스 감염 개체는 수확량 2배(applyEvGain이 252/510 상한을 그대로 강제).
     const baseYield = getEvYield(wild.species);

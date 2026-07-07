@@ -27,6 +27,32 @@ export function getExpForLevel(level: number): number {
   return level ** 3;
 }
 
+// ── 친밀도(friendship) 누적 — 친밀도 진화(이브이/골뱃/피츄/리오르 등, 임계 160) 도달용 ──
+// 친밀도는 생성 시 종별 baseHappiness(대개 70)로 시작하며, 여기서 레벨업·전투로 누적된다.
+/** 친밀도 상한(본가 255). */
+export const MAX_FRIENDSHIP = 255;
+
+/** 레벨업 1회당 친밀도 증가량 — 현재 친밀도가 낮을수록 더 오른다(본가식, 이 게임 속도로 소폭 상향). */
+function friendshipLevelUpGain(current: number): number {
+  if (current < 100) return 5;
+  if (current < 200) return 3;
+  return 2;
+}
+
+/** 레벨업으로 오른 레벨 수만큼 친밀도를 티어별로 누적한다(상한 255). pokemon 을 변형. */
+function gainFriendshipFromLevelUps(pokemon: OwnedPokemon, levelsGained: number): void {
+  let f = pokemon.friendship ?? 70;
+  for (let i = 0; i < levelsGained && f < MAX_FRIENDSHIP; i++) {
+    f = Math.min(MAX_FRIENDSHIP, f + friendshipLevelUpGain(f));
+  }
+  pokemon.friendship = f;
+}
+
+/** 전투 참여(출전) 1회당 친밀도 +2(상한 255). 야생/포획 전투 후 생존 참여자에게 적용. */
+export function gainFriendshipFromBattle(pokemon: OwnedPokemon): void {
+  pokemon.friendship = Math.min(MAX_FRIENDSHIP, (pokemon.friendship ?? 70) + 2);
+}
+
 export interface ApplyExpResult {
   leveled: boolean;
   newLevel: number;
@@ -62,9 +88,12 @@ export function applyExpToPokemon(
   const levelUp = checkLevelUp(pokemon);
   if (!levelUp.leveled) return result;
 
+  const oldLevel = pokemon.level;
   pokemon.level = levelUp.newLevel;
   result.leveled = true;
   result.newLevel = levelUp.newLevel;
+  // 친밀도: 오른 레벨 수만큼 티어별로 누적(낮을수록 많이). 친밀도 진화 임계(160) 도달용.
+  gainFriendshipFromLevelUps(pokemon, levelUp.newLevel - oldLevel);
   const moveResult = applyLearnedMoves(pokemon, levelUp.newMoves);
   result.learnedMoves = moveResult.learned;
   result.pendingMoveLearns = moveResult.pending;
