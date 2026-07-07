@@ -465,6 +465,8 @@ function normalizeUserData(user: UserData): UserData {
     storage: reconciled.storage,
     pokedex: caught,
     seenSpecies: seen,
+    // 업적 완료 집합 — 구 저장본(필드 없음)은 []로 정규화(후방호환). 1회성 보상 가드로만 쓰인다.
+    completedAchievements: Array.isArray(user.completedAchievements) ? user.completedAchievements : [],
     eggs: Array.isArray(user.eggs) ? user.eggs : [],
     pendingEvolutions,
     pendingMoveLearns,

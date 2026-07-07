@@ -388,6 +388,10 @@ export interface UserData {
   // active이면서 여기 없는 공지만 내려준다. 게임 초기화(reset-game) 시에도 보존하지 않고
   // 비운다(공지는 진행 데이터가 아니라 표시 상태일 뿐).
   dismissedAnnouncementIds?: string[];
+  // 달성 완료한 업적 id 목록(1회성 보상 지급 가드). 업적 조건은 현재 유저 상태(+PvP 전적)에서
+  // 지연 평가하며, 여기에 없으면서 조건을 충족한 업적만 evaluateAchievements가 보상을 지급하고
+  // 이 배열에 추가한다. 구 저장본 호환을 위해 선택 필드 — normalizeUserData가 []로 정규화한다.
+  completedAchievements?: string[];
 }
 
 // === Config ===

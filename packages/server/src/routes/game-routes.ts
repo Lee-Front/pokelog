@@ -12,6 +12,8 @@ import { getAvailableEvolutionOptions, prunePendingEvolutions } from "../game/pe
 import { findPokemonByUid, getPartyPokemon } from "../game/pokemon-state.js";
 import { GameRuleError } from "../game/game-errors.js";
 import { getAnnouncements } from "../storage/announcement-store.js";
+import { evaluateAchievements } from "../game/achievements.js";
+import { getStats } from "../storage/pvp-stats-store.js";
 import { childLogger } from "../logger.js";
 const log = childLogger("game-routes");
 
@@ -472,6 +474,39 @@ gameRoutes.get("/pokedex", async (req: AuthRequest, res: Response) => {
     });
   } catch (err) {
     log.error({ err }, "Pokedex error");
+    res.status(500).json({ error: "서버 오류가 발생했습니다" });
+  }
+});
+
+// 업적 목록 + 지연 평가 보상 지급. 현재 유저 상태와 PvP 승수로 미완료 업적을 검사해, 충족분에
+// 보상을 1회 지급(completedAchievements 가드)하고 갱신된 재화와 함께 전체 진행 상태를 내려준다.
+// 신규 달성이 있을 때만 saveUser로 영속한다(멱등: 재호출해도 이미 완료분은 재지급되지 않음).
+gameRoutes.get("/achievements", async (req: AuthRequest, res: Response) => {
+  try {
+    const user = await getUser(req.userId!);
+    if (!user) {
+      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+      return;
+    }
+
+    // PvP 승수는 유저 파일이 아니라 pvp-stats 저장소에 있다(전적 없으면 0승으로 취급).
+    const stats = await getStats(user.account.id);
+    const pvpWins = stats?.wins ?? 0;
+
+    const result = evaluateAchievements(user, pvpWins);
+    if (result.newlyCompleted.length > 0) {
+      await saveUser(user);
+    }
+
+    res.json({
+      achievements: result.list,
+      newlyCompleted: result.newlyCompleted,
+      rewards: result.rewardsGranted,
+      points: user.points,
+      gameMoney: user.gameMoney,
+    });
+  } catch (err) {
+    log.error({ err }, "Achievements error");
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
   }
 });
