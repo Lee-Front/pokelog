@@ -307,6 +307,20 @@ export interface BattleState {
   playerFlinched?: boolean;
 }
 
+/**
+ * One HP snapshot in a wild-battle fight turn's ordered timeline. Pushed after
+ * each discrete HP-changing step (pre-attack self damage, player attack, wild
+ * attack, end-of-turn) in the true execution order the turn engine runs. The
+ * web client animates the HP bars through these frames so damage drains in
+ * attack order instead of snapping to the final state. The last frame always
+ * equals the final HP the client would otherwise snap to. Only wild-battle
+ * fight turns emit frames; absence/empty means "snap as before" (backward compatible).
+ */
+export interface BattleHpFrame {
+  playerHp: number;
+  wildHp: number;
+}
+
 export interface BattleDroppedItem {
   item: string;
   qty: number;

@@ -8,7 +8,7 @@ import { attemptCapture, getCatchRate } from "../game/capture.js";
 import { wildPokemonToOwned } from "../game/pokemon-factory.js";
 import { getMoveById, getSpeciesByName } from "../game/data-loader.js";
 import { getZPower } from "../game/z-moves.js";
-import type { BattleState, MoveData, OwnedPokemon, UserData } from "../../../../shared/types.js";
+import type { BattleHpFrame, BattleState, MoveData, OwnedPokemon, UserData } from "../../../../shared/types.js";
 import { decrementItem, healPokemon, resolveShopItem } from "../game/inventory-utils.js";
 import { recordMoveUsage } from "../game/move-usage.js";
 import { grantBattleRewards } from "../game/battle-rewards.js";
@@ -62,10 +62,13 @@ battleRoutes.use(authMiddleware);
 
 function sendFaintedResponse(
   res: Response, result: FaintedResult, userId: string, battle: BattleState,
+  // 야생전 fight 턴만 실제 프레임을 넘긴다. 다른 호출처(catch/item/switch)는 생략 → [] 로
+  // 클라이언트가 종전처럼 최종 상태로 스냅한다(하위호환).
+  hpFrames: BattleHpFrame[] = [],
 ): void {
   // "lose"만 전투 종료 — "fainted"는 강제 교체로 전투가 계속된다.
   if (result.result === "lose") logBattleEnd(userId, battle, "lose");
-  res.json({ log: result.log, battleState: result.battleState, result: result.result });
+  res.json({ log: result.log, battleState: result.battleState, result: result.result, hpFrames });
 }
 
 /**
@@ -75,6 +78,9 @@ function sendFaintedResponse(
  */
 async function finishWin(
   user: UserData, winner: OwnedPokemon, battle: BattleState, log: string[], res: Response,
+  // 야생전 fight 턴만 실제 프레임을 넘긴다(승리 프레임엔 killing blow가 이미 담겨 있다).
+  // handleFight 외 호출처는 없지만 다른 호출처 추가 시에도 종전 스냅 동작이 되도록 기본 [].
+  hpFrames: BattleHpFrame[] = [],
 ): Promise<void> {
   log.push(`야생 ${getDisplaySpeciesName(battle.wild.species)}이(가) 쓰러졌다!`);
   const config = await getConfig();
@@ -123,6 +129,7 @@ async function finishWin(
     rewards,
     transformationType: wonTransformationType,
     playerBattleForm: wonPlayerBattleForm,
+    hpFrames,
   });
 }
 
@@ -307,6 +314,13 @@ async function handleFight(
     }
   }
 
+  // 이 턴의 HP 타임라인 — HP가 바뀌는 단계 직후마다 (플레이어 hp, 야생 hp) 스냅샷을 쌓는다.
+  // 코드가 실제 실행하는 순서(선공/후공 분기 포함) 그대로 담기며, 마지막 프레임은 클라이언트가
+  // 종전에 스냅하던 최종 상태와 정확히 일치한다. 클라이언트는 이 프레임들을 순차로 재생해 공격
+  // 순서대로 게이지를 깎는다. (야생전 fight 턴 전용 — 프레임이 없으면 종전과 동일하게 스냅.)
+  const hpFrames: BattleHpFrame[] = [];
+  const pushFrame = () => hpFrames.push({ playerHp: myPokemon.hp, wildHp: battle.wild.hp });
+
   // Pre-select wild move to get its priority for turn order
   const wildAvailableMoves = battle.wild.moves.filter((m) => m.pp > 0);
   const wildChosenMove = wildAvailableMoves.length > 0
@@ -320,8 +334,9 @@ async function handleFight(
   if (!playerCanAct && preAttack.selfDamage) {
     myPokemon.hp = Math.max(0, myPokemon.hp - preAttack.selfDamage);
     log.push(`${getDisplaySpeciesName(myPokemon.species)}이(가) ${preAttack.selfDamage} 데미지를 받았다!`);
+    pushFrame(); // 혼란 등 행동불가 자해 데미지
     const faintResult = await handleFainted(user, myPokemon, battle, log);
-    if (faintResult) { sendFaintedResponse(res, faintResult, user.account.id, battle); return; }
+    if (faintResult) { sendFaintedResponse(res, faintResult, user.account.id, battle, hpFrames); return; }
   }
 
   // Determine turn order (paralysis speed halving + stat stages applied inside)
@@ -346,23 +361,27 @@ async function handleFight(
     if (playerCanAct) {
       recordMoveUsage(myPokemon, selectedMove.id);
       const attackResult = executePlayerAttack(battle, myPokemon, selectedMoveData, selectedMove, log);
+      pushFrame(); // 플레이어 공격 (야생 hp 감소, 격파 시 0 포함)
       if (battle.wild.hp <= 0) {
-        await finishWin(user, myPokemon, battle, log, res);
+        await finishWin(user, myPokemon, battle, log, res, hpFrames);
         return;
       }
       if (attackResult.flinchCaused) {
         log.push(`야생 ${getDisplaySpeciesName(battle.wild.species)}은(는) 풀이 죽어 움직이지 못했다!`);
       } else {
         const wildResult = await doWildAttackAndCheck(user, myPokemon, battle, log, wildChosenMove ?? undefined);
-        if (wildResult) { sendFaintedResponse(res, wildResult, user.account.id, battle); return; }
+        pushFrame(); // 야생 반격 (플레이어 hp 감소, 기절 시 0 포함)
+        if (wildResult) { sendFaintedResponse(res, wildResult, user.account.id, battle, hpFrames); return; }
       }
     } else {
       const wildResult = await doWildAttackAndCheck(user, myPokemon, battle, log, wildChosenMove ?? undefined);
-      if (wildResult) { sendFaintedResponse(res, wildResult, user.account.id, battle); return; }
+      pushFrame(); // 행동불가 상태에서 야생 공격
+      if (wildResult) { sendFaintedResponse(res, wildResult, user.account.id, battle, hpFrames); return; }
     }
   } else {
     const wildResult = await doWildAttackAndCheck(user, myPokemon, battle, log, wildChosenMove ?? undefined);
-    if (wildResult) { sendFaintedResponse(res, wildResult, user.account.id, battle); return; }
+    pushFrame(); // 야생 선공 (플레이어 hp 감소, 기절 시 0 포함)
+    if (wildResult) { sendFaintedResponse(res, wildResult, user.account.id, battle, hpFrames); return; }
     // 야생이 선공하며 풀죽음을 유발했으면 플레이어는 이번 턴 행동 불가(임시 플래그 즉시 해제).
     const playerFlinched = battle.playerFlinched ?? false;
     battle.playerFlinched = false;
@@ -371,8 +390,9 @@ async function handleFight(
     } else if (playerCanAct) {
       recordMoveUsage(myPokemon, selectedMove.id);
       executePlayerAttack(battle, myPokemon, selectedMoveData, selectedMove, log);
+      pushFrame(); // 플레이어 후공 (야생 hp 감소, 격파 시 0 포함)
       if (battle.wild.hp <= 0) {
-        await finishWin(user, myPokemon, battle, log, res);
+        await finishWin(user, myPokemon, battle, log, res, hpFrames);
         return;
       }
     }
@@ -382,19 +402,20 @@ async function handleFight(
   applyEndOfTurnBattle(battle, myPokemon, log);
   applyWeatherEndOfTurn(battle, myPokemon, log);
   applyTerrainEndOfTurn(battle, myPokemon, log);
+  pushFrame(); // 턴 종료 데미지/회복 (독·화상·날씨·필드 등). 변화 없으면 클라가 no-op 프레임으로 스킵.
 
   // Check if end-of-turn damage KO'd anyone
   if (myPokemon.hp <= 0) {
     const faintResult = await handleFainted(user, myPokemon, battle, log);
-    if (faintResult) { sendFaintedResponse(res, faintResult, user.account.id, battle); return; }
+    if (faintResult) { sendFaintedResponse(res, faintResult, user.account.id, battle, hpFrames); return; }
   }
   if (battle.wild.hp <= 0) {
-    await finishWin(user, myPokemon, battle, log, res);
+    await finishWin(user, myPokemon, battle, log, res, hpFrames);
     return;
   }
 
   await saveUser(user);
-  res.json({ log, battleState: battle, result: "continue" });
+  res.json({ log, battleState: battle, result: "continue", hpFrames });
 }
 
 async function handleCatch(
