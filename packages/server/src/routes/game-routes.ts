@@ -7,9 +7,10 @@ import { getAllSpecies, createWildPokemon, createPokemon } from "../game/pokemon
 import { selectFromEncounters, splitEncounters } from "../game/encounter.js";
 import { createEncounterEvent } from "../game/event-factory.js";
 import { getRegion, getRegionNames, getSpeciesByName } from "../game/data-loader.js";
-import { buildLevelEvolutionContext, getEvolutionBranchDiagnostics } from "../game/growth.js";
+import { buildLevelEvolutionContext, getEvolutionBranchDiagnostics, getRelearnableMoves, applyMoveRelearn } from "../game/growth.js";
 import { getAvailableEvolutionOptions, prunePendingEvolutions } from "../game/pending-evolution.js";
 import { findPokemonByUid, getPartyPokemon } from "../game/pokemon-state.js";
+import { GameRuleError } from "../game/game-errors.js";
 import { getAnnouncements } from "../storage/announcement-store.js";
 import { childLogger } from "../logger.js";
 const log = childLogger("game-routes");
@@ -339,6 +340,62 @@ gameRoutes.get("/pokemon/:uid", async (req: AuthRequest, res: Response) => {
     });
   } catch (err) {
     log.error({ err }, "Pokemon detail error");
+    res.status(500).json({ error: "서버 오류가 발생했습니다" });
+  }
+});
+
+// 기술 기억 도우미 — 다시 배울 수 있는 기술 목록 조회. 종의 레벨업 학습표 기술 중 현재 아는
+// 기술을 뺀 풀과 1회 비용(게임머니), 보유 게임머니를 함께 내려준다(레벨 무관, 신세대식).
+gameRoutes.get("/pokemon/:uid/relearn-moves", async (req: AuthRequest, res: Response) => {
+  try {
+    const user = await getUser(req.userId!);
+    if (!user) { res.status(404).json({ error: "사용자를 찾을 수 없습니다" }); return; }
+    const pokemon = findPokemonByUid(user, req.params.uid);
+    if (!pokemon) { res.status(404).json({ error: "포켓몬을 찾을 수 없습니다" }); return; }
+    const config = await getConfig();
+    res.json({
+      moves: getRelearnableMoves(pokemon),
+      cost: config.moveRelearnCost,
+      gameMoney: user.gameMoney,
+    });
+  } catch (err) {
+    log.error({ err }, "Relearn moves list error");
+    res.status(500).json({ error: "서버 오류가 발생했습니다" });
+  }
+});
+
+// 기술 기억 도우미 — 실제 재학습. 풀에 있는 기술이면 게임머니를 차감하고 다시 배운다. 기술이
+// 4개면 forgetMoveId로 지정한 기술을 제자리 교체(순서 유지)하고, 4개 미만이면 새 슬롯을 추가한다.
+gameRoutes.post("/pokemon/:uid/relearn", async (req: AuthRequest, res: Response) => {
+  try {
+    const { moveId, forgetMoveId } = req.body ?? {};
+    if (!moveId || typeof moveId !== "string") {
+      res.status(400).json({ error: "moveId가 필요합니다" });
+      return;
+    }
+    const user = await getUser(req.userId!);
+    if (!user) { res.status(404).json({ error: "사용자를 찾을 수 없습니다" }); return; }
+    const pokemon = findPokemonByUid(user, req.params.uid);
+    if (!pokemon) { res.status(404).json({ error: "포켓몬을 찾을 수 없습니다" }); return; }
+
+    const config = await getConfig();
+    applyMoveRelearn(
+      user,
+      pokemon,
+      moveId,
+      config.moveRelearnCost,
+      typeof forgetMoveId === "string" ? forgetMoveId : null,
+    );
+    await saveUser(user);
+
+    res.json({
+      pokemon: { ...pokemon },
+      gameMoney: user.gameMoney,
+      message: `${moveId}을(를) 다시 배웠다!`,
+    });
+  } catch (err) {
+    if (err instanceof GameRuleError) { res.status(err.status).json({ error: err.message }); return; }
+    log.error({ err }, "Relearn move error");
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
   }
 });

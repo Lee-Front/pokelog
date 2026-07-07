@@ -530,6 +530,9 @@ export interface ServerConfig {
   egg: EggConfig;
   // 이로치(shiny) 확률 — 알 부화·야생·스타터 등 createPokemon 공통. 0~1 (기본 1/4096).
   shinyRate: number;
+  // 기술 기억 도우미(Move Reminder) 1회 비용(게임머니). 종의 레벨업 학습표 기술을 레벨 무관하게
+  // 다시 배울 때 차감한다. 운영자가 /admin에서 튜닝(기본 300).
+  moveRelearnCost: number;
   pvp: PvpConfig;
 }
 

@@ -177,6 +177,73 @@ export function applyLearnedMoves(
   return { learned, pending };
 }
 
+// ── 기술 기억 도우미 (Move Reminder) — 신세대식(레벨 무관) 재학습 ──
+// 본가의 기술 기억 도우미를 이식하되, 레벨 조건 없이 종의 레벨업 학습표에 있는 기술이면
+// 무엇이든 다시 배울 수 있게 한다. 4개를 넘겨 잊어버린 기술을 소정의 게임머니로 되찾는 용도.
+
+/**
+ * 재학습 가능한 기술 풀 — 종의 레벨업 학습표(levelUp) 전 레벨의 기술 중,
+ *  - 이미 알고 있는 기술과
+ *  - getMoveById로 해석되지 않는(무효/미구현) id
+ * 를 제외한 **중복 없는** 목록. 학습표 레벨 순서를 유지한다.
+ */
+export function getRelearnableMoves(pokemon: OwnedPokemon): string[] {
+  const speciesData = getSpeciesByName(pokemon.species);
+  if (!speciesData) return [];
+
+  const known = new Set(pokemon.moves.map((move) => move.id));
+  const seen = new Set<string>();
+  const pool: string[] = [];
+
+  for (const moveIds of Object.values(speciesData.learnset.levelUp)) {
+    for (const moveId of moveIds) {
+      if (known.has(moveId) || seen.has(moveId)) continue;
+      if (!getMoveById(moveId)) continue; // 데이터에 없는 기술 id는 건너뛴다
+      seen.add(moveId);
+      pool.push(moveId);
+    }
+  }
+
+  return pool;
+}
+
+/**
+ * 기술 기억 도우미 실행 — pokemon이 moveId를 다시 배우도록 pokemon.moves(및 user.gameMoney)를
+ * 변형한다. 순수 로직만 담당하고 저장은 호출부(라우트)가 한다.
+ *  - moveId가 재학습 풀에 없으면(무효/이미 앎) GameRuleError(400).
+ *  - 게임머니가 cost보다 적으면 GameRuleError(400).
+ *  - 기술이 4개 미만이면 새 슬롯을 추가.
+ *  - 4개면 forgetMoveId(현재 아는 기술 중 하나)가 필요 — 없거나 잘못되면 GameRuleError(400).
+ *    해당 슬롯을 제자리에서 교체해 슬롯 순서를 유지한다.
+ *  - 마지막으로 cost만큼 게임머니를 차감.
+ */
+export function applyMoveRelearn(
+  user: { gameMoney: number },
+  pokemon: OwnedPokemon,
+  moveId: string,
+  cost: number,
+  forgetMoveId?: string | null,
+): void {
+  if (!getRelearnableMoves(pokemon).includes(moveId)) {
+    throw new GameRuleError("다시 배울 수 없는 기술입니다.", 400);
+  }
+  if (user.gameMoney < cost) {
+    throw new GameRuleError("게임머니가 부족합니다", 400);
+  }
+
+  if (pokemon.moves.length >= 4) {
+    const idx = forgetMoveId ? pokemon.moves.findIndex((move) => move.id === forgetMoveId) : -1;
+    if (idx < 0) {
+      throw new GameRuleError("잊을 기술을 선택해주세요", 400);
+    }
+    pokemon.moves[idx] = buildMoveSlot(moveId); // 제자리 교체 — 슬롯 순서 유지
+  } else {
+    pokemon.moves.push(buildMoveSlot(moveId));
+  }
+
+  user.gameMoney -= cost;
+}
+
 function resolveEvolutionAbilityId(species: string, currentAbilityId: string | null | undefined): string | null {
   const speciesData = getSpeciesByName(species);
   if (!speciesData?.abilities) {

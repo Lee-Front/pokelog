@@ -221,6 +221,8 @@ export const DEFAULT_CONFIG: ServerConfig = {
     legend: { cost: 3200, minLevel: 15, maxLevel: 25, legendaryChance: 0.03, rareChance: 0.47 },
   },
   shinyRate: DEFAULT_SHINY_RATE,
+  // 기술 기억 도우미 1회 비용(게임머니). 종의 레벨업 학습표 기술을 레벨 무관하게 다시 배울 때 차감.
+  moveRelearnCost: 300,
   // PvP 설정(Phase 2). 모든 매치는 에스크로(내기) 단일 경로 — 빈 stake가 친선.
   // ELO는 시작 1000·K 32. 운영자가 /admin에서 튜닝한다.
   pvp: {
