@@ -61,7 +61,7 @@
   },
   {
     "id": "armor-tail",
-    "name": "Armor Tail",
+    "name": "테일아머",
     "shortEffect": "The mysterious tail covering the Pokémon's head makes opponents unable to use priority moves against the Pokémon or its allies.",
     "isMainSeries": true
   },
@@ -289,7 +289,7 @@
   },
   {
     "id": "cud-chew",
-    "name": "Cud Chew",
+    "name": "되새김질",
     "shortEffect": "When the Pokémon eats a Berry, it will regurgitate that Berry at the end of the next turn and eat it one more time.",
     "isMainSeries": true
   },
@@ -1621,7 +1621,7 @@
   },
   {
     "id": "sharpness",
-    "name": "Sharpness",
+    "name": "예리함",
     "shortEffect": "Powers up slicing moves.",
     "isMainSeries": true
   },
@@ -1879,7 +1879,7 @@
   },
   {
     "id": "supreme-overlord",
-    "name": "Supreme Overlord",
+    "name": "총대장",
     "shortEffect": "When the Pokémon enters a battle, its Attack and Sp. Atk stats are slightly boosted for each of the allies in its party that have already been defeated.",
     "isMainSeries": true
   },
@@ -2197,7 +2197,7 @@
   },
   {
     "id": "wind-rider",
-    "name": "Wind Rider",
+    "name": "바람타기",
     "shortEffect": "Boosts the Pokémon's Attack stat if Tailwind takes effect or if the Pokémon is hit by a wind move. The Pokémon also takes no damage from wind moves.",
     "isMainSeries": true
   },

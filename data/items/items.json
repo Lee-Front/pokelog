@@ -15,7 +15,7 @@
   },
   {
     "id": "ability-shield",
-    "name": "Ability Shield",
+    "name": "특성가드",
     "category": "held-items",
     "cost": 20000,
     "shortEffect": ""
@@ -99,7 +99,7 @@
   },
   {
     "id": "booster-energy",
-    "name": "Booster Energy",
+    "name": "부스트에너지",
     "category": "held-items",
     "cost": 0,
     "shortEffect": ""
@@ -134,7 +134,7 @@
   },
   {
     "id": "clear-amulet",
-    "name": "Clear Amulet",
+    "name": "클리어참",
     "category": "held-items",
     "cost": 30000,
     "shortEffect": ""
@@ -148,7 +148,7 @@
   },
   {
     "id": "covert-cloak",
-    "name": "Covert Cloak",
+    "name": "은밀망토",
     "category": "held-items",
     "cost": 20000,
     "shortEffect": ""
@@ -463,7 +463,7 @@
   },
   {
     "id": "loaded-dice",
-    "name": "Loaded Dice",
+    "name": "속임수주사위",
     "category": "held-items",
     "cost": 20000,
     "shortEffect": ""
@@ -498,7 +498,7 @@
   },
   {
     "id": "malicious-armor",
-    "name": "Malicious Armor",
+    "name": "저주받은갑옷",
     "category": "evolution",
     "cost": 750,
     "shortEffect": ""
@@ -547,7 +547,7 @@
   },
   {
     "id": "mirror-herb",
-    "name": "Mirror Herb",
+    "name": "흉내허브",
     "category": "held-items",
     "cost": 30000,
     "shortEffect": ""
@@ -673,7 +673,7 @@
   },
   {
     "id": "punching-glove",
-    "name": "Punching Glove",
+    "name": "펀치글러브",
     "category": "held-items",
     "cost": 15000,
     "shortEffect": ""
