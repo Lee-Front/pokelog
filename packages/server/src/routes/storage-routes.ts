@@ -150,3 +150,50 @@ storageRoutes.post("/pokemon/:uid/release", async (req: AuthRequest, res: Respon
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
   }
 });
+
+// 포켓몬 여러 마리 한번에 풀어주기(파티/보관함 상관없이 uid 배열). 단일 release와 달리 하나라도
+// 무효한 uid가 섞이면 전부 거부(all-or-nothing) — 부분 실행 시 클라이언트가 뭐가 빠졌는지
+// 추적하기 번거롭기 때문. 전멸 방지 규칙도 배치로 일반화: 이 배치를 반영한 뒤 파티에 최소
+// 1마리는 남아야 한다(파티는 소유 전체의 부분집합이므로, 이 조건이 곧 "최소 1마리는 남는다"도
+// 함께 보장한다 — 파티가 이미 늘 1마리 이상이므로).
+storageRoutes.post("/pokemon/release-many", async (req: AuthRequest, res: Response) => {
+  try {
+    const { uids } = req.body as { uids?: unknown };
+    if (!Array.isArray(uids) || uids.length === 0 || !uids.every((u) => typeof u === "string")) {
+      res.status(400).json({ error: "풀어줄 포켓몬 uid 배열을 입력해주세요" });
+      return;
+    }
+
+    const user = await getUser(req.userId!);
+    if (!user) {
+      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+      return;
+    }
+
+    const uidSet = new Set<string>(uids as string[]);
+    const ownedIds = new Set([
+      ...user.pokemon.map((p) => p.uid),
+      ...user.storage.map((p) => p.uid),
+    ]);
+    const missing = [...uidSet].filter((u) => !ownedIds.has(u));
+    if (missing.length > 0) {
+      res.status(404).json({ error: "존재하지 않는 포켓몬이 포함돼 있습니다" });
+      return;
+    }
+
+    const remainingParty = user.party.filter((u) => !uidSet.has(u));
+    if (remainingParty.length === 0) {
+      res.status(400).json({ error: "파티에 최소 1마리는 남아야 합니다" });
+      return;
+    }
+
+    user.pokemon = user.pokemon.filter((p) => !uidSet.has(p.uid));
+    user.storage = user.storage.filter((p) => !uidSet.has(p.uid));
+    user.party = remainingParty;
+    await saveUser(user);
+    res.json({ released: [...uidSet] });
+  } catch (err) {
+    log.error({ err }, "Release-many error");
+    res.status(500).json({ error: "서버 오류가 발생했습니다" });
+  }
+});
