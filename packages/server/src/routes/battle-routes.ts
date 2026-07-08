@@ -13,6 +13,7 @@ import { decrementItem, healPokemon, resolveShopItem, applyStatusCure } from "..
 import { recordMoveUsage } from "../game/move-usage.js";
 import { grantBattleRewards } from "../game/battle-rewards.js";
 import { BOSSES, getCurrentBoss, getIsoWeek, grantBossRewardOnce, type BossReward } from "../game/weekly-boss.js";
+import { registerBossClear } from "../storage/boss-clears-store.js";
 import { getDisplaySpeciesName } from "../game/pokemon-state.js";
 import { checkTurnForm } from "../game/battle-forms.js";
 import {
@@ -125,7 +126,9 @@ async function finishWin(
 
   // 주간보스 처치 훅 — 주(ISO week)당 1회 보상 지급. 이미 이번 주에 처치했다면(멱등 가드)
   // 재지급하지 않고 "이미 수령" 안내만 남긴다. 응답에 boss 요약을 실어 클라가 처치를 인지한다.
-  let bossSummary: { defeated: true; reward: BossReward | null; alreadyClaimed: boolean } | undefined;
+  let bossSummary:
+    | { defeated: true; reward: BossReward | null; alreadyClaimed: boolean; rank?: number; points?: number }
+    | undefined;
   if (battle.isBoss && battle.bossId) {
     const now = new Date();
     const week = getIsoWeek(now);
@@ -137,16 +140,26 @@ async function finishWin(
     if (boss.id === battle.bossId) {
       const grant = grantBossRewardOnce(user, boss, week);
       if (grant.granted) {
-        log.push("보스 처치 보상을 획득했다!");
-        if (grant.reward.points > 0) log.push(`포인트 ${grant.reward.points}을(를) 획득했다!`);
+        // 순위 보상 — 이번 주 이 보스를 이번이 처음 처치인 유저만 랭킹에 등록되므로(grantBossRewardOnce
+        // 의 멱등 가드와 1:1), 순위·포인트는 항상 이 유저의 "선착 순번"을 정확히 반영한다.
+        const clear = await registerBossClear(week, boss.id, user.account.id, user.account.nickname);
+        user.points += clear.points;
+        user.bossDefeatTotal = (user.bossDefeatTotal ?? 0) + 1;
+        if (clear.rank === 1) user.bossFirstPlaceTotal = (user.bossFirstPlaceTotal ?? 0) + 1;
+
+        log.push(`이번 주 ${clear.rank}번째로 처치! 포인트 ${clear.points}을(를) 획득했다!`);
         if (grant.reward.gameMoney > 0) log.push(`게임머니 ${grant.reward.gameMoney}을(를) 획득했다!`);
         if (grant.reward.item && grant.reward.item.qty > 0) {
           log.push(`${grant.reward.item.id} ${grant.reward.item.qty}개를 획득했다!`);
         }
+        bossSummary = {
+          defeated: true, reward: grant.reward, alreadyClaimed: false,
+          rank: clear.rank, points: clear.points,
+        };
       } else {
         log.push("이번 주에는 이미 보스 보상을 받았습니다.");
+        bossSummary = { defeated: true, reward: null, alreadyClaimed: true };
       }
-      bossSummary = { defeated: true, reward: grant.granted ? grant.reward : null, alreadyClaimed: grant.alreadyDefeated };
     } else {
       bossSummary = { defeated: true, reward: null, alreadyClaimed: false };
     }

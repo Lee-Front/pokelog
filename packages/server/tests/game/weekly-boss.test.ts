@@ -2,8 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
   BOSSES,
   buildBossWild,
+  computeBossLevel,
   getCurrentBoss,
+  getIsoCalendarWeek,
   getIsoWeek,
+  getIsoWeekLabel,
   grantBossRewardOnce,
   type BossDef,
 } from "../../src/game/weekly-boss.js";
@@ -23,6 +26,51 @@ describe("getIsoWeek", () => {
     expect(getIsoWeek(a)).toBe(getIsoWeek(sameDayLater));
     expect(getIsoWeek(mondayOfWeek(1))).toBe(getIsoWeek(mondayOfWeek(0)) + 1);
     expect(getIsoWeek(mondayOfWeek(5))).toBe(getIsoWeek(mondayOfWeek(0)) + 5);
+  });
+});
+
+describe("getIsoCalendarWeek / getIsoWeekLabel", () => {
+  it("gives a small human calendar week number, not the raw epoch-week index (regression: was showing e.g. '2948차')", () => {
+    const d = new Date(2026, 0, 5); // 2026-01-05, ISO 2026-W02 Monday
+    const { year, week } = getIsoCalendarWeek(d);
+    expect(year).toBe(2026);
+    expect(week).toBeGreaterThanOrEqual(1);
+    expect(week).toBeLessThanOrEqual(53);
+    // 절대 인덱스(getIsoWeek)는 수천 단위로 크지만, 캘린더 주는 항상 1~53 범위다.
+    expect(getIsoWeek(d)).toBeGreaterThan(53);
+    expect(getIsoWeekLabel(d)).toBe(`${year}년 ${week}주차`);
+  });
+
+  it("increments the calendar week by 1 across a normal week boundary", () => {
+    const w1 = getIsoCalendarWeek(mondayOfWeek(0));
+    const w2 = getIsoCalendarWeek(mondayOfWeek(1));
+    if (w2.year === w1.year) {
+      expect(w2.week).toBe(w1.week + 1);
+    } else {
+      // 연 경계를 넘는 드문 케이스 — 새해 첫 주로 리셋.
+      expect(w2.week).toBe(1);
+    }
+  });
+});
+
+describe("computeBossLevel", () => {
+  const boss: BossDef = {
+    id: "level-test", name: "", description: "", gimmick: "",
+    species: "metagross", level: 75, moves: ["tackle"],
+    reward: { gameMoney: 0, item: null },
+  };
+
+  it("never scales below the boss base level", () => {
+    expect(computeBossLevel(boss, 0)).toBe(75);
+    expect(computeBossLevel(boss, 10)).toBe(75);
+  });
+
+  it("scales up to partyMaxLevel + 8 once the party out-levels the boss", () => {
+    expect(computeBossLevel(boss, 90)).toBe(98);
+  });
+
+  it("caps at 100", () => {
+    expect(computeBossLevel(boss, 100)).toBe(100);
   });
 });
 
@@ -63,7 +111,7 @@ describe("buildBossWild", () => {
       level,
       moves: ["meteor-mash", "earthquake"],
       statMultiplier: { hp: 3, attack: 2 },
-      reward: { points: 0, gameMoney: 0, item: null },
+      reward: { gameMoney: 0, item: null },
     };
 
     const wild = buildBossWild(boss);
@@ -116,9 +164,11 @@ describe("grantBossRewardOnce", () => {
     species: "metagross",
     level: 70,
     moves: ["meteor-mash"],
-    reward: { points: 400, gameMoney: 2500, item: { id: "assault-vest", qty: 1 } },
+    reward: { gameMoney: 2500, item: { id: "assault-vest", qty: 1 } },
   };
 
+  // 포인트는 이제 grantBossRewardOnce가 아니라 boss-clears-store의 순위 등록이 지급한다
+  // (별도 boss-clears-store.test.ts). 여기선 gameMoney/item/멱등 가드만 검증한다.
   it("grants the reward once and records the defeat", () => {
     const user = makeUser();
     const week = 3000;
@@ -126,7 +176,7 @@ describe("grantBossRewardOnce", () => {
     const first = grantBossRewardOnce(user, boss, week);
     expect(first.granted).toBe(true);
     expect(first.alreadyDefeated).toBe(false);
-    expect(user.points).toBe(500); // 100 + 400
+    expect(user.points).toBe(100); // 미변경(포인트는 boss-clears-store 몫)
     expect(user.gameMoney).toBe(2550); // 50 + 2500
     expect(user.inventory["assault-vest"]).toBe(1);
     expect(user.bossDefeat).toEqual({ week, bossId: boss.id });
@@ -142,7 +192,6 @@ describe("grantBossRewardOnce", () => {
     expect(second.granted).toBe(false);
     expect(second.alreadyDefeated).toBe(true);
     // 재화/아이템이 두 번 지급되지 않는다.
-    expect(user.points).toBe(500);
     expect(user.gameMoney).toBe(2550);
     expect(user.inventory["assault-vest"]).toBe(1);
   });
@@ -153,7 +202,7 @@ describe("grantBossRewardOnce", () => {
     const nextWeek = grantBossRewardOnce(user, boss, 3001);
 
     expect(nextWeek.granted).toBe(true);
-    expect(user.points).toBe(900); // 100 + 400 + 400
+    expect(user.gameMoney).toBe(5050); // 50 + 2500 + 2500
     expect(user.inventory["assault-vest"]).toBe(2);
     expect(user.bossDefeat).toEqual({ week: 3001, bossId: boss.id });
   });

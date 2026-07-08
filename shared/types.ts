@@ -397,10 +397,15 @@ export interface UserData {
   // 지연 평가하며, 여기에 없으면서 조건을 충족한 업적만 evaluateAchievements가 보상을 지급하고
   // 이 배열에 추가한다. 구 저장본 호환을 위해 선택 필드 — normalizeUserData가 []로 정규화한다.
   completedAchievements?: string[];
-  // 주간보스 처치 기록 — 주(ISO week)당 1회 보상 지급 멱등 가드. finishWin의 보스 훅이 여기 week가
-  // 현재 주와 다르거나(또는 없음) bossId가 다를 때만 보상을 지급하고 { week, bossId }로 갱신한다.
+  // 주간보스 처치 기록 — 주(ISO week)당 1회 처치 멱등 가드. finishWin의 보스 훅이 여기 week가
+  // 현재 주와 다르거나(또는 없음) bossId가 다를 때만 이번 주 처치를 인정하고 { week, bossId }로 갱신한다.
   // 구 저장본은 미설정(undefined) — normalize는 그대로 통과시킨다(스프레드 보존, 후방호환).
   bossDefeat?: { week: number; bossId: string };
+  // 주간보스 통산 처치 횟수(누적, 업적용). finishWin의 보스 훅이 '이번 주 첫 처치'마다 +1.
+  // normalize가 0으로 정규화(구 저장본 후방호환).
+  bossDefeatTotal?: number;
+  // 주간보스 이번 주 '선착 1위' 처치 통산 횟수(업적용). 순위 기록 시 rank===1일 때만 +1.
+  bossFirstPlaceTotal?: number;
 }
 
 // === Config ===

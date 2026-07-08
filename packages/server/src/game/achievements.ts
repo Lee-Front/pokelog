@@ -9,7 +9,7 @@
 import type { UserData } from "../../../../shared/types.js";
 import { incrementItem } from "./inventory-utils.js";
 
-export type AchievementCategory = "collection" | "growth" | "battle" | "activity";
+export type AchievementCategory = "collection" | "growth" | "battle" | "boss" | "activity";
 
 /** 업적 보상 — 포인트/게임머니/아이템(인벤토리 키·수량) 조합. 전부 선택. */
 export interface AchievementReward {
@@ -47,9 +47,6 @@ function seenCount(user: UserData): number {
 function partySize(user: UserData): number {
   return Array.isArray(user.party) ? user.party.length : 0;
 }
-function totalExpOf(user: UserData): number {
-  return typeof user.totalExp === "number" ? user.totalExp : 0;
-}
 /** 보유 개체(파티풀 pokemon[] ∪ 보관함 storage[]) 최고 레벨. 보유 0이면 0. */
 function maxOwnedLevel(user: UserData): number {
   const owned = [
@@ -60,11 +57,60 @@ function maxOwnedLevel(user: UserData): number {
 }
 /** 보유 개체 중 이로치(isShiny)가 하나라도 있으면 true. */
 function hasShiny(user: UserData): boolean {
+  return shinyCount(user) >= 1;
+}
+/** 보유 개체(파티풀 ∪ 보관함) 중 이로치(isShiny) 수. */
+function shinyCount(user: UserData): number {
   const owned = [
     ...(Array.isArray(user.pokemon) ? user.pokemon : []),
     ...(Array.isArray(user.storage) ? user.storage : []),
   ];
-  return owned.some((p) => p.isShiny === true);
+  return owned.filter((p) => p.isShiny === true).length;
+}
+/** 현재 파티(6마리 슬롯) 레벨 합 — "총 전력" 지표로 정예 파티 조건에 쓴다. */
+function partyLevelSum(user: UserData): number {
+  const partyUids = Array.isArray(user.party) ? user.party : [];
+  const pool = Array.isArray(user.pokemon) ? user.pokemon : [];
+  return partyUids.reduce((sum, uid) => {
+    const p = pool.find((x) => x.uid === uid);
+    return sum + (p?.level ?? 0);
+  }, 0);
+}
+/** 보유 개체(파티풀 ∪ 보관함) 중 6스탯 개체값(IV)이 전부 31(완벽 개체)인 것이 하나라도 있으면 true. */
+function hasPerfectIvs(user: UserData): boolean {
+  const owned = [
+    ...(Array.isArray(user.pokemon) ? user.pokemon : []),
+    ...(Array.isArray(user.storage) ? user.storage : []),
+  ];
+  return owned.some((p) => {
+    const ivs = p.ivs;
+    if (!ivs) return false;
+    return (
+      ivs.hp === 31 && ivs.attack === 31 && ivs.defense === 31
+      && ivs.spAttack === 31 && ivs.spDefense === 31 && ivs.speed === 31
+    );
+  });
+}
+/** 보유 개체(파티풀 ∪ 보관함) 중 최고 친밀도(255 만점). 보유 0이면 0. */
+function maxFriendship(user: UserData): number {
+  const owned = [
+    ...(Array.isArray(user.pokemon) ? user.pokemon : []),
+    ...(Array.isArray(user.storage) ? user.storage : []),
+  ];
+  return owned.reduce((max, p) => Math.max(max, p.friendship ?? 0), 0);
+}
+/** 인벤토리 전체 아이템 수량 합(소지품 다양성/축적 지표). */
+function inventoryTotalCount(user: UserData): number {
+  const inv = user.inventory ?? {};
+  return Object.values(inv).reduce((sum: number, n) => sum + (typeof n === "number" ? n : 0), 0);
+}
+/** 주간보스 통산 처치 횟수(누적). 구 저장본은 normalizeUserData가 0으로 정규화한다. */
+function bossDefeatTotal(user: UserData): number {
+  return typeof user.bossDefeatTotal === "number" ? user.bossDefeatTotal : 0;
+}
+/** 주간보스 이번 주 "선착 1위" 통산 횟수(누적). */
+function bossFirstPlaceTotal(user: UserData): number {
+  return typeof user.bossFirstPlaceTotal === "number" ? user.bossFirstPlaceTotal : 0;
 }
 
 /**
@@ -131,6 +177,26 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     met: (u) => hasShiny(u),
     reward: { points: 1000, item: { id: "leftovers", qty: 1 } },
   },
+  {
+    id: "catch-200",
+    name: "전당 등재",
+    description: "포켓몬 200종을 도감에 등록한다.",
+    category: "collection",
+    target: 200,
+    current: (u) => pokedexCount(u),
+    met: (u) => pokedexCount(u) >= 200,
+    reward: { points: 4000, item: { id: "ultraball", qty: 10 } },
+  },
+  {
+    id: "shiny-collector-3",
+    name: "이로치 컬렉터",
+    description: "이로치(색이 다른) 포켓몬을 3마리 이상 손에 넣는다.",
+    category: "collection",
+    target: 3,
+    current: (u) => shinyCount(u),
+    met: (u) => shinyCount(u) >= 3,
+    reward: { points: 2500, item: { id: "wise-glasses", qty: 1 } },
+  },
 
   // ── 육성(growth) ─────────────────────────────────────────────────
   {
@@ -163,6 +229,35 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     met: (u) => partySize(u) >= 6,
     reward: { points: 500 },
   },
+  {
+    id: "team-level-300",
+    name: "정예 파티",
+    description: "현재 파티 6마리의 레벨 합이 300 이상이 되도록 키운다.",
+    category: "growth",
+    target: 300,
+    current: (u) => partyLevelSum(u),
+    met: (u) => partyLevelSum(u) >= 300,
+    reward: { points: 2500, gameMoney: 1500 },
+  },
+  {
+    id: "perfect-iv",
+    name: "육성의 정수",
+    description: "6스탯 개체값(IV)이 전부 31인 완벽 개체를 손에 넣는다.",
+    category: "growth",
+    current: (u) => hasPerfectIvs(u),
+    met: (u) => hasPerfectIvs(u),
+    reward: { points: 2000, item: { id: "ability-capsule", qty: 1 } },
+  },
+  {
+    id: "best-friend",
+    name: "베스트 프렌드",
+    description: "포켓몬 한 마리의 친밀도를 최대(255)까지 쌓는다.",
+    category: "growth",
+    target: 255,
+    current: (u) => maxFriendship(u),
+    met: (u) => maxFriendship(u) >= 255,
+    reward: { points: 1500, item: { id: "leftovers", qty: 1 } },
+  },
 
   // ── 대전(battle) ─────────────────────────────────────────────────
   {
@@ -184,27 +279,107 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     met: (_u, pvpWins) => pvpWins >= 10,
     reward: { points: 2000, gameMoney: 1000 },
   },
+  {
+    id: "pvp-25-wins",
+    name: "PvP 레전드",
+    description: "유저 대전(PvP)에서 25승을 달성한다.",
+    category: "battle",
+    target: 25,
+    current: (_u, pvpWins) => pvpWins,
+    met: (_u, pvpWins) => pvpWins >= 25,
+    reward: { points: 5000, gameMoney: 2500, item: { id: "expert-belt", qty: 1 } },
+  },
+
+  // ── 주간보스(boss) ────────────────────────────────────────────────
+  {
+    id: "boss-first-clear",
+    name: "첫 레이드",
+    description: "주간보스를 처음으로 처치한다.",
+    category: "boss",
+    current: (u) => bossDefeatTotal(u) >= 1,
+    met: (u) => bossDefeatTotal(u) >= 1,
+    reward: { points: 500 },
+  },
+  {
+    id: "boss-veteran",
+    name: "레이드 상비군",
+    description: "주간보스를 통산 5회 처치한다.",
+    category: "boss",
+    target: 5,
+    current: (u) => bossDefeatTotal(u),
+    met: (u) => bossDefeatTotal(u) >= 5,
+    reward: { points: 2000, gameMoney: 1000 },
+  },
+  {
+    id: "boss-legend",
+    name: "레이드 전설",
+    description: "주간보스를 통산 20회 처치한다.",
+    category: "boss",
+    target: 20,
+    current: (u) => bossDefeatTotal(u),
+    met: (u) => bossDefeatTotal(u) >= 20,
+    reward: { points: 6000, gameMoney: 3000, item: { id: "focus-sash", qty: 1 } },
+  },
+  {
+    id: "boss-first-place-1",
+    name: "선착의 영광",
+    description: "주간보스를 그 주 가장 먼저(1위) 처치한다.",
+    category: "boss",
+    current: (u) => bossFirstPlaceTotal(u) >= 1,
+    met: (u) => bossFirstPlaceTotal(u) >= 1,
+    reward: { points: 1500 },
+  },
+  {
+    id: "boss-first-place-5",
+    name: "만년 1등",
+    description: "주간보스 1위 처치를 통산 5회 달성한다.",
+    category: "boss",
+    target: 5,
+    current: (u) => bossFirstPlaceTotal(u),
+    met: (u) => bossFirstPlaceTotal(u) >= 5,
+    reward: { points: 5000, item: { id: "muscle-band", qty: 1 } },
+  },
 
   // ── 활동(activity) ───────────────────────────────────────────────
   {
-    id: "total-exp-100k",
-    name: "성실한 개발자",
-    description: "누적 경험치 100,000을 적립한다.",
+    id: "points-10k",
+    name: "포인트 부자",
+    description: "포인트를 10,000 이상 보유한다.",
     category: "activity",
-    target: 100_000,
-    current: (u) => totalExpOf(u),
-    met: (u) => totalExpOf(u) >= 100_000,
-    reward: { points: 1000 },
+    target: 10_000,
+    current: (u) => u.points ?? 0,
+    met: (u) => (u.points ?? 0) >= 10_000,
+    reward: { gameMoney: 500 },
   },
   {
-    id: "total-exp-1m",
-    name: "커밋 장인",
-    description: "누적 경험치 1,000,000을 적립한다.",
+    id: "points-100k",
+    name: "포인트 거부",
+    description: "포인트를 100,000 이상 보유한다.",
     category: "activity",
-    target: 1_000_000,
-    current: (u) => totalExpOf(u),
-    met: (u) => totalExpOf(u) >= 1_000_000,
-    reward: { points: 5000, gameMoney: 2000 },
+    target: 100_000,
+    current: (u) => u.points ?? 0,
+    met: (u) => (u.points ?? 0) >= 100_000,
+    reward: { gameMoney: 3000, item: { id: "ability-patch", qty: 1 } },
+  },
+  {
+    id: "game-money-50k",
+    name: "게임머니 갑부",
+    description: "게임머니를 50,000 이상 보유한다.",
+    category: "activity",
+    target: 50_000,
+    current: (u) => u.gameMoney ?? 0,
+    met: (u) => (u.gameMoney ?? 0) >= 50_000,
+    reward: { points: 1500 },
+  },
+  {
+    id: "inventory-collector",
+    name: "가방 정리의 달인",
+    description: "인벤토리 아이템을 합계 100개 이상 보유한다.",
+    category: "activity",
+    target: 100,
+    current: (u) => inventoryTotalCount(u),
+    met: (u) => inventoryTotalCount(u) >= 100,
+    reward: { points: 1000 },
   },
 ];
 

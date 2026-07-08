@@ -137,4 +137,40 @@ describe("evaluateAchievements", () => {
     const { list } = evaluateAchievements(makeUser(), 0);
     expect(list.map((a) => a.id)).toEqual(ACHIEVEMENTS.map((a) => a.id));
   });
+
+  it("커밋이 더 이상 경험치를 주지 않으므로 누적경험치 업적은 존재하지 않는다", () => {
+    expect(ACHIEVEMENTS.some((a) => a.id === "total-exp-100k")).toBe(false);
+    expect(ACHIEVEMENTS.some((a) => a.id === "total-exp-1m")).toBe(false);
+  });
+
+  it("주간보스 통산 처치·1위 카운터로 boss 카테고리 업적을 지급한다", () => {
+    const user = makeUser({ bossDefeatTotal: 5, bossFirstPlaceTotal: 1 });
+    const { newlyCompleted, list } = evaluateAchievements(user, 0);
+
+    expect(newlyCompleted).toEqual(
+      expect.arrayContaining(["boss-first-clear", "boss-veteran", "boss-first-place-1"]),
+    );
+    expect(newlyCompleted).not.toContain("boss-legend");
+    expect(list.find((a) => a.id === "boss-veteran")?.current).toBe(5);
+  });
+
+  it("현재 파티 레벨 합·완벽개체(IV31)·최대친밀도로 growth 업적을 지급한다", () => {
+    const user = makeUser({
+      party: ["p-1"],
+      pokemon: [
+        makePokemon({
+          uid: "p-1",
+          level: 100,
+          ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
+          friendship: 255,
+        }),
+      ],
+    });
+
+    const { newlyCompleted } = evaluateAchievements(user, 0);
+    expect(newlyCompleted).toContain("max-level-100");
+    expect(newlyCompleted).toContain("perfect-iv");
+    expect(newlyCompleted).toContain("best-friend");
+    expect(newlyCompleted).not.toContain("team-level-300"); // 100 < 300
+  });
 });

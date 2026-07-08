@@ -18,10 +18,15 @@ import { resolveSpeciesOrVariant } from "./pokemon-state.js";
 import { buildStats } from "./pokemon-stats.js";
 import { incrementItem } from "./inventory-utils.js";
 
-/** 보스 처치 보상. item은 인벤토리 키 기준(예: "leftovers"·"assault-vest") — 지닌물건 계열은
- *  config.shop/battleShop.items 키와 items.json id가 동일해 지급·표시가 일관된다. */
+/**
+ * 보스 처치 보상. item은 인벤토리 키 기준(예: "leftovers"·"assault-vest") — 지닌물건 계열은
+ * config.shop/battleShop.items 키와 items.json id가 동일해 지급·표시가 일관된다.
+ *
+ * 포인트는 여기 없다 — "먼저 깬 순서"로 지급되는 랭킹 보상(boss-clears-store의 RANK_POINTS/
+ * PARTICIPATION_POINTS)으로 전 보스 공통 통일했다. gameMoney/item은 보스마다 다른 "준비" 보상으로
+ * 남겨 공략 루프(테마 지닌물건 파밍)를 유지한다.
+ */
 export interface BossReward {
-  points: number;
   gameMoney: number;
   item: { id: string; qty: number } | null;
 }
@@ -76,7 +81,7 @@ export const BOSSES: BossDef[] = [
     heldItem: "leftovers",
     moves: ["meteor-mash", "zen-headbutt", "earthquake", "bullet-punch"],
     statMultiplier: { hp: 2.6, defense: 1.25, spDefense: 1.2, attack: 1.15, spAttack: 1.15, speed: 1.1 },
-    reward: { points: 400, gameMoney: 2500, item: { id: "assault-vest", qty: 1 } },
+    reward: { gameMoney: 2500, item: { id: "assault-vest", qty: 1 } },
   },
   {
     id: "rain-tyrant",
@@ -89,7 +94,7 @@ export const BOSSES: BossDef[] = [
     heldItem: "life-orb",
     moves: ["hydro-pump", "ice-beam", "thunder", "dark-pulse"],
     statMultiplier: { hp: 2.4, spAttack: 1.2, spDefense: 1.15, defense: 1.1, speed: 1.1 },
-    reward: { points: 500, gameMoney: 3000, item: { id: "leftovers", qty: 1 } },
+    reward: { gameMoney: 3000, item: { id: "leftovers", qty: 1 } },
   },
   {
     id: "sand-king",
@@ -102,7 +107,7 @@ export const BOSSES: BossDef[] = [
     heldItem: "leftovers",
     moves: ["stone-edge", "crunch", "earthquake", "fire-punch"],
     statMultiplier: { hp: 2.5, attack: 1.2, defense: 1.15, spDefense: 1.1, speed: 1.05 },
-    reward: { points: 450, gameMoney: 2800, item: { id: "expert-belt", qty: 1 } },
+    reward: { gameMoney: 2800, item: { id: "expert-belt", qty: 1 } },
   },
   {
     id: "poison-fortress",
@@ -115,7 +120,7 @@ export const BOSSES: BossDef[] = [
     heldItem: "leftovers",
     moves: ["toxic", "scald", "recover", "sludge-bomb"],
     statMultiplier: { hp: 3.0, defense: 1.1, spDefense: 1.1, spAttack: 1.2, speed: 1.05 },
-    reward: { points: 500, gameMoney: 3200, item: { id: "focus-sash", qty: 1 } },
+    reward: { gameMoney: 3200, item: { id: "focus-sash", qty: 1 } },
   },
   {
     id: "dragon-bruiser",
@@ -128,7 +133,7 @@ export const BOSSES: BossDef[] = [
     heldItem: "life-orb",
     moves: ["outrage", "earthquake", "hurricane", "fire-punch"],
     statMultiplier: { hp: 2.5, attack: 1.2, spAttack: 1.1, defense: 1.1, spDefense: 1.1 },
-    reward: { points: 500, gameMoney: 3000, item: { id: "muscle-band", qty: 1 } },
+    reward: { gameMoney: 3000, item: { id: "muscle-band", qty: 1 } },
   },
   {
     id: "sun-scorcher",
@@ -141,7 +146,7 @@ export const BOSSES: BossDef[] = [
     heldItem: "life-orb",
     moves: ["fire-blast", "air-slash", "focus-blast", "dragon-pulse"],
     statMultiplier: { hp: 2.4, spAttack: 1.2, speed: 1.15, spDefense: 1.1 },
-    reward: { points: 450, gameMoney: 2800, item: { id: "wise-glasses", qty: 1 } },
+    reward: { gameMoney: 2800, item: { id: "wise-glasses", qty: 1 } },
   },
   {
     id: "blizzard-queen",
@@ -154,7 +159,7 @@ export const BOSSES: BossDef[] = [
     heldItem: "leftovers",
     moves: ["blizzard", "wood-hammer", "earthquake", "ice-shard"],
     statMultiplier: { hp: 2.6, attack: 1.15, spAttack: 1.15, defense: 1.1, spDefense: 1.1 },
-    reward: { points: 450, gameMoney: 2800, item: { id: "life-orb", qty: 1 } },
+    reward: { gameMoney: 2800, item: { id: "life-orb", qty: 1 } },
   },
 ];
 
@@ -180,20 +185,59 @@ export function getCurrentBoss(date: Date = new Date()): BossDef {
   return BOSSES[idx];
 }
 
+const MS_PER_WEEK = 7 * MS_PER_DAY;
+
+/**
+ * 사람이 읽는 "OO년 OO주차" 표시용 ISO 8601 캘린더 주(목요일 기준 연도, 1~53). getIsoWeek의
+ * 연속 절대 인덱스(로테이션·주1회 가드용, 예: ~2948)는 raw 값이라 그대로 노출하면 어색하므로
+ * 표시 전용으로 분리했다.
+ */
+export function getIsoCalendarWeek(date: Date = new Date()): { year: number; week: number } {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = (d.getUTCDay() + 6) % 7; // 월=0..일=6
+  d.setUTCDate(d.getUTCDate() - dayNum + 3); // 이번 주 목요일로 이동(ISO 연도 결정 기준)
+  const isoYear = d.getUTCFullYear();
+  const jan4 = new Date(Date.UTC(isoYear, 0, 4));
+  const jan4DayNum = (jan4.getUTCDay() + 6) % 7;
+  const week1Monday = new Date(jan4);
+  week1Monday.setUTCDate(jan4.getUTCDate() - jan4DayNum);
+  const week = Math.round((d.getTime() - week1Monday.getTime()) / MS_PER_WEEK) + 1;
+  return { year: isoYear, week };
+}
+
+/** 포털 표시용 "OO년 OO주차" 라벨. */
+export function getIsoWeekLabel(date: Date = new Date()): string {
+  const { year, week } = getIsoCalendarWeek(date);
+  return `${year}년 ${week}주차`;
+}
+
+/**
+ * 보스 레벨을 파티 최고 레벨 기준으로 스케일링한다 — 정의된 base level보다 낮게 내려가지 않고
+ * (원래 컨셉인 "높은 레벨 강적" 유지), 파티가 그 이상으로 성장하면 파티 최고 레벨+8까지 따라
+ * 올라가(최대 100) 항상 도전적이게 만든다. partyMaxLevel<=0(파티 없음)이면 base level 그대로.
+ */
+export function computeBossLevel(boss: BossDef, partyMaxLevel: number): number {
+  return Math.min(100, Math.max(boss.level, partyMaxLevel + 8));
+}
+
 /**
  * 보스를 야생 개체(WildPokemon)로 구성한다. 종족값 기반 스탯(중립 성격·IV 0)을 계산한 뒤
  * statMultiplier를 곱해(floor, 최소 1) 레이드용으로 강화하고, moves를 pp 있는 기술 슬롯으로,
  * ability/heldItem을 부착하고 HP를 풀피로 채운다. RNG 미사용 → 결정적.
+ *
+ * levelOverride가 주어지면(파티 기준 스케일링, computeBossLevel 결과) boss.level 대신 그 레벨로
+ * 스탯을 계산한다 — 미지정 시 기존처럼 boss.level 그대로(테스트·단순 조회에서 안전한 기본값).
  */
-export function buildBossWild(boss: BossDef): WildPokemon {
+export function buildBossWild(boss: BossDef, levelOverride?: number): WildPokemon {
   const speciesKey = boss.variantId ?? boss.species;
   const { baseSpecies, variantId, speciesData } = resolveSpeciesOrVariant(speciesKey);
   if (!speciesData) {
     throw new Error(`Unknown boss species: ${boss.species}`);
   }
+  const level = levelOverride ?? boss.level;
 
   // 중립 성격(undefined)·IV/EV 없음 → 종족값만의 결정적 스탯.
-  const { maxHp, stats } = buildStats(speciesData, boss.level, undefined, variantId);
+  const { maxHp, stats } = buildStats(speciesData, level, undefined, variantId);
   const mult = boss.statMultiplier ?? {};
   const boostedMaxHp = Math.max(1, Math.floor(maxHp * (mult.hp ?? 1)));
   const boostedStats: PokemonStats = {
@@ -213,7 +257,7 @@ export function buildBossWild(boss: BossDef): WildPokemon {
   return {
     species: baseSpecies,
     variantId: variantId ?? null,
-    level: boss.level,
+    level,
     hp: boostedMaxHp,
     maxHp: boostedMaxHp,
     stats: boostedStats,
@@ -232,9 +276,11 @@ export interface BossRewardGrant {
 }
 
 /**
- * 주간보스 보상을 ISO 주당 1회만 지급한다(멱등 가드). user.bossDefeat.week가 현재 week와 같고
- * bossId도 같으면 이미 이번 주에 처치·수령한 것 → 재지급하지 않고 granted=false를 돌려준다.
- * 아니면 points/gameMoney/inventory에 보상을 적립하고 user.bossDefeat={week,bossId}로 갱신한다.
+ * 주간보스 "준비" 보상(gameMoney/item)을 ISO 주당 1회만 지급한다(멱등 가드). user.bossDefeat.week가
+ * 현재 week와 같고 bossId도 같으면 이미 이번 주에 처치·수령한 것 → 재지급하지 않고 granted=false를
+ * 돌려준다. 아니면 gameMoney/inventory에 보상을 적립하고 user.bossDefeat={week,bossId}로 갱신한다.
+ * 포인트(순위 보상)는 여기서 다루지 않는다 — 호출부(finishWin)가 granted=true일 때만
+ * boss-clears-store.registerBossClear로 순위를 매기고 별도로 points를 지급한다.
  * 순수-ish: 파일 I/O 없음. incrementItem(순수 유틸)만 사용 → finishWin에서 factor-out해 테스트 가능.
  */
 export function grantBossRewardOnce(
@@ -247,7 +293,6 @@ export function grantBossRewardOnce(
     return { granted: false, alreadyDefeated: true, reward: boss.reward };
   }
 
-  user.points += boss.reward.points;
   user.gameMoney += boss.reward.gameMoney;
   if (boss.reward.item && boss.reward.item.qty > 0) {
     incrementItem(user.inventory, boss.reward.item.id, boss.reward.item.qty);

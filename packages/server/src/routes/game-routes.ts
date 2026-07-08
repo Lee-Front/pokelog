@@ -10,12 +10,13 @@ import { createEncounterEvent } from "../game/event-factory.js";
 import { getRegion, getRegionNames, getSpeciesByName } from "../game/data-loader.js";
 import { buildLevelEvolutionContext, getEvolutionBranchDiagnostics, getRelearnableMoves, applyMoveRelearn, getTeachableMoves, applyMoveTeach } from "../game/growth.js";
 import { getAvailableEvolutionOptions, prunePendingEvolutions } from "../game/pending-evolution.js";
-import { findPokemonByUid, getPartyPokemon } from "../game/pokemon-state.js";
+import { findPokemonByUid, getPartyPokemon, getDisplaySpeciesName } from "../game/pokemon-state.js";
 import { GameRuleError } from "../game/game-errors.js";
 import { getAnnouncements } from "../storage/announcement-store.js";
 import { evaluateAchievements } from "../game/achievements.js";
 import { getStats } from "../storage/pvp-stats-store.js";
-import { buildBossWild, getCurrentBoss, getIsoWeek } from "../game/weekly-boss.js";
+import { buildBossWild, computeBossLevel, getCurrentBoss, getIsoWeek, getIsoWeekLabel } from "../game/weekly-boss.js";
+import { getClears, RANK_POINTS, PARTICIPATION_POINTS } from "../storage/boss-clears-store.js";
 import { defaultStatStages } from "../game/battle.js";
 import { applySwitchInAbilities } from "../game/abilities.js";
 import { checkPrimalReversion, getTransformedStats } from "../game/battle-transformations.js";
@@ -233,6 +234,12 @@ gameRoutes.get("/boss", async (req: AuthRequest, res: Response) => {
     const defeatedThisWeek =
       user.bossDefeat?.week === week && user.bossDefeat?.bossId === boss.id;
 
+    const party = getPartyPokemon(user);
+    const partyMaxLevel = party.reduce((max, p) => Math.max(max, p.level ?? 0), 0);
+    const effectiveLevel = computeBossLevel(boss, partyMaxLevel);
+
+    const clears = await getClears(week, boss.id);
+
     res.json({
       boss: {
         id: boss.id,
@@ -241,18 +248,22 @@ gameRoutes.get("/boss", async (req: AuthRequest, res: Response) => {
         gimmick: boss.gimmick,
         species: boss.species,
         variantId: boss.variantId ?? null,
-        level: boss.level,
+        level: effectiveLevel,
         moves: boss.moves,
         ability: boss.ability ?? null,
         heldItem: boss.heldItem ?? null,
         reward: {
-          points: boss.reward.points,
           gameMoney: boss.reward.gameMoney,
           item: boss.reward.item ?? null,
         },
       },
       defeatedThisWeek,
       week,
+      weekLabel: getIsoWeekLabel(now),
+      rankPoints: RANK_POINTS,
+      participationPoints: PARTICIPATION_POINTS,
+      clears: clears.map((c) => ({ nickname: c.nickname, rank: c.rank, points: c.points })),
+      bannedLegendary: true,
     });
   } catch (err) {
     log.error({ err }, "Boss info error");
@@ -283,9 +294,23 @@ gameRoutes.post("/boss/start", async (req: AuthRequest, res: Response) => {
       return;
     }
 
+    // 전설/환상 포켓몬 참전 금지 — 기믹(타입 커버리지·지닌물건·상태이상 치료 등 "준비")을 써서
+    // 평범한 포켓몬으로 깨게 만드는 것이 보스전의 의도이므로, 압도적인 전설/환상은 벤치에서도 막는다.
+    const banned = party
+      .map((p) => ({ p, species: getSpeciesByName(p.species) }))
+      .filter(({ species }) => species?.isLegendary || species?.isMythical);
+    if (banned.length > 0) {
+      const names = banned.map(({ p }) => getDisplaySpeciesName(p.species)).join(", ");
+      res.status(400).json({
+        error: `전설/환상의 포켓몬(${names})은 주간보스전에 출전할 수 없습니다. 파티에서 빼주세요.`,
+      });
+      return;
+    }
+
     const now = new Date();
     const boss = getCurrentBoss(now);
-    const wild = buildBossWild(boss);
+    const partyMaxLevel = party.reduce((max, p) => Math.max(max, p.level ?? 0), 0);
+    const wild = buildBossWild(boss, computeBossLevel(boss, partyMaxLevel));
 
     const battleState: BattleState = {
       // 야생 조우처럼 pendingEvent를 참조하지 않는 합성 eventId(finishWin/handleRun의 pendingEvents
