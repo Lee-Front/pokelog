@@ -368,6 +368,10 @@ export function getItemById(id: string): ItemData | undefined {
   return getItems().find((item) => item.id === id);
 }
 
+export function getAbilityById(id: string): AbilityData | undefined {
+  return getAbilities().find((ability) => ability.id === id);
+}
+
 export function getNatureById(id: string): NatureData | undefined {
   return getNatures().find((n) => n.id === id);
 }

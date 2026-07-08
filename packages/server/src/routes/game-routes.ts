@@ -7,7 +7,7 @@ import { getConfig } from "../storage/config-store.js";
 import { getAllSpecies, createWildPokemon, createPokemon } from "../game/pokemon-factory.js";
 import { selectFromEncounters, splitEncounters } from "../game/encounter.js";
 import { createEncounterEvent } from "../game/event-factory.js";
-import { getRegion, getRegionNames, getSpeciesByName } from "../game/data-loader.js";
+import { getRegion, getRegionNames, getSpeciesByName, getAbilityById } from "../game/data-loader.js";
 import { buildLevelEvolutionContext, getEvolutionBranchDiagnostics, getRelearnableMoves, applyMoveRelearn, getTeachableMoves, applyMoveTeach } from "../game/growth.js";
 import { getAvailableEvolutionOptions, prunePendingEvolutions } from "../game/pending-evolution.js";
 import { findPokemonByUid, getPartyPokemon, getDisplaySpeciesName } from "../game/pokemon-state.js";
@@ -15,7 +15,11 @@ import { GameRuleError } from "../game/game-errors.js";
 import { getAnnouncements } from "../storage/announcement-store.js";
 import { evaluateAchievements } from "../game/achievements.js";
 import { getStats } from "../storage/pvp-stats-store.js";
-import { buildBossWild, computeBossLevel, getCurrentBoss, getIsoWeek, getIsoWeekLabel } from "../game/weekly-boss.js";
+import { getCompletedTradeCount } from "../storage/trade-store.js";
+import {
+  buildBossWild, computeBossLevel, getCurrentBoss, getIsoWeek, getIsoWeekLabel,
+  HELD_ITEM_EFFECT_KO,
+} from "../game/weekly-boss.js";
 import { getClears, RANK_POINTS, PARTICIPATION_POINTS } from "../storage/boss-clears-store.js";
 import { defaultStatStages } from "../game/battle.js";
 import { applySwitchInAbilities } from "../game/abilities.js";
@@ -218,8 +222,10 @@ gameRoutes.post("/wild/search", async (req: AuthRequest, res: Response) => {
   }
 });
 
-// 주간보스 정보 — 이번 주 보스 정의(표시용) + 이번 주 처치 여부(bossDefeat 가드) + 주 인덱스.
-// 포털 /pokelog/boss 화면이 이 응답으로 보스 카드(아트·기술·특성·지닌물건·보상·공략)를 그린다.
+// 주간보스 정보 — 이번 주 보스 정의(표시용) + 이번 주 처치 여부(bossDefeat 가드) + 순위 랭킹.
+// 포털 /pokelog/boss 화면이 이 응답으로 보스 카드(아트·기술·특성·지닌물건·순위 보상)를 그린다.
+// 특성/지닌물건은 이름뿐 아니라 실제 효과 설명(abilityDescription/heldItemDescription)도 내려줘
+// 포켓몬을 잘 모르는 유저도 기믹을 이해하고 대응 준비를 할 수 있게 한다.
 gameRoutes.get("/boss", async (req: AuthRequest, res: Response) => {
   try {
     const user = await getUser(req.userId!);
@@ -240,25 +246,23 @@ gameRoutes.get("/boss", async (req: AuthRequest, res: Response) => {
 
     const clears = await getClears(week, boss.id);
 
+    const abilityData = boss.ability ? getAbilityById(boss.ability) : undefined;
+
     res.json({
       boss: {
         id: boss.id,
         name: boss.name,
-        description: boss.description,
-        gimmick: boss.gimmick,
         species: boss.species,
         variantId: boss.variantId ?? null,
         level: effectiveLevel,
         moves: boss.moves,
         ability: boss.ability ?? null,
+        abilityName: abilityData?.name ?? null,
+        abilityDescription: abilityData?.shortEffect ?? null,
         heldItem: boss.heldItem ?? null,
-        reward: {
-          gameMoney: boss.reward.gameMoney,
-          item: boss.reward.item ?? null,
-        },
+        heldItemDescription: (boss.heldItem && HELD_ITEM_EFFECT_KO[boss.heldItem]) ?? null,
       },
       defeatedThisWeek,
-      week,
       weekLabel: getIsoWeekLabel(now),
       rankPoints: RANK_POINTS,
       participationPoints: PARTICIPATION_POINTS,
@@ -651,11 +655,12 @@ gameRoutes.get("/achievements", async (req: AuthRequest, res: Response) => {
       return;
     }
 
-    // PvP 승수는 유저 파일이 아니라 pvp-stats 저장소에 있다(전적 없으면 0승으로 취급).
+    // PvP 승수·트레이드 성사 수는 유저 파일이 아니라 각각 pvp-stats/trade 저장소에 있다.
     const stats = await getStats(user.account.id);
     const pvpWins = stats?.wins ?? 0;
+    const tradesCompleted = await getCompletedTradeCount(user.account.id);
 
-    const result = evaluateAchievements(user, pvpWins);
+    const result = evaluateAchievements(user, pvpWins, tradesCompleted);
     if (result.newlyCompleted.length > 0) {
       await saveUser(user);
     }

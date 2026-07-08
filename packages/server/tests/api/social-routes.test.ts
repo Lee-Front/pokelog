@@ -12,7 +12,7 @@ describe("social routes", () => {
     t?.cleanup();
   });
 
-  it("GET /ranking returns ranking list", async () => {
+  it("GET /ranking returns ranking list (default sort=pokedex, collection stats — no exp/level)", async () => {
     await t.registerAndLogin("rankeduser", "charmander");
 
     const res = await t.request.get("/api/social/ranking");
@@ -20,15 +20,21 @@ describe("social routes", () => {
     expect(Array.isArray(res.body.ranking)).toBe(true);
     expect(res.body.ranking.length).toBeGreaterThanOrEqual(1);
     expect(res.body.ranking[0]).toHaveProperty("nickname");
-    expect(res.body.ranking[0]).toHaveProperty("totalExp");
+    expect(res.body.ranking[0]).toHaveProperty("pokedexCount");
+    expect(res.body.ranking[0]).toHaveProperty("shinyCount");
+    expect(res.body.ranking[0]).toHaveProperty("legendaryCount");
+    expect(res.body.ranking[0]).not.toHaveProperty("totalExp");
+    expect(res.body.ranking[0]).not.toHaveProperty("topLevel");
   });
 
-  it("GET /ranking supports custom sort field", async () => {
+  it("GET /ranking supports custom sort field (points/shiny/legendary)", async () => {
     await t.registerAndLogin("sortuser", "squirtle");
 
-    const res = await t.request.get("/api/social/ranking?by=points");
-    expect(res.status).toBe(200);
-    expect(Array.isArray(res.body.ranking)).toBe(true);
+    for (const by of ["points", "shiny", "legendary"]) {
+      const res = await t.request.get(`/api/social/ranking?by=${by}`);
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body.ranking)).toBe(true);
+    }
   });
 
   it("GET /profile/:nickname returns user profile", async () => {

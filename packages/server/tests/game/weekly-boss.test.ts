@@ -4,7 +4,7 @@ import {
   buildBossWild,
   computeBossLevel,
   getCurrentBoss,
-  getIsoCalendarWeek,
+  getDisplayWeekNumber,
   getIsoWeek,
   getIsoWeekLabel,
   grantBossRewardOnce,
@@ -29,35 +29,33 @@ describe("getIsoWeek", () => {
   });
 });
 
-describe("getIsoCalendarWeek / getIsoWeekLabel", () => {
-  it("gives a small human calendar week number, not the raw epoch-week index (regression: was showing e.g. '2948차')", () => {
-    const d = new Date(2026, 0, 5); // 2026-01-05, ISO 2026-W02 Monday
-    const { year, week } = getIsoCalendarWeek(d);
-    expect(year).toBe(2026);
-    expect(week).toBeGreaterThanOrEqual(1);
-    expect(week).toBeLessThanOrEqual(53);
-    // 절대 인덱스(getIsoWeek)는 수천 단위로 크지만, 캘린더 주는 항상 1~53 범위다.
-    expect(getIsoWeek(d)).toBeGreaterThan(53);
-    expect(getIsoWeekLabel(d)).toBe(`${year}년 ${week}주차`);
+describe("getDisplayWeekNumber / getIsoWeekLabel", () => {
+  it("starts at 1 for the week this feature launched (2026-07-06), not the raw epoch-week index (regression: was showing e.g. '2948차')", () => {
+    const launchMonday = new Date(2026, 6, 6);
+    expect(getDisplayWeekNumber(launchMonday)).toBe(1);
+    expect(getIsoWeekLabel(launchMonday)).toBe("1주차");
+    // 절대 인덱스(getIsoWeek)는 수천 단위로 크지만, 표시용 주차는 1부터 시작한다.
+    expect(getIsoWeek(launchMonday)).toBeGreaterThan(53);
   });
 
-  it("increments the calendar week by 1 across a normal week boundary", () => {
-    const w1 = getIsoCalendarWeek(mondayOfWeek(0));
-    const w2 = getIsoCalendarWeek(mondayOfWeek(1));
-    if (w2.year === w1.year) {
-      expect(w2.week).toBe(w1.week + 1);
-    } else {
-      // 연 경계를 넘는 드문 케이스 — 새해 첫 주로 리셋.
-      expect(w2.week).toBe(1);
-    }
+  it("increments by 1 per week after launch", () => {
+    const launchMonday = new Date(2026, 6, 6);
+    const nextMonday = new Date(2026, 6, 13);
+    expect(getDisplayWeekNumber(nextMonday)).toBe(getDisplayWeekNumber(launchMonday) + 1);
+    expect(getIsoWeekLabel(nextMonday)).toBe("2주차");
+  });
+
+  it("is stable within the same calendar day", () => {
+    const launchMonday = new Date(2026, 6, 6);
+    const sameDayLater = new Date(2026, 6, 6, 23, 59);
+    expect(getDisplayWeekNumber(launchMonday)).toBe(getDisplayWeekNumber(sameDayLater));
   });
 });
 
 describe("computeBossLevel", () => {
   const boss: BossDef = {
-    id: "level-test", name: "", description: "", gimmick: "",
+    id: "level-test", name: "",
     species: "metagross", level: 75, moves: ["tackle"],
-    reward: { gameMoney: 0, item: null },
   };
 
   it("never scales below the boss base level", () => {
@@ -105,13 +103,10 @@ describe("buildBossWild", () => {
     const boss: BossDef = {
       id: "test-mult",
       name: "테스트 보스",
-      description: "",
-      gimmick: "",
       species: "metagross",
       level,
       moves: ["meteor-mash", "earthquake"],
       statMultiplier: { hp: 3, attack: 2 },
-      reward: { gameMoney: 0, item: null },
     };
 
     const wild = buildBossWild(boss);
@@ -159,26 +154,22 @@ describe("grantBossRewardOnce", () => {
   const boss: BossDef = {
     id: "reward-boss",
     name: "보상 보스",
-    description: "",
-    gimmick: "",
     species: "metagross",
     level: 70,
     moves: ["meteor-mash"],
-    reward: { gameMoney: 2500, item: { id: "assault-vest", qty: 1 } },
   };
 
-  // 포인트는 이제 grantBossRewardOnce가 아니라 boss-clears-store의 순위 등록이 지급한다
-  // (별도 boss-clears-store.test.ts). 여기선 gameMoney/item/멱등 가드만 검증한다.
-  it("grants the reward once and records the defeat", () => {
+  // 실제 보상(랭킹 포인트)은 boss-clears-store가 지급한다(별도 boss-clears-store.test.ts).
+  // grantBossRewardOnce는 이제 "이번 주 첫 처치인가"만 멱등하게 가드한다.
+  it("grants once and records the defeat, without touching any currency", () => {
     const user = makeUser();
     const week = 3000;
 
     const first = grantBossRewardOnce(user, boss, week);
     expect(first.granted).toBe(true);
     expect(first.alreadyDefeated).toBe(false);
-    expect(user.points).toBe(100); // 미변경(포인트는 boss-clears-store 몫)
-    expect(user.gameMoney).toBe(2550); // 50 + 2500
-    expect(user.inventory["assault-vest"]).toBe(1);
+    expect(user.points).toBe(100);
+    expect(user.gameMoney).toBe(50);
     expect(user.bossDefeat).toEqual({ week, bossId: boss.id });
   });
 
@@ -191,9 +182,6 @@ describe("grantBossRewardOnce", () => {
 
     expect(second.granted).toBe(false);
     expect(second.alreadyDefeated).toBe(true);
-    // 재화/아이템이 두 번 지급되지 않는다.
-    expect(user.gameMoney).toBe(2550);
-    expect(user.inventory["assault-vest"]).toBe(1);
   });
 
   it("grants again in a different week", () => {
@@ -202,8 +190,6 @@ describe("grantBossRewardOnce", () => {
     const nextWeek = grantBossRewardOnce(user, boss, 3001);
 
     expect(nextWeek.granted).toBe(true);
-    expect(user.gameMoney).toBe(5050); // 50 + 2500 + 2500
-    expect(user.inventory["assault-vest"]).toBe(2);
     expect(user.bossDefeat).toEqual({ week: 3001, bossId: boss.id });
   });
 });

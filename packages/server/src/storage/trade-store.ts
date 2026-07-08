@@ -51,6 +51,18 @@ export async function getArchivedTrades(): Promise<TradeRecord[]> {
   return await readJson<TradeRecord[]>(archivePath()) ?? [];
 }
 
+/**
+ * 유저가 요청자/응답자로 참여해 실제로 성사(status="accepted")한 트레이드 통산 횟수(업적용).
+ * 현재 파일(trades.json)과 아카이브(trades-archive.json, MAX_RESOLVED_TRADES 초과분) 둘 다 센다
+ * — 오래된 트레이드도 통산 집계에서 빠지면 안 되므로.
+ */
+export async function getCompletedTradeCount(userId: string): Promise<number> {
+  const [active, archived] = await Promise.all([getTrades(), getArchivedTrades()]);
+  const isMine = (t: TradeRecord) =>
+    t.status === "accepted" && (t.requesterUserId === userId || t.responderUserId === userId);
+  return active.filter(isMine).length + archived.filter(isMine).length;
+}
+
 export function createTradeRecord(input: {
   requesterUserId: string;
   requesterPokemonUid: string;

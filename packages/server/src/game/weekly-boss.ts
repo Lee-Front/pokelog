@@ -2,10 +2,15 @@
 // ─────────────────────────────────────────────────────────────────────────
 // 콘셉트: 한 주에 하나, 의도적으로 까다롭고 기믹이 있는 보스가 등장한다. 플레이어는 커버리지
 // 타입·기술(기술 가르침)·지닌물건·특성·상태이상 치료제 등을 "준비"해 파티 6마리로 도전한다.
-// 야생 전투 엔진을 그대로 재사용한다(단일 강력 개체 = WildPokemon). 주 1회 처치 보상.
+// 야생 전투 엔진을 그대로 재사용한다(단일 강력 개체 = WildPokemon).
+//
+// 보상은 보스별로 다르지 않다 — "이번 주 몇 번째로 처치했는가"(선착 랭킹)로 전 보스 공통 포인트를
+// 준다(boss-clears-store의 RANK_POINTS/PARTICIPATION_POINTS). 이 파일은 그 랭킹을 다루지 않고,
+// 유저별 "이번 주에 이미 처치했는지" 멱등 가드(grantBossRewardOnce)까지만 담당한다.
 //
 // 이 파일은 순수(부수효과 없는) 데이터/헬퍼만 담는다. 라우트(game-routes)가 buildBossWild로
-// 전투를 세팅하고, battle-routes.finishWin이 grantBossRewardOnce로 주 1회 보상을 지급한다.
+// 전투를 세팅하고, battle-routes.finishWin이 grantBossRewardOnce + boss-clears-store로 처치를
+// 인정·기록한다.
 
 import type {
   PokemonMove,
@@ -16,20 +21,6 @@ import type {
 import { getMoveById } from "./data-loader.js";
 import { resolveSpeciesOrVariant } from "./pokemon-state.js";
 import { buildStats } from "./pokemon-stats.js";
-import { incrementItem } from "./inventory-utils.js";
-
-/**
- * 보스 처치 보상. item은 인벤토리 키 기준(예: "leftovers"·"assault-vest") — 지닌물건 계열은
- * config.shop/battleShop.items 키와 items.json id가 동일해 지급·표시가 일관된다.
- *
- * 포인트는 여기 없다 — "먼저 깬 순서"로 지급되는 랭킹 보상(boss-clears-store의 RANK_POINTS/
- * PARTICIPATION_POINTS)으로 전 보스 공통 통일했다. gameMoney/item은 보스마다 다른 "준비" 보상으로
- * 남겨 공략 루프(테마 지닌물건 파밍)를 유지한다.
- */
-export interface BossReward {
-  gameMoney: number;
-  item: { id: string; qty: number } | null;
-}
 
 /** 보스 스탯 배수 — 종족값 기반 스탯에 곱해 "레이드용" 두꺼운/강한 개체를 만든다. 미지정 스탯은 ×1. */
 export interface BossStatMultiplier {
@@ -46,13 +37,9 @@ export interface BossDef {
   id: string;
   /** 표시명(한글, 종명 포함). 예: "강철의 벽 메타그로스". */
   name: string;
-  /** 테마/컨셉 설명(한글). */
-  description: string;
-  /** 공략 힌트(한글) — 어떤 준비(커버리지 타입·기술·아이템)가 필요한지. */
-  gimmick: string;
   species: string;
   variantId?: string | null;
-  /** 높은 레벨(예: 70~85). */
+  /** 높은 레벨(예: 70~85) — 파티가 이를 넘어서면 computeBossLevel이 파티 기준으로 올린다. */
   level: number;
   /** 특성 id(예: "clear-body"·"drizzle"). 전투 엔진이 스위치인/피격 특성으로 반영한다. */
   ability?: string;
@@ -62,106 +49,99 @@ export interface BossDef {
   moves: string[];
   /** 스탯 배수(레이드 튜닝). hp는 두껍게(예: 2.5~3×), 나머지는 소폭(예: 1.1~1.2×). */
   statMultiplier?: BossStatMultiplier;
-  reward: BossReward;
 }
 
 // ── 보스 로스터 ──────────────────────────────────────────────────────────
 // 각 보스는 서로 다른 타입 테마/기믹을 가져 주마다 다른 준비를 요구한다(강철 벽, 비 스위퍼,
 // 모래 탱커, 상태이상 요새, 멀티스케일 브루저, 햇살 스위퍼, 눈보라). 모든 종/특성/기술/아이템은
-// data/*.json에 존재하는 유효 id다.
+// data/*.json에 존재하는 유효 id다. 테마 설명·공략 힌트는 두지 않는다 — 포털이 특성/지닌물건의
+// 실제 효과 설명(ABILITY_KO의 shortEffect·HELD_ITEM_EFFECT_KO)만으로 기믹을 안내한다.
 export const BOSSES: BossDef[] = [
   {
     id: "steel-wall",
     name: "강철의 벽 메타그로스",
-    description: "능력 하락을 무효화하는 클리어바디로 무장한 강철의 요새. 높은 방어와 남은밥으로 오래 버틴다.",
-    gimmick: "위협·울음소리 등 능력 하락이 통하지 않는다. 불꽃·땅·고스트·악 타입으로 약점을 찔러 화력으로 뚫어라.",
     species: "metagross",
     level: 75,
     ability: "clear-body",
     heldItem: "leftovers",
     moves: ["meteor-mash", "zen-headbutt", "earthquake", "bullet-punch"],
     statMultiplier: { hp: 2.6, defense: 1.25, spDefense: 1.2, attack: 1.15, spAttack: 1.15, speed: 1.1 },
-    reward: { gameMoney: 2500, item: { id: "assault-vest", qty: 1 } },
   },
   {
     id: "rain-tyrant",
     name: "바다의 폭군 가이오가",
-    description: "등장과 동시에 비를 부르는 대해의 폭군. 빗속에서 물 기술이 거세지고 생명의구슬로 화력을 더한다.",
-    gimmick: "잔비로 물 기술이 1.5배가 된다. 전기·풀 타입과 비에 강한(물 반감) 포켓몬으로 맞서라.",
     species: "kyogre",
     level: 80,
     ability: "drizzle",
     heldItem: "life-orb",
     moves: ["hydro-pump", "ice-beam", "thunder", "dark-pulse"],
     statMultiplier: { hp: 2.4, spAttack: 1.2, spDefense: 1.15, defense: 1.1, speed: 1.1 },
-    reward: { gameMoney: 3000, item: { id: "leftovers", qty: 1 } },
   },
   {
     id: "sand-king",
     name: "모래의 제왕 마기라스",
-    description: "모래날림으로 전장을 뒤덮는 바위·악의 제왕. 매턴 모래바람이 상대를 갉아먹는다.",
-    gimmick: "모래바람이 바위·땅·강철 이외 타입을 매턴 깎는다. 격투·땅·강철 타입 + 모래 면역 포켓몬을 준비하라.",
     species: "tyranitar",
     level: 78,
     ability: "sand-stream",
     heldItem: "leftovers",
     moves: ["stone-edge", "crunch", "earthquake", "fire-punch"],
     statMultiplier: { hp: 2.5, attack: 1.2, defense: 1.15, spDefense: 1.1, speed: 1.05 },
-    reward: { gameMoney: 2800, item: { id: "expert-belt", qty: 1 } },
   },
   {
     id: "poison-fortress",
     name: "맹독의 요새 더시마사리",
-    description: "독과 화상을 뿌리고 자기회복으로 버티는 지구전의 요새. 압도적인 내구로 시간을 끈다.",
-    gimmick: "맹독·화상을 걸고 리커버로 회복한다. 상태이상 치료제와 강한 특수 화력, 독 무효(강철·독) 포켓몬으로 속전속결하라.",
     species: "toxapex",
     level: 72,
     ability: "merciless",
     heldItem: "leftovers",
     moves: ["toxic", "scald", "recover", "sludge-bomb"],
     statMultiplier: { hp: 3.0, defense: 1.1, spDefense: 1.1, spAttack: 1.2, speed: 1.05 },
-    reward: { gameMoney: 3200, item: { id: "focus-sash", qty: 1 } },
   },
   {
     id: "dragon-bruiser",
     name: "폭풍의 용 망나뇽",
-    description: "풀 HP에서 받는 피해가 절반이 되는 멀티스케일의 용. 껍질을 깨기 전엔 좀처럼 쓰러지지 않는다.",
-    gimmick: "풀 HP에서 피해 절반(멀티스케일). 얼음·페어리·드래곤으로 첫 방을 크게 넣어 껍질을 깨고 몰아쳐라.",
     species: "dragonite",
     level: 80,
     ability: "multiscale",
     heldItem: "life-orb",
     moves: ["outrage", "earthquake", "hurricane", "fire-punch"],
     statMultiplier: { hp: 2.5, attack: 1.2, spAttack: 1.1, defense: 1.1, spDefense: 1.1 },
-    reward: { gameMoney: 3000, item: { id: "muscle-band", qty: 1 } },
   },
   {
     id: "sun-scorcher",
     name: "불꽃의 화신 리자몽",
-    description: "강렬한 햇살을 부르는 불꽃의 화신. 햇빛 아래 불꽃 기술이 작열하며 빠르게 몰아친다.",
-    gimmick: "가뭄으로 불꽃 기술이 1.5배가 된다. 리자몽은 바위 4배 약점 — 물·바위·전기 타입과 햇살에 강한 포켓몬으로 노려라.",
     species: "charizard",
     level: 78,
     ability: "drought",
     heldItem: "life-orb",
     moves: ["fire-blast", "air-slash", "focus-blast", "dragon-pulse"],
     statMultiplier: { hp: 2.4, spAttack: 1.2, speed: 1.15, spDefense: 1.1 },
-    reward: { gameMoney: 2800, item: { id: "wise-glasses", qty: 1 } },
   },
   {
     id: "blizzard-queen",
     name: "눈보라의 여왕 눈설왕",
-    description: "눈퍼뜨리기로 눈보라를 일으키는 풀·얼음의 여왕. 매턴 눈보라가 얼음 이외 타입을 갉아먹는다.",
-    gimmick: "눈보라가 얼음 이외 타입을 매턴 깎는다. 눈설왕은 불꽃 4배 약점 — 불꽃·격투·강철·바위로 이중 약점(풀·얼음)을 찔러라.",
     species: "abomasnow",
     level: 74,
     ability: "snow-warning",
     heldItem: "leftovers",
     moves: ["blizzard", "wood-hammer", "earthquake", "ice-shard"],
     statMultiplier: { hp: 2.6, attack: 1.15, spAttack: 1.15, defense: 1.1, spDefense: 1.1 },
-    reward: { gameMoney: 2800, item: { id: "life-orb", qty: 1 } },
   },
 ];
+
+/**
+ * 보스 지닌물건 효과 설명(한글, 포켓몬을 잘 모르는 유저 대상). items.json의 shortEffect는
+ * 지닌물건류가 대부분 비어 있어서(실측 데이터 부재) 여기서 보스 로스터가 실제로 쓰는 지닌물건만
+ * 손번역한다. 미등록 id는 game-routes가 null로 내려보낸다(포털은 이름만 표시).
+ */
+export const HELD_ITEM_EFFECT_KO: Record<string, string> = {
+  leftovers: "매 턴 종료 시 최대 HP의 1/16을 회복한다. 장기전에서 체력을 계속 채운다.",
+  "life-orb": "기술 위력이 1.3배가 되지만, 공격할 때마다 최대 HP의 1/10만큼 자신도 HP가 줄어든다.",
+  "expert-belt": "상대의 약점을 찌르는 기술(효과가 굉장했다)의 위력이 1.2배가 된다.",
+  "focus-sash": "HP가 가득 찬 상태에서 한 방에 기절할 데미지를 받아도 HP 1을 남기고 버틴다(1회용).",
+  "muscle-band": "물리 기술의 위력이 1.1배가 된다.",
+  "wise-glasses": "특수 기술의 위력이 1.1배가 된다.",
+};
 
 const MS_PER_DAY = 86400000;
 // 1970-01-05는 월요일(ISO 주 시작). 이 월요일을 0주로 삼아 "연속 ISO 주 인덱스"를 센다.
@@ -185,30 +165,19 @@ export function getCurrentBoss(date: Date = new Date()): BossDef {
   return BOSSES[idx];
 }
 
-const MS_PER_WEEK = 7 * MS_PER_DAY;
+// 이 기능이 배포된 주(2026-07-06 월요일)의 연속 ISO 주 인덱스. "N주차" 표시가 이 기능이 생긴
+// 시점부터 1주차로 시작하게 하는 기준점 — getIsoWeek의 원값(~2948)을 그대로 노출하면 어색하고,
+// 달력 연주차("OO년 OO주차")도 "이번이 몇 번째 주간보스인가"라는 실제 궁금증과는 맞지 않는다.
+const BOSS_FEATURE_LAUNCH_WEEK = getIsoWeek(new Date(2026, 6, 6));
 
-/**
- * 사람이 읽는 "OO년 OO주차" 표시용 ISO 8601 캘린더 주(목요일 기준 연도, 1~53). getIsoWeek의
- * 연속 절대 인덱스(로테이션·주1회 가드용, 예: ~2948)는 raw 값이라 그대로 노출하면 어색하므로
- * 표시 전용으로 분리했다.
- */
-export function getIsoCalendarWeek(date: Date = new Date()): { year: number; week: number } {
-  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-  const dayNum = (d.getUTCDay() + 6) % 7; // 월=0..일=6
-  d.setUTCDate(d.getUTCDate() - dayNum + 3); // 이번 주 목요일로 이동(ISO 연도 결정 기준)
-  const isoYear = d.getUTCFullYear();
-  const jan4 = new Date(Date.UTC(isoYear, 0, 4));
-  const jan4DayNum = (jan4.getUTCDay() + 6) % 7;
-  const week1Monday = new Date(jan4);
-  week1Monday.setUTCDate(jan4.getUTCDate() - jan4DayNum);
-  const week = Math.round((d.getTime() - week1Monday.getTime()) / MS_PER_WEEK) + 1;
-  return { year: isoYear, week };
+/** "이 기능이 생긴 이후 몇 번째 주인가"(1부터 시작)를 계산한다. */
+export function getDisplayWeekNumber(date: Date = new Date()): number {
+  return getIsoWeek(date) - BOSS_FEATURE_LAUNCH_WEEK + 1;
 }
 
-/** 포털 표시용 "OO년 OO주차" 라벨. */
+/** 포털 표시용 "N주차" 라벨(이 기능이 생긴 주가 1주차). */
 export function getIsoWeekLabel(date: Date = new Date()): string {
-  const { year, week } = getIsoCalendarWeek(date);
-  return `${year}년 ${week}주차`;
+  return `${getDisplayWeekNumber(date)}주차`;
 }
 
 /**
@@ -268,20 +237,19 @@ export function buildBossWild(boss: BossDef, levelOverride?: number): WildPokemo
   };
 }
 
-/** grantBossRewardOnce 결과. granted=이번 호출에서 실제 지급됨, alreadyDefeated=이미 이번 주 처치. */
+/** grantBossRewardOnce 결과. granted=이번이 이번 주 첫 처치, alreadyDefeated=이미 이번 주 처치. */
 export interface BossRewardGrant {
   granted: boolean;
   alreadyDefeated: boolean;
-  reward: BossReward;
 }
 
 /**
- * 주간보스 "준비" 보상(gameMoney/item)을 ISO 주당 1회만 지급한다(멱등 가드). user.bossDefeat.week가
- * 현재 week와 같고 bossId도 같으면 이미 이번 주에 처치·수령한 것 → 재지급하지 않고 granted=false를
- * 돌려준다. 아니면 gameMoney/inventory에 보상을 적립하고 user.bossDefeat={week,bossId}로 갱신한다.
- * 포인트(순위 보상)는 여기서 다루지 않는다 — 호출부(finishWin)가 granted=true일 때만
- * boss-clears-store.registerBossClear로 순위를 매기고 별도로 points를 지급한다.
- * 순수-ish: 파일 I/O 없음. incrementItem(순수 유틸)만 사용 → finishWin에서 factor-out해 테스트 가능.
+ * 유저의 "이번 주 첫 처치"를 ISO 주당 1회만 인정한다(멱등 가드). user.bossDefeat.week가 현재
+ * week와 같고 bossId도 같으면 이미 이번 주에 처치를 인정받은 것 → granted=false. 아니면
+ * user.bossDefeat={week,bossId}로 갱신하고 granted=true를 돌려준다.
+ *
+ * 실제 보상(랭킹 포인트)은 여기서 다루지 않는다 — 호출부(finishWin)가 granted=true일 때만
+ * boss-clears-store.registerBossClear로 순위를 매기고 포인트를 지급한다. 순수 함수(파일 I/O 없음).
  */
 export function grantBossRewardOnce(
   user: UserData,
@@ -290,14 +258,9 @@ export function grantBossRewardOnce(
 ): BossRewardGrant {
   const already = user.bossDefeat?.week === week && user.bossDefeat?.bossId === boss.id;
   if (already) {
-    return { granted: false, alreadyDefeated: true, reward: boss.reward };
+    return { granted: false, alreadyDefeated: true };
   }
 
-  user.gameMoney += boss.reward.gameMoney;
-  if (boss.reward.item && boss.reward.item.qty > 0) {
-    incrementItem(user.inventory, boss.reward.item.id, boss.reward.item.qty);
-  }
   user.bossDefeat = { week, bossId: boss.id };
-
-  return { granted: true, alreadyDefeated: false, reward: boss.reward };
+  return { granted: true, alreadyDefeated: false };
 }

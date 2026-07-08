@@ -12,7 +12,7 @@ import type { BattleHpFrame, BattleState, MoveData, OwnedPokemon, UserData } fro
 import { decrementItem, healPokemon, resolveShopItem, applyStatusCure } from "../game/inventory-utils.js";
 import { recordMoveUsage } from "../game/move-usage.js";
 import { grantBattleRewards } from "../game/battle-rewards.js";
-import { BOSSES, getCurrentBoss, getIsoWeek, grantBossRewardOnce, type BossReward } from "../game/weekly-boss.js";
+import { BOSSES, getCurrentBoss, getIsoWeek, grantBossRewardOnce } from "../game/weekly-boss.js";
 import { registerBossClear } from "../storage/boss-clears-store.js";
 import { getDisplaySpeciesName } from "../game/pokemon-state.js";
 import { checkTurnForm } from "../game/battle-forms.js";
@@ -127,7 +127,7 @@ async function finishWin(
   // 주간보스 처치 훅 — 주(ISO week)당 1회 보상 지급. 이미 이번 주에 처치했다면(멱등 가드)
   // 재지급하지 않고 "이미 수령" 안내만 남긴다. 응답에 boss 요약을 실어 클라가 처치를 인지한다.
   let bossSummary:
-    | { defeated: true; reward: BossReward | null; alreadyClaimed: boolean; rank?: number; points?: number }
+    | { defeated: true; alreadyClaimed: boolean; rank?: number; points?: number }
     | undefined;
   if (battle.isBoss && battle.bossId) {
     const now = new Date();
@@ -148,20 +148,13 @@ async function finishWin(
         if (clear.rank === 1) user.bossFirstPlaceTotal = (user.bossFirstPlaceTotal ?? 0) + 1;
 
         log.push(`이번 주 ${clear.rank}번째로 처치! 포인트 ${clear.points}을(를) 획득했다!`);
-        if (grant.reward.gameMoney > 0) log.push(`게임머니 ${grant.reward.gameMoney}을(를) 획득했다!`);
-        if (grant.reward.item && grant.reward.item.qty > 0) {
-          log.push(`${grant.reward.item.id} ${grant.reward.item.qty}개를 획득했다!`);
-        }
-        bossSummary = {
-          defeated: true, reward: grant.reward, alreadyClaimed: false,
-          rank: clear.rank, points: clear.points,
-        };
+        bossSummary = { defeated: true, alreadyClaimed: false, rank: clear.rank, points: clear.points };
       } else {
         log.push("이번 주에는 이미 보스 보상을 받았습니다.");
-        bossSummary = { defeated: true, reward: null, alreadyClaimed: true };
+        bossSummary = { defeated: true, alreadyClaimed: true };
       }
     } else {
-      bossSummary = { defeated: true, reward: null, alreadyClaimed: false };
+      bossSummary = { defeated: true, alreadyClaimed: false };
     }
   }
 

@@ -1,39 +1,53 @@
 import { Router } from "express";
 import { getAllUsers } from "../storage/user-store.js";
+import { getSpeciesByName } from "../game/data-loader.js";
 import { childLogger } from "../logger.js";
 const log = childLogger("social-routes");
 
 
 export const socialRoutes = Router();
 
+/** 유저 보유 개체(파티풀 ∪ 보관함) 중 이로치(isShiny) 수. */
+function shinyCountOf(u: Awaited<ReturnType<typeof getAllUsers>>[number]): number {
+  return [...u.pokemon, ...u.storage].filter((p) => p.isShiny === true).length;
+}
+
+/** 도감(영구 기록, user.pokedex)에 등록된 종 중 전설/환상 종 수 — 방생해도 유지되는 "잡아본 적 있는" 지표. */
+function legendaryCountOf(u: Awaited<ReturnType<typeof getAllUsers>>[number]): number {
+  return u.pokedex.filter((species) => {
+    const data = getSpeciesByName(species);
+    return data?.isLegendary || data?.isMythical;
+  }).length;
+}
+
+// 레벨은 100에서 캡되고(무한정 성장 X) 경험치는 커밋이 더는 주지 않아 랭킹으로서 의미가 옅어져
+// exp/level 탭은 제거했다 — 수집(도감/이로치/전설·환상)과 포인트만 남긴다.
 socialRoutes.get("/ranking", async (req, res) => {
   try {
-    const by = (req.query.by as string) || "exp";
+    const by = (req.query.by as string) || "pokedex";
     const users = await getAllUsers();
 
     const ranked = users.map((u) => ({
       nickname: u.account.nickname,
-      totalExp: u.totalExp,
       points: u.points,
       pokedexCount: u.pokedex.length,
-      topLevel: u.pokemon.reduce((max, p) => Math.max(max, p.level), 0),
+      shinyCount: shinyCountOf(u),
+      legendaryCount: legendaryCountOf(u),
     }));
 
     switch (by) {
-      case "exp":
-        ranked.sort((a, b) => b.totalExp - a.totalExp);
-        break;
-      case "level":
-        ranked.sort((a, b) => b.topLevel - a.topLevel);
-        break;
-      case "pokedex":
-        ranked.sort((a, b) => b.pokedexCount - a.pokedexCount);
-        break;
       case "points":
         ranked.sort((a, b) => b.points - a.points);
         break;
+      case "shiny":
+        ranked.sort((a, b) => b.shinyCount - a.shinyCount);
+        break;
+      case "legendary":
+        ranked.sort((a, b) => b.legendaryCount - a.legendaryCount);
+        break;
+      case "pokedex":
       default:
-        ranked.sort((a, b) => b.totalExp - a.totalExp);
+        ranked.sort((a, b) => b.pokedexCount - a.pokedexCount);
     }
 
     res.json({ ranking: ranked });

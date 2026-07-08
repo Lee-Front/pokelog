@@ -1,15 +1,17 @@
 /**
  * 업적(Achievements) 시스템 — 커밋→성장 루프에 목표를 부여한다.
  *
- * 설계 원칙: 모든 조건은 **현재 유저 상태(+ PvP 전적)에서 지연 평가(lazy)** 로 파생한다.
- * 행동별 이벤트 트래커를 두지 않으므로(포획 카운터·전투 카운터 등 별도 상태 없음), 어떤 경로로
- * 상태가 바뀌든 재계산만으로 정확하다(견고·단순). GET /game/achievements 가 호출될 때마다
+ * 설계 원칙: 모든 조건은 **현재 유저 상태(+ PvP 전적 + 트레이드 성사 수)에서 지연 평가(lazy)** 로
+ * 파생한다. 행동별 이벤트 트래커를 유저 파일에 두지 않으므로(포획 카운터·전투 카운터 등 없음),
+ * 어떤 경로로 상태가 바뀌든 재계산만으로 정확하다(견고·단순). PvP 승수·트레이드 수만 예외로
+ * 다른 저장소(pvp-stats/trade)에서 조회해 주입한다. GET /game/achievements 가 호출될 때마다
  * evaluateAchievements가 미완료 업적을 검사해 충족분에 보상을 1회 지급한다(completedAchievements 가드).
  */
 import type { UserData } from "../../../../shared/types.js";
 import { incrementItem } from "./inventory-utils.js";
 
-export type AchievementCategory = "collection" | "growth" | "battle" | "boss" | "activity";
+export type AchievementCategory =
+  | "collection" | "growth" | "battle" | "boss" | "trade" | "economy";
 
 /** 업적 보상 — 포인트/게임머니/아이템(인벤토리 키·수량) 조합. 전부 선택. */
 export interface AchievementReward {
@@ -20,10 +22,12 @@ export interface AchievementReward {
 }
 
 /**
- * 업적 정의. current/met 는 유저 상태와 PvP 승수(pvpWins)만으로 파생하는 순수 함수다.
+ * 업적 정의. current/met 는 유저 상태 + PvP 승수(pvpWins) + 트레이드 성사 수(tradesCompleted)
+ * 만으로 파생하는 순수 함수다.
  *  - current: 진행도(카운트형=number, 조건형=boolean). UI 진행바/체크 표시에 쓴다.
  *  - met: 달성 여부. target 이 있으면 보통 `metric >= target`, 없으면 조건 boolean.
- * PvP 승수는 유저 파일에 없고 pvp-stats 저장소에서 오므로 두 번째 인자로 주입한다.
+ * PvP 승수·트레이드 수는 유저 파일이 아니라 각각 pvp-stats/trade 저장소에서 오므로
+ * evaluateAchievements가 별도로 조회해 인자로 주입한다.
  */
 export interface AchievementDef {
   id: string;
@@ -32,8 +36,8 @@ export interface AchievementDef {
   category: AchievementCategory;
   /** 카운트형 업적의 목표치(조건형 업적은 생략). */
   target?: number;
-  current(user: UserData, pvpWins: number): number | boolean;
-  met(user: UserData, pvpWins: number): boolean;
+  current(user: UserData, pvpWins: number, tradesCompleted: number): number | boolean;
+  met(user: UserData, pvpWins: number, tradesCompleted: number): boolean;
   reward: AchievementReward;
 }
 
@@ -112,6 +116,22 @@ function bossDefeatTotal(user: UserData): number {
 function bossFirstPlaceTotal(user: UserData): number {
   return typeof user.bossFirstPlaceTotal === "number" ? user.bossFirstPlaceTotal : 0;
 }
+/** 보유 개체(파티풀 ∪ 보관함) 중 테라스탈 타입이 설정된(=테라스탈을 해본) 개체가 있으면 true. */
+function hasTeraExperience(user: UserData): boolean {
+  const owned = [
+    ...(Array.isArray(user.pokemon) ? user.pokemon : []),
+    ...(Array.isArray(user.storage) ? user.storage : []),
+  ];
+  return owned.some((p) => !!p.teraType);
+}
+/** 보유 개체(파티풀 ∪ 보관함) 중 포켓루스에 감염된 개체가 있으면 true. */
+function hasPokerus(user: UserData): boolean {
+  const owned = [
+    ...(Array.isArray(user.pokemon) ? user.pokemon : []),
+    ...(Array.isArray(user.storage) ? user.storage : []),
+  ];
+  return owned.some((p) => p.pokerus === true);
+}
 
 /**
  * 업적 정의 목록(SSOT). 카테고리별로 묶어 선언 순서대로 UI에 노출된다.
@@ -175,7 +195,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     category: "collection",
     current: (u) => hasShiny(u),
     met: (u) => hasShiny(u),
-    reward: { points: 1000, item: { id: "leftovers", qty: 1 } },
+    reward: { points: 1500 },
   },
   {
     id: "catch-200",
@@ -195,7 +215,27 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     target: 3,
     current: (u) => shinyCount(u),
     met: (u) => shinyCount(u) >= 3,
-    reward: { points: 2500, item: { id: "wise-glasses", qty: 1 } },
+    reward: { points: 3000 },
+  },
+  {
+    id: "catch-300",
+    name: "그랜드 마스터",
+    description: "포켓몬 300종을 도감에 등록한다.",
+    category: "collection",
+    target: 300,
+    current: (u) => pokedexCount(u),
+    met: (u) => pokedexCount(u) >= 300,
+    reward: { points: 7000, item: { id: "masterball", qty: 1 } },
+  },
+  {
+    id: "seen-300",
+    name: "대탐험가",
+    description: "포켓몬 300종을 발견한다(만난 적 있음).",
+    category: "collection",
+    target: 300,
+    current: (u) => seenCount(u),
+    met: (u) => seenCount(u) >= 300,
+    reward: { points: 2500 },
   },
 
   // ── 육성(growth) ─────────────────────────────────────────────────
@@ -256,7 +296,25 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     target: 255,
     current: (u) => maxFriendship(u),
     met: (u) => maxFriendship(u) >= 255,
-    reward: { points: 1500, item: { id: "leftovers", qty: 1 } },
+    reward: { points: 2000 },
+  },
+  {
+    id: "tera-first",
+    name: "테라스탈 입문",
+    description: "테라스탈을 경험한 포켓몬을 손에 넣는다.",
+    category: "growth",
+    current: (u) => hasTeraExperience(u),
+    met: (u) => hasTeraExperience(u),
+    reward: { points: 800 },
+  },
+  {
+    id: "pokerus-carrier",
+    name: "포켓루스 보균자",
+    description: "포켓루스에 감염된 포켓몬을 손에 넣는다.",
+    category: "growth",
+    current: (u) => hasPokerus(u),
+    met: (u) => hasPokerus(u),
+    reward: { points: 500 },
   },
 
   // ── 대전(battle) ─────────────────────────────────────────────────
@@ -287,7 +345,17 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     target: 25,
     current: (_u, pvpWins) => pvpWins,
     met: (_u, pvpWins) => pvpWins >= 25,
-    reward: { points: 5000, gameMoney: 2500, item: { id: "expert-belt", qty: 1 } },
+    reward: { points: 6000, gameMoney: 2500 },
+  },
+  {
+    id: "pvp-50-wins",
+    name: "PvP 그랜드마스터",
+    description: "유저 대전(PvP)에서 50승을 달성한다.",
+    category: "battle",
+    target: 50,
+    current: (_u, pvpWins) => pvpWins,
+    met: (_u, pvpWins) => pvpWins >= 50,
+    reward: { points: 9000, gameMoney: 4000 },
   },
 
   // ── 주간보스(boss) ────────────────────────────────────────────────
@@ -318,7 +386,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     target: 20,
     current: (u) => bossDefeatTotal(u),
     met: (u) => bossDefeatTotal(u) >= 20,
-    reward: { points: 6000, gameMoney: 3000, item: { id: "focus-sash", qty: 1 } },
+    reward: { points: 7000, gameMoney: 3000 },
   },
   {
     id: "boss-first-place-1",
@@ -337,15 +405,47 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     target: 5,
     current: (u) => bossFirstPlaceTotal(u),
     met: (u) => bossFirstPlaceTotal(u) >= 5,
-    reward: { points: 5000, item: { id: "muscle-band", qty: 1 } },
+    reward: { points: 6000 },
   },
 
-  // ── 활동(activity) ───────────────────────────────────────────────
+  // ── 트레이드(trade) ──────────────────────────────────────────────
+  // 트레이드 성사 수는 유저 파일이 아니라 trade-store(활성+아카이브)에서 세어 주입한다.
+  {
+    id: "trade-first",
+    name: "첫 거래",
+    description: "다른 유저와 트레이드를 처음으로 성사한다.",
+    category: "trade",
+    current: (_u, _pvpWins, tradesCompleted) => tradesCompleted >= 1,
+    met: (_u, _pvpWins, tradesCompleted) => tradesCompleted >= 1,
+    reward: { points: 500 },
+  },
+  {
+    id: "trade-10",
+    name: "거래상",
+    description: "트레이드를 통산 10회 성사한다.",
+    category: "trade",
+    target: 10,
+    current: (_u, _pvpWins, tradesCompleted) => tradesCompleted,
+    met: (_u, _pvpWins, tradesCompleted) => tradesCompleted >= 10,
+    reward: { points: 2000, gameMoney: 300 },
+  },
+  {
+    id: "trade-25",
+    name: "거래의 달인",
+    description: "트레이드를 통산 25회 성사한다.",
+    category: "trade",
+    target: 25,
+    current: (_u, _pvpWins, tradesCompleted) => tradesCompleted,
+    met: (_u, _pvpWins, tradesCompleted) => tradesCompleted >= 25,
+    reward: { points: 5000, item: { id: "linking-cord", qty: 1 } },
+  },
+
+  // ── 경제(economy) ────────────────────────────────────────────────
   {
     id: "points-10k",
     name: "포인트 부자",
     description: "포인트를 10,000 이상 보유한다.",
-    category: "activity",
+    category: "economy",
     target: 10_000,
     current: (u) => u.points ?? 0,
     met: (u) => (u.points ?? 0) >= 10_000,
@@ -355,7 +455,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     id: "points-100k",
     name: "포인트 거부",
     description: "포인트를 100,000 이상 보유한다.",
-    category: "activity",
+    category: "economy",
     target: 100_000,
     current: (u) => u.points ?? 0,
     met: (u) => (u.points ?? 0) >= 100_000,
@@ -365,17 +465,27 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     id: "game-money-50k",
     name: "게임머니 갑부",
     description: "게임머니를 50,000 이상 보유한다.",
-    category: "activity",
+    category: "economy",
     target: 50_000,
     current: (u) => u.gameMoney ?? 0,
     met: (u) => (u.gameMoney ?? 0) >= 50_000,
     reward: { points: 1500 },
   },
   {
+    id: "game-money-200k",
+    name: "게임머니 재벌",
+    description: "게임머니를 200,000 이상 보유한다.",
+    category: "economy",
+    target: 200_000,
+    current: (u) => u.gameMoney ?? 0,
+    met: (u) => (u.gameMoney ?? 0) >= 200_000,
+    reward: { points: 5000, item: { id: "ability-capsule", qty: 1 } },
+  },
+  {
     id: "inventory-collector",
     name: "가방 정리의 달인",
     description: "인벤토리 아이템을 합계 100개 이상 보유한다.",
-    category: "activity",
+    category: "economy",
     target: 100,
     current: (u) => inventoryTotalCount(u),
     met: (u) => inventoryTotalCount(u) >= 100,
@@ -417,7 +527,11 @@ export interface EvaluateResult {
  *
  * 순수하지 않다(user를 in-place 변형). 호출부는 newlyCompleted가 있으면 saveUser로 영속하면 된다.
  */
-export function evaluateAchievements(user: UserData, pvpWins: number): EvaluateResult {
+export function evaluateAchievements(
+  user: UserData,
+  pvpWins: number,
+  tradesCompleted = 0,
+): EvaluateResult {
   if (!Array.isArray(user.completedAchievements)) user.completedAchievements = [];
   const completed = new Set(user.completedAchievements);
   const newlyCompleted: string[] = [];
@@ -425,7 +539,7 @@ export function evaluateAchievements(user: UserData, pvpWins: number): EvaluateR
 
   for (const def of ACHIEVEMENTS) {
     if (completed.has(def.id)) continue;
-    if (!def.met(user, pvpWins)) continue;
+    if (!def.met(user, pvpWins, tradesCompleted)) continue;
 
     const { reward } = def;
     if (reward.points) {
@@ -454,7 +568,7 @@ export function evaluateAchievements(user: UserData, pvpWins: number): EvaluateR
     description: def.description,
     category: def.category,
     ...(def.target !== undefined ? { target: def.target } : {}),
-    current: def.current(user, pvpWins),
+    current: def.current(user, pvpWins, tradesCompleted),
     completed: completed.has(def.id),
     reward: def.reward,
   }));

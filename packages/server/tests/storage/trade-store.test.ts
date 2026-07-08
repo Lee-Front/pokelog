@@ -105,4 +105,65 @@ describe("trade-store", () => {
       expect(archived.some((t) => t.id === `a-${i}`)).toBe(true);
     }
   });
+
+  it("getCompletedTradeCount counts accepted trades where the user was requester or responder, across active + archive", async () => {
+    const pendingTrade: TradeRecord = {
+      id: "pending-1",
+      requesterUserId: "alice",
+      requesterPokemonUid: "a1",
+      responderUserId: "bob",
+      responderPokemonUid: "b1",
+      status: "pending",
+      createdAt: "2026-04-13T00:00:00.000Z",
+      updatedAt: "2026-04-13T00:00:00.000Z",
+    };
+    const rejectedTrade: TradeRecord = {
+      ...pendingTrade,
+      id: "rejected-1",
+      status: "rejected",
+      resolvedAt: "2026-04-13T00:00:01.000Z",
+    };
+    const aliceAsRequester: TradeRecord = {
+      id: "acc-1",
+      requesterUserId: "alice",
+      requesterPokemonUid: "a2",
+      responderUserId: "carol",
+      responderPokemonUid: "c1",
+      status: "accepted",
+      createdAt: "2026-04-13T00:00:02.000Z",
+      updatedAt: "2026-04-13T00:00:02.000Z",
+      resolvedAt: "2026-04-13T00:00:02.000Z",
+    };
+    const aliceAsResponder: TradeRecord = {
+      id: "acc-2",
+      requesterUserId: "dave",
+      requesterPokemonUid: "d1",
+      responderUserId: "alice",
+      responderPokemonUid: "a3",
+      status: "accepted",
+      createdAt: "2026-04-13T00:00:03.000Z",
+      updatedAt: "2026-04-13T00:00:03.000Z",
+      resolvedAt: "2026-04-13T00:00:03.000Z",
+    };
+    await tradeStoreModule.saveTrades([pendingTrade, rejectedTrade, aliceAsRequester, aliceAsResponder]);
+
+    // 아카이브에도 alice가 참여한 성사 트레이드 하나를 직접 심는다(MAX_RESOLVED_TRADES 초과분 흉내).
+    const archivePath = path.join(tmpDir, "trades", "trades-archive.json");
+    fs.mkdirSync(path.dirname(archivePath), { recursive: true });
+    fs.writeFileSync(archivePath, JSON.stringify([{
+      id: "archived-1",
+      requesterUserId: "alice",
+      requesterPokemonUid: "a4",
+      responderUserId: "eve",
+      responderPokemonUid: "e1",
+      status: "accepted",
+      createdAt: "2026-03-01T00:00:00.000Z",
+      updatedAt: "2026-03-01T00:00:00.000Z",
+      resolvedAt: "2026-03-01T00:00:00.000Z",
+    } satisfies TradeRecord]));
+
+    expect(await tradeStoreModule.getCompletedTradeCount("alice")).toBe(3);
+    expect(await tradeStoreModule.getCompletedTradeCount("bob")).toBe(0); // pending만 관여, 성사 아님
+    expect(await tradeStoreModule.getCompletedTradeCount("nobody")).toBe(0);
+  });
 });

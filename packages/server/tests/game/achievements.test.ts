@@ -92,8 +92,8 @@ describe("evaluateAchievements", () => {
     expect(user.completedAchievements).toEqual(["first-catch", "catch-10"]);
   });
 
-  it("아이템 보상은 인벤토리에 정확한 수량으로 적립된다", () => {
-    // 도감 100종(catch-100 → ultraball x5), 이로치 보유(shiny-trainer → leftovers x1),
+  it("아이템 보상은 인벤토리에 정확한 수량으로 적립된다(전부 소모품 — 지닌물건류는 없음)", () => {
+    // 도감 100종(catch-100 → ultraball x5), 이로치 보유(shiny-trainer → 포인트만),
     // 레벨 100 개체(max-level-50 + max-level-100 → ability-patch x1).
     const user = makeUser({
       pokedex: speciesList(100),
@@ -107,15 +107,19 @@ describe("evaluateAchievements", () => {
     expect(newlyCompleted).toContain("shiny-trainer");
     expect(newlyCompleted).toContain("max-level-100");
     expect(user.inventory.ultraball).toBe(5);
-    expect(user.inventory.leftovers).toBe(1);
     expect(user.inventory["ability-patch"]).toBe(1);
     expect(rewardsGranted.items).toEqual(
       expect.arrayContaining([
         { id: "ultraball", qty: 5 },
-        { id: "leftovers", qty: 1 },
         { id: "ability-patch", qty: 1 },
       ]),
     );
+    // 지닌물건류(leftovers/wise-glasses/focus-sash/muscle-band/expert-belt)는 어떤 업적에서도 보상으로
+    // 지급되지 않는다 — 아이템 보상은 소모품(볼/특성캡슐·패치/교환의끈 등)만 준다.
+    const heldItemIds = new Set(["leftovers", "wise-glasses", "focus-sash", "muscle-band", "expert-belt"]);
+    for (const def of ACHIEVEMENTS) {
+      if (def.reward.item) expect(heldItemIds.has(def.reward.item.id)).toBe(false);
+    }
   });
 
   it("PvP 승수 기반 업적은 주입된 pvpWins 로 평가된다", () => {
@@ -172,5 +176,47 @@ describe("evaluateAchievements", () => {
     expect(newlyCompleted).toContain("perfect-iv");
     expect(newlyCompleted).toContain("best-friend");
     expect(newlyCompleted).not.toContain("team-level-300"); // 100 < 300
+  });
+
+  it("테라스탈 경험·포켓루스 보균 개체로 growth 업적을 지급한다", () => {
+    const user = makeUser({
+      storage: [
+        makePokemon({ uid: "tera-1", teraType: "fire" }),
+        makePokemon({ uid: "rus-1", pokerus: true }),
+      ],
+    });
+    const { newlyCompleted } = evaluateAchievements(user, 0);
+    expect(newlyCompleted).toContain("tera-first");
+    expect(newlyCompleted).toContain("pokerus-carrier");
+  });
+
+  it("트레이드 성사 수(3번째 인자)로 trade 카테고리 업적을 지급한다", () => {
+    const zero = evaluateAchievements(makeUser(), 0, 0);
+    expect(zero.newlyCompleted).not.toContain("trade-first");
+
+    const user = makeUser();
+    const { newlyCompleted, list } = evaluateAchievements(user, 0, 10);
+    expect(newlyCompleted).toEqual(
+      expect.arrayContaining(["trade-first", "trade-10"]),
+    );
+    expect(newlyCompleted).not.toContain("trade-25");
+    expect(list.find((a) => a.id === "trade-10")?.current).toBe(10);
+  });
+
+  it("tradesCompleted 미지정 시 기본값 0으로 평가된다(트레이드 업적 미달성)", () => {
+    const { newlyCompleted } = evaluateAchievements(makeUser(), 0);
+    expect(newlyCompleted).not.toContain("trade-first");
+  });
+
+  it("포인트/게임머니/인벤토리 업적은 economy 카테고리다(activity 카테고리는 더 이상 없음)", () => {
+    expect(ACHIEVEMENTS.some((a) => a.category === "activity")).toBe(false);
+    const pointsAch = ACHIEVEMENTS.find((a) => a.id === "points-10k");
+    expect(pointsAch?.category).toBe("economy");
+
+    const user = makeUser({ gameMoney: 200_000 });
+    const { newlyCompleted } = evaluateAchievements(user, 0);
+    expect(newlyCompleted).toEqual(
+      expect.arrayContaining(["game-money-50k", "game-money-200k"]),
+    );
   });
 });
