@@ -52,22 +52,40 @@ function makeUser(active: OwnedPokemon): UserData {
 
 beforeEach(() => clearAllCaches());
 
+// 본가 5세대 스케일링 공식을 그대로 재현하는 기대값 헬퍼.
+function expectedExpFor(baseExp: number, faintedLevel: number, winnerLevel: number, mult: number) {
+  const scale = Math.pow((2 * faintedLevel + 10) / (faintedLevel + winnerLevel + 10), 2.5);
+  return Math.floor(((baseExp * faintedLevel) / 5) * scale * mult) + 1;
+}
+
 describe("calculateBattleExp", () => {
-  it("uses the main-series formula floor(baseExp * level / 7)", () => {
-    const baseExp = getSpeciesByName("charizard")!.baseExpYield!;
-    expect(calculateBattleExp({ species: "charizard", level: 30 }, config)).toBe(
-      Math.floor((baseExp * 30) / 7),
+  it("uses the gen-5 scaled formula floor(baseExp*L/5 * scale) + 1", () => {
+    const b = getSpeciesByName("charizard")!.baseExpYield!;
+    // 동레벨(30 vs 30) → 스케일 항 = 1
+    expect(calculateBattleExp({ species: "charizard", level: 30 }, 30, config)).toBe(
+      expectedExpFor(b, 30, 30, config.expMultiplier),
     );
   });
 
+  it("scales by winner level: under-leveled > equal > over-leveled", () => {
+    const wild = { species: "charizard", level: 40 } as const;
+    const under = calculateBattleExp(wild, 5, config); // 내 레벨이 낮음 → 보너스
+    const equal = calculateBattleExp(wild, 40, config); // 동레벨 → 기준
+    const over = calculateBattleExp(wild, 60, config); // 내 레벨이 높음 → 페널티
+    expect(under).toBeGreaterThan(equal);
+    expect(equal).toBeGreaterThan(over);
+  });
+
   it("scales by expMultiplier", () => {
+    const b = getSpeciesByName("pidgey")!.baseExpYield!;
     const doubled = { ...config, expMultiplier: 2 };
-    const base = calculateBattleExp({ species: "pidgey", level: 10 }, config);
-    expect(calculateBattleExp({ species: "pidgey", level: 10 }, doubled)).toBe(base * 2);
+    expect(calculateBattleExp({ species: "pidgey", level: 10 }, 10, doubled)).toBe(
+      expectedExpFor(b, 10, 10, 2),
+    );
   });
 
   it("returns 0 for an unknown species (no base exp)", () => {
-    expect(calculateBattleExp({ species: "not-a-pokemon", level: 50 }, config)).toBe(0);
+    expect(calculateBattleExp({ species: "not-a-pokemon", level: 50 }, 50, config)).toBe(0);
   });
 });
 
@@ -117,7 +135,7 @@ describe("grantBattleRewards", () => {
       { random: () => 0, now: new Date("2026-01-01T12:00:00Z") }, // roll 0 → potion drop
     );
 
-    const expectedExp = calculateBattleExp({ species: "pidgey", level: 10 }, config);
+    const expectedExp = calculateBattleExp({ species: "pidgey", level: 10 }, 30, config); // winner Lv30
     expect(rewards.exp).toBe(expectedExp);
     expect(winner.exp).toBe(startExp + expectedExp);
     expect(rewards.gameMoney).toBe(calculateBattleMoney(10, config));
@@ -161,7 +179,7 @@ describe("grantBattleRewards", () => {
       { random: () => 0, now: new Date("2026-01-01T12:00:00Z"), includeSpoils: false },
     );
 
-    const expectedExp = calculateBattleExp({ species: "pidgey", level: 10 }, config);
+    const expectedExp = calculateBattleExp({ species: "pidgey", level: 10 }, 40, config); // winner Lv40
     expect(rewards.exp).toBe(expectedExp); // 경험치는 격파(KO)와 동일
     expect(winner.exp).toBe(startExp + expectedExp);
     expect(rewards.gameMoney).toBe(0); // 상금 없음
@@ -186,7 +204,7 @@ describe("grantBattleRewards participant EXP (classic, gen-6+)", () => {
 
     const rewards = grantBattleRewards(user, [p1, p2], wild, config, opts);
 
-    const fullExp = calculateBattleExp(wild, config);
+    const fullExp = calculateBattleExp(wild, 40, config);
     expect(rewards.exp).toBe(fullExp);
     expect(p1.exp).toBe(start1 + fullExp);
     expect(p2.exp).toBe(start2 + fullExp); // 분배 없이 둘 다 풀
@@ -205,7 +223,7 @@ describe("grantBattleRewards participant EXP (classic, gen-6+)", () => {
 
     const rewards = grantBattleRewards(user, [solo], wild, config, opts);
 
-    const fullExp = calculateBattleExp(wild, config);
+    const fullExp = calculateBattleExp(wild, 40, config);
     expect(solo.exp).toBe(start + fullExp);
     expect(rewards.partyExp).toHaveLength(1);
     expect(rewards.partyExp?.[0].uid).toBe(solo.uid);
@@ -259,7 +277,7 @@ describe("grantBattleRewards Exp Share (benched party members)", () => {
 
     const rewards = grantBattleRewards(user, [active], wild, config, opts);
 
-    const fullExp = calculateBattleExp(wild, config);
+    const fullExp = calculateBattleExp(wild, 40, config);
     const sharedExp = Math.floor(fullExp * config.expShareRatio);
     expect(sharedExp).toBeGreaterThan(0);
 

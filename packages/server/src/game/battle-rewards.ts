@@ -19,14 +19,25 @@ import type {
 /** 승리 후 미감염 참여자가 포켓루스에 감염될 확률(본가 1/3 대비 보수적). */
 export const POKERUS_INFECTION_CHANCE = 0.03;
 
-/** EXP yield using the main-series formula: floor(baseExp * level / 7) * multiplier. */
+/**
+ * EXP yield — 본가 5세대+ 스케일링 공식. 쓰러진(야생) 레벨과 **경험치를 받는 포켓몬의
+ * 레벨** 둘 다에 의존한다:
+ *   floor( baseExp × L / 5 × ((2L+10)/(L+Lp+10))^2.5 × expMultiplier ) + 1
+ * 여기서 L = 쓰러진 레벨, Lp = 획득 포켓몬 레벨. 내 레벨이 낮으면 보너스(스케일 > 1),
+ * 높으면 페널티(< 1), 같으면 정확히 1이다. (구 1~4세대식 baseExp×L/7 은 승자 레벨을
+ * 무시했다 — 동레벨 전투가 체감상 너무 짜던 문제를 이 스케일링이 해소한다.)
+ */
 export function calculateBattleExp(
   wild: Pick<WildPokemon, "species" | "level">,
+  winnerLevel: number,
   config: BattleRewardConfig,
 ): number {
   const baseExpYield = getSpeciesByName(wild.species)?.baseExpYield ?? 0;
-  const raw = (baseExpYield * wild.level) / 7;
-  return Math.max(0, Math.floor(raw * config.expMultiplier));
+  if (baseExpYield <= 0) return 0;
+  const L = wild.level;
+  const scaling = Math.pow((2 * L + 10) / (L + winnerLevel + 10), 2.5);
+  const raw = ((baseExpYield * L) / 5) * scaling * config.expMultiplier;
+  return Math.floor(raw) + 1;
 }
 
 /** Battle money from a win, approximating main-series trainer prize money by level. */
@@ -100,9 +111,9 @@ function grantExpToMember(
 /**
  * Grant all wild-battle win rewards to the user, mutating `user` in place. EXP
  * is distributed the classic (gen-6+) way: every Pokemon that *participated*
- * (was sent out during the battle) and is still alive (hp>0) earns the FULL
- * yield — no division. Fainted (hp<=0) participants earn nothing. A single-
- * Pokemon battle therefore behaves exactly as before. `participants[0]` is the
+ * (was sent out during the battle) and is still alive (hp>0) earns its full
+ * (per-level scaled) yield — no division among participants. Fainted (hp<=0)
+ * participants earn nothing. `participants[0]` is the
  * headline (winner) used for the back-compat scalar reward fields.
  * Returns the reward summary for the battle action response.
  */
@@ -119,7 +130,6 @@ export function grantBattleRewards(
   // (본가: 잡으면 상금 없음). 기본 true — 격파(KO) 경로의 동작은 그대로 유지된다.
   const includeSpoils = options.includeSpoils ?? true;
 
-  const exp = calculateBattleExp(wild, config);
   const gameMoney = includeSpoils ? calculateBattleMoney(wild.level, config) : 0;
   const drop = includeSpoils ? rollItemDrop(config, random) : null;
 
@@ -150,7 +160,9 @@ export function grantBattleRewards(
             Object.entries(baseYield).map(([key, value]) => [key, (value ?? 0) * mult]),
           ) as Partial<PokemonEVs>);
     member.evs = applyEvGain(member.evs ?? emptyEvs(), evGain);
-    const summary = grantExpToMember(user, member, exp, party, now);
+    // 본가 5세대식: 참여자 각자의 레벨로 스케일해 EXP 계산(언더레벨 보너스/오버레벨 페널티).
+    const memberExp = calculateBattleExp(wild, member.level, config);
+    const summary = grantExpToMember(user, member, memberExp, party, now);
     if (!summary.leveledUp) {
       // 레벨업 재계산이 없었으므로 EV 증가분을 지금 반영한다(현재 HP 보존, 클램프).
       const recomputed = buildStatsForPokemon(member);
@@ -167,15 +179,15 @@ export function grantBattleRewards(
   // RNG를 전혀 쓰지 않으므로 아래 포켓루스 롤의 시퀀스를 교란하지 않고, 요약도 참여자 뒤에 붙어
   // partyExp[0](헤드라인)은 여전히 첫 참여자로 유지된다.
   const shareRatio = config.expShareRatio ?? 0.5;
-  if (shareRatio > 0 && exp > 0) {
+  if (shareRatio > 0) {
     const participantUids = new Set(participants.map((p) => p.uid));
-    const sharedExp = Math.floor(exp * shareRatio);
-    if (sharedExp > 0) {
-      for (const member of party) {
-        if (participantUids.has(member.uid) || member.hp <= 0) continue;
-        const summary = grantExpToMember(user, member, sharedExp, party, now);
-        partyExp.push(summary);
-      }
+    for (const member of party) {
+      if (participantUids.has(member.uid) || member.hp <= 0) continue;
+      // 벤치원도 본인 레벨로 스케일한 뒤 shareRatio 배(학습장치식).
+      const sharedExp = Math.floor(calculateBattleExp(wild, member.level, config) * shareRatio);
+      if (sharedExp <= 0) continue;
+      const summary = grantExpToMember(user, member, sharedExp, party, now);
+      partyExp.push(summary);
     }
   }
 
@@ -192,7 +204,7 @@ export function grantBattleRewards(
   // 헤드라인(winner) — 첫 살아있는 참여자. 전원 기절 같은 예외는 participants[0]로 폴백.
   const headline = partyExp[0];
   return {
-    exp,
+    exp: headline?.exp ?? 0,
     gameMoney,
     droppedItems,
     leveledUp: headline?.leveledUp ?? false,
