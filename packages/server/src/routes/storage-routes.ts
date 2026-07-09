@@ -197,3 +197,45 @@ storageRoutes.post("/pokemon/release-many", async (req: AuthRequest, res: Respon
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
   }
 });
+
+// 파티에서 여러 마리를 한번에 보관함으로 맡긴다. 선택한 uid가 전부 현재 파티 소속이어야
+// 하고(보관함에 이미 있는 걸 또 맡기는 건 무의미하므로 하나라도 파티 밖이면 전부 거부),
+// 옮긴 뒤 파티에 최소 1마리는 남아야 한다(release-many와 동일한 전멸 방지 규칙).
+storageRoutes.post("/storage/deposit-many", async (req: AuthRequest, res: Response) => {
+  try {
+    const { uids } = req.body as { uids?: unknown };
+    if (!Array.isArray(uids) || uids.length === 0 || !uids.every((u) => typeof u === "string")) {
+      res.status(400).json({ error: "옮길 포켓몬 uid 배열을 입력해주세요" });
+      return;
+    }
+
+    const user = await getUser(req.userId!);
+    if (!user) {
+      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+      return;
+    }
+
+    const uidSet = new Set<string>(uids as string[]);
+    const notInParty = [...uidSet].filter((u) => !user.party.includes(u));
+    if (notInParty.length > 0) {
+      res.status(400).json({ error: "파티에 있는 포켓몬만 맡길 수 있습니다" });
+      return;
+    }
+
+    const remainingParty = user.party.filter((u) => !uidSet.has(u));
+    if (remainingParty.length === 0) {
+      res.status(400).json({ error: "파티에 최소 1마리는 남아야 합니다" });
+      return;
+    }
+
+    const moving = user.pokemon.filter((p) => uidSet.has(p.uid));
+    user.pokemon = user.pokemon.filter((p) => !uidSet.has(p.uid));
+    user.storage.push(...moving);
+    user.party = remainingParty;
+    await saveUser(user);
+    res.json({ deposited: moving.map((p) => p.uid) });
+  } catch (err) {
+    log.error({ err }, "Deposit-many error");
+    res.status(500).json({ error: "서버 오류가 발생했습니다" });
+  }
+});

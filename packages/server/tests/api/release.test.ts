@@ -165,3 +165,90 @@ describe("POST /api/game/pokemon/release-many", () => {
     expect(notArray.status).toBe(400);
   });
 });
+
+// POST /game/storage/deposit-many — 파티에서 여러 마리를 한번에 보관함으로 맡기기
+describe("POST /api/game/storage/deposit-many", () => {
+  let app: TestApp;
+
+  beforeAll(async () => {
+    app = await setupTestApp();
+  });
+
+  afterAll(() => {
+    app.cleanup();
+  });
+
+  async function givePokemon(userId: string, species = "pidgey"): Promise<string> {
+    const res = await app.admin().post("/api/admin/test/give-pokemon", {
+      userId,
+      species,
+      level: 5,
+    });
+    expect(res.status).toBe(200);
+    return (res.body as { pokemon: { uid: string } }).pokemon.uid;
+  }
+
+  it("파티 여러 마리를 한번에 보관함으로 옮긴다", async () => {
+    const { token, userId } = await app.registerAndLogin();
+    const a = await givePokemon(userId);
+    const b = await givePokemon(userId); // 파티 3마리(스타터 + a + b)
+
+    const res = await app.authed(token).post("/api/game/storage/deposit-many", { uids: [a, b] });
+    expect(res.status).toBe(200);
+    expect((res.body as { deposited: string[] }).deposited.sort()).toEqual([a, b].sort());
+
+    const party = await app.authed(token).get("/api/game/party");
+    expect((party.body as { party: { uid: string }[] }).party).toHaveLength(1);
+
+    const storage = await app.authed(token).get("/api/game/storage");
+    const storageUids = (storage.body as { storage: { uid: string }[] }).storage.map((p) => p.uid);
+    expect(storageUids).toEqual(expect.arrayContaining([a, b]));
+  });
+
+  it("옮긴 뒤 파티가 0마리가 되면 전부 거부한다(부분 실행 없음)", async () => {
+    const { token, userId } = await app.registerAndLogin();
+    const a = await givePokemon(userId); // 파티 2마리(스타터 + a)
+    const party = await app.authed(token).get("/api/game/party");
+    const starterUid = (party.body as { party: { uid: string }[] }).party.find(
+      (p) => p.uid !== a,
+    )!.uid;
+
+    const res = await app
+      .authed(token)
+      .post("/api/game/storage/deposit-many", { uids: [a, starterUid] });
+    expect(res.status).toBe(400);
+    expect((res.body as { error: string }).error).toContain("최소 1마리");
+
+    // 거부됐으니 파티는 그대로 2마리.
+    const partyAfter = await app.authed(token).get("/api/game/party");
+    expect((partyAfter.body as { party: { uid: string }[] }).party).toHaveLength(2);
+  });
+
+  it("보관함에 이미 있는 uid가 섞이면(파티 소속 아님) 전부 거부한다", async () => {
+    const { token, userId } = await app.registerAndLogin();
+    const a = await givePokemon(userId); // 파티 2마리
+    const b = await givePokemon(userId);
+    await app.authed(token).post("/api/game/storage/deposit", { uid: b }); // b는 이제 보관함
+
+    const res = await app
+      .authed(token)
+      .post("/api/game/storage/deposit-many", { uids: [a, b] });
+    expect(res.status).toBe(400);
+    expect((res.body as { error: string }).error).toContain("파티에 있는");
+
+    // 거부됐으니 a는 여전히 파티에 남아 있어야 한다.
+    const party = await app.authed(token).get("/api/game/party");
+    expect((party.body as { party: { uid: string }[] }).party.map((p) => p.uid)).toContain(a);
+  });
+
+  it("빈 배열이나 배열이 아닌 값은 400", async () => {
+    const { token } = await app.registerAndLogin();
+    const empty = await app.authed(token).post("/api/game/storage/deposit-many", { uids: [] });
+    expect(empty.status).toBe(400);
+
+    const notArray = await app
+      .authed(token)
+      .post("/api/game/storage/deposit-many", { uids: "not-an-array" });
+    expect(notArray.status).toBe(400);
+  });
+});
