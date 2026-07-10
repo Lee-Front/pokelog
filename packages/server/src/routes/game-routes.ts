@@ -7,7 +7,9 @@ import { getConfig } from "../storage/config-store.js";
 import { getAllSpecies, createWildPokemon, createPokemon } from "../game/pokemon-factory.js";
 import { selectFromEncounters, splitEncounters } from "../game/encounter.js";
 import { createEncounterEvent } from "../game/event-factory.js";
-import { getRegion, getRegionNames, getSpeciesByName, getAbilityById } from "../game/data-loader.js";
+import { getRegion, getRegionNames, getSpeciesByName, getAbilityById, isWildSpecies, regionSpeciesList } from "../game/data-loader.js";
+import { rollRegionEncounters } from "../game/wild-roll.js";
+import { startWildBattle } from "./battle-routes.js";
 import { buildLevelEvolutionContext, getEvolutionBranchDiagnostics, getRelearnableMoves, applyMoveRelearn, getTeachableMoves, applyMoveTeach } from "../game/growth.js";
 import { getAvailableEvolutionOptions, prunePendingEvolutions } from "../game/pending-evolution.js";
 import { findPokemonByUid, getPartyPokemon, getDisplaySpeciesName } from "../game/pokemon-state.js";
@@ -183,25 +185,20 @@ gameRoutes.post("/wild/search", async (req: AuthRequest, res: Response) => {
 
     // 야생 레벨 파티 스케일링 — 파티 최고 레벨 기준 ±variance로 뽑는다(플래그 켜짐 + 파티 보유 시).
     // 종 선택은 그대로(가중 추첨)이고 레벨만 스케일된다. 파티가 비었으면 undefined로 둬서 지역
-    // levelRange 균등 롤(종 자연 레벨대)로 폴백한다.
+    // levelRange 균등 롤(종 자연 레벨대)로 폴백한다. (전설 주입용 scaling만 여기서 계산 — 일반
+    // 풀 배치는 rollRegionEncounters가 동일 로직으로 자체 계산한다.)
     const party = getPartyPokemon(user);
     const partyMaxLevel = party.reduce((max, p) => Math.max(max, p.level), 0);
     const scaling = config.battle.wildLevelScaling && partyMaxLevel > 0
       ? { partyMaxLevel, variance: config.battle.wildLevelVariance }
       : undefined;
 
-    // 전설/환상은 일반 가중 추첨에서 제외한다 — 일반 풀에서만 rollCount 배치를 뽑는다.
-    const { normal: normalPool, legendary: legendaryPool } = splitEncounters(regionData);
+    // rollCount만큼 일반 조우를 생성한다(자동 탐색과 공유하는 순수 롤 함수).
+    const newBatch = await rollRegionEncounters(user, rollCount);
 
-    // rollCount만큼 일반 조우를 생성한다.
-    const newBatch = Array.from({ length: rollCount }, () => {
-      const pick = selectFromEncounters(normalPool, Math.random, scaling);
-      const wildPokemon = createWildPokemon(pick.species, pick.level);
-      return createEncounterEvent(wildPokemon);
-    });
-
-    // 게이팅된 전설 주입 — 롤 1회당 확률적으로 슬롯 하나를 지역 전설로 교체한다(최대 1마리, 쿨다운 없음).
+    // 게이팅된 전설 주입(수동 전용) — 롤 1회당 확률적으로 슬롯 하나를 지역 전설로 교체한다(최대 1마리, 쿨다운 없음).
     // 전설도 레벨은 스케일되지만 자기 levelRange[0] 하한으로 클램프돼 밴드 아래로는 내려가지 않는다.
+    const { legendary: legendaryPool } = splitEncounters(regionData);
     if (legendaryPool.length && Math.random() < config.rewards.encounter.wildLegendaryChance) {
       const pick = selectFromEncounters(legendaryPool, Math.random, scaling);
       const legendary = createEncounterEvent(createWildPokemon(pick.species, pick.level));
@@ -218,6 +215,142 @@ gameRoutes.post("/wild/search", async (req: AuthRequest, res: Response) => {
     res.status(200).json({ events: newBatch, count: newBatch.length });
   } catch (err) {
     log.error({ err }, "Wild search error");
+    res.status(500).json({ error: "서버 오류가 발생했습니다" });
+  }
+});
+
+// === 자동 야생 탐색(관심 포켓몬 + 30분 보관) ===
+
+// 자동 탐색 현황 — 관심종·토글·보관함 + 현재 지역 출몰 종 목록(관심종 선택 UI용).
+gameRoutes.get("/interests", async (req: AuthRequest, res: Response) => {
+  try {
+    const user = await getUser(req.userId!);
+    if (!user) {
+      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+      return;
+    }
+
+    res.json({
+      interestSpecies: user.interestSpecies ?? [],
+      autoSearchEnabled: user.autoSearchEnabled ?? false,
+      storedEncounters: user.storedEncounters ?? [],
+      regionSpecies: regionSpeciesList(user.currentRegion ?? "default"),
+    });
+  } catch (err) {
+    log.error({ err }, "Interests get error");
+    res.status(500).json({ error: "서버 오류가 발생했습니다" });
+  }
+});
+
+// 관심종 저장 — 현재 지역 출몰 풀에 있는 종만 허용(중복 제거). 하나라도 그 지역 미출몰이면 400.
+gameRoutes.put("/interests", async (req: AuthRequest, res: Response) => {
+  try {
+    const { species } = req.body ?? {};
+    if (!Array.isArray(species)) {
+      res.status(400).json({ error: "관심 포켓몬 목록(species)이 필요합니다" });
+      return;
+    }
+
+    const user = await getUser(req.userId!);
+    if (!user) {
+      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+      return;
+    }
+
+    const region = user.currentRegion ?? "default";
+    for (const sp of species) {
+      if (typeof sp !== "string" || !isWildSpecies(sp, region)) {
+        res.status(400).json({ error: "해당 지역에 출몰하지 않는 종" });
+        return;
+      }
+    }
+
+    const interestSpecies = [...new Set(species as string[])];
+    user.interestSpecies = interestSpecies;
+    await saveUser(user);
+    res.json({ interestSpecies });
+  } catch (err) {
+    log.error({ err }, "Interests update error");
+    res.status(500).json({ error: "서버 오류가 발생했습니다" });
+  }
+});
+
+// 자동 탐색 토글 — 켤 때는 관심종이 최소 1마리 있어야 한다(없으면 400).
+gameRoutes.put("/auto-search", async (req: AuthRequest, res: Response) => {
+  try {
+    const { enabled } = req.body ?? {};
+    if (typeof enabled !== "boolean") {
+      res.status(400).json({ error: "enabled(boolean)가 필요합니다" });
+      return;
+    }
+
+    const user = await getUser(req.userId!);
+    if (!user) {
+      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+      return;
+    }
+
+    if (enabled && (user.interestSpecies ?? []).length === 0) {
+      res.status(400).json({ error: "관심 포켓몬을 먼저 등록하세요" });
+      return;
+    }
+
+    user.autoSearchEnabled = enabled;
+    await saveUser(user);
+    res.json({ autoSearchEnabled: enabled });
+  } catch (err) {
+    log.error({ err }, "Auto-search toggle error");
+    res.status(500).json({ error: "서버 오류가 발생했습니다" });
+  }
+});
+
+// 보관함 인카운터로 전투 시작 — 보관함에서 그 이벤트를 꺼내 pendingEvents로 옮긴 뒤(전투 종료
+// 정리 로직이 pendingEvents 기준이라 안전) 야생 전투를 연다. startWildBattle이 saveUser하므로
+// 이동도 함께 영속된다.
+gameRoutes.post("/stored/:id/battle", async (req: AuthRequest, res: Response) => {
+  try {
+    const { pokemonUid } = req.body ?? {};
+    if (typeof pokemonUid !== "string") {
+      res.status(400).json({ error: "포켓몬 UID를 입력해주세요" });
+      return;
+    }
+
+    const user = await getUser(req.userId!);
+    if (!user) {
+      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+      return;
+    }
+
+    if (user.battleState) {
+      res.status(400).json({ error: "이미 진행 중인 전투가 있습니다" });
+      return;
+    }
+
+    const stored = user.storedEncounters ?? [];
+    const event = stored.find((e) => e.id === req.params.id);
+    if (!event) {
+      res.status(404).json({ error: "보관된 인카운터를 찾을 수 없습니다" });
+      return;
+    }
+
+    const pokemon = user.pokemon.find((p) => p.uid === pokemonUid);
+    if (!pokemon) {
+      res.status(404).json({ error: "포켓몬을 찾을 수 없습니다" });
+      return;
+    }
+    if (pokemon.hp <= 0) {
+      res.status(400).json({ error: "기절한 포켓몬은 전투에 참여할 수 없습니다" });
+      return;
+    }
+
+    // 보관함에서 제거하고 pendingEvents로 이동(같은 user 객체 — startWildBattle의 saveUser가 함께 영속).
+    user.storedEncounters = stored.filter((e) => e.id !== event.id);
+    user.pendingEvents.push(event);
+
+    const { battleState, log: startLog } = await startWildBattle(user, event, pokemonUid);
+    res.json({ battleState, log: startLog });
+  } catch (err) {
+    log.error({ err }, "Stored encounter battle error");
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
   }
 });

@@ -473,6 +473,10 @@ function normalizeUserData(user: UserData): UserData {
     eggs: Array.isArray(user.eggs) ? user.eggs : [],
     pendingEvolutions,
     pendingMoveLearns,
+    // 자동 야생 탐색 상태 — 구 저장본(필드 없음)은 배열이 아니면 [], boolean이 아니면 false로 정규화.
+    interestSpecies: Array.isArray(user.interestSpecies) ? user.interestSpecies : [],
+    storedEncounters: Array.isArray(user.storedEncounters) ? user.storedEncounters : [],
+    autoSearchEnabled: typeof user.autoSearchEnabled === "boolean" ? user.autoSearchEnabled : false,
     integrations: Array.isArray(user.integrations)
       ? user.integrations.map(normalizeIntegration)
       : [],

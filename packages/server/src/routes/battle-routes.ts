@@ -8,7 +8,7 @@ import { attemptCapture, getCatchRate } from "../game/capture.js";
 import { wildPokemonToOwned } from "../game/pokemon-factory.js";
 import { getMoveById, getSpeciesByName } from "../game/data-loader.js";
 import { getZPower } from "../game/z-moves.js";
-import type { BattleHpFrame, BattleState, MoveData, OwnedPokemon, UserData } from "../../../../shared/types.js";
+import type { BattleHpFrame, BattleState, MoveData, OwnedPokemon, PendingEvent, UserData } from "../../../../shared/types.js";
 import { decrementItem, healPokemon, resolveShopItem, applyStatusCure } from "../game/inventory-utils.js";
 import { recordMoveUsage } from "../game/move-usage.js";
 import { grantBattleRewards } from "../game/battle-rewards.js";
@@ -172,6 +172,75 @@ async function finishWin(
   });
 }
 
+/**
+ * 야생 전투 시작 코어 — 이미 검증된 (event, pokemonUid)로 battleState를 만들어 user에 세팅·저장하고
+ * {battleState, log}를 반환한다. 수동 전투 시작(POST /battle/start)과 자동 탐색 보관함 전투 시작
+ * (POST /game/stored/:id/battle)이 공유한다. 입력 검증(400/404)은 호출자가 책임진다 — 여기서는
+ * event.pokemon이 유효한 야생이고 pokemonUid가 살아있는 내 포켓몬을 가리킨다고 가정한다.
+ *
+ * event가 user.pendingEvents/storedEncounters 중 어디서 왔든, 이 함수는 그 배열을 건드리지 않는다.
+ * 호출자가 필요 시 이동/제거를 먼저 해 두고(같은 user 객체) 호출하면 saveUser가 함께 영속한다.
+ */
+export async function startWildBattle(
+  user: UserData,
+  event: PendingEvent,
+  pokemonUid: string,
+): Promise<{ battleState: BattleState; log: string[] }> {
+  const pokemon = user.pokemon.find((p) => p.uid === pokemonUid)!;
+
+  const battleState: BattleState = {
+    eventId: event.id,
+    myPokemonUid: pokemonUid,
+    // 첫 출전 포켓몬을 참여자로 기록(클래식 EXP 분배용). 교체 시 handleSwitch에서 추가.
+    participantUids: [pokemonUid],
+    turn: 0,
+    wild: { ...event.pokemon },
+    playerStatStages: defaultStatStages(),
+    wildStatStages: defaultStatStages(),
+    playerVolatile: [],
+    wildVolatile: [],
+  };
+
+  // Check primal reversion for active pokemon
+  const primalForm = checkPrimalReversion(pokemon);
+  if (primalForm) {
+    battleState.playerBattleForm = primalForm;
+    battleState.transformationType = "primal";
+    // Apply primal stats
+    const transformed = getTransformedStats(pokemon, primalForm);
+    pokemon.stats = transformed.stats;
+    pokemon.maxHp = transformed.maxHp;
+    pokemon.hp = Math.min(pokemon.hp, pokemon.maxHp);
+  }
+
+  // 야생을 전투에서 마주하면 영구 "만난적(발견)"에 기록 — 잡지 못하고 도망/패배해도 유지된다.
+  const seenList = user.seenSpecies ?? (user.seenSpecies = []);
+  if (!seenList.includes(battleState.wild.species)) seenList.push(battleState.wild.species);
+
+  // 스위치인 특성(intimidate·날씨/필드 세터): 양측 등장 시 발동.
+  // 플레이어 리드가 먼저 등장 → 야생 스탯을 깎고, 이어 야생이 등장 → 플레이어 스탯을 깎는다.
+  // 무특성/미지원이면 no-op이라 종전 동작과 동일하다.
+  const startLog: string[] = [];
+  battleState.wildStatStages = applySwitchInAbilities(battleState, "player", pokemon, battleState.wildStatStages!, startLog);
+  battleState.playerStatStages = applySwitchInAbilities(battleState, "wild", battleState.wild, battleState.playerStatStages!, startLog);
+
+  user.battleState = battleState;
+  await saveUser(user);
+  void appendEvent({
+    type: "battle_start",
+    userId: user.account.id,
+    detail: {
+      eventId: event.id,
+      wildSpecies: battleState.wild.species,
+      wildLevel: battleState.wild.level,
+      myPokemonUid: pokemonUid,
+      mySpecies: pokemon.species,
+      myLevel: pokemon.level,
+    },
+  });
+  return { battleState, log: startLog };
+}
+
 battleRoutes.post("/start", async (req, res) => {
   try {
     const { userId } = req as AuthRequest;
@@ -205,56 +274,7 @@ battleRoutes.post("/start", async (req, res) => {
       return;
     }
 
-    const battleState: BattleState = {
-      eventId,
-      myPokemonUid: pokemonUid,
-      // 첫 출전 포켓몬을 참여자로 기록(클래식 EXP 분배용). 교체 시 handleSwitch에서 추가.
-      participantUids: [pokemonUid],
-      turn: 0,
-      wild: { ...event.pokemon },
-      playerStatStages: defaultStatStages(),
-      wildStatStages: defaultStatStages(),
-      playerVolatile: [],
-      wildVolatile: [],
-    };
-
-    // Check primal reversion for active pokemon
-    const primalForm = checkPrimalReversion(pokemon);
-    if (primalForm) {
-      battleState.playerBattleForm = primalForm;
-      battleState.transformationType = "primal";
-      // Apply primal stats
-      const transformed = getTransformedStats(pokemon, primalForm);
-      pokemon.stats = transformed.stats;
-      pokemon.maxHp = transformed.maxHp;
-      pokemon.hp = Math.min(pokemon.hp, pokemon.maxHp);
-    }
-
-    // 야생을 전투에서 마주하면 영구 "만난적(발견)"에 기록 — 잡지 못하고 도망/패배해도 유지된다.
-    const seenList = user.seenSpecies ?? (user.seenSpecies = []);
-    if (!seenList.includes(battleState.wild.species)) seenList.push(battleState.wild.species);
-
-    // 스위치인 특성(intimidate·날씨/필드 세터): 양측 등장 시 발동.
-    // 플레이어 리드가 먼저 등장 → 야생 스탯을 깎고, 이어 야생이 등장 → 플레이어 스탯을 깎는다.
-    // 무특성/미지원이면 no-op이라 종전 동작과 동일하다.
-    const startLog: string[] = [];
-    battleState.wildStatStages = applySwitchInAbilities(battleState, "player", pokemon, battleState.wildStatStages, startLog);
-    battleState.playerStatStages = applySwitchInAbilities(battleState, "wild", battleState.wild, battleState.playerStatStages, startLog);
-
-    user.battleState = battleState;
-    await saveUser(user);
-    void appendEvent({
-      type: "battle_start",
-      userId: user.account.id,
-      detail: {
-        eventId,
-        wildSpecies: battleState.wild.species,
-        wildLevel: battleState.wild.level,
-        myPokemonUid: pokemonUid,
-        mySpecies: pokemon.species,
-        myLevel: pokemon.level,
-      },
-    });
+    const { battleState, log: startLog } = await startWildBattle(user, event, pokemonUid);
     res.json({ battleState, log: startLog });
   } catch (err) {
     log.error({ err }, "Battle start error");

@@ -424,6 +424,26 @@ export function getAllSpeciesList(): Array<{ id: number; species: string; name: 
   return getSpecies().map((s) => ({ id: s.id, species: s.species, name: s.name }));
 }
 
+/** 해당 종이 지역 출몰 풀에 있는지(자동 탐색 관심종 등록 검증용). */
+export function isWildSpecies(species: string, region: string): boolean {
+  try {
+    return getRegion(region).encounters.some((e) => e.species === species);
+  } catch {
+    return false;
+  }
+}
+
+/** 지역 출몰 종 목록(중복 제거·정렬). 자동 탐색 관심종 선택 UI에 내려준다. */
+export function regionSpeciesList(region: string): string[] {
+  try {
+    return [...new Set(getRegion(region).encounters.map((e) => e.species))].sort((a, b) =>
+      a.localeCompare(b),
+    );
+  } catch {
+    return [];
+  }
+}
+
 export function clearAllCaches(): void {
   speciesCache = null;
   movesCache = null;

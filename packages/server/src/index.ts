@@ -1,6 +1,7 @@
 import { createApp } from "./app.js";
 import { getConfig } from "./storage/config-store.js";
 import { startPolling } from "./polling/polling-worker.js";
+import { startAutoSearch } from "./polling/auto-search-worker.js";
 import { logger } from "./logger.js";
 
 if (!process.env.POKELOG_JWT_SECRET) {
@@ -15,6 +16,7 @@ async function main() {
   app.listen(config.server.port, () => {
     logger.info({ port: config.server.port }, "pokelog server running");
     startPolling();
+    startAutoSearch();
   });
 }
 
