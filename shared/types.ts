@@ -563,6 +563,9 @@ export interface ServerConfig {
   // 기술 가르침 도우미(Move Tutor) 1회 비용(게임머니). 종의 TM/교배/가르침 학습표 기술을
   // 가르칠 때 차감한다. 프리미엄/커버리지 기술이라 재학습보다 비싸다. 운영자가 /admin에서 튜닝(기본 800).
   moveTeachCost: number;
+  // 기술 일괄 교체(4개 자유 편집) 시 "새로 배우는" 기술 1개당 비용(게임머니). 자리 이동·삭제·
+  // 유지는 무료이고, 원래 없던 기술을 넣을 때만 개수만큼 차감한다. 운영자가 /admin에서 튜닝(기본 500).
+  moveChangeCost: number;
   pvp: PvpConfig;
 }
 

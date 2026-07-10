@@ -10,7 +10,7 @@ import { createEncounterEvent } from "../game/event-factory.js";
 import { getRegion, getRegionNames, getSpeciesByName, getAbilityById, isWildSpecies, regionSpeciesList } from "../game/data-loader.js";
 import { rollRegionEncounters } from "../game/wild-roll.js";
 import { startWildBattle } from "./battle-routes.js";
-import { buildLevelEvolutionContext, getEvolutionBranchDiagnostics, getRelearnableMoves, applyMoveRelearn, getTeachableMoves, applyMoveTeach } from "../game/growth.js";
+import { buildLevelEvolutionContext, getEvolutionBranchDiagnostics, getAllLearnableMoves, setPokemonMoves } from "../game/growth.js";
 import { getAvailableEvolutionOptions, prunePendingEvolutions } from "../game/pending-evolution.js";
 import { findPokemonByUid, getPartyPokemon, getDisplaySpeciesName } from "../game/pokemon-state.js";
 import { GameRuleError } from "../game/game-errors.js";
@@ -645,9 +645,9 @@ gameRoutes.get("/pokemon/:uid", async (req: AuthRequest, res: Response) => {
   }
 });
 
-// 기술 기억 도우미 — 다시 배울 수 있는 기술 목록 조회. 종의 레벨업 학습표 기술 중 현재 아는
-// 기술을 뺀 풀과 1회 비용(게임머니), 보유 게임머니를 함께 내려준다(레벨 무관, 신세대식).
-gameRoutes.get("/pokemon/:uid/relearn-moves", async (req: AuthRequest, res: Response) => {
+// 기술 일괄 편집 — 배울 수 있는 전체 기술 풀 조회. 종의 레벨업 학습표 전 레벨 ∪ TM ∪ 교배 ∪
+// 가르침을 합친 풀(현재 아는 기술도 포함)과 새 기술 1개당 비용(changeCost), 보유 게임머니를 내려준다.
+gameRoutes.get("/pokemon/:uid/learnable-moves", async (req: AuthRequest, res: Response) => {
   try {
     const user = await getUser(req.userId!);
     if (!user) { res.status(404).json({ error: "사용자를 찾을 수 없습니다" }); return; }
@@ -655,104 +655,39 @@ gameRoutes.get("/pokemon/:uid/relearn-moves", async (req: AuthRequest, res: Resp
     if (!pokemon) { res.status(404).json({ error: "포켓몬을 찾을 수 없습니다" }); return; }
     const config = await getConfig();
     res.json({
-      moves: getRelearnableMoves(pokemon),
-      cost: config.moveRelearnCost,
+      learnable: getAllLearnableMoves(pokemon),
       gameMoney: user.gameMoney,
+      changeCost: config.moveChangeCost,
     });
   } catch (err) {
-    log.error({ err }, "Relearn moves list error");
+    log.error({ err }, "Learnable moves list error");
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
   }
 });
 
-// 기술 기억 도우미 — 실제 재학습. 풀에 있는 기술이면 게임머니를 차감하고 다시 배운다. 기술이
-// 4개면 forgetMoveId로 지정한 기술을 제자리 교체(순서 유지)하고, 4개 미만이면 새 슬롯을 추가한다.
-gameRoutes.post("/pokemon/:uid/relearn", async (req: AuthRequest, res: Response) => {
+// 기술 일괄 편집 — 4개 슬롯 일괄 저장. moveIds(1~4개)로 pokemon.moves를 통째로 교체하고, 원래
+// 없던(새로 배우는) 기술 수만큼만 게임머니를 차감한다(자리 이동·삭제·유지는 무료). 검증 위반은
+// setPokemonMoves가 GameRuleError(400)로 던지고, 아래 핸들러가 관례대로 400으로 응답한다.
+gameRoutes.post("/pokemon/:uid/set-moves", async (req: AuthRequest, res: Response) => {
   try {
-    const { moveId, forgetMoveId } = req.body ?? {};
-    if (!moveId || typeof moveId !== "string") {
-      res.status(400).json({ error: "moveId가 필요합니다" });
-      return;
-    }
+    const { moveIds } = req.body ?? {};
     const user = await getUser(req.userId!);
     if (!user) { res.status(404).json({ error: "사용자를 찾을 수 없습니다" }); return; }
     const pokemon = findPokemonByUid(user, req.params.uid);
     if (!pokemon) { res.status(404).json({ error: "포켓몬을 찾을 수 없습니다" }); return; }
 
     const config = await getConfig();
-    applyMoveRelearn(
-      user,
-      pokemon,
-      moveId,
-      config.moveRelearnCost,
-      typeof forgetMoveId === "string" ? forgetMoveId : null,
-    );
+    const { cost } = setPokemonMoves(user, pokemon, moveIds, config.moveChangeCost);
     await saveUser(user);
 
     res.json({
       pokemon: { ...pokemon },
       gameMoney: user.gameMoney,
-      message: `${moveId}을(를) 다시 배웠다!`,
+      cost,
     });
   } catch (err) {
     if (err instanceof GameRuleError) { res.status(err.status).json({ error: err.message }); return; }
-    log.error({ err }, "Relearn move error");
-    res.status(500).json({ error: "서버 오류가 발생했습니다" });
-  }
-});
-
-// 기술 가르침 도우미 — 가르칠 수 있는 기술 목록 조회. 종의 TM/교배/가르침 학습표 기술 중 현재 아는
-// 기술을 뺀 풀과 1회 비용(게임머니), 보유 게임머니를 함께 내려준다(레벨 무관, 재학습과 별개 비용).
-gameRoutes.get("/pokemon/:uid/teachable-moves", async (req: AuthRequest, res: Response) => {
-  try {
-    const user = await getUser(req.userId!);
-    if (!user) { res.status(404).json({ error: "사용자를 찾을 수 없습니다" }); return; }
-    const pokemon = findPokemonByUid(user, req.params.uid);
-    if (!pokemon) { res.status(404).json({ error: "포켓몬을 찾을 수 없습니다" }); return; }
-    const config = await getConfig();
-    res.json({
-      moves: getTeachableMoves(pokemon),
-      cost: config.moveTeachCost,
-      gameMoney: user.gameMoney,
-    });
-  } catch (err) {
-    log.error({ err }, "Teachable moves list error");
-    res.status(500).json({ error: "서버 오류가 발생했습니다" });
-  }
-});
-
-// 기술 가르침 도우미 — 실제 가르치기. 풀에 있는 기술이면 게임머니를 차감하고 가르친다. 기술이
-// 4개면 forgetMoveId로 지정한 기술을 제자리 교체(순서 유지)하고, 4개 미만이면 새 슬롯을 추가한다.
-gameRoutes.post("/pokemon/:uid/teach", async (req: AuthRequest, res: Response) => {
-  try {
-    const { moveId, forgetMoveId } = req.body ?? {};
-    if (!moveId || typeof moveId !== "string") {
-      res.status(400).json({ error: "moveId가 필요합니다" });
-      return;
-    }
-    const user = await getUser(req.userId!);
-    if (!user) { res.status(404).json({ error: "사용자를 찾을 수 없습니다" }); return; }
-    const pokemon = findPokemonByUid(user, req.params.uid);
-    if (!pokemon) { res.status(404).json({ error: "포켓몬을 찾을 수 없습니다" }); return; }
-
-    const config = await getConfig();
-    applyMoveTeach(
-      user,
-      pokemon,
-      moveId,
-      config.moveTeachCost,
-      typeof forgetMoveId === "string" ? forgetMoveId : null,
-    );
-    await saveUser(user);
-
-    res.json({
-      pokemon: { ...pokemon },
-      gameMoney: user.gameMoney,
-      message: `${moveId}을(를) 배웠다!`,
-    });
-  } catch (err) {
-    if (err instanceof GameRuleError) { res.status(err.status).json({ error: err.message }); return; }
-    log.error({ err }, "Teach move error");
+    log.error({ err }, "Set moves error");
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
   }
 });

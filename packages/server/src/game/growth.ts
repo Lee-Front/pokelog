@@ -380,6 +380,84 @@ export function applyMoveTeach(
   );
 }
 
+// ── 기술 일괄 편집 (Move Editor) — 4개 슬롯 자유 교체 + 일괄 저장 ──
+// 기억(relearn)·가르침(teach)을 한 화면에서 통합한다. 종이 배울 수 있는 모든 기술(레벨업 학습표
+// 전 레벨 ∪ TM ∪ 교배 ∪ 가르침)을 후보로 내려주고, 플레이어가 4개 슬롯을 자유롭게 재구성해
+// 한 번에 저장한다. 비용은 "원래 없던(새로 배우는)" 기술 수만큼만 든다(자리 이동·삭제·유지는 무료).
+
+/**
+ * 종이 배울 수 있는 전체 기술 풀 — 레벨업 학습표(levelUp 전 레벨) ∪ tm ∪ tutor ∪ egg 의
+ * 합집합(중복 제거). getMoveById로 해석되는 유효한 id만 남긴다. 재학습/가르침 풀과 달리
+ * **현재 아는 기술을 제외하지 않는다** — 에디터에서 기존 기술을 자리만 옮기거나 유지할 수 있어야
+ * 하기 때문이다. 종을 찾을 수 없으면 [].
+ */
+export function getAllLearnableMoves(pokemon: OwnedPokemon): string[] {
+  const speciesData = getSpeciesByName(pokemon.species);
+  if (!speciesData) return [];
+
+  const seen = new Set<string>();
+  const pool: string[] = [];
+
+  const source = [
+    ...Object.values(speciesData.learnset.levelUp).flat(),
+    ...speciesData.learnset.tm,
+    ...speciesData.learnset.tutor,
+    ...speciesData.learnset.egg,
+  ];
+  for (const moveId of source) {
+    if (seen.has(moveId)) continue;
+    if (!getMoveById(moveId)) continue; // 데이터에 없는 기술 id는 건너뛴다
+    seen.add(moveId);
+    pool.push(moveId);
+  }
+
+  return pool;
+}
+
+/**
+ * 기술 4개 슬롯 일괄 저장 — moveIds(1~4개, 중복 없음)로 pokemon.moves를 통째로 교체하며,
+ * 원래 없던(새로 배우는) 기술 수 × changeCost 만큼 게임머니를 차감한다(자리 이동·삭제·유지 무료).
+ * pokemon.moves(및 user.gameMoney)를 변형하고, 저장은 호출부(라우트)가 한다.
+ *  - moveIds 는 배열이어야 하고 길이 1~4, 중복이 없어야 한다.
+ *  - 각 id 는 getAllLearnableMoves 풀에 있거나, 현재 이미 아는 기술이어야 한다
+ *    (학습표 밖 보유기의 유지 허용). 위반 시 GameRuleError(400).
+ *  - 유지되는 기술 슬롯은 기존 pp/maxPp 를 보존하고, 새로 배우는 기술은 풀 pp 로 채운다.
+ *  - 게임머니가 비용보다 적으면 GameRuleError(400).
+ */
+export function setPokemonMoves(
+  user: { gameMoney: number },
+  pokemon: OwnedPokemon,
+  moveIds: string[],
+  changeCost: number,
+): { cost: number } {
+  if (!Array.isArray(moveIds) || moveIds.length < 1 || moveIds.length > 4) {
+    throw new GameRuleError("기술은 1개 이상 4개 이하로 선택해야 합니다", 400);
+  }
+  if (new Set(moveIds).size !== moveIds.length) {
+    throw new GameRuleError("같은 기술을 중복해서 배울 수 없습니다", 400);
+  }
+
+  const learnable = new Set(getAllLearnableMoves(pokemon));
+  const currentIds = new Set(pokemon.moves.map((move) => move.id));
+  for (const id of moveIds) {
+    if (!learnable.has(id) && !currentIds.has(id)) {
+      throw new GameRuleError("배울 수 없는 기술입니다.", 400);
+    }
+  }
+
+  const originalIds = new Set(pokemon.moves.map((move) => move.id));
+  const cost = moveIds.filter((id) => !originalIds.has(id)).length * changeCost;
+  if (user.gameMoney < cost) {
+    throw new GameRuleError("게임머니가 부족합니다", 400);
+  }
+
+  // 유지 슬롯은 기존 pp/maxPp 를 보존(원래 pp가 감소돼 있어도 유지), 새 기술만 풀 pp.
+  pokemon.moves = moveIds.map((id) => pokemon.moves.find((move) => move.id === id) ?? buildMoveSlot(id));
+  user.gameMoney -= cost;
+
+  return { cost };
+}
+
 function resolveEvolutionAbilityId(species: string, currentAbilityId: string | null | undefined): string | null {
   const speciesData = getSpeciesByName(species);
   if (!speciesData?.abilities) {
