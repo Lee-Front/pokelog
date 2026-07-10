@@ -221,7 +221,8 @@ gameRoutes.post("/wild/search", async (req: AuthRequest, res: Response) => {
 
 // === 자동 야생 탐색(관심 포켓몬 + 30분 보관) ===
 
-// 자동 탐색 현황 — 관심종·토글·보관함 + 현재 지역 출몰 종 목록(관심종 선택 UI용).
+// 자동 탐색 현황 — 관심종은 지역별로 분리되므로 현재 지역 기준으로 내려준다(관심종·토글·보관함 +
+// 현재 지역 출몰 종 목록과 지역키). 다른 지역 관심종은 그 지역으로 옮긴 뒤 조회한다.
 gameRoutes.get("/interests", async (req: AuthRequest, res: Response) => {
   try {
     const user = await getUser(req.userId!);
@@ -230,11 +231,13 @@ gameRoutes.get("/interests", async (req: AuthRequest, res: Response) => {
       return;
     }
 
+    const region = user.currentRegion ?? "default";
     res.json({
-      interestSpecies: user.interestSpecies ?? [],
-      autoSearchEnabled: user.autoSearchEnabled ?? false,
+      interestSpecies: user.interestSpecies?.[region] ?? [],
+      autoSearchEnabled: !!user.autoSearchEnabled,
       storedEncounters: user.storedEncounters ?? [],
-      regionSpecies: regionSpeciesList(user.currentRegion ?? "default"),
+      regionSpecies: regionSpeciesList(region),
+      region,
     });
   } catch (err) {
     log.error({ err }, "Interests get error");
@@ -242,7 +245,8 @@ gameRoutes.get("/interests", async (req: AuthRequest, res: Response) => {
   }
 });
 
-// 관심종 저장 — 현재 지역 출몰 풀에 있는 종만 허용(중복 제거). 하나라도 그 지역 미출몰이면 400.
+// 관심종 저장 — 현재 지역에만 저장한다(다른 지역 관심종은 보존). 현재 지역 출몰 풀에 있는 종만
+// 허용(중복 제거). 하나라도 그 지역 미출몰이면 400.
 gameRoutes.put("/interests", async (req: AuthRequest, res: Response) => {
   try {
     const { species } = req.body ?? {};
@@ -266,16 +270,21 @@ gameRoutes.put("/interests", async (req: AuthRequest, res: Response) => {
     }
 
     const interestSpecies = [...new Set(species as string[])];
-    user.interestSpecies = interestSpecies;
+    // 현재 지역 항목만 갱신하고 다른 지역 목록은 그대로 보존한다(normalize가 맵으로 정규화하지만,
+    // 여기서도 기존 값을 방어적으로 객체 취급한다).
+    user.interestSpecies = {
+      ...(user.interestSpecies ?? {}),
+      [region]: interestSpecies,
+    };
     await saveUser(user);
-    res.json({ interestSpecies });
+    res.json({ interestSpecies, region });
   } catch (err) {
     log.error({ err }, "Interests update error");
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
   }
 });
 
-// 자동 탐색 토글 — 켤 때는 관심종이 최소 1마리 있어야 한다(없으면 400).
+// 자동 탐색 토글 — 관심종 요건 없이 단순 on/off(끌 때는 물론, 켤 때도 관심종 유무를 검사하지 않는다).
 gameRoutes.put("/auto-search", async (req: AuthRequest, res: Response) => {
   try {
     const { enabled } = req.body ?? {};
@@ -287,11 +296,6 @@ gameRoutes.put("/auto-search", async (req: AuthRequest, res: Response) => {
     const user = await getUser(req.userId!);
     if (!user) {
       res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
-      return;
-    }
-
-    if (enabled && (user.interestSpecies ?? []).length === 0) {
-      res.status(400).json({ error: "관심 포켓몬을 먼저 등록하세요" });
       return;
     }
 

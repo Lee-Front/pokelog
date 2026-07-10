@@ -31,14 +31,16 @@ describe("runAutoSearch (자동 탐색 30분 스윕)", () => {
     return { token, userId };
   }
 
-  it("자동 켜짐 + 관심종 있는 유저의 보관함에 관심종을 틱당 최대 1마리 보관한다", async () => {
+  it("자동 켜짐 + 현재 지역 관심종 있는 유저의 보관함에 관심종을 틱당 최대 1마리 보관한다", async () => {
     const { userId } = await enabledUser();
 
     await runAutoSearch();
 
     const after = (await getUser(userId))!;
     expect(after.storedEncounters).toHaveLength(1);
-    const interests = after.interestSpecies ?? [];
+    // 관심종은 지역별 맵 — 현재 지역(kanto) 목록에서 매치를 찾는다.
+    const region = after.currentRegion ?? "default";
+    const interests = after.interestSpecies?.[region] ?? [];
     expect(interests).toContain(after.storedEncounters![0].pokemon.species);
     expect(after.storedEncounters![0].type).toBe("wild_encounter");
 
@@ -47,12 +49,28 @@ describe("runAutoSearch (자동 탐색 30분 스윕)", () => {
     expect((await getUser(userId))!.storedEncounters).toHaveLength(2);
   });
 
-  it("자동 꺼짐이거나 관심종이 없으면 보관하지 않는다(no-op)", async () => {
+  it("자동 꺼짐이거나 현재 지역 관심종이 없으면 보관하지 않는다(no-op)", async () => {
     // 관심종은 있지만 토글 꺼짐
     const { token, userId } = await app.registerAndLogin();
     await app.authed(token).put("/api/game/region", { region: "kanto" });
     await app.authed(token).put("/api/game/interests", { species: ["abra"] });
     // auto-search는 켜지 않는다
+
+    await runAutoSearch();
+    expect((await getUser(userId))!.storedEncounters ?? []).toHaveLength(0);
+  });
+
+  it("현재 지역 관심종만 쓴다 — 다른 지역에만 관심종이 있으면 보관하지 않는다", async () => {
+    // hoenn 관심종을 등록하고 자동 탐색을 켠 뒤, 현재 지역을 kanto로 옮긴다.
+    // 현재 지역(kanto) 관심종이 비어 있으므로 스윕은 no-op이어야 한다.
+    const { token, userId } = await app.registerAndLogin();
+    await app.authed(token).put("/api/game/region", { region: "hoenn" });
+    const interests = await app.authed(token).get("/api/game/interests");
+    const hoennSpecies = (interests.body as { regionSpecies: string[] }).regionSpecies;
+    await app.authed(token).put("/api/game/interests", { species: hoennSpecies });
+    await app.authed(token).put("/api/game/auto-search", { enabled: true });
+    // 현재 지역을 관심종이 없는 kanto로 옮긴다.
+    await app.authed(token).put("/api/game/region", { region: "kanto" });
 
     await runAutoSearch();
     expect((await getUser(userId))!.storedEncounters ?? []).toHaveLength(0);

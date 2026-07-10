@@ -23,8 +23,9 @@ function withSearchLock<T>(body: () => Promise<T>): Promise<T> {
 }
 
 /**
- * 자동 탐색 1회 스윕 — 자동 탐색을 켰고 관심종이 있으며 보관함이 상한 미만인 유저마다, 그 유저의
- * 현재 지역을 12롤 굴려 관심종 첫 매치 1마리를 보관함에 추가한다(상한 클램프). 매치가 없으면 no-op.
+ * 자동 탐색 1회 스윕 — 자동 탐색을 켰고 현재 지역 관심종이 있으며 보관함이 상한 미만인 유저마다,
+ * 그 유저의 현재 지역을 12롤 굴려 그 지역 관심종 첫 매치 1마리를 보관함에 추가한다(상한 클램프).
+ * 관심종은 지역별 맵이므로 유저의 현재 지역 목록만 본다. 매치가 없으면 no-op.
  *
  * 테스트/수동 트리거 가능하도록 export. 실제 스케줄러(startAutoSearch)는 이 함수를 직렬화 락으로 감싼다.
  */
@@ -33,14 +34,15 @@ export async function runAutoSearch(): Promise<void> {
   let hits = 0;
 
   for (const u of users) {
+    const region = u.currentRegion ?? "default";
+    const interest = u.interestSpecies?.[region] ?? [];
     if (!u.autoSearchEnabled) continue;
-    if (!(u.interestSpecies?.length)) continue;
+    if (!interest.length) continue;
     if ((u.storedEncounters?.length ?? 0) >= STORED_ENCOUNTER_CAP) continue;
 
     try {
       const rolled = await rollRegionEncounters(u, 12);
-      const interests = u.interestSpecies;
-      const hit = rolled.find((ev) => interests.includes(ev.pokemon.species));
+      const hit = rolled.find((ev) => interest.includes(ev.pokemon.species));
       if (!hit) continue;
 
       u.storedEncounters = [...(u.storedEncounters ?? []), hit].slice(0, STORED_ENCOUNTER_CAP);

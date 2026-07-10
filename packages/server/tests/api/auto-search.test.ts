@@ -24,7 +24,7 @@ describe("자동 야생 탐색 API", () => {
     return { token, userId };
   }
 
-  it("GET /interests는 현재 지역 출몰 종 목록과 기본값을 내려준다", async () => {
+  it("GET /interests는 현재 지역 출몰 종 목록·기본값·지역키를 내려준다", async () => {
     const { token } = await kantoUser();
     const res = await app.authed(token).get("/api/game/interests");
     expect(res.status).toBe(200);
@@ -33,12 +33,14 @@ describe("자동 야생 탐색 API", () => {
       autoSearchEnabled: boolean;
       storedEncounters: unknown[];
       regionSpecies: string[];
+      region: string;
     };
     expect(body.interestSpecies).toEqual([]);
     expect(body.autoSearchEnabled).toBe(false);
     expect(body.storedEncounters).toEqual([]);
     expect(body.regionSpecies).toContain("abra");
     expect(body.regionSpecies).not.toContain("baltoy");
+    expect(body.region).toBe("kanto");
   });
 
   it("PUT /interests는 현재 지역 출몰 종만 허용한다(미출몰 종은 400)", async () => {
@@ -46,8 +48,9 @@ describe("자동 야생 탐색 API", () => {
 
     const ok = await app.authed(token).put("/api/game/interests", { species: ["abra", "abra", "pidgey"] });
     expect(ok.status).toBe(200);
-    // 중복 제거
-    expect((ok.body as { interestSpecies: string[] }).interestSpecies).toEqual(["abra", "pidgey"]);
+    // 중복 제거 + 현재 지역키를 함께 내려준다
+    expect((ok.body as { interestSpecies: string[]; region: string }).interestSpecies).toEqual(["abra", "pidgey"]);
+    expect((ok.body as { region: string }).region).toBe("kanto");
 
     const bad = await app.authed(token).put("/api/game/interests", { species: ["abra", "baltoy"] });
     expect(bad.status).toBe(400);
@@ -58,23 +61,67 @@ describe("자동 야생 탐색 API", () => {
     expect(notArray.status).toBe(400);
   });
 
-  it("PUT /auto-search는 관심종이 없으면 켜지지 않는다(400)", async () => {
+  it("PUT /interests는 현재 지역에만 저장하고 다른 지역 관심종은 보존한다", async () => {
+    const { token, userId } = await kantoUser();
+
+    // kanto에 관심종을 등록한다.
+    const kanto = await app.authed(token).put("/api/game/interests", { species: ["abra", "pidgey"] });
+    expect(kanto.status).toBe(200);
+
+    // hoenn으로 이동해 그 지역 관심종을 등록한다(baltoy는 hoenn 출몰).
+    await app.authed(token).put("/api/game/region", { region: "hoenn" });
+    const hoenn = await app.authed(token).put("/api/game/interests", { species: ["baltoy"] });
+    expect(hoenn.status).toBe(200);
+    expect((hoenn.body as { region: string }).region).toBe("hoenn");
+
+    // hoenn에서 조회하면 hoenn 목록만 보인다.
+    const hoennGet = await app.authed(token).get("/api/game/interests");
+    expect((hoennGet.body as { interestSpecies: string[]; region: string }).interestSpecies).toEqual(["baltoy"]);
+    expect((hoennGet.body as { region: string }).region).toBe("hoenn");
+
+    // kanto로 돌아오면 kanto 목록이 그대로 보존돼 있다.
+    await app.authed(token).put("/api/game/region", { region: "kanto" });
+    const kantoGet = await app.authed(token).get("/api/game/interests");
+    expect((kantoGet.body as { interestSpecies: string[] }).interestSpecies).toEqual(["abra", "pidgey"]);
+
+    // 저장된 구조도 지역별 맵이다.
+    const user = (await getUser(userId))!;
+    expect(user.interestSpecies).toEqual({ kanto: ["abra", "pidgey"], hoenn: ["baltoy"] });
+  });
+
+  it("구버전 배열 관심종은 현재 지역 키로 이관된다(마이그레이션)", async () => {
+    const { token, userId } = await kantoUser();
+
+    // 구 저장본 형태(전역 배열)를 파일에 직접 심는다. saveUser의 normalize가 지역 맵으로 이관한다.
+    const seed = (await getUser(userId))!;
+    (seed as unknown as { interestSpecies: string[] }).interestSpecies = ["abra", "pidgey"];
+    await saveUser(seed);
+
+    // 저장된 구조가 { kanto: [...] } 로 이관돼 있다.
+    const migrated = (await getUser(userId))!;
+    expect(migrated.interestSpecies).toEqual({ kanto: ["abra", "pidgey"] });
+
+    // GET도 현재 지역(kanto) 목록으로 그 값을 내려준다.
+    const res = await app.authed(token).get("/api/game/interests");
+    expect((res.body as { interestSpecies: string[] }).interestSpecies).toEqual(["abra", "pidgey"]);
+  });
+
+  it("PUT /auto-search는 관심종 요건 없이 on/off 된다", async () => {
     const { token } = await kantoUser();
 
-    const noInterests = await app.authed(token).put("/api/game/auto-search", { enabled: true });
-    expect(noInterests.status).toBe(400);
-    expect((noInterests.body as { error: string }).error).toBe("관심 포켓몬을 먼저 등록하세요");
-
-    // 관심종 등록 후에는 켜진다
-    await app.authed(token).put("/api/game/interests", { species: ["abra"] });
+    // 관심종이 없어도 켜진다(요건 가드 제거).
     const on = await app.authed(token).put("/api/game/auto-search", { enabled: true });
     expect(on.status).toBe(200);
     expect((on.body as { autoSearchEnabled: boolean }).autoSearchEnabled).toBe(true);
 
-    // 끄는 것은 관심종 여부와 무관하게 항상 허용
+    // 끄는 것도 항상 허용.
     const off = await app.authed(token).put("/api/game/auto-search", { enabled: false });
     expect(off.status).toBe(200);
     expect((off.body as { autoSearchEnabled: boolean }).autoSearchEnabled).toBe(false);
+
+    // boolean이 아니면 400.
+    const bad = await app.authed(token).put("/api/game/auto-search", { enabled: "yes" });
+    expect(bad.status).toBe(400);
   });
 
   it("POST /stored/:id/battle는 보관 인카운터를 pendingEvents로 옮기고 전투를 연다", async () => {

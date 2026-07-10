@@ -385,10 +385,12 @@ export interface UserData {
   pendingEvents: PendingEvent[];
   pendingEvolutions?: PendingEvolution[];
   pendingMoveLearns?: PendingMoveLearn[];
-  // 자동 야생 탐색 — 관심종(현재 지역 출몰 풀에 있는 종만) + 토글 + 보관함(미포획 인카운터, 상한 10).
-  // 30분 워커가 autoSearchEnabled && interestSpecies.length>0인 유저의 지역을 굴려 관심종 첫 매치
-  // 1마리를 storedEncounters에 보관한다. 구 저장본(필드 없음)은 normalize가 []/false로 정규화한다.
-  interestSpecies?: string[];
+  // 자동 야생 탐색 — 관심종(지역별로 분리, 각 지역 출몰 풀에 있는 종만) + 토글 + 보관함(미포획
+  // 인카운터, 상한 10). 30분 워커가 autoSearchEnabled이고 현재 지역 관심종이 있는 유저의 지역을
+  // 굴려 관심종 첫 매치 1마리를 storedEncounters에 보관한다. interestSpecies는 지역키(currentRegion
+  // 또는 'default')→종목록 맵이다. 구 저장본(배열)은 normalize가 { [currentRegion]: 그배열 }로
+  // 이관하고, 필드 없음/그 외는 {}로, boolean 아닌 토글은 false로 정규화한다.
+  interestSpecies?: Record<string, string[]>;
   storedEncounters?: PendingEvent[];
   autoSearchEnabled?: boolean;
   battleState: BattleState | null;

@@ -388,6 +388,30 @@ export function dropDanglingPending<T extends { pokemonUid: string }>(
   return entries.filter((entry) => liveUids.has(entry.pokemonUid));
 }
 
+/**
+ * 관심종을 지역별 맵으로 정규화한다. 관심종은 이제 지역키(currentRegion 또는 'default')→종목록
+ * 구조다. 마이그레이션 규칙:
+ *  - 배열(구버전 전역 목록)이면 `{ [currentRegion]: 그배열 }`로 이관해 데이터를 보존한다.
+ *  - 이미 객체(맵)면 각 값이 배열인 항목만 살려 얕게 정규화한다(배열 아닌 값은 버린다).
+ *  - 그 외(undefined/원시값 등)면 빈 맵.
+ */
+function normalizeInterestSpecies(
+  raw: unknown,
+  currentRegion: string,
+): Record<string, string[]> {
+  if (Array.isArray(raw)) {
+    return { [currentRegion]: raw as string[] };
+  }
+  if (raw && typeof raw === "object") {
+    const out: Record<string, string[]> = {};
+    for (const [region, list] of Object.entries(raw as Record<string, unknown>)) {
+      if (Array.isArray(list)) out[region] = list as string[];
+    }
+    return out;
+  }
+  return {};
+}
+
 function normalizeUserData(user: UserData): UserData {
   // Map (fill defaults) first so reconcile compares normalized copies and each
   // surviving entry is normalized exactly once; reconcile then drops duplicates.
@@ -473,8 +497,10 @@ function normalizeUserData(user: UserData): UserData {
     eggs: Array.isArray(user.eggs) ? user.eggs : [],
     pendingEvolutions,
     pendingMoveLearns,
-    // 자동 야생 탐색 상태 — 구 저장본(필드 없음)은 배열이 아니면 [], boolean이 아니면 false로 정규화.
-    interestSpecies: Array.isArray(user.interestSpecies) ? user.interestSpecies : [],
+    // 자동 야생 탐색 상태 — 관심종은 지역별 맵(지역키→종목록). 구 저장본이 배열(전역 목록)이면
+    // 현재 지역 키 하나로 이관해 데이터를 보존하고, 이미 맵이면 각 값이 배열인지 얕게 정규화한다.
+    // 그 외/필드 없음은 {}. storedEncounters는 배열 아니면 [], 토글은 boolean 아니면 false.
+    interestSpecies: normalizeInterestSpecies(user.interestSpecies, user.currentRegion ?? "default"),
     storedEncounters: Array.isArray(user.storedEncounters) ? user.storedEncounters : [],
     autoSearchEnabled: typeof user.autoSearchEnabled === "boolean" ? user.autoSearchEnabled : false,
     integrations: Array.isArray(user.integrations)
