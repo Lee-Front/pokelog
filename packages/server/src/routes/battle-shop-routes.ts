@@ -1,6 +1,7 @@
 import { Router } from "express";
 import type { AuthRequest } from "../middleware/auth-middleware.js";
 import { getUser, saveUser } from "../storage/user-store.js";
+import { withLock } from "../storage/pvp-store.js";
 import { getConfig } from "../storage/config-store.js";
 import { authMiddleware } from "../middleware/auth-middleware.js";
 import { incrementItem } from "../game/inventory-utils.js";
@@ -49,25 +50,27 @@ battleShopRoutes.post("/buy", async (req, res) => {
 
     const totalCost = shopItem.price * qty;
 
-    const user = await getUser(userId!);
-    if (!user) {
-      res.status(404).json({ error: "User not found." });
-      return;
-    }
+    await withLock(`user:${userId!}`, async () => {
+      const user = await getUser(userId!);
+      if (!user) {
+        res.status(404).json({ error: "User not found." });
+        return;
+      }
 
-    if (user.gameMoney < totalCost) {
-      res.status(400).json({ error: "Not enough game money." });
-      return;
-    }
+      if (user.gameMoney < totalCost) {
+        res.status(400).json({ error: "Not enough game money." });
+        return;
+      }
 
-    user.gameMoney -= totalCost;
-    incrementItem(user.inventory, item, qty);
-    await saveUser(user);
+      user.gameMoney -= totalCost;
+      incrementItem(user.inventory, item, qty);
+      await saveUser(user);
 
-    res.json({
-      message: `Purchased ${qty} ${shopItem.name}.`,
-      gameMoney: user.gameMoney,
-      inventory: user.inventory,
+      res.json({
+        message: `Purchased ${qty} ${shopItem.name}.`,
+        gameMoney: user.gameMoney,
+        inventory: user.inventory,
+      });
     });
   } catch (err) {
     log.error({ err }, "Battle shop buy error");

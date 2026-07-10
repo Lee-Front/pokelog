@@ -2,6 +2,7 @@ import { Router } from "express";
 import type { Response } from "express";
 import { authMiddleware, type AuthRequest } from "../middleware/auth-middleware.js";
 import { getUser, saveUser } from "../storage/user-store.js";
+import { withLock } from "../storage/pvp-store.js";
 import { getMoveDisplayName, resolvePendingMoveLearn } from "../game/pending-move-learn.js";
 import { GameRuleError } from "../game/game-errors.js";
 import { findPokemonByUid } from "../game/pokemon-state.js";
@@ -47,29 +48,31 @@ moveRoutes.post("/moves/resolve", async (req: AuthRequest, res: Response) => {
       return;
     }
 
-    const user = await getUser(req.userId!);
-    if (!user) {
-      res.status(404).json({ error: "User not found." });
-      return;
-    }
+    await withLock(`user:${req.userId!}`, async () => {
+      const user = await getUser(req.userId!);
+      if (!user) {
+        res.status(404).json({ error: "User not found." });
+        return;
+      }
 
-    const result = resolvePendingMoveLearn(
-      user,
-      pendingMoveLearnId,
-      typeof forgetMoveId === "string" ? forgetMoveId : null,
-    );
-    await saveUser(user);
+      const result = resolvePendingMoveLearn(
+        user,
+        pendingMoveLearnId,
+        typeof forgetMoveId === "string" ? forgetMoveId : null,
+      );
+      await saveUser(user);
 
-    const message = result.skipped
-      ? `${getMoveDisplayName(result.pendingMoveLearn.moveId)} was not learned.`
-      : result.learnedMoveId
-        ? `${result.pokemon.species} learned ${getMoveDisplayName(result.learnedMoveId)}.`
-        : `${getMoveDisplayName(result.pendingMoveLearn.moveId)} is already known.`;
+      const message = result.skipped
+        ? `${getMoveDisplayName(result.pendingMoveLearn.moveId)} was not learned.`
+        : result.learnedMoveId
+          ? `${result.pokemon.species} learned ${getMoveDisplayName(result.learnedMoveId)}.`
+          : `${getMoveDisplayName(result.pendingMoveLearn.moveId)} is already known.`;
 
-    res.json({
-      message,
-      pokemon: result.pokemon,
-      remainingPending: user.pendingMoveLearns ?? [],
+      res.json({
+        message,
+        pokemon: result.pokemon,
+        remainingPending: user.pendingMoveLearns ?? [],
+      });
     });
   } catch (err) {
     if (err instanceof GameRuleError) {

@@ -1,4 +1,5 @@
-import { getAllUsers, saveUser } from "../storage/user-store.js";
+import { getAllUsers, getUser, saveUser } from "../storage/user-store.js";
+import { withLock } from "../storage/pvp-store.js";
 import { rollRegionEncounters } from "../game/wild-roll.js";
 import { endWorldBossIfExpired } from "../storage/world-boss-store.js";
 import { childLogger } from "../logger.js";
@@ -38,26 +39,39 @@ export async function runAutoSearch(): Promise<void> {
     log.error({ err }, "world-boss expiry check failed during auto-search tick");
   }
 
-  const users = await getAllUsers();
+  // getAllUsers는 스냅샷이므로 후보 선별에만 쓰고(값싼 1차 필터), 실제 변경은 유저 락 하에
+  // 최신 유저를 다시 읽어(fresh) 수행한다 — 스냅샷~저장 사이 유저의 인앱 행동이 끼어들어도
+  // 그 갱신을 덮어쓰지 않는다(lost-update 방지). 다른 프로세스와도 파일 락으로 배타.
+  const candidates = await getAllUsers();
   let hits = 0;
 
-  for (const u of users) {
-    const region = u.currentRegion ?? "default";
-    const interest = u.interestSpecies?.[region] ?? [];
-    if (!u.autoSearchEnabled) continue;
+  for (const candidate of candidates) {
+    const region = candidate.currentRegion ?? "default";
+    const interest = candidate.interestSpecies?.[region] ?? [];
+    if (!candidate.autoSearchEnabled) continue;
     if (!interest.length) continue;
-    if ((u.storedEncounters?.length ?? 0) >= STORED_ENCOUNTER_CAP) continue;
+    if ((candidate.storedEncounters?.length ?? 0) >= STORED_ENCOUNTER_CAP) continue;
 
     try {
-      const rolled = await rollRegionEncounters(u, 12);
-      const hit = rolled.find((ev) => interest.includes(ev.pokemon.species));
-      if (!hit) continue;
+      await withLock(`user:${candidate.account.id}`, async () => {
+        // 락 하에 최신 유저를 다시 읽어 조건을 재확인한다(스냅샷은 낡았을 수 있다).
+        const u = await getUser(candidate.account.id);
+        if (!u) return;
+        const freshRegion = u.currentRegion ?? "default";
+        const freshInterest = u.interestSpecies?.[freshRegion] ?? [];
+        if (!u.autoSearchEnabled || !freshInterest.length) return;
+        if ((u.storedEncounters?.length ?? 0) >= STORED_ENCOUNTER_CAP) return;
 
-      u.storedEncounters = [...(u.storedEncounters ?? []), hit].slice(0, STORED_ENCOUNTER_CAP);
-      await saveUser(u);
-      hits += 1;
+        const rolled = await rollRegionEncounters(u, 12);
+        const hit = rolled.find((ev) => freshInterest.includes(ev.pokemon.species));
+        if (!hit) return;
+
+        u.storedEncounters = [...(u.storedEncounters ?? []), hit].slice(0, STORED_ENCOUNTER_CAP);
+        await saveUser(u);
+        hits += 1;
+      });
     } catch (err) {
-      log.error({ err, userId: u.account?.id }, "auto-search roll failed for user");
+      log.error({ err, userId: candidate.account?.id }, "auto-search roll failed for user");
     }
   }
 

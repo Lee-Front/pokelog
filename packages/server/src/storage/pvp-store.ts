@@ -10,9 +10,11 @@
 import path from "node:path";
 import fs from "node:fs/promises";
 import crypto from "node:crypto";
+import { AsyncLocalStorage } from "node:async_hooks";
 import type { PvpMatch, PvpQueueState } from "../../../../shared/types.js";
 import { getDataDir } from "../paths.js";
 import { readJson, writeJson } from "./json-store.js";
+import { withProcessLock } from "./xproc-lock.js";
 
 function pvpDir(): string {
   return path.join(getDataDir(), "pvp");
@@ -29,17 +31,48 @@ function queuePath(): string {
 
 // --- 키별 직렬화(mutex) ------------------------------------------------------
 // 같은 키에 대한 작업을 순차 실행해 읽기-수정-쓰기 경합을 막는다.
+//
+// 2단 직렬화:
+//  1) 프로세스 내부 — 키별 약속 체인(값싼 경로). 같은 프로세스의 같은 키 작업을 순차화해,
+//     아래 파일 락에는 키당 최대 한 명의 대기자만 도달한다.
+//  2) 프로세스 간 — xproc-lock의 mkdir 기반 파일 락(blue-green 배포 중 두 프로세스가
+//     겹칠 때 같은 유저 JSON에 대한 읽기-수정-쓰기 유실을 막는다).
+// 경합이 없을 때의 동작은 기존과 기능적으로 동일하다(임계구역 앞뒤로 락 획득/해제만 추가).
 const locks = new Map<string, Promise<unknown>>();
 
-export function withLock<T>(key: string, fn: () => Promise<T>): Promise<T> {
+/**
+ * 현재 async 컨텍스트가 보유 중인 락 키 집합. 파일 락은 재진입 불가이므로, 이미 같은 키를
+ * 쥔 흐름이 같은 키로 withLock을 다시 부르면(재진입) 락을 다시 잡지 않고 fn만 그대로 실행해
+ * 자기 자신과의 교착을 막는다. AsyncLocalStorage로 흐름별 격리 — 서로 다른 요청이 우연히
+ * 같은 키를 쓸 때는 격리되어 정상 직렬화된다.
+ */
+const heldKeys = new AsyncLocalStorage<Set<string>>();
+
+/**
+ * 프로세스 내부 키별 약속 체인. fn을 이전 같은 키 작업 뒤에 잇고, 호출자에게는 원본 결과를
+ * (거부 포함) 그대로 전파한다. 체인 핸들은 성공/실패를 모두 흡수해 unhandled rejection이
+ * 생기지 않게 한다.
+ */
+function chainInProcess<T>(key: string, fn: () => Promise<T>): Promise<T> {
   const prev = locks.get(key) ?? Promise.resolve();
-  // 이전 작업의 성공/실패와 무관하게 다음 작업을 잇는다(fn 자체는 한 번만 실행).
   const run = prev.then(() => fn(), () => fn());
-  // 체인용 핸들(성공/실패 모두 흡수)을 락 맵에 저장 — 다음 작업의 게이트 역할만 하고
-  // 거부를 여기서 소비하므로 unhandled rejection이 생기지 않는다. 호출자에게는
-  // 원본 run을 반환해 거부가 그대로 전파된다.
   locks.set(key, run.then(() => undefined, () => undefined));
   return run;
+}
+
+export function withLock<T>(key: string, fn: () => Promise<T>): Promise<T> {
+  // 재진입 가드 — 이미 이 키를 쥔 흐름이면 재획득 없이 그대로 실행(파일 락은 non-reentrant).
+  const currentlyHeld = heldKeys.getStore();
+  if (currentlyHeld?.has(key)) {
+    return fn();
+  }
+
+  return chainInProcess(key, () => {
+    // 이 흐름에서 잡은 키를 기록해, fn 내부의 같은 키 재진입을 위 가드가 감지하게 한다.
+    const held = new Set(currentlyHeld ?? []);
+    held.add(key);
+    return heldKeys.run(held, () => withProcessLock(key, fn));
+  });
 }
 
 // --- 매치 CRUD ---------------------------------------------------------------

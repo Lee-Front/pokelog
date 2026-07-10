@@ -3,6 +3,7 @@ import fs from "node:fs/promises";
 import { getConfig } from "../storage/config-store.js";
 import { getDataDir } from "../paths.js";
 import { getUser, isGitIntegration, normalizeRepoUrl, saveUser } from "../storage/user-store.js";
+import { withLock } from "../storage/pvp-store.js";
 import { calculateReward } from "../game/reward.js";
 import { judgeCombo, getComboMultiplier } from "../game/combo.js";
 import {
@@ -192,11 +193,6 @@ export async function recomputeUser(userId: string): Promise<RecomputeResult> {
   const before = { points: user.points, totalExp: user.totalExp };
   const config = await getConfig();
 
-  // Reset commit-derived state to a clean baseline before replaying.
-  user.points = 0;
-  user.totalExp = 0;
-  user.combo = { count: 0, lastCommitAt: null };
-
   // Collect this user's commits across every git integration repo, deduplicated
   // by commit hash (a commit could appear via two integrations on the same repo)
   // and sorted chronologically so combo timing matches a real forward poll.
@@ -235,21 +231,37 @@ export async function recomputeUser(userId: string): Promise<RecomputeResult> {
     (a, b) => new Date(a.commit.timestamp).getTime() - new Date(b.commit.timestamp).getTime(),
   );
 
-  for (const { commit, bytes } of pending) {
-    applyCommitReward(user, commit, bytes, config);
-  }
+  // The slow git clone/fetch/collect above ran WITHOUT the user lock (read-only,
+  // no user mutation). Only the reset→replay→save critical section takes the
+  // lock, and re-reads the user fresh so a reward/action that landed during the
+  // long collection window is not clobbered (lost-update) — and no other writer
+  // interleaves with the replay. The lock window stays short (no network I/O).
+  const after = await withLock(`user:${userId}`, async () => {
+    const fresh = await getUser(userId);
+    if (!fresh) throw new Error("유저 없음");
 
-  // Single intentional save; reason skips the balance-regression warning.
-  await saveUser(user, "admin-recompute");
+    // Reset commit-derived state to a clean baseline before replaying.
+    fresh.points = 0;
+    fresh.totalExp = 0;
+    fresh.combo = { count: 0, lastCommitAt: null };
+
+    for (const { commit, bytes } of pending) {
+      applyCommitReward(fresh, commit, bytes, config);
+    }
+
+    // Single intentional save; reason skips the balance-regression warning.
+    await saveUser(fresh, "admin-recompute");
+    return { points: fresh.points, totalExp: fresh.totalExp };
+  });
 
   log.info(
-    { userId, before, after: { points: user.points, totalExp: user.totalExp }, commitsApplied: pending.length },
+    { userId, before, after, commitsApplied: pending.length },
     "recompute: done",
   );
 
   return {
     before,
-    after: { points: user.points, totalExp: user.totalExp },
+    after,
     commitsApplied: pending.length,
   };
 }

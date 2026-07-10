@@ -571,24 +571,26 @@ adminRoutes.put("/users/:id/git-emails", async (req, res) => {
       return res.status(400).json({ error: "emails는 배열이어야 합니다" });
     }
 
-    const user = await getUser(req.params.id);
-    if (!user) return res.status(404).json({ error: "유저 없음" });
+    await withLock(`user:${req.params.id}`, async () => {
+      const user = await getUser(req.params.id);
+      if (!user) return res.status(404).json({ error: "유저 없음" });
 
-    const normalized = Array.from(
-      new Set(
-        emails
-          .filter((e): e is string => typeof e === "string")
-          .map((e) => e.trim().toLowerCase())
-          .filter((e) => e.length > 0 && e.includes("@"))
-      )
-    );
+      const normalized = Array.from(
+        new Set(
+          emails
+            .filter((e): e is string => typeof e === "string")
+            .map((e) => e.trim().toLowerCase())
+            .filter((e) => e.length > 0 && e.includes("@"))
+        )
+      );
 
-    user.account.matchings = user.account.matchings ?? {};
-    user.account.matchings.git = user.account.matchings.git ?? { emails: [] };
-    user.account.matchings.git.emails = normalized;
+      user.account.matchings = user.account.matchings ?? {};
+      user.account.matchings.git = user.account.matchings.git ?? { emails: [] };
+      user.account.matchings.git.emails = normalized;
 
-    await saveUser(user);
-    res.json({ ok: true, emails: normalized });
+      await saveUser(user);
+      res.json({ ok: true, emails: normalized });
+    });
   } catch (err) {
     log.error({ err }, "Admin git-emails set error");
     res.status(500).json({ error: "서버 오류" });
@@ -599,36 +601,38 @@ adminRoutes.put("/users/:id/git-emails", async (req, res) => {
 // 결과가 음수면 0으로 클램프. 잔액 하락이 의도된 운영 작업이므로 "admin-adjust"로 저장.
 adminRoutes.post("/users/:id/adjust", async (req, res) => {
   try {
-    const user = await getUser(req.params.id);
-    if (!user) return res.status(404).json({ error: "유저 없음" });
+    await withLock(`user:${req.params.id}`, async () => {
+      const user = await getUser(req.params.id);
+      if (!user) return res.status(404).json({ error: "유저 없음" });
 
-    const fields = [
-      { name: "Points", target: "points" },
-      { name: "TotalExp", target: "totalExp" },
-      { name: "GameMoney", target: "gameMoney" },
-    ] as const;
+      const fields = [
+        { name: "Points", target: "points" },
+        { name: "TotalExp", target: "totalExp" },
+        { name: "GameMoney", target: "gameMoney" },
+      ] as const;
 
-    for (const { name, target } of fields) {
-      const setVal = req.body[`set${name}`];
-      const addVal = req.body[`add${name}`];
-      if (setVal != null && addVal != null) {
-        return res.status(400).json({ error: `set${name}와 add${name}는 동시에 줄 수 없습니다` });
-      }
-      if (setVal != null) {
-        if (typeof setVal !== "number" || !Number.isFinite(setVal)) {
-          return res.status(400).json({ error: `set${name}는 숫자여야 합니다` });
+      for (const { name, target } of fields) {
+        const setVal = req.body[`set${name}`];
+        const addVal = req.body[`add${name}`];
+        if (setVal != null && addVal != null) {
+          return res.status(400).json({ error: `set${name}와 add${name}는 동시에 줄 수 없습니다` });
         }
-        user[target] = Math.max(0, setVal);
-      } else if (addVal != null) {
-        if (typeof addVal !== "number" || !Number.isFinite(addVal)) {
-          return res.status(400).json({ error: `add${name}는 숫자여야 합니다` });
+        if (setVal != null) {
+          if (typeof setVal !== "number" || !Number.isFinite(setVal)) {
+            return res.status(400).json({ error: `set${name}는 숫자여야 합니다` });
+          }
+          user[target] = Math.max(0, setVal);
+        } else if (addVal != null) {
+          if (typeof addVal !== "number" || !Number.isFinite(addVal)) {
+            return res.status(400).json({ error: `add${name}는 숫자여야 합니다` });
+          }
+          user[target] = Math.max(0, user[target] + addVal);
         }
-        user[target] = Math.max(0, user[target] + addVal);
       }
-    }
 
-    await saveUser(user, "admin-adjust");
-    res.json({ ok: true, points: user.points, totalExp: user.totalExp, gameMoney: user.gameMoney });
+      await saveUser(user, "admin-adjust");
+      res.json({ ok: true, points: user.points, totalExp: user.totalExp, gameMoney: user.gameMoney });
+    });
   } catch (err) {
     log.error({ err }, "Admin adjust error");
     res.status(500).json({ error: "서버 오류" });
@@ -646,12 +650,14 @@ adminRoutes.post("/users/:id/give-item", async (req, res) => {
       return res.status(400).json({ error: "qty는 양수여야 합니다" });
     }
 
-    const user = await getUser(req.params.id);
-    if (!user) return res.status(404).json({ error: "유저 없음" });
+    await withLock(`user:${req.params.id}`, async () => {
+      const user = await getUser(req.params.id);
+      if (!user) return res.status(404).json({ error: "유저 없음" });
 
-    incrementItem(user.inventory, item, quantity);
-    await saveUser(user);
-    res.json({ ok: true, inventory: user.inventory });
+      incrementItem(user.inventory, item, quantity);
+      await saveUser(user);
+      res.json({ ok: true, inventory: user.inventory });
+    });
   } catch (err) {
     log.error({ err }, "Admin give-item error");
     res.status(500).json({ error: "서버 오류" });
@@ -665,21 +671,23 @@ adminRoutes.post("/users/:id/give-pokemon", async (req, res) => {
     if (!species) return res.status(400).json({ error: "species 필요" });
     if (!getSpeciesByName(species)) return res.status(400).json({ error: "존재하지 않는 포켓몬입니다" });
 
-    const user = await getUser(req.params.id);
-    if (!user) return res.status(404).json({ error: "유저 없음" });
+    await withLock(`user:${req.params.id}`, async () => {
+      const user = await getUser(req.params.id);
+      if (!user) return res.status(404).json({ error: "유저 없음" });
 
-    const pokemon = createPokemon(species, level ?? 5);
-    if (typeof shiny === "boolean") pokemon.isShiny = shiny;
-    if (user.party.length < 6) {
-      user.pokemon.push(pokemon);
-      user.party.push(pokemon.uid);
-    } else user.storage.push(pokemon);
-    if (!user.pokedex.includes(pokemon.species)) user.pokedex.push(pokemon.species);
+      const pokemon = createPokemon(species, level ?? 5);
+      if (typeof shiny === "boolean") pokemon.isShiny = shiny;
+      if (user.party.length < 6) {
+        user.pokemon.push(pokemon);
+        user.party.push(pokemon.uid);
+      } else user.storage.push(pokemon);
+      if (!user.pokedex.includes(pokemon.species)) user.pokedex.push(pokemon.species);
 
-    await saveUser(user);
-    res.json({
-      ok: true,
-      pokemon: { uid: pokemon.uid, species: pokemon.species, level: pokemon.level, shiny: pokemon.isShiny ?? false },
+      await saveUser(user);
+      res.json({
+        ok: true,
+        pokemon: { uid: pokemon.uid, species: pokemon.species, level: pokemon.level, shiny: pokemon.isShiny ?? false },
+      });
     });
   } catch (err) {
     log.error({ err }, "Admin give-pokemon error");
@@ -820,12 +828,14 @@ adminRoutes.delete("/users/:id", async (req, res) => {
 // 게임 데이터 초기화(개별) — 계정·연동 보존. 리셋/보존 필드는 resetGameData 주석 참조.
 adminRoutes.post("/users/:id/reset-game", async (req, res) => {
   try {
-    const user = await getUser(req.params.id);
-    if (!user) return res.status(404).json({ error: "유저 없음" });
+    await withLock(`user:${req.params.id}`, async () => {
+      const user = await getUser(req.params.id);
+      if (!user) return res.status(404).json({ error: "유저 없음" });
 
-    resetGameData(user);
-    await saveUser(user, "admin-adjust");
-    res.json({ ok: true });
+      resetGameData(user);
+      await saveUser(user, "admin-adjust");
+      res.json({ ok: true });
+    });
   } catch (err) {
     log.error({ err }, "Admin reset-game error");
     res.status(500).json({ error: "서버 오류" });
@@ -1237,12 +1247,14 @@ adminRoutes.post("/test/give-points", async (req, res) => {
     const { userId, amount } = req.body;
     if (!userId || amount == null) return res.status(400).json({ error: "userId, amount 필요" });
 
-    const user = await getUser(userId);
-    if (!user) return res.status(404).json({ error: "유저 없음" });
+    await withLock(`user:${userId}`, async () => {
+      const user = await getUser(userId);
+      if (!user) return res.status(404).json({ error: "유저 없음" });
 
-    user.points += amount;
-    await saveUser(user, "admin-adjust");
-    res.json({ ok: true, points: user.points });
+      user.points += amount;
+      await saveUser(user, "admin-adjust");
+      res.json({ ok: true, points: user.points });
+    });
   } catch {
     res.status(500).json({ error: "서버 오류" });
   }
@@ -1254,12 +1266,14 @@ adminRoutes.post("/test/give-item", async (req, res) => {
     const { userId, item, quantity } = req.body;
     if (!userId || !item) return res.status(400).json({ error: "userId, item 필요" });
 
-    const user = await getUser(userId);
-    if (!user) return res.status(404).json({ error: "유저 없음" });
+    await withLock(`user:${userId}`, async () => {
+      const user = await getUser(userId);
+      if (!user) return res.status(404).json({ error: "유저 없음" });
 
-    incrementItem(user.inventory, item, quantity || 1);
-    await saveUser(user);
-    res.json({ ok: true, inventory: user.inventory });
+      incrementItem(user.inventory, item, quantity || 1);
+      await saveUser(user);
+      res.json({ ok: true, inventory: user.inventory });
+    });
   } catch {
     res.status(500).json({ error: "서버 오류" });
   }
@@ -1271,30 +1285,32 @@ adminRoutes.post("/test/give-pokemon", async (req, res) => {
     const { userId, species, level, hasGigantamaxFactor } = req.body;
     if (!userId || !species) return res.status(400).json({ error: "userId, species 필요" });
 
-    const user = await getUser(userId);
-    if (!user) return res.status(404).json({ error: "유저 없음" });
+    await withLock(`user:${userId}`, async () => {
+      const user = await getUser(userId);
+      if (!user) return res.status(404).json({ error: "유저 없음" });
 
-    const pokemon = createPokemon(species, level || 5);
-    if (typeof hasGigantamaxFactor === "boolean") {
-      pokemon.hasGigantamaxFactor = hasGigantamaxFactor;
-    }
-    if (user.party.length < 6) {
-      user.pokemon.push(pokemon);
-      user.party.push(pokemon.uid);
-    } else {
-      user.storage.push(pokemon);
-    }
-    if (!user.pokedex.includes(species)) user.pokedex.push(species);
+      const pokemon = createPokemon(species, level || 5);
+      if (typeof hasGigantamaxFactor === "boolean") {
+        pokemon.hasGigantamaxFactor = hasGigantamaxFactor;
+      }
+      if (user.party.length < 6) {
+        user.pokemon.push(pokemon);
+        user.party.push(pokemon.uid);
+      } else {
+        user.storage.push(pokemon);
+      }
+      if (!user.pokedex.includes(species)) user.pokedex.push(species);
 
-    await saveUser(user);
-    res.json({
-      ok: true,
-      pokemon: {
-        uid: pokemon.uid,
-        species,
-        level: pokemon.level,
-        hasGigantamaxFactor: pokemon.hasGigantamaxFactor ?? false,
-      },
+      await saveUser(user);
+      res.json({
+        ok: true,
+        pokemon: {
+          uid: pokemon.uid,
+          species,
+          level: pokemon.level,
+          hasGigantamaxFactor: pokemon.hasGigantamaxFactor ?? false,
+        },
+      });
     });
   } catch (err) {
     log.error({ err }, "Admin route error");
@@ -1308,12 +1324,14 @@ adminRoutes.post("/test/clear-battle", async (req, res) => {
     const { userId } = req.body;
     if (!userId) return res.status(400).json({ error: "userId 필요" });
 
-    const user = await getUser(userId);
-    if (!user) return res.status(404).json({ error: "유저 없음" });
+    await withLock(`user:${userId}`, async () => {
+      const user = await getUser(userId);
+      if (!user) return res.status(404).json({ error: "유저 없음" });
 
-    user.battleState = null;
-    await saveUser(user);
-    res.json({ ok: true });
+      user.battleState = null;
+      await saveUser(user);
+      res.json({ ok: true });
+    });
   } catch {
     res.status(500).json({ error: "서버 오류" });
   }

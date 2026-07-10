@@ -1,6 +1,7 @@
 import { Router } from "express";
 import type { AuthRequest } from "../middleware/auth-middleware.js";
 import { getUser, saveUser } from "../storage/user-store.js";
+import { withLock } from "../storage/pvp-store.js";
 import { getConfig } from "../storage/config-store.js";
 import { authMiddleware } from "../middleware/auth-middleware.js";
 import { incrementItem, resolveShopItem } from "../game/inventory-utils.js";
@@ -51,25 +52,27 @@ shopRoutes.post("/buy", async (req, res) => {
 
     const totalCost = shopItem.price * qty;
 
-    const user = await getUser(userId!);
-    if (!user) {
-      res.status(404).json({ error: "User not found." });
-      return;
-    }
+    await withLock(`user:${userId!}`, async () => {
+      const user = await getUser(userId!);
+      if (!user) {
+        res.status(404).json({ error: "User not found." });
+        return;
+      }
 
-    if (user.points < totalCost) {
-      res.status(400).json({ error: "Not enough points." });
-      return;
-    }
+      if (user.points < totalCost) {
+        res.status(400).json({ error: "Not enough points." });
+        return;
+      }
 
-    user.points -= totalCost;
-    incrementItem(user.inventory, item, qty);
-    await saveUser(user, "shop-purchase");
+      user.points -= totalCost;
+      incrementItem(user.inventory, item, qty);
+      await saveUser(user, "shop-purchase");
 
-    res.json({
-      message: `Purchased ${qty} ${shopItem.name}.`,
-      points: user.points,
-      inventory: user.inventory,
+      res.json({
+        message: `Purchased ${qty} ${shopItem.name}.`,
+        points: user.points,
+        inventory: user.inventory,
+      });
     });
   } catch (err) {
     log.error({ err }, "Buy error");
@@ -91,67 +94,69 @@ shopRoutes.post("/use", async (req, res) => {
     // 회복약 등은 게임머니 상점(battleShop)으로 이동했으므로 두 카탈로그를 모두 조회한다.
     const shopItem = resolveShopItem(config, item);
 
-    const user = await getUser(userId!);
-    if (!user) {
-      res.status(404).json({ error: "User not found." });
-      return;
-    }
+    await withLock(`user:${userId!}`, async () => {
+      const user = await getUser(userId!);
+      if (!user) {
+        res.status(404).json({ error: "User not found." });
+        return;
+      }
 
-    const result = useInventoryItem(user, item, pokemonUid, shopItem);
-    await saveUser(user);
+      const result = useInventoryItem(user, item, pokemonUid, shopItem);
+      await saveUser(user);
 
-    if (result.kind === "healing") {
+      if (result.kind === "healing") {
+        res.json({
+          kind: result.kind,
+          message: `${result.itemName} used successfully.`,
+          pokemon: { uid: result.pokemon.uid, hp: result.pokemon.hp, maxHp: result.pokemon.maxHp },
+          inventory: user.inventory,
+        });
+        return;
+      }
+
+      if (result.kind === "status-cure") {
+        res.json({
+          kind: result.kind,
+          message: `${result.itemName} used successfully.`,
+          pokemon: {
+            uid: result.pokemon.uid,
+            hp: result.pokemon.hp,
+            maxHp: result.pokemon.maxHp,
+            statusCondition: result.pokemon.statusCondition ?? null,
+          },
+          inventory: user.inventory,
+        });
+        return;
+      }
+
+      if (result.kind === "gmax-factor") {
+        res.json({
+          kind: result.kind,
+          message: `${result.pokemon.species}이(가) 거다이맥스할 수 있게 되었다!`,
+          pokemon: result.pokemon,
+          inventory: user.inventory,
+        });
+        return;
+      }
+
+      // 특성 변경(특성캡슐/특성패치) — item-usage가 만든 안내 메시지와 바뀐 특성을 그대로 전달한다.
+      if (result.kind === "ability") {
+        res.json({
+          kind: result.kind,
+          message: result.message ?? `${result.itemName} used successfully.`,
+          abilityId: result.abilityId ?? null,
+          pokemon: result.pokemon,
+          inventory: user.inventory,
+        });
+        return;
+      }
+
       res.json({
         kind: result.kind,
-        message: `${result.itemName} used successfully.`,
-        pokemon: { uid: result.pokemon.uid, hp: result.pokemon.hp, maxHp: result.pokemon.maxHp },
-        inventory: user.inventory,
-      });
-      return;
-    }
-
-    if (result.kind === "status-cure") {
-      res.json({
-        kind: result.kind,
-        message: `${result.itemName} used successfully.`,
-        pokemon: {
-          uid: result.pokemon.uid,
-          hp: result.pokemon.hp,
-          maxHp: result.pokemon.maxHp,
-          statusCondition: result.pokemon.statusCondition ?? null,
-        },
-        inventory: user.inventory,
-      });
-      return;
-    }
-
-    if (result.kind === "gmax-factor") {
-      res.json({
-        kind: result.kind,
-        message: `${result.pokemon.species}이(가) 거다이맥스할 수 있게 되었다!`,
+        message: `${result.previousSpecies} evolved into ${result.pokemon.species} using ${result.itemName}.`,
         pokemon: result.pokemon,
         inventory: user.inventory,
       });
-      return;
-    }
-
-    // 특성 변경(특성캡슐/특성패치) — item-usage가 만든 안내 메시지와 바뀐 특성을 그대로 전달한다.
-    if (result.kind === "ability") {
-      res.json({
-        kind: result.kind,
-        message: result.message ?? `${result.itemName} used successfully.`,
-        abilityId: result.abilityId ?? null,
-        pokemon: result.pokemon,
-        inventory: user.inventory,
-      });
-      return;
-    }
-
-    res.json({
-      kind: result.kind,
-      message: `${result.previousSpecies} evolved into ${result.pokemon.species} using ${result.itemName}.`,
-      pokemon: result.pokemon,
-      inventory: user.inventory,
     });
   } catch (err) {
     if (err instanceof GameRuleError) {

@@ -3,6 +3,7 @@ import type { Response } from "express";
 import crypto from "node:crypto";
 import { authMiddleware, type AuthRequest } from "../middleware/auth-middleware.js";
 import { getUser, saveUser } from "../storage/user-store.js";
+import { withLock } from "../storage/pvp-store.js";
 import { getConfig } from "../storage/config-store.js";
 import { getAllSpecies, createWildPokemon, createPokemon } from "../game/pokemon-factory.js";
 import { selectFromEncounters, splitEncounters } from "../game/encounter.js";
@@ -33,7 +34,7 @@ import { resolveShopItem } from "../game/inventory-utils.js";
 import {
   getWorldBoss, mutateWorldBoss, endWorldBossIfExpired, CHAT_MAX,
 } from "../storage/world-boss-store.js";
-import type { BattleState, WorldBossState } from "../../../../shared/types.js";
+import type { BattleState, OwnedPokemon, WorldBossState } from "../../../../shared/types.js";
 import { childLogger } from "../logger.js";
 const log = childLogger("game-routes");
 
@@ -48,32 +49,34 @@ const VALID_STARTERS = ["bulbasaur", "charmander", "squirtle"];
 // 가입과 동일하게 Lv.5 스타터 + 몬스터볼 5개를 지급하고 도감에 등록한다(멱등: 이미 보유 시 거부).
 gameRoutes.post("/starter", async (req: AuthRequest, res: Response) => {
   try {
-    const user = await getUser(req.userId!);
-    if (!user) {
-      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
-      return;
-    }
+    await withLock(`user:${req.userId!}`, async () => {
+      const user = await getUser(req.userId!);
+      if (!user) {
+        res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+        return;
+      }
 
-    const starter = typeof req.body?.starter === "string" ? req.body.starter : "";
-    if (!VALID_STARTERS.includes(starter)) {
-      res.status(400).json({ error: "올바른 스타터를 선택해주세요 (bulbasaur, charmander, squirtle)" });
-      return;
-    }
+      const starter = typeof req.body?.starter === "string" ? req.body.starter : "";
+      if (!VALID_STARTERS.includes(starter)) {
+        res.status(400).json({ error: "올바른 스타터를 선택해주세요 (bulbasaur, charmander, squirtle)" });
+        return;
+      }
 
-    // 이미 포켓몬이 있으면 스타터를 다시 줄 수 없다(중복 지급 방지).
-    if ((user.pokemon?.length ?? 0) > 0 || (user.party?.length ?? 0) > 0) {
-      res.status(400).json({ error: "이미 포켓몬을 보유하고 있어 스타터를 받을 수 없습니다." });
-      return;
-    }
+      // 이미 포켓몬이 있으면 스타터를 다시 줄 수 없다(중복 지급 방지).
+      if ((user.pokemon?.length ?? 0) > 0 || (user.party?.length ?? 0) > 0) {
+        res.status(400).json({ error: "이미 포켓몬을 보유하고 있어 스타터를 받을 수 없습니다." });
+        return;
+      }
 
-    const starterPokemon = createPokemon(starter, 5);
-    user.pokemon = [starterPokemon];
-    user.party = [starterPokemon.uid];
-    if (!user.pokedex.includes(starter)) user.pokedex.push(starter);
-    user.inventory.pokeball = (user.inventory.pokeball ?? 0) + 5;
+      const starterPokemon = createPokemon(starter, 5);
+      user.pokemon = [starterPokemon];
+      user.party = [starterPokemon.uid];
+      if (!user.pokedex.includes(starter)) user.pokedex.push(starter);
+      user.inventory.pokeball = (user.inventory.pokeball ?? 0) + 5;
 
-    await saveUser(user);
-    res.json({ ok: true, pokemon: starterPokemon });
+      await saveUser(user);
+      res.json({ ok: true, pokemon: starterPokemon });
+    });
   } catch (err) {
     log.error({ err }, "Starter selection error");
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
@@ -82,37 +85,39 @@ gameRoutes.post("/starter", async (req: AuthRequest, res: Response) => {
 
 gameRoutes.get("/status", async (req: AuthRequest, res: Response) => {
   try {
-    const user = await getUser(req.userId!);
-    if (!user) {
-      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
-      return;
-    }
+    await withLock(`user:${req.userId!}`, async () => {
+      const user = await getUser(req.userId!);
+      if (!user) {
+        res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+        return;
+      }
 
-    const now = new Date();
-    // 야생 조우는 만료되지 않으므로 대기 이벤트 전체가 곧 활성 개수다.
-    const pendingCount = user.pendingEvents.length;
+      const now = new Date();
+      // 야생 조우는 만료되지 않으므로 대기 이벤트 전체가 곧 활성 개수다.
+      const pendingCount = user.pendingEvents.length;
 
-    // 더 이상 진화를 자동으로 큐잉하지 않는다 — 진화는 플레이어가 목록/상세에서 명시적으로
-    // 요청하는 온디맨드 경로(POST /game/pokemon/:uid/evolve)로 옮겼다. 다만 과거 자동 큐잉으로
-    // 존재하지 않는 대상 종에 잘못 쌓였던 기존 유저의 잔여 pending만 여기서 마이그레이션 삼아 정리한다.
-    const prunedCount = prunePendingEvolutions(user);
-    if (prunedCount > 0) {
-      await saveUser(user);
-    }
+      // 더 이상 진화를 자동으로 큐잉하지 않는다 — 진화는 플레이어가 목록/상세에서 명시적으로
+      // 요청하는 온디맨드 경로(POST /game/pokemon/:uid/evolve)로 옮겼다. 다만 과거 자동 큐잉으로
+      // 존재하지 않는 대상 종에 잘못 쌓였던 기존 유저의 잔여 pending만 여기서 마이그레이션 삼아 정리한다.
+      const prunedCount = prunePendingEvolutions(user);
+      if (prunedCount > 0) {
+        await saveUser(user);
+      }
 
-    const today = now.toISOString().slice(0, 10);
-    const todayLogs = user.log.filter((l) => l.timestamp.startsWith(today));
+      const today = now.toISOString().slice(0, 10);
+      const todayLogs = user.log.filter((l) => l.timestamp.startsWith(today));
 
-    res.json({
-      nickname: user.account.nickname,
-      points: user.points,
-      totalExp: user.totalExp,
-      combo: user.combo,
-      pendingEventCount: pendingCount,
-      pendingEvolutionCount: user.pendingEvolutions?.length ?? 0,
-      pendingMoveLearnCount: user.pendingMoveLearns?.length ?? 0,
-      todayLog: todayLogs,
-      region: (() => { try { return getRegion(user.currentRegion ?? "default").name; } catch { return user.currentRegion ?? "default"; } })(),
+      res.json({
+        nickname: user.account.nickname,
+        points: user.points,
+        totalExp: user.totalExp,
+        combo: user.combo,
+        pendingEventCount: pendingCount,
+        pendingEvolutionCount: user.pendingEvolutions?.length ?? 0,
+        pendingMoveLearnCount: user.pendingMoveLearns?.length ?? 0,
+        todayLog: todayLogs,
+        region: (() => { try { return getRegion(user.currentRegion ?? "default").name; } catch { return user.currentRegion ?? "default"; } })(),
+      });
     });
   } catch (err) {
     log.error({ err }, "Status error");
@@ -152,22 +157,24 @@ gameRoutes.get("/events", async (req: AuthRequest, res: Response) => {
 // battle-routes의 pendingEvents 정리 패턴과 동일하게 id로 걸러낸다.
 gameRoutes.delete("/events/:id", async (req: AuthRequest, res: Response) => {
   try {
-    const user = await getUser(req.userId!);
-    if (!user) {
-      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
-      return;
-    }
+    await withLock(`user:${req.userId!}`, async () => {
+      const user = await getUser(req.userId!);
+      if (!user) {
+        res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+        return;
+      }
 
-    const { id } = req.params;
-    const before = user.pendingEvents.length;
-    user.pendingEvents = user.pendingEvents.filter((e) => e.id !== id);
-    if (user.pendingEvents.length === before) {
-      res.status(404).json({ error: "이벤트를 찾을 수 없습니다" });
-      return;
-    }
+      const { id } = req.params;
+      const before = user.pendingEvents.length;
+      user.pendingEvents = user.pendingEvents.filter((e) => e.id !== id);
+      if (user.pendingEvents.length === before) {
+        res.status(404).json({ error: "이벤트를 찾을 수 없습니다" });
+        return;
+      }
 
-    await saveUser(user);
-    res.json({ ok: true });
+      await saveUser(user);
+      res.json({ ok: true });
+    });
   } catch (err) {
     log.error({ err }, "Event delete error");
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
@@ -179,46 +186,48 @@ gameRoutes.delete("/events/:id", async (req: AuthRequest, res: Response) => {
 // 포인트 차감 없음(무료). 포털은 이 응답을 받아 슬롯 롤 애니메이션 후 일괄 공개한다.
 gameRoutes.post("/wild/search", async (req: AuthRequest, res: Response) => {
   try {
-    const user = await getUser(req.userId!);
-    if (!user) {
-      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
-      return;
-    }
+    await withLock(`user:${req.userId!}`, async () => {
+      const user = await getUser(req.userId!);
+      if (!user) {
+        res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+        return;
+      }
 
-    const config = await getConfig();
-    const rollCount = config.rewards.encounter.rollCount;
-    const regionData = getRegion(user.currentRegion ?? "default");
+      const config = await getConfig();
+      const rollCount = config.rewards.encounter.rollCount;
+      const regionData = getRegion(user.currentRegion ?? "default");
 
-    // 야생 레벨 파티 스케일링 — 파티 최고 레벨 기준 ±variance로 뽑는다(플래그 켜짐 + 파티 보유 시).
-    // 종 선택은 그대로(가중 추첨)이고 레벨만 스케일된다. 파티가 비었으면 undefined로 둬서 지역
-    // levelRange 균등 롤(종 자연 레벨대)로 폴백한다. (전설 주입용 scaling만 여기서 계산 — 일반
-    // 풀 배치는 rollRegionEncounters가 동일 로직으로 자체 계산한다.)
-    const party = getPartyPokemon(user);
-    const partyMaxLevel = party.reduce((max, p) => Math.max(max, p.level), 0);
-    const scaling = config.battle.wildLevelScaling && partyMaxLevel > 0
-      ? { partyMaxLevel, variance: config.battle.wildLevelVariance }
-      : undefined;
+      // 야생 레벨 파티 스케일링 — 파티 최고 레벨 기준 ±variance로 뽑는다(플래그 켜짐 + 파티 보유 시).
+      // 종 선택은 그대로(가중 추첨)이고 레벨만 스케일된다. 파티가 비었으면 undefined로 둬서 지역
+      // levelRange 균등 롤(종 자연 레벨대)로 폴백한다. (전설 주입용 scaling만 여기서 계산 — 일반
+      // 풀 배치는 rollRegionEncounters가 동일 로직으로 자체 계산한다.)
+      const party = getPartyPokemon(user);
+      const partyMaxLevel = party.reduce((max, p) => Math.max(max, p.level), 0);
+      const scaling = config.battle.wildLevelScaling && partyMaxLevel > 0
+        ? { partyMaxLevel, variance: config.battle.wildLevelVariance }
+        : undefined;
 
-    // rollCount만큼 일반 조우를 생성한다(자동 탐색과 공유하는 순수 롤 함수).
-    const newBatch = await rollRegionEncounters(user, rollCount);
+      // rollCount만큼 일반 조우를 생성한다(자동 탐색과 공유하는 순수 롤 함수).
+      const newBatch = await rollRegionEncounters(user, rollCount);
 
-    // 게이팅된 전설 주입(수동 전용) — 롤 1회당 확률적으로 슬롯 하나를 지역 전설로 교체한다(최대 1마리, 쿨다운 없음).
-    // 전설도 레벨은 스케일되지만 자기 levelRange[0] 하한으로 클램프돼 밴드 아래로는 내려가지 않는다.
-    const { legendary: legendaryPool } = splitEncounters(regionData);
-    if (legendaryPool.length && Math.random() < config.rewards.encounter.wildLegendaryChance) {
-      const pick = selectFromEncounters(legendaryPool, Math.random, scaling);
-      const legendary = createEncounterEvent(createWildPokemon(pick.species, pick.level));
-      const slot = Math.floor(Math.random() * newBatch.length);
-      newBatch[slot] = legendary;
-    }
+      // 게이팅된 전설 주입(수동 전용) — 롤 1회당 확률적으로 슬롯 하나를 지역 전설로 교체한다(최대 1마리, 쿨다운 없음).
+      // 전설도 레벨은 스케일되지만 자기 levelRange[0] 하한으로 클램프돼 밴드 아래로는 내려가지 않는다.
+      const { legendary: legendaryPool } = splitEncounters(regionData);
+      if (legendaryPool.length && Math.random() < config.rewards.encounter.wildLegendaryChance) {
+        const pick = selectFromEncounters(legendaryPool, Math.random, scaling);
+        const legendary = createEncounterEvent(createWildPokemon(pick.species, pick.level));
+        const slot = Math.floor(Math.random() * newBatch.length);
+        newBatch[slot] = legendary;
+      }
 
-    // 보드 교체 — 기존 야생 조우는 제거하되 진화/기술배우기 등 다른 pending은 보존한다.
-    user.pendingEvents = user.pendingEvents
-      .filter((e) => e.type !== "wild_encounter")
-      .concat(newBatch);
-    await saveUser(user);
+      // 보드 교체 — 기존 야생 조우는 제거하되 진화/기술배우기 등 다른 pending은 보존한다.
+      user.pendingEvents = user.pendingEvents
+        .filter((e) => e.type !== "wild_encounter")
+        .concat(newBatch);
+      await saveUser(user);
 
-    res.status(200).json({ events: newBatch, count: newBatch.length });
+      res.status(200).json({ events: newBatch, count: newBatch.length });
+    });
   } catch (err) {
     log.error({ err }, "Wild search error");
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
@@ -261,29 +270,31 @@ gameRoutes.put("/interests", async (req: AuthRequest, res: Response) => {
       return;
     }
 
-    const user = await getUser(req.userId!);
-    if (!user) {
-      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
-      return;
-    }
-
-    const region = user.currentRegion ?? "default";
-    for (const sp of species) {
-      if (typeof sp !== "string" || !isWildSpecies(sp, region)) {
-        res.status(400).json({ error: "해당 지역에 출몰하지 않는 종" });
+    await withLock(`user:${req.userId!}`, async () => {
+      const user = await getUser(req.userId!);
+      if (!user) {
+        res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
         return;
       }
-    }
 
-    const interestSpecies = [...new Set(species as string[])];
-    // 현재 지역 항목만 갱신하고 다른 지역 목록은 그대로 보존한다(normalize가 맵으로 정규화하지만,
-    // 여기서도 기존 값을 방어적으로 객체 취급한다).
-    user.interestSpecies = {
-      ...(user.interestSpecies ?? {}),
-      [region]: interestSpecies,
-    };
-    await saveUser(user);
-    res.json({ interestSpecies, region });
+      const region = user.currentRegion ?? "default";
+      for (const sp of species) {
+        if (typeof sp !== "string" || !isWildSpecies(sp, region)) {
+          res.status(400).json({ error: "해당 지역에 출몰하지 않는 종" });
+          return;
+        }
+      }
+
+      const interestSpecies = [...new Set(species as string[])];
+      // 현재 지역 항목만 갱신하고 다른 지역 목록은 그대로 보존한다(normalize가 맵으로 정규화하지만,
+      // 여기서도 기존 값을 방어적으로 객체 취급한다).
+      user.interestSpecies = {
+        ...(user.interestSpecies ?? {}),
+        [region]: interestSpecies,
+      };
+      await saveUser(user);
+      res.json({ interestSpecies, region });
+    });
   } catch (err) {
     log.error({ err }, "Interests update error");
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
@@ -299,15 +310,17 @@ gameRoutes.put("/auto-search", async (req: AuthRequest, res: Response) => {
       return;
     }
 
-    const user = await getUser(req.userId!);
-    if (!user) {
-      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
-      return;
-    }
+    await withLock(`user:${req.userId!}`, async () => {
+      const user = await getUser(req.userId!);
+      if (!user) {
+        res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+        return;
+      }
 
-    user.autoSearchEnabled = enabled;
-    await saveUser(user);
-    res.json({ autoSearchEnabled: enabled });
+      user.autoSearchEnabled = enabled;
+      await saveUser(user);
+      res.json({ autoSearchEnabled: enabled });
+    });
   } catch (err) {
     log.error({ err }, "Auto-search toggle error");
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
@@ -325,40 +338,42 @@ gameRoutes.post("/stored/:id/battle", async (req: AuthRequest, res: Response) =>
       return;
     }
 
-    const user = await getUser(req.userId!);
-    if (!user) {
-      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
-      return;
-    }
+    await withLock(`user:${req.userId!}`, async () => {
+      const user = await getUser(req.userId!);
+      if (!user) {
+        res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+        return;
+      }
 
-    if (user.battleState) {
-      res.status(400).json({ error: "이미 진행 중인 전투가 있습니다" });
-      return;
-    }
+      if (user.battleState) {
+        res.status(400).json({ error: "이미 진행 중인 전투가 있습니다" });
+        return;
+      }
 
-    const stored = user.storedEncounters ?? [];
-    const event = stored.find((e) => e.id === req.params.id);
-    if (!event) {
-      res.status(404).json({ error: "보관된 인카운터를 찾을 수 없습니다" });
-      return;
-    }
+      const stored = user.storedEncounters ?? [];
+      const event = stored.find((e) => e.id === req.params.id);
+      if (!event) {
+        res.status(404).json({ error: "보관된 인카운터를 찾을 수 없습니다" });
+        return;
+      }
 
-    const pokemon = user.pokemon.find((p) => p.uid === pokemonUid);
-    if (!pokemon) {
-      res.status(404).json({ error: "포켓몬을 찾을 수 없습니다" });
-      return;
-    }
-    if (pokemon.hp <= 0) {
-      res.status(400).json({ error: "기절한 포켓몬은 전투에 참여할 수 없습니다" });
-      return;
-    }
+      const pokemon = user.pokemon.find((p) => p.uid === pokemonUid);
+      if (!pokemon) {
+        res.status(404).json({ error: "포켓몬을 찾을 수 없습니다" });
+        return;
+      }
+      if (pokemon.hp <= 0) {
+        res.status(400).json({ error: "기절한 포켓몬은 전투에 참여할 수 없습니다" });
+        return;
+      }
 
-    // 보관함에서 제거하고 pendingEvents로 이동(같은 user 객체 — startWildBattle의 saveUser가 함께 영속).
-    user.storedEncounters = stored.filter((e) => e.id !== event.id);
-    user.pendingEvents.push(event);
+      // 보관함에서 제거하고 pendingEvents로 이동(같은 user 객체 — startWildBattle의 saveUser가 함께 영속).
+      user.storedEncounters = stored.filter((e) => e.id !== event.id);
+      user.pendingEvents.push(event);
 
-    const { battleState, log: startLog } = await startWildBattle(user, event, pokemonUid);
-    res.json({ battleState, log: startLog });
+      const { battleState, log: startLog } = await startWildBattle(user, event, pokemonUid);
+      res.json({ battleState, log: startLog });
+    });
   } catch (err) {
     log.error({ err }, "Stored encounter battle error");
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
@@ -423,6 +438,7 @@ gameRoutes.get("/boss", async (req: AuthRequest, res: Response) => {
 // 세팅하고 isBoss/bossId를 찍어 저장한다. 응답의 battleState로 포털 전투 화면이 바로 이어진다.
 gameRoutes.post("/boss/start", async (req: AuthRequest, res: Response) => {
   try {
+    await withLock(`user:${req.userId!}`, async () => {
     const user = await getUser(req.userId!);
     if (!user) {
       res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
@@ -513,6 +529,7 @@ gameRoutes.post("/boss/start", async (req: AuthRequest, res: Response) => {
       },
     });
     res.json({ battleState, log: startLog });
+    });
   } catch (err) {
     log.error({ err }, "Boss start error");
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
@@ -591,102 +608,119 @@ gameRoutes.get("/world-boss", async (req: AuthRequest, res: Response) => {
 // 연다(startWildBattle이 아니라 boss/start와 동일한 인라인 세팅 — isWorldBoss/worldBossId 표식).
 gameRoutes.post("/world-boss/enter", async (req: AuthRequest, res: Response) => {
   try {
-    const user = await getUser(req.userId!);
-    if (!user) {
-      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
-      return;
-    }
-
-    const pokemonUid = typeof req.body?.pokemonUid === "string" ? req.body.pokemonUid : "";
-    if (!pokemonUid) {
-      res.status(400).json({ error: "포켓몬 UID를 입력해주세요" });
-      return;
-    }
-
-    if (user.battleState) {
-      res.status(400).json({ error: "이미 진행 중인 전투가 있습니다" });
-      return;
-    }
-
-    const config = await getConfig();
-    const state = await endWorldBossIfExpired();
-    if (!state || !state.active || state.defeated || state.globalHp <= 0) {
-      res.status(400).json({ error: "현재 진행 중인 월드보스가 없습니다" });
-      return;
-    }
-
-    // 참전당 쿨다운 — 마지막 참전 이후 cooldownMs가 지나야 한다.
-    if (user.lastWorldBossAttackAt) {
-      const elapsed = Date.now() - new Date(user.lastWorldBossAttackAt).getTime();
-      if (elapsed < config.worldBoss.cooldownMs) {
-        const remainMs = config.worldBoss.cooldownMs - elapsed;
-        res.status(400).json({ error: "아직 재참전 쿨다운입니다", cooldownMs: remainMs });
-        return;
+    // user 락은 유저 데이터(배틀상태/쿨다운)의 읽기-수정-저장까지만 잡는다. world-boss 락(mutateWorldBoss)은
+    // 그 뒤 락을 놓고 잡는다 — 데미지 반영 경로가 'world-boss'→'user:u' 순서로 락을 잡으므로, 여기서
+    // 'user'를 쥔 채 'world-boss'를 잡으면 교차 교착이 생긴다. 순서를 world-boss→user로 통일해 이를 막는다.
+    const prepared = await withLock(`user:${req.userId!}`, async (): Promise<
+      | { battleState: BattleState; startLog: string[]; pokemon: OwnedPokemon; nickname: string; userId: string; bossId: string; wildSpecies: string; wildLevel: number; pokemonUid: string }
+      | null
+    > => {
+      const user = await getUser(req.userId!);
+      if (!user) {
+        res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+        return null;
       }
-    }
 
-    const pokemon = user.pokemon.find((p) => p.uid === pokemonUid);
-    if (!pokemon) {
-      res.status(404).json({ error: "포켓몬을 찾을 수 없습니다" });
-      return;
-    }
-    if (pokemon.hp <= 0) {
-      res.status(400).json({ error: "기절한 포켓몬은 전투에 참여할 수 없습니다" });
-      return;
-    }
-    if (!user.party.includes(pokemonUid)) {
-      res.status(400).json({ error: "파티의 포켓몬만 참전할 수 있습니다" });
-      return;
-    }
+      const pokemonUid = typeof req.body?.pokemonUid === "string" ? req.body.pokemonUid : "";
+      if (!pokemonUid) {
+        res.status(400).json({ error: "포켓몬 UID를 입력해주세요" });
+        return null;
+      }
 
-    // 현재 공유 체력을 hp로 스냅해 보스 개체를 복제한다(전투 중 표시·데미지 계산 기준).
-    const wild = { ...state.wild, hp: Math.min(state.globalHp, state.wild.maxHp) };
+      if (user.battleState) {
+        res.status(400).json({ error: "이미 진행 중인 전투가 있습니다" });
+        return null;
+      }
 
-    const battleState: BattleState = {
-      eventId: `world-boss-${state.bossId}-${crypto.randomUUID()}`,
-      myPokemonUid: pokemonUid,
-      participantUids: [pokemonUid],
-      turn: 0,
-      wild,
-      isWorldBoss: true,
-      worldBossId: state.bossId,
-      playerStatStages: defaultStatStages(),
-      wildStatStages: defaultStatStages(),
-      playerVolatile: [],
-      wildVolatile: [],
-    };
+      const config = await getConfig();
+      const state = await endWorldBossIfExpired();
+      if (!state || !state.active || state.defeated || state.globalHp <= 0) {
+        res.status(400).json({ error: "현재 진행 중인 월드보스가 없습니다" });
+        return null;
+      }
 
-    // 리드의 원시회귀(그란돈/가이오가 등) — 야생전/보스전과 동일 처리.
-    const primalForm = checkPrimalReversion(pokemon);
-    if (primalForm) {
-      battleState.playerBattleForm = primalForm;
-      battleState.transformationType = "primal";
-      const transformed = getTransformedStats(pokemon, primalForm);
-      pokemon.stats = transformed.stats;
-      pokemon.maxHp = transformed.maxHp;
-      pokemon.hp = Math.min(pokemon.hp, pokemon.maxHp);
-    }
+      // 참전당 쿨다운 — 마지막 참전 이후 cooldownMs가 지나야 한다.
+      if (user.lastWorldBossAttackAt) {
+        const elapsed = Date.now() - new Date(user.lastWorldBossAttackAt).getTime();
+        if (elapsed < config.worldBoss.cooldownMs) {
+          const remainMs = config.worldBoss.cooldownMs - elapsed;
+          res.status(400).json({ error: "아직 재참전 쿨다운입니다", cooldownMs: remainMs });
+          return null;
+        }
+      }
 
-    const startLog: string[] = [`월드보스 ${state.name}에게 도전한다!`];
-    battleState.wildStatStages = applySwitchInAbilities(battleState, "player", pokemon, battleState.wildStatStages!, startLog);
-    battleState.playerStatStages = applySwitchInAbilities(battleState, "wild", wild, battleState.playerStatStages!, startLog);
+      const pokemon = user.pokemon.find((p) => p.uid === pokemonUid);
+      if (!pokemon) {
+        res.status(404).json({ error: "포켓몬을 찾을 수 없습니다" });
+        return null;
+      }
+      if (pokemon.hp <= 0) {
+        res.status(400).json({ error: "기절한 포켓몬은 전투에 참여할 수 없습니다" });
+        return null;
+      }
+      if (!user.party.includes(pokemonUid)) {
+        res.status(400).json({ error: "파티의 포켓몬만 참전할 수 있습니다" });
+        return null;
+      }
 
-    const seenList = user.seenSpecies ?? (user.seenSpecies = []);
-    if (!seenList.includes(wild.species)) seenList.push(wild.species);
+      // 현재 공유 체력을 hp로 스냅해 보스 개체를 복제한다(전투 중 표시·데미지 계산 기준).
+      const wild = { ...state.wild, hp: Math.min(state.globalHp, state.wild.maxHp) };
 
-    // 참전 시각 기록(쿨다운 기준).
-    user.lastWorldBossAttackAt = new Date().toISOString();
-    user.battleState = battleState;
-    await saveUser(user);
+      const battleState: BattleState = {
+        eventId: `world-boss-${state.bossId}-${crypto.randomUUID()}`,
+        myPokemonUid: pokemonUid,
+        participantUids: [pokemonUid],
+        turn: 0,
+        wild,
+        isWorldBoss: true,
+        worldBossId: state.bossId,
+        playerStatStages: defaultStatStages(),
+        wildStatStages: defaultStatStages(),
+        playerVolatile: [],
+        wildVolatile: [],
+      };
 
-    // 참전자 등록(아레나 표시용) — 락 하에 contributions에 포켓몬/활동시각을 세팅(데미지는 유지·신규는 0).
+      // 리드의 원시회귀(그란돈/가이오가 등) — 야생전/보스전과 동일 처리.
+      const primalForm = checkPrimalReversion(pokemon);
+      if (primalForm) {
+        battleState.playerBattleForm = primalForm;
+        battleState.transformationType = "primal";
+        const transformed = getTransformedStats(pokemon, primalForm);
+        pokemon.stats = transformed.stats;
+        pokemon.maxHp = transformed.maxHp;
+        pokemon.hp = Math.min(pokemon.hp, pokemon.maxHp);
+      }
+
+      const startLog: string[] = [`월드보스 ${state.name}에게 도전한다!`];
+      battleState.wildStatStages = applySwitchInAbilities(battleState, "player", pokemon, battleState.wildStatStages!, startLog);
+      battleState.playerStatStages = applySwitchInAbilities(battleState, "wild", wild, battleState.playerStatStages!, startLog);
+
+      const seenList = user.seenSpecies ?? (user.seenSpecies = []);
+      if (!seenList.includes(wild.species)) seenList.push(wild.species);
+
+      // 참전 시각 기록(쿨다운 기준).
+      user.lastWorldBossAttackAt = new Date().toISOString();
+      user.battleState = battleState;
+      await saveUser(user);
+
+      return {
+        battleState, startLog, pokemon,
+        nickname: user.account.nickname, userId: user.account.id,
+        bossId: state.bossId, wildSpecies: wild.species, wildLevel: wild.level, pokemonUid,
+      };
+    });
+
+    // 유저 락을 놓은 뒤 world-boss 락으로 참전자 등록(아레나 표시용). 락 순서 world-boss→user를
+    // 지키기 위해 유저 락 밖에서 수행한다(교차 교착 방지). 응답도 여기서 확정.
+    if (!prepared) return; // 위에서 이미 검증 실패 응답을 보냈다.
+
     await mutateWorldBoss((ws) => {
-      if (ws.bossId !== state.bossId) return null;
-      const existing = ws.contributions[user.account.id];
-      ws.contributions[user.account.id] = {
-        nickname: user.account.nickname,
+      if (ws.bossId !== prepared.bossId) return null;
+      const existing = ws.contributions[prepared.userId];
+      ws.contributions[prepared.userId] = {
+        nickname: prepared.nickname,
         damage: existing?.damage ?? 0,
-        pokemon: { species: pokemon.species, variantId: pokemon.variantId ?? null, shiny: pokemon.isShiny ?? false },
+        pokemon: { species: prepared.pokemon.species, variantId: prepared.pokemon.variantId ?? null, shiny: prepared.pokemon.isShiny ?? false },
         lastActiveAt: new Date().toISOString(),
       };
       return ws;
@@ -694,10 +728,10 @@ gameRoutes.post("/world-boss/enter", async (req: AuthRequest, res: Response) => 
 
     void appendEvent({
       type: "battle_start",
-      userId: user.account.id,
-      detail: { worldBoss: state.bossId, wildSpecies: wild.species, wildLevel: wild.level, myPokemonUid: pokemonUid },
+      userId: prepared.userId,
+      detail: { worldBoss: prepared.bossId, wildSpecies: prepared.wildSpecies, wildLevel: prepared.wildLevel, myPokemonUid: prepared.pokemonUid },
     });
-    res.json({ battleState, log: startLog });
+    res.json({ battleState: prepared.battleState, log: prepared.startLog });
   } catch (err) {
     log.error({ err }, "World-boss enter error");
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
@@ -753,6 +787,7 @@ gameRoutes.post("/world-boss/chat", async (req: AuthRequest, res: Response) => {
 // + 볼 catchBonus. 성공: 개체 지급(파티/보관함·도감) + capture 소멸. 실패: ballAttempts 1 차감.
 gameRoutes.post("/world-boss/capture", async (req: AuthRequest, res: Response) => {
   try {
+    await withLock(`user:${req.userId!}`, async () => {
     const user = await getUser(req.userId!);
     if (!user) {
       res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
@@ -810,6 +845,7 @@ gameRoutes.post("/world-boss/capture", async (req: AuthRequest, res: Response) =
     }
     await saveUser(user);
     res.json({ caught: false, ballAttempts: remainingAttempts, message: "아깝다! 잡지 못했다..." });
+    });
   } catch (err) {
     log.error({ err }, "World-boss capture error");
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
@@ -892,22 +928,24 @@ gameRoutes.put("/party", async (req: AuthRequest, res: Response) => {
       return;
     }
 
-    const user = await getUser(req.userId!);
-    if (!user) {
-      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
-      return;
-    }
+    await withLock(`user:${req.userId!}`, async () => {
+      const user = await getUser(req.userId!);
+      if (!user) {
+        res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+        return;
+      }
 
-    const allUids = user.pokemon.map((p) => p.uid);
-    const invalid = uids.filter((uid: string) => !allUids.includes(uid));
-    if (invalid.length > 0) {
-      res.status(400).json({ error: "존재하지 않는 포켓몬이 포함되어 있습니다" });
-      return;
-    }
+      const allUids = user.pokemon.map((p) => p.uid);
+      const invalid = uids.filter((uid: string) => !allUids.includes(uid));
+      if (invalid.length > 0) {
+        res.status(400).json({ error: "존재하지 않는 포켓몬이 포함되어 있습니다" });
+        return;
+      }
 
-    user.party = uids;
-    await saveUser(user);
-    res.json({ party: uids });
+      user.party = uids;
+      await saveUser(user);
+      res.json({ party: uids });
+    });
   } catch (err) {
     log.error({ err }, "Party update error");
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
@@ -978,19 +1016,21 @@ gameRoutes.get("/pokemon/:uid/learnable-moves", async (req: AuthRequest, res: Re
 gameRoutes.post("/pokemon/:uid/set-moves", async (req: AuthRequest, res: Response) => {
   try {
     const { moveIds } = req.body ?? {};
-    const user = await getUser(req.userId!);
-    if (!user) { res.status(404).json({ error: "사용자를 찾을 수 없습니다" }); return; }
-    const pokemon = findPokemonByUid(user, req.params.uid);
-    if (!pokemon) { res.status(404).json({ error: "포켓몬을 찾을 수 없습니다" }); return; }
+    await withLock(`user:${req.userId!}`, async () => {
+      const user = await getUser(req.userId!);
+      if (!user) { res.status(404).json({ error: "사용자를 찾을 수 없습니다" }); return; }
+      const pokemon = findPokemonByUid(user, req.params.uid);
+      if (!pokemon) { res.status(404).json({ error: "포켓몬을 찾을 수 없습니다" }); return; }
 
-    const config = await getConfig();
-    const { cost } = setPokemonMoves(user, pokemon, moveIds, config.moveChangeCost);
-    await saveUser(user);
+      const config = await getConfig();
+      const { cost } = setPokemonMoves(user, pokemon, moveIds, config.moveChangeCost);
+      await saveUser(user);
 
-    res.json({
-      pokemon: { ...pokemon },
-      gameMoney: user.gameMoney,
-      cost,
+      res.json({
+        pokemon: { ...pokemon },
+        gameMoney: user.gameMoney,
+        cost,
+      });
     });
   } catch (err) {
     if (err instanceof GameRuleError) { res.status(err.status).json({ error: err.message }); return; }
@@ -1024,28 +1064,30 @@ gameRoutes.get("/pokedex", async (req: AuthRequest, res: Response) => {
 // 신규 달성이 있을 때만 saveUser로 영속한다(멱등: 재호출해도 이미 완료분은 재지급되지 않음).
 gameRoutes.get("/achievements", async (req: AuthRequest, res: Response) => {
   try {
-    const user = await getUser(req.userId!);
-    if (!user) {
-      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
-      return;
-    }
+    await withLock(`user:${req.userId!}`, async () => {
+      const user = await getUser(req.userId!);
+      if (!user) {
+        res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+        return;
+      }
 
-    // PvP 승수·트레이드 성사 수는 유저 파일이 아니라 각각 pvp-stats/trade 저장소에 있다.
-    const stats = await getStats(user.account.id);
-    const pvpWins = stats?.wins ?? 0;
-    const tradesCompleted = await getCompletedTradeCount(user.account.id);
+      // PvP 승수·트레이드 성사 수는 유저 파일이 아니라 각각 pvp-stats/trade 저장소에 있다.
+      const stats = await getStats(user.account.id);
+      const pvpWins = stats?.wins ?? 0;
+      const tradesCompleted = await getCompletedTradeCount(user.account.id);
 
-    const result = evaluateAchievements(user, pvpWins, tradesCompleted);
-    if (result.newlyCompleted.length > 0) {
-      await saveUser(user);
-    }
+      const result = evaluateAchievements(user, pvpWins, tradesCompleted);
+      if (result.newlyCompleted.length > 0) {
+        await saveUser(user);
+      }
 
-    res.json({
-      achievements: result.list,
-      newlyCompleted: result.newlyCompleted,
-      rewards: result.rewardsGranted,
-      points: user.points,
-      gameMoney: user.gameMoney,
+      res.json({
+        achievements: result.list,
+        newlyCompleted: result.newlyCompleted,
+        rewards: result.rewardsGranted,
+        points: user.points,
+        gameMoney: user.gameMoney,
+      });
     });
   } catch (err) {
     log.error({ err }, "Achievements error");
@@ -1089,18 +1131,20 @@ gameRoutes.put("/region", async (req: AuthRequest, res: Response) => {
       return;
     }
 
-    const user = await getUser(req.userId!);
-    if (!user) {
-      res.status(404).json({ error: "User not found." });
-      return;
-    }
+    await withLock(`user:${req.userId!}`, async () => {
+      const user = await getUser(req.userId!);
+      if (!user) {
+        res.status(404).json({ error: "User not found." });
+        return;
+      }
 
-    user.currentRegion = region;
-    await saveUser(user);
+      user.currentRegion = region;
+      await saveUser(user);
 
-    res.json({
-      currentRegion: region,
-      regionName: getRegion(region).name,
+      res.json({
+        currentRegion: region,
+        regionName: getRegion(region).name,
+      });
     });
   } catch (err) {
     log.error({ err }, "Region update error");
@@ -1129,19 +1173,21 @@ gameRoutes.get("/announcements/active", async (req: AuthRequest, res: Response) 
 // 공지 닫기 — 유저 데이터에 dismiss 기록(중복 추가 안 함). 존재하지 않는 id도 멱등 허용.
 gameRoutes.post("/announcements/:id/dismiss", async (req: AuthRequest, res: Response) => {
   try {
-    const user = await getUser(req.userId!);
-    if (!user) {
-      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
-      return;
-    }
+    await withLock(`user:${req.userId!}`, async () => {
+      const user = await getUser(req.userId!);
+      if (!user) {
+        res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+        return;
+      }
 
-    const dismissed = user.dismissedAnnouncementIds ?? [];
-    if (!dismissed.includes(req.params.id)) {
-      dismissed.push(req.params.id);
-      user.dismissedAnnouncementIds = dismissed;
-      await saveUser(user);
-    }
-    res.json({ ok: true });
+      const dismissed = user.dismissedAnnouncementIds ?? [];
+      if (!dismissed.includes(req.params.id)) {
+        dismissed.push(req.params.id);
+        user.dismissedAnnouncementIds = dismissed;
+        await saveUser(user);
+      }
+      res.json({ ok: true });
+    });
   } catch (err) {
     log.error({ err }, "Dismiss announcement error");
     res.status(500).json({ error: "서버 오류가 발생했습니다" });

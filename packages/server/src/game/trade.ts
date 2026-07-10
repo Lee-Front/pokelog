@@ -1,5 +1,6 @@
 import type { OwnedPokemon, TradePokemonCandidate, TradeRecord, UserData } from "../../../../shared/types.js";
 import { getUser, saveUser } from "../storage/user-store.js";
+import { withLock } from "../storage/pvp-store.js";
 import { createTradeRecord, getTrades, saveTrades } from "../storage/trade-store.js";
 import { GameRuleError } from "./game-errors.js";
 import { evolvePokemon, resolveTradeEvolution } from "./growth.js";
@@ -10,6 +11,16 @@ type PokemonSlot =
   | { container: "storage"; index: number };
 
 export { GameRuleError as TradeError };
+
+/**
+ * 두 유저의 읽기-수정-쓰기를 각자의 user 락 하에서 직렬화한다. 교차 교착을 막기 위해 두 키를
+ * 항상 같은 전역 순서(userId 오름차순)로 획득한다 — 동시에 서로를 상대로 여는 두 트레이드가
+ * 반대 순서로 락을 잡아 서로를 기다리는 일이 없다. body는 두 락을 모두 쥔 상태에서 실행된다.
+ */
+function withTwoUserLocks<T>(userIdA: string, userIdB: string, body: () => Promise<T>): Promise<T> {
+  const [first, second] = [userIdA, userIdB].sort();
+  return withLock(`user:${first}`, () => withLock(`user:${second}`, body));
+}
 
 function clonePokemon(pokemon: OwnedPokemon): OwnedPokemon {
   return {
@@ -297,54 +308,59 @@ export async function acceptTradeRequest(userId: string, tradeId: string): Promi
     throw new GameRuleError("Only pending trades can be accepted.");
   }
 
-  const [requester, responder] = await Promise.all([
-    getUser(trade.requesterUserId),
-    getUser(trade.responderUserId),
-  ]);
+  // 두 유저의 로스터를 각자 user 락 하에서(전역 순서로) 배타적으로 읽고-수정-저장한다. 스냅샷이
+  // 아니라 락 안에서 다시 읽어(fresh) 진행하므로, 트레이드가 각 유저의 다른 행동과 겹쳐도
+  // lost-update가 없다. trade 레코드 저장(saveTrades)도 같은 임계구역 안에서 함께 확정한다.
+  return withTwoUserLocks(trade.requesterUserId, trade.responderUserId, async () => {
+    const [requester, responder] = await Promise.all([
+      getUser(trade.requesterUserId),
+      getUser(trade.responderUserId),
+    ]);
 
-  if (!requester || !responder) {
-    throw new GameRuleError("Both users must exist before a trade can be completed.");
-  }
+    if (!requester || !responder) {
+      throw new GameRuleError("Both users must exist before a trade can be completed.");
+    }
 
-  const requesterFound = ensureTradeablePokemon(requester, trade.requesterPokemonUid, "Requester");
-  const responderFound = ensureTradeablePokemon(responder, trade.responderPokemonUid, "Responder");
-  const requesterOriginalSpecies = requesterFound.pokemon.species;
-  const responderOriginalSpecies = responderFound.pokemon.species;
+    const requesterFound = ensureTradeablePokemon(requester, trade.requesterPokemonUid, "Requester");
+    const responderFound = ensureTradeablePokemon(responder, trade.responderPokemonUid, "Responder");
+    const requesterOriginalSpecies = requesterFound.pokemon.species;
+    const responderOriginalSpecies = responderFound.pokemon.species;
 
-  const requesterRemoved = removePokemon(requester, trade.requesterPokemonUid);
-  const responderRemoved = removePokemon(responder, trade.responderPokemonUid);
+    const requesterRemoved = removePokemon(requester, trade.requesterPokemonUid);
+    const responderRemoved = removePokemon(responder, trade.responderPokemonUid);
 
-  insertPokemon(requester, responderRemoved.pokemon, requesterRemoved.slot);
-  insertPokemon(responder, requesterRemoved.pokemon, responderRemoved.slot);
+    insertPokemon(requester, responderRemoved.pokemon, requesterRemoved.slot);
+    insertPokemon(responder, requesterRemoved.pokemon, responderRemoved.slot);
 
-  const requesterReceived = ensureTradeablePokemon(requester, responderRemoved.pokemon.uid, "Requester").pokemon;
-  const responderReceived = ensureTradeablePokemon(responder, requesterRemoved.pokemon.uid, "Responder").pokemon;
+    const requesterReceived = ensureTradeablePokemon(requester, responderRemoved.pokemon.uid, "Requester").pokemon;
+    const responderReceived = ensureTradeablePokemon(responder, requesterRemoved.pokemon.uid, "Responder").pokemon;
 
-  const requesterEvolution = maybeApplyTradeEvolution(requester, requesterReceived, requesterOriginalSpecies);
-  const responderEvolution = maybeApplyTradeEvolution(responder, responderReceived, responderOriginalSpecies);
+    const requesterEvolution = maybeApplyTradeEvolution(requester, requesterReceived, requesterOriginalSpecies);
+    const responderEvolution = maybeApplyTradeEvolution(responder, responderReceived, responderOriginalSpecies);
 
-  if (!requester.pokedex.includes(requesterReceived.species)) {
-    requester.pokedex.push(requesterReceived.species);
-  }
-  if (!responder.pokedex.includes(responderReceived.species)) {
-    responder.pokedex.push(responderReceived.species);
-  }
+    if (!requester.pokedex.includes(requesterReceived.species)) {
+      requester.pokedex.push(requesterReceived.species);
+    }
+    if (!responder.pokedex.includes(responderReceived.species)) {
+      responder.pokedex.push(responderReceived.species);
+    }
 
-  trade.status = "accepted";
-  trade.updatedAt = new Date().toISOString();
-  trade.resolvedAt = trade.updatedAt;
+    trade.status = "accepted";
+    trade.updatedAt = new Date().toISOString();
+    trade.resolvedAt = trade.updatedAt;
 
-  await Promise.all([
-    saveUser(requester),
-    saveUser(responder),
-    saveTrades(trades),
-  ]);
+    await Promise.all([
+      saveUser(requester),
+      saveUser(responder),
+      saveTrades(trades),
+    ]);
 
-  return {
-    trade,
-    requesterPokemon: requesterReceived,
-    responderPokemon: responderReceived,
-    requesterEvolution,
-    responderEvolution,
-  };
+    return {
+      trade,
+      requesterPokemon: requesterReceived,
+      responderPokemon: responderReceived,
+      requesterEvolution,
+      responderEvolution,
+    };
+  });
 }

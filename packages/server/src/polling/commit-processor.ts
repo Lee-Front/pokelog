@@ -1,4 +1,5 @@
-import { getUsersForRepoCommit, saveUser } from "../storage/user-store.js";
+import { getUser, getUsersForRepoCommit, saveUser } from "../storage/user-store.js";
+import { withLock } from "../storage/pvp-store.js";
 import { getConfig } from "../storage/config-store.js";
 import { calculateReward } from "../game/reward.js";
 import { judgeCombo, getComboMultiplier } from "../game/combo.js";
@@ -34,7 +35,14 @@ export async function processCommit(
   const bytes = await getCommitByteChanges(repoDir, commit.hash);
   if (bytes === 0) return;
 
-  for (const user of users) {
+  for (const candidate of users) {
+    // getUsersForRepoCommit는 스냅샷이라 후보 식별에만 쓰고, 실제 적립은 유저 락 하에 최신 유저를
+    // 다시 읽어(fresh) 수행한다 — 폴링 적립이 유저의 인앱 행동(전투/상점/로스터)과 겹쳐도 서로의
+    // 저장을 덮어쓰지 않게(lost-update 방지). 파일 락으로 blue-green 겹침 프로세스와도 배타.
+    await withLock(`user:${candidate.account.id}`, async () => {
+    const user = await getUser(candidate.account.id);
+    if (!user) return;
+
     // Update combo
     const comboResult = judgeCombo(
       user.combo.lastCommitAt ? user.combo : null,
@@ -131,5 +139,6 @@ export async function processCommit(
     });
 
     await saveUser(user);
+    });
   }
 }

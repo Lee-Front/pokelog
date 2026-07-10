@@ -2,6 +2,7 @@ import { Router } from "express";
 import type { Response } from "express";
 import { authMiddleware, type AuthRequest } from "../middleware/auth-middleware.js";
 import { getUser, saveUser } from "../storage/user-store.js";
+import { withLock } from "../storage/pvp-store.js";
 import { getConfig } from "../storage/config-store.js";
 import { healPokemon, resolveShopItem } from "../game/inventory-utils.js";
 import { equipHeldItem, unequipHeldItem } from "../game/held-item-usage.js";
@@ -47,20 +48,22 @@ itemRoutes.post("/items/equip", async (req: AuthRequest, res: Response) => {
       return;
     }
 
-    const user = await getUser(req.userId!);
-    if (!user) {
-      res.status(404).json({ error: "User not found." });
-      return;
-    }
+    await withLock(`user:${req.userId!}`, async () => {
+      const user = await getUser(req.userId!);
+      if (!user) {
+        res.status(404).json({ error: "User not found." });
+        return;
+      }
 
-    const result = equipHeldItem(user, pokemonUid, item);
-    await saveUser(user);
+      const result = equipHeldItem(user, pokemonUid, item);
+      await saveUser(user);
 
-    res.json({
-      message: `${result.pokemon.species} is now holding ${result.itemName}.`,
-      pokemon: result.pokemon,
-      previousHeldItem: result.previousHeldItem,
-      inventory: user.inventory,
+      res.json({
+        message: `${result.pokemon.species} is now holding ${result.itemName}.`,
+        pokemon: result.pokemon,
+        previousHeldItem: result.previousHeldItem,
+        inventory: user.inventory,
+      });
     });
   } catch (err) {
     if (err instanceof GameRuleError) {
@@ -81,19 +84,21 @@ itemRoutes.post("/items/unequip", async (req: AuthRequest, res: Response) => {
       return;
     }
 
-    const user = await getUser(req.userId!);
-    if (!user) {
-      res.status(404).json({ error: "User not found." });
-      return;
-    }
+    await withLock(`user:${req.userId!}`, async () => {
+      const user = await getUser(req.userId!);
+      if (!user) {
+        res.status(404).json({ error: "User not found." });
+        return;
+      }
 
-    const result = unequipHeldItem(user, pokemonUid);
-    await saveUser(user);
+      const result = unequipHeldItem(user, pokemonUid);
+      await saveUser(user);
 
-    res.json({
-      message: `${result.pokemon.species} is no longer holding ${result.itemName}.`,
-      pokemon: result.pokemon,
-      inventory: user.inventory,
+      res.json({
+        message: `${result.pokemon.species} is no longer holding ${result.itemName}.`,
+        pokemon: result.pokemon,
+        inventory: user.inventory,
+      });
     });
   } catch (err) {
     if (err instanceof GameRuleError) {
@@ -108,20 +113,22 @@ itemRoutes.post("/items/unequip", async (req: AuthRequest, res: Response) => {
 
 itemRoutes.post("/heal", async (req: AuthRequest, res: Response) => {
   try {
-    const user = await getUser(req.userId!);
-    if (!user) {
-      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
-      return;
-    }
+    await withLock(`user:${req.userId!}`, async () => {
+      const user = await getUser(req.userId!);
+      if (!user) {
+        res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+        return;
+      }
 
-    const partyPokemon = getPartyPokemon(user);
+      const partyPokemon = getPartyPokemon(user);
 
-    for (const p of partyPokemon) {
-      healPokemon(p);
-    }
+      for (const p of partyPokemon) {
+        healPokemon(p);
+      }
 
-    await saveUser(user);
-    res.json({ healed: partyPokemon.length });
+      await saveUser(user);
+      res.json({ healed: partyPokemon.length });
+    });
   } catch (err) {
     log.error({ err }, "Heal error");
     res.status(500).json({ error: "서버 오류가 발생했습니다" });

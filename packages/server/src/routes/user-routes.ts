@@ -25,6 +25,7 @@ import {
   searchUsersByIdentity,
   saveUser,
 } from "../storage/user-store.js";
+import { withLock } from "../storage/pvp-store.js";
 import { childLogger } from "../logger.js";
 
 const log = childLogger("user-routes");
@@ -156,15 +157,17 @@ userRoutes.put("/nickname", async (req: AuthRequest, res: Response) => {
       return;
     }
 
-    const user = await getUser(req.userId!);
-    if (!user) {
-      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
-      return;
-    }
+    await withLock(`user:${req.userId!}`, async () => {
+      const user = await getUser(req.userId!);
+      if (!user) {
+        res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+        return;
+      }
 
-    user.account.nickname = nickname;
-    await saveUser(user);
-    res.json({ nickname });
+      user.account.nickname = nickname;
+      await saveUser(user);
+      res.json({ nickname });
+    });
   } catch (err) {
     log.error({ err }, "Nickname error");
     res.status(500).json({ error: "닉네임을 변경하지 못했습니다" });
@@ -179,34 +182,36 @@ userRoutes.post("/match", async (req: AuthRequest, res: Response) => {
       return;
     }
 
-    const user = await getUser(req.userId!);
-    if (!user) {
-      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
-      return;
-    }
-
-    if (app === "git") {
-      const taken = await isEmailTaken(identifier);
-      if (taken) {
-        res.status(409).json({ error: "이미 다른 사용자가 등록한 이메일입니다" });
+    await withLock(`user:${req.userId!}`, async () => {
+      const user = await getUser(req.userId!);
+      if (!user) {
+        res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
         return;
       }
 
-      if (!user.account.matchings.git) {
-        user.account.matchings.git = { emails: [] };
-      }
-      if (!user.account.matchings.git.emails.includes(identifier)) {
-        user.account.matchings.git.emails.push(identifier);
-      }
-    } else {
-      if (!user.account.matchings[app]) {
-        user.account.matchings[app] = {};
-      }
-      (user.account.matchings[app] as Record<string, unknown>).identifier = identifier;
-    }
+      if (app === "git") {
+        const taken = await isEmailTaken(identifier);
+        if (taken) {
+          res.status(409).json({ error: "이미 다른 사용자가 등록한 이메일입니다" });
+          return;
+        }
 
-    await saveUser(user);
-    res.json({ matchings: user.account.matchings });
+        if (!user.account.matchings.git) {
+          user.account.matchings.git = { emails: [] };
+        }
+        if (!user.account.matchings.git.emails.includes(identifier)) {
+          user.account.matchings.git.emails.push(identifier);
+        }
+      } else {
+        if (!user.account.matchings[app]) {
+          user.account.matchings[app] = {};
+        }
+        (user.account.matchings[app] as Record<string, unknown>).identifier = identifier;
+      }
+
+      await saveUser(user);
+      res.json({ matchings: user.account.matchings });
+    });
   } catch (err) {
     log.error({ err }, "Match error");
     res.status(500).json({ error: "match 정보를 저장하지 못했습니다" });
@@ -221,22 +226,24 @@ userRoutes.delete("/match", async (req: AuthRequest, res: Response) => {
       return;
     }
 
-    const user = await getUser(req.userId!);
-    if (!user) {
-      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
-      return;
-    }
+    await withLock(`user:${req.userId!}`, async () => {
+      const user = await getUser(req.userId!);
+      if (!user) {
+        res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+        return;
+      }
 
-    if (app === "git" && user.account.matchings.git) {
-      user.account.matchings.git.emails = user.account.matchings.git.emails.filter(
-        (email) => email !== identifier,
-      );
-    } else {
-      delete user.account.matchings[app];
-    }
+      if (app === "git" && user.account.matchings.git) {
+        user.account.matchings.git.emails = user.account.matchings.git.emails.filter(
+          (email) => email !== identifier,
+        );
+      } else {
+        delete user.account.matchings[app];
+      }
 
-    await saveUser(user);
-    res.json({ matchings: user.account.matchings });
+      await saveUser(user);
+      res.json({ matchings: user.account.matchings });
+    });
   } catch (err) {
     log.error({ err }, "Match delete error");
     res.status(500).json({ error: "match 정보를 삭제하지 못했습니다" });
@@ -319,21 +326,23 @@ userRoutes.post("/integrations/repo-authors", async (req: AuthRequest, res: Resp
 
 userRoutes.post("/integrations", async (req: AuthRequest, res: Response) => {
   try {
-    const user = await getUser(req.userId!);
-    if (!user) {
-      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
-      return;
-    }
+    await withLock(`user:${req.userId!}`, async () => {
+      const user = await getUser(req.userId!);
+      if (!user) {
+        res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+        return;
+      }
 
-    const parsed = await parseIntegrationInput(req.body, req.userId!);
-    if ("error" in parsed) {
-      res.status(parsed.status).json({ error: parsed.error });
-      return;
-    }
+      const parsed = await parseIntegrationInput(req.body, req.userId!);
+      if ("error" in parsed) {
+        res.status(parsed.status).json({ error: parsed.error });
+        return;
+      }
 
-    user.integrations.push(parsed.integration);
-    await saveUser(user);
-    res.status(201).json({ integration: parsed.integration });
+      user.integrations.push(parsed.integration);
+      await saveUser(user);
+      res.status(201).json({ integration: parsed.integration });
+    });
   } catch (err) {
     log.error({ err }, "Integration create error");
     res.status(500).json({ error: "연동을 생성하지 못했습니다" });
@@ -342,6 +351,7 @@ userRoutes.post("/integrations", async (req: AuthRequest, res: Response) => {
 
 userRoutes.patch("/integrations/:id", async (req: AuthRequest, res: Response) => {
   try {
+    await withLock(`user:${req.userId!}`, async () => {
     const user = await getUser(req.userId!);
     if (!user) {
       res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
@@ -387,6 +397,7 @@ userRoutes.patch("/integrations/:id", async (req: AuthRequest, res: Response) =>
     };
     await saveUser(user);
     res.json({ integration: user.integrations[idx] });
+    });
   } catch (err) {
     log.error({ err }, "Integration update error");
     res.status(500).json({ error: "연동 정보를 수정하지 못했습니다" });
@@ -398,6 +409,7 @@ userRoutes.patch("/integrations/:id", async (req: AuthRequest, res: Response) =>
 // flow after the user re-picks from the author checkboxes.
 userRoutes.patch("/integrations/:id/emails", async (req: AuthRequest, res: Response) => {
   try {
+    await withLock(`user:${req.userId!}`, async () => {
     const user = await getUser(req.userId!);
     if (!user) {
       res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
@@ -432,6 +444,7 @@ userRoutes.patch("/integrations/:id/emails", async (req: AuthRequest, res: Respo
     current.emails = emails;
     await saveUser(user);
     res.json({ integration: current });
+    });
   } catch (err) {
     log.error({ err }, "Integration emails update error");
     res.status(500).json({ error: "이메일을 수정하지 못했습니다" });
@@ -440,21 +453,23 @@ userRoutes.patch("/integrations/:id/emails", async (req: AuthRequest, res: Respo
 
 userRoutes.delete("/integrations/:id", async (req: AuthRequest, res: Response) => {
   try {
-    const user = await getUser(req.userId!);
-    if (!user) {
-      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
-      return;
-    }
+    await withLock(`user:${req.userId!}`, async () => {
+      const user = await getUser(req.userId!);
+      if (!user) {
+        res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+        return;
+      }
 
-    const before = user.integrations.length;
-    user.integrations = user.integrations.filter((integration) => integration.id !== req.params.id);
-    if (user.integrations.length === before) {
-      res.status(404).json({ error: "연동 정보를 찾을 수 없습니다" });
-      return;
-    }
+      const before = user.integrations.length;
+      user.integrations = user.integrations.filter((integration) => integration.id !== req.params.id);
+      if (user.integrations.length === before) {
+        res.status(404).json({ error: "연동 정보를 찾을 수 없습니다" });
+        return;
+      }
 
-    await saveUser(user);
-    res.json({ ok: true });
+      await saveUser(user);
+      res.json({ ok: true });
+    });
   } catch (err) {
     log.error({ err }, "Integration delete error");
     res.status(500).json({ error: "연동을 삭제하지 못했습니다" });
@@ -463,6 +478,7 @@ userRoutes.delete("/integrations/:id", async (req: AuthRequest, res: Response) =
 
 userRoutes.post("/integrations/:id/test", async (req: AuthRequest, res: Response) => {
   try {
+    await withLock(`user:${req.userId!}`, async () => {
     const user = await getUser(req.userId!);
     if (!user) {
       res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
@@ -494,6 +510,7 @@ userRoutes.post("/integrations/:id/test", async (req: AuthRequest, res: Response
       warning: result.warning,
       metadata: result.metadata,
     });
+    });
   } catch (err) {
     log.error({ err }, "Integration test error");
     res.status(500).json({ error: "연결 테스트에 실패했습니다" });
@@ -502,6 +519,7 @@ userRoutes.post("/integrations/:id/test", async (req: AuthRequest, res: Response
 
 userRoutes.post("/integrations/:id/sync", async (req: AuthRequest, res: Response) => {
   try {
+    await withLock(`user:${req.userId!}`, async () => {
     const user = await getUser(req.userId!);
     if (!user) {
       res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
@@ -542,6 +560,7 @@ userRoutes.post("/integrations/:id/sync", async (req: AuthRequest, res: Response
       ok: true,
       integration,
       result,
+    });
     });
   } catch (err) {
     log.error({ err }, "Integration sync error");
