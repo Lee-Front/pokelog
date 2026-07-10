@@ -1,5 +1,6 @@
 import { getAllUsers, saveUser } from "../storage/user-store.js";
 import { rollRegionEncounters } from "../game/wild-roll.js";
+import { endWorldBossIfExpired } from "../storage/world-boss-store.js";
 import { childLogger } from "../logger.js";
 
 const log = childLogger("auto-search-worker");
@@ -30,6 +31,13 @@ function withSearchLock<T>(body: () => Promise<T>): Promise<T> {
  * 테스트/수동 트리거 가능하도록 export. 실제 스케줄러(startAutoSearch)는 이 함수를 직렬화 락으로 감싼다.
  */
 export async function runAutoSearch(): Promise<void> {
+  // 월드보스 24h 만료 정리 — 이 틱에서 함께 지연 종료한다(GET /world-boss의 지연 검사와 중복 안전).
+  try {
+    await endWorldBossIfExpired();
+  } catch (err) {
+    log.error({ err }, "world-boss expiry check failed during auto-search tick");
+  }
+
   const users = await getAllUsers();
   let hits = 0;
 

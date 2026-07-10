@@ -29,6 +29,7 @@ import {
 } from "../game/battle-state.js";
 import { applySwitchInAbilities } from "../game/abilities.js";
 import { appendEvent } from "../storage/event-log.js";
+import { syncWorldBossDamage } from "../game/world-boss-sync.js";
 import { childLogger } from "../logger.js";
 
 const log = childLogger("battle-routes");
@@ -419,7 +420,10 @@ async function handleFight(
   if (turnOrder === "player") {
     if (playerCanAct) {
       recordMoveUsage(myPokemon, selectedMove.id);
+      const wildHpBefore = battle.wild.hp;
       const attackResult = executePlayerAttack(battle, myPokemon, selectedMoveData, selectedMove, log);
+      // 월드보스: 이번 턴 보스HP 감소분을 공유 체력에 반영하고 battle.wild.hp를 새 globalHp로 맞춘다.
+      if (battle.isWorldBoss) await syncWorldBossDamage(battle, user, Math.max(0, wildHpBefore - battle.wild.hp));
       pushFrame(); // 플레이어 공격 (야생 hp 감소, 격파 시 0 포함)
       if (battle.wild.hp <= 0) {
         await finishWin(user, myPokemon, battle, log, res, hpFrames);
@@ -448,7 +452,10 @@ async function handleFight(
       log.push(`${getDisplaySpeciesName(myPokemon.species)}은(는) 풀이 죽어 움직이지 못했다!`);
     } else if (playerCanAct) {
       recordMoveUsage(myPokemon, selectedMove.id);
+      const wildHpBefore = battle.wild.hp;
       executePlayerAttack(battle, myPokemon, selectedMoveData, selectedMove, log);
+      // 월드보스: 이번 턴 보스HP 감소분을 공유 체력에 반영하고 battle.wild.hp를 새 globalHp로 맞춘다.
+      if (battle.isWorldBoss) await syncWorldBossDamage(battle, user, Math.max(0, wildHpBefore - battle.wild.hp));
       pushFrame(); // 플레이어 후공 (야생 hp 감소, 격파 시 0 포함)
       if (battle.wild.hp <= 0) {
         await finishWin(user, myPokemon, battle, log, res, hpFrames);
@@ -458,9 +465,13 @@ async function handleFight(
   }
 
   // End-of-turn: status/volatile ticks, gmax countdown, weather damage
+  const wildHpBeforeEot = battle.wild.hp;
   applyEndOfTurnBattle(battle, myPokemon, log);
   applyWeatherEndOfTurn(battle, myPokemon, log);
   applyTerrainEndOfTurn(battle, myPokemon, log);
+  // 월드보스: 턴 종료 데미지(독·화상·날씨·필드)도 공유 체력에 반영한다. 회복(음수 델타)은 무시하고
+  // battle.wild.hp만 globalHp로 되돌린다(단일 플레이어의 회복이 공유체력을 부풀리지 않게).
+  if (battle.isWorldBoss) await syncWorldBossDamage(battle, user, Math.max(0, wildHpBeforeEot - battle.wild.hp));
   pushFrame(); // 턴 종료 데미지/회복 (독·화상·날씨·필드 등). 변화 없으면 클라가 no-op 프레임으로 스킵.
 
   // Check if end-of-turn damage KO'd anyone
@@ -481,8 +492,9 @@ async function handleCatch(
   user: UserData, myPokemon: OwnedPokemon, battle: BattleState,
   data: Record<string, unknown>, log: string[], res: Response,
 ) {
-  // 주간보스는 잡을 수 없다 — 볼을 소모하지 않고 즉시 거부(턴도 소비하지 않는다).
-  if (battle.isBoss) { res.status(400).json({ error: "보스는 잡을 수 없다!" }); return; }
+  // 주간보스·월드보스는 (전투 중엔) 잡을 수 없다 — 볼을 소모하지 않고 즉시 거부(턴도 소비하지 않는다).
+  // 월드보스는 처치 후 별도 포획 페이지(/world-boss/capture)에서 기여도 비례 시도권으로 잡는다.
+  if (battle.isBoss || battle.isWorldBoss) { res.status(400).json({ error: "보스는 잡을 수 없다!" }); return; }
 
   const ballType = typeof data?.ball === "string" ? data.ball : "pokeball";
 

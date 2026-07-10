@@ -27,7 +27,13 @@ import { defaultStatStages } from "../game/battle.js";
 import { applySwitchInAbilities } from "../game/abilities.js";
 import { checkPrimalReversion, getTransformedStats } from "../game/battle-transformations.js";
 import { appendEvent } from "../storage/event-log.js";
-import type { BattleState } from "../../../../shared/types.js";
+import { attemptCapture } from "../game/capture.js";
+import { wildPokemonToOwned } from "../game/pokemon-factory.js";
+import { resolveShopItem } from "../game/inventory-utils.js";
+import {
+  getWorldBoss, mutateWorldBoss, endWorldBossIfExpired, CHAT_MAX,
+} from "../storage/world-boss-store.js";
+import type { BattleState, WorldBossState } from "../../../../shared/types.js";
 import { childLogger } from "../logger.js";
 const log = childLogger("game-routes");
 
@@ -509,6 +515,303 @@ gameRoutes.post("/boss/start", async (req: AuthRequest, res: Response) => {
     res.json({ battleState, log: startLog });
   } catch (err) {
     log.error({ err }, "Boss start error");
+    res.status(500).json({ error: "서버 오류가 발생했습니다" });
+  }
+});
+
+// ========== 월드보스(전 유저 공유체력 공동전) ==========
+
+/** 월드보스 상태 → 플레이어 뷰(요청 유저 관점). 만료 지연 검사 후의 상태를 쓴다. */
+function worldBossView(state: WorldBossState | null, userId: string, cooldownMs: number): Record<string, unknown> {
+  // 활성도 아니고 처치도 아니면(스폰 전/만료 종료) 빈 뷰. 처치 직후에는 active=false여도 아레나/포획
+  // 유도를 위해 defeated 상태를 노출한다.
+  if (!state || (!state.active && !state.defeated)) {
+    return { active: false, boss: null, defeated: false, participants: [], attackFeed: [], chat: [], myDamage: 0, myCooldownMs: 0, myCapture: null };
+  }
+  const s = state;
+  const participants = Object.entries(s.contributions)
+    .map(([uid, c]) => ({
+      userId: uid,
+      nickname: c.nickname,
+      species: c.pokemon.species,
+      variantId: c.pokemon.variantId,
+      shiny: c.pokemon.shiny,
+      damage: c.damage,
+    }))
+    .sort((a, b) => b.damage - a.damage);
+
+  const myContribution = s.contributions[userId];
+  const lastAttackAt = myContribution?.lastActiveAt;
+  const myCooldownMs = lastAttackAt
+    ? Math.max(0, cooldownMs - (Date.now() - new Date(lastAttackAt).getTime()))
+    : 0;
+
+  return {
+    active: s.active,
+    boss: { species: s.species, variantId: s.variantId, level: s.level, name: s.name },
+    globalHp: s.globalHp,
+    globalMaxHp: s.globalMaxHp,
+    defeated: s.defeated,
+    expiresAt: s.expiresAt,
+    participants,
+    attackFeed: s.attackFeed,
+    chat: s.chat,
+    myDamage: myContribution?.damage ?? 0,
+    myCooldownMs,
+    myCapture: null as unknown, // 아래에서 유저별로 덮어씀
+  };
+}
+
+// 월드보스 라이브 뷰 — 만료 지연 검사 후 아레나/공유HP/참전자/피드/채팅 + 내 데미지·쿨다운·포획권.
+gameRoutes.get("/world-boss", async (req: AuthRequest, res: Response) => {
+  try {
+    const user = await getUser(req.userId!);
+    if (!user) {
+      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+      return;
+    }
+    const config = await getConfig();
+    const state = await endWorldBossIfExpired();
+    const view = worldBossView(state, user.account.id, config.worldBoss.cooldownMs);
+    // 내 쿨다운은 lastWorldBossAttackAt(참전 시각) 기준으로도 반영 — contributions.lastActiveAt은
+    // 딜마다 갱신되므로 "참전 쿨다운"과는 다르다. 더 보수적인(긴) 쪽을 남긴다.
+    if (user.lastWorldBossAttackAt) {
+      const enterCooldown = Math.max(0, config.worldBoss.cooldownMs - (Date.now() - new Date(user.lastWorldBossAttackAt).getTime()));
+      view.myCooldownMs = Math.max((view.myCooldownMs as number) ?? 0, enterCooldown);
+    }
+    view.myCapture = user.worldBossCapture ?? null;
+    res.json(view);
+  } catch (err) {
+    log.error({ err }, "World-boss view error");
+    res.status(500).json({ error: "서버 오류가 발생했습니다" });
+  }
+});
+
+// 월드보스 참전 — 쿨다운/활성보스/살아있는 포켓몬 검사 후, 현재 globalHp를 hp로 스냅한 보스전을
+// 연다(startWildBattle이 아니라 boss/start와 동일한 인라인 세팅 — isWorldBoss/worldBossId 표식).
+gameRoutes.post("/world-boss/enter", async (req: AuthRequest, res: Response) => {
+  try {
+    const user = await getUser(req.userId!);
+    if (!user) {
+      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+      return;
+    }
+
+    const pokemonUid = typeof req.body?.pokemonUid === "string" ? req.body.pokemonUid : "";
+    if (!pokemonUid) {
+      res.status(400).json({ error: "포켓몬 UID를 입력해주세요" });
+      return;
+    }
+
+    if (user.battleState) {
+      res.status(400).json({ error: "이미 진행 중인 전투가 있습니다" });
+      return;
+    }
+
+    const config = await getConfig();
+    const state = await endWorldBossIfExpired();
+    if (!state || !state.active || state.defeated || state.globalHp <= 0) {
+      res.status(400).json({ error: "현재 진행 중인 월드보스가 없습니다" });
+      return;
+    }
+
+    // 참전당 쿨다운 — 마지막 참전 이후 cooldownMs가 지나야 한다.
+    if (user.lastWorldBossAttackAt) {
+      const elapsed = Date.now() - new Date(user.lastWorldBossAttackAt).getTime();
+      if (elapsed < config.worldBoss.cooldownMs) {
+        const remainMs = config.worldBoss.cooldownMs - elapsed;
+        res.status(400).json({ error: "아직 재참전 쿨다운입니다", cooldownMs: remainMs });
+        return;
+      }
+    }
+
+    const pokemon = user.pokemon.find((p) => p.uid === pokemonUid);
+    if (!pokemon) {
+      res.status(404).json({ error: "포켓몬을 찾을 수 없습니다" });
+      return;
+    }
+    if (pokemon.hp <= 0) {
+      res.status(400).json({ error: "기절한 포켓몬은 전투에 참여할 수 없습니다" });
+      return;
+    }
+    if (!user.party.includes(pokemonUid)) {
+      res.status(400).json({ error: "파티의 포켓몬만 참전할 수 있습니다" });
+      return;
+    }
+
+    // 현재 공유 체력을 hp로 스냅해 보스 개체를 복제한다(전투 중 표시·데미지 계산 기준).
+    const wild = { ...state.wild, hp: Math.min(state.globalHp, state.wild.maxHp) };
+
+    const battleState: BattleState = {
+      eventId: `world-boss-${state.bossId}-${crypto.randomUUID()}`,
+      myPokemonUid: pokemonUid,
+      participantUids: [pokemonUid],
+      turn: 0,
+      wild,
+      isWorldBoss: true,
+      worldBossId: state.bossId,
+      playerStatStages: defaultStatStages(),
+      wildStatStages: defaultStatStages(),
+      playerVolatile: [],
+      wildVolatile: [],
+    };
+
+    // 리드의 원시회귀(그란돈/가이오가 등) — 야생전/보스전과 동일 처리.
+    const primalForm = checkPrimalReversion(pokemon);
+    if (primalForm) {
+      battleState.playerBattleForm = primalForm;
+      battleState.transformationType = "primal";
+      const transformed = getTransformedStats(pokemon, primalForm);
+      pokemon.stats = transformed.stats;
+      pokemon.maxHp = transformed.maxHp;
+      pokemon.hp = Math.min(pokemon.hp, pokemon.maxHp);
+    }
+
+    const startLog: string[] = [`월드보스 ${state.name}에게 도전한다!`];
+    battleState.wildStatStages = applySwitchInAbilities(battleState, "player", pokemon, battleState.wildStatStages!, startLog);
+    battleState.playerStatStages = applySwitchInAbilities(battleState, "wild", wild, battleState.playerStatStages!, startLog);
+
+    const seenList = user.seenSpecies ?? (user.seenSpecies = []);
+    if (!seenList.includes(wild.species)) seenList.push(wild.species);
+
+    // 참전 시각 기록(쿨다운 기준).
+    user.lastWorldBossAttackAt = new Date().toISOString();
+    user.battleState = battleState;
+    await saveUser(user);
+
+    // 참전자 등록(아레나 표시용) — 락 하에 contributions에 포켓몬/활동시각을 세팅(데미지는 유지·신규는 0).
+    await mutateWorldBoss((ws) => {
+      if (ws.bossId !== state.bossId) return null;
+      const existing = ws.contributions[user.account.id];
+      ws.contributions[user.account.id] = {
+        nickname: user.account.nickname,
+        damage: existing?.damage ?? 0,
+        pokemon: { species: pokemon.species, variantId: pokemon.variantId ?? null, shiny: pokemon.isShiny ?? false },
+        lastActiveAt: new Date().toISOString(),
+      };
+      return ws;
+    });
+
+    void appendEvent({
+      type: "battle_start",
+      userId: user.account.id,
+      detail: { worldBoss: state.bossId, wildSpecies: wild.species, wildLevel: wild.level, myPokemonUid: pokemonUid },
+    });
+    res.json({ battleState, log: startLog });
+  } catch (err) {
+    log.error({ err }, "World-boss enter error");
+    res.status(500).json({ error: "서버 오류가 발생했습니다" });
+  }
+});
+
+const WORLD_BOSS_CHAT_MAX_LENGTH = 500;
+
+// 월드보스 참여 채팅 — 활성 보스가 있을 때만, 길이 검증 후 링버퍼(CHAT_MAX)에 추가한다.
+gameRoutes.post("/world-boss/chat", async (req: AuthRequest, res: Response) => {
+  try {
+    const user = await getUser(req.userId!);
+    if (!user) {
+      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+      return;
+    }
+    const text = typeof req.body?.text === "string" ? req.body.text.trim() : "";
+    if (!text) {
+      res.status(400).json({ error: "빈 메시지는 보낼 수 없습니다" });
+      return;
+    }
+    if (text.length > WORLD_BOSS_CHAT_MAX_LENGTH) {
+      res.status(400).json({ error: `메시지는 ${WORLD_BOSS_CHAT_MAX_LENGTH}자 이하여야 합니다` });
+      return;
+    }
+
+    const current = await getWorldBoss();
+    if (!current || !current.active) {
+      res.status(400).json({ error: "현재 진행 중인 월드보스가 없습니다" });
+      return;
+    }
+
+    const message = {
+      id: crypto.randomUUID(),
+      userId: user.account.id,
+      nickname: user.account.nickname,
+      text,
+      at: new Date().toISOString(),
+    };
+    await mutateWorldBoss((ws) => {
+      ws.chat.push(message);
+      if (ws.chat.length > CHAT_MAX) ws.chat = ws.chat.slice(-CHAT_MAX);
+      return ws;
+    });
+    res.json({ message });
+  } catch (err) {
+    log.error({ err }, "World-boss chat error");
+    res.status(500).json({ error: "서버 오류가 발생했습니다" });
+  }
+});
+
+// 월드보스 포획 — 처치 후 배분받은 시도권(worldBossCapture)으로 볼을 던진다. 확률 판정(capture.ts)
+// + 볼 catchBonus. 성공: 개체 지급(파티/보관함·도감) + capture 소멸. 실패: ballAttempts 1 차감.
+gameRoutes.post("/world-boss/capture", async (req: AuthRequest, res: Response) => {
+  try {
+    const user = await getUser(req.userId!);
+    if (!user) {
+      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+      return;
+    }
+
+    const capture = user.worldBossCapture;
+    if (!capture || capture.ballAttempts <= 0) {
+      res.status(400).json({ error: "사용할 수 있는 포획 시도권이 없습니다" });
+      return;
+    }
+
+    const config = await getConfig();
+    // 볼은 capture.ballItem(스폰 시 config.worldBoss.captureBall)로 고정 — 별도 인벤토리 소모는 없다
+    // (시도권 자체가 볼). catchBonus만 볼 메타에서 조회한다.
+    const ballItem = resolveShopItem(config, capture.ballItem);
+    const ballCatchMultiplier = 1 + (ballItem?.catchBonus ?? 0);
+    const guaranteedCatch = ballItem?.guaranteedCatch ?? false;
+
+    // HP 감쇠항이 없는 "알 부화식" 단순 확률 — currentHp=0, maxHp=1을 넣어 (1 - hp/maxHp)=1로 만들고
+    // baseCatchRate를 config.worldBoss.captureBaseRate로 명시한다(전설의 낮은 종 catchRate 대신).
+    const baseRate = config.worldBoss.captureBaseRate;
+    const caught = guaranteedCatch || attemptCapture(ballCatchMultiplier, 0, 1, baseRate);
+
+    const remainingAttempts = capture.ballAttempts - 1;
+
+    if (caught) {
+      // 배분 시점 정보로 개체를 만든다(레벨·종·변종·이로치). createWildPokemon으로 종/변종·레벨에 맞는
+      // 개체를 만든 뒤(랜덤 성격/IV) 이로치만 배분값으로 고정하고, wildPokemonToOwned로 소유 개체화한다.
+      const wild = createWildPokemon(capture.variantId ?? capture.species, capture.level);
+      wild.isShiny = capture.shiny;
+      const newPokemon = wildPokemonToOwned(wild);
+      newPokemon.isShiny = capture.shiny;
+
+      if (user.party.length < 6) {
+        user.pokemon.push(newPokemon);
+        user.party.push(newPokemon.uid);
+      } else {
+        user.storage.push(newPokemon);
+      }
+      if (!user.pokedex.includes(newPokemon.species)) user.pokedex.push(newPokemon.species);
+
+      // 포획 성공 → 시도권 소멸.
+      user.worldBossCapture = undefined;
+      await saveUser(user);
+      res.json({ caught: true, pokemon: newPokemon, ballAttempts: 0, message: `${getDisplaySpeciesName(newPokemon.species)}을(를) 잡았다!` });
+      return;
+    }
+
+    // 실패 → 시도권 1 차감(0이면 소멸).
+    if (remainingAttempts <= 0) {
+      user.worldBossCapture = undefined;
+    } else {
+      user.worldBossCapture = { ...capture, ballAttempts: remainingAttempts };
+    }
+    await saveUser(user);
+    res.json({ caught: false, ballAttempts: remainingAttempts, message: "아깝다! 잡지 못했다..." });
+  } catch (err) {
+    log.error({ err }, "World-boss capture error");
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
   }
 });

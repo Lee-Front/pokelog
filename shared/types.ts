@@ -310,6 +310,13 @@ export interface BattleState {
   // 그대로 재사용된다. bossId는 시작 시점 주간보스의 id로, 보상 지급 가드에 쓰인다.
   isBoss?: boolean;
   bossId?: string;
+  // 월드보스(전 유저 공유체력 공동전) 전투 표식. isWorldBoss=true면 battle-routes의 공격 턴 훅이
+  // 이번 턴 야생HP 감소분만큼 world-boss.json의 globalHp를 락 하에 차감하고 battle.wild.hp를 새
+  // globalHp로 맞춘다(공유체력 라이브 반영). handleCatch는 isBoss와 동일하게 차단된다. 시작 시점의
+  // globalHp를 wild.hp에 스냅해 만든다. worldBossId는 스폰 개체 id로, 오래된 전투(새 보스 스폰 후)를
+  // 데미지 동기화에서 무시하는 가드에 쓴다.
+  isWorldBoss?: boolean;
+  worldBossId?: string;
 }
 
 /**
@@ -414,6 +421,13 @@ export interface UserData {
   bossDefeatTotal?: number;
   // 주간보스 이번 주 '선착 1위' 처치 통산 횟수(업적용). 순위 기록 시 rank===1일 때만 +1.
   bossFirstPlaceTotal?: number;
+  // 월드보스 처치 후 배분받은 포획 시도권. 처치 시 기여도 비례로 몬스터볼 N개(ballAttempts)를 받고,
+  // /world-boss/capture가 이를 소진하며 확률 포획을 시도한다. 성공하면 개체를 지급하고 이 필드를 비운다.
+  // 없으면 undefined(포획 대상 없음). expiresAt은 참고용(만료돼도 서버는 강제로 지우지 않는다).
+  worldBossCapture?: WorldBossCapture;
+  // 마지막으로 월드보스에 참전(공격 전투 시작)한 시각(ISO). /world-boss/enter의 참전당 쿨다운 판정에 쓴다.
+  // 구 저장본은 미설정(undefined) — 쿨다운 없음으로 취급한다.
+  lastWorldBossAttackAt?: string;
 }
 
 // === Config ===
@@ -569,12 +583,27 @@ export interface ServerConfig {
   // 유지는 무료이고, 원래 없던 기술을 넣을 때만 개수만큼 차감한다. 운영자가 /admin에서 튜닝(기본 500).
   moveChangeCost: number;
   pvp: PvpConfig;
+  worldBoss: WorldBossConfig;
 }
 
 // === PvP 설정(Phase 2) ===
 export interface PvpConfig {
   /** ELO: 시작 레이팅 start(>0), K 계수 k(>0). 모든 매치에 적용. */
   elo: { start: number; k: number };
+}
+
+// === 월드보스 설정 ===
+export interface WorldBossConfig {
+  /** 참전당 쿨다운(ms). 마지막 참전 이후 이 시간이 지나야 다시 /world-boss/enter 가능. 기본 600000(10분). */
+  cooldownMs: number;
+  /** 처치 시 전 기여자에게 배분하는 총 포획 시도권(몬스터볼) 풀. 기여도 비례로 나눈다. 기본 100. */
+  ballPool: number;
+  /** 스폰 시 durationHours 미지정 시의 기본 수명(시간). 기본 24. */
+  durationHours: number;
+  /** 배분된 포획 시도권으로 던지는 볼의 인벤토리 키(catchBonus 조회용). 기본 "greatball". */
+  captureBall: string;
+  /** 포획 확률의 기본 상수(HP 감쇠항 없이 볼 배수에 더해지는 base). 전설 낮은 catchRate 대신 명시. 기본 0.35. */
+  captureBaseRate: number;
 }
 
 // === Sync State ===
@@ -1101,4 +1130,89 @@ export interface EventLogEntry {
   userId?: string;
   /** 이벤트별 상세 — 자유 형식 JSON */
   detail?: Record<string, unknown>;
+}
+
+// === 월드보스(전 유저 공유체력 공동전) ===
+
+/** 월드보스 참여자 기여 기록(contributions[userId]). 누적 데미지 + 참전 포켓몬 표시 정보. */
+export interface WorldBossContribution {
+  nickname: string;
+  /** 이 유저가 이 보스에 누적으로 넣은 데미지. */
+  damage: number;
+  /** 참전(마지막 전투 시작) 포켓몬 표시 정보 — 아레나 스프라이트/라벨용. */
+  pokemon: { species: string; variantId: string | null; shiny: boolean };
+  /** 마지막 활동(전투 시작 또는 딜) 시각 ISO — 아레나 참전자 정렬/상한용. */
+  lastActiveAt: string;
+}
+
+/** 월드보스 공격 피드 항목(링버퍼, 최근 N개). 아레나 공격 연출·플로팅 데미지 숫자용. */
+export interface WorldBossAttackFeedItem {
+  id: string;
+  userId: string;
+  nickname: string;
+  species: string;
+  variantId: string | null;
+  damage: number;
+  at: string;
+}
+
+/** 월드보스 참여 채팅 메시지(PvP 인배틀 채팅과 동형). */
+export interface WorldBossChatMessage {
+  id: string;
+  userId: string;
+  nickname: string;
+  text: string;
+  at: string;
+}
+
+/** 처치 후 유저에게 배분되는 포획 시도권(UserData.worldBossCapture). 볼=포획 시도 횟수. */
+export interface WorldBossCapture {
+  species: string;
+  variantId: string | null;
+  level: number;
+  shiny: boolean;
+  /** 던질 볼의 인벤토리 키(config.worldBoss.captureBall). catchBonus 조회용. */
+  ballItem: string;
+  /** 남은 포획 시도 횟수. 성공하면 개체 지급 후 이 필드 삭제, 실패하면 1 차감(0이면 소진). */
+  ballAttempts: number;
+  /** 소속 보스 스폰 id(중복 배분 방지·표시용). */
+  bossId: string;
+  /** 참고용 만료 시각 ISO(서버는 강제로 지우지 않음). */
+  expiresAt: string;
+}
+
+/**
+ * 월드보스 전역 상태(pokelog-data/world-boss.json 단일 파일). 관리자 스폰으로 active=true가 되고,
+ * 처치(globalHp<=0)되면 defeated=true, 24h 만료 또는 관리자 종료로 active=false가 된다. 변형은
+ * 항상 withLock('world-boss') 안에서만 한다. wild는 전투 진입 시 hp를 현재 globalHp로 스냅해 복제한다.
+ */
+export interface WorldBossState {
+  /** 진행 중(스폰됐고 종료되지 않음). false면 보스 없음(스폰 전/종료 후). */
+  active: boolean;
+  /** 스폰 개체 id(UUID). 데미지 동기화·포획 배분의 소속 가드에 쓴다. */
+  bossId: string;
+  species: string;
+  variantId: string | null;
+  level: number;
+  /** 표시명(한글 종명). */
+  name: string;
+  startedAt: string;
+  expiresAt: string;
+  /** 공유 최대 체력(=wild.maxHp, 뻥튀기 반영). */
+  globalMaxHp: number;
+  /** 공유 현재 체력. 각 유저 전투 턴이 락 하에 차감. 0 이하면 처치. */
+  globalHp: number;
+  /** 처치됨. globalHp<=0이 되는 순간 true. */
+  defeated: boolean;
+  defeatedAt?: string;
+  /** 처치 보상(포획 시도권) 1회 배분 가드. */
+  rewardsDistributed: boolean;
+  /** 전투용 보스 개체(buildWorldBossWild 결과). 진입 시 hp만 globalHp로 스냅해 복제한다. */
+  wild: WildPokemon;
+  /** 유저별 기여 기록. */
+  contributions: Record<string, WorldBossContribution>;
+  /** 최근 공격 피드(링버퍼, 최근 ~30). */
+  attackFeed: WorldBossAttackFeedItem[];
+  /** 참여 채팅(링버퍼, 최근 ~50). */
+  chat: WorldBossChatMessage[];
 }

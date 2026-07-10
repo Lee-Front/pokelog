@@ -286,6 +286,15 @@ export const DEFAULT_CONFIG: ServerConfig = {
   pvp: {
     elo: { start: 1000, k: 32 },
   },
+  // 월드보스(전 유저 공유체력 공동전) 설정. 관리자 수동 스폰·24h 시간제한·참전당 10분 쿨다운.
+  // 처치 시 기여도 비례로 총 ballPool개의 포획 시도권(그레이트볼)을 배분한다. 운영자가 /admin에서 튜닝.
+  worldBoss: {
+    cooldownMs: 600000,
+    ballPool: 100,
+    durationHours: 24,
+    captureBall: "greatball",
+    captureBaseRate: 0.35,
+  },
 };
 
 export async function getConfig(): Promise<ServerConfig> {
@@ -363,6 +372,10 @@ export async function getConfig(): Promise<ServerConfig> {
       ...DEFAULT_CONFIG.pvp,
       ...config.pvp,
       elo: { ...DEFAULT_CONFIG.pvp.elo, ...config.pvp?.elo },
+    },
+    worldBoss: {
+      ...DEFAULT_CONFIG.worldBoss,
+      ...config.worldBoss,
     },
   };
 }

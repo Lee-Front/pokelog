@@ -37,6 +37,10 @@ import { queuePendingMoveLearns } from "../game/pending-move-learn.js";
 
 import { query as queryEventLog } from "../storage/event-log.js";
 import { adminMiddleware } from "../middleware/admin-middleware.js";
+import { buildWorldBossWild } from "../game/world-boss.js";
+import { getDisplaySpeciesName } from "../game/pokemon-state.js";
+import { getWorldBoss, setWorldBoss, mutateWorldBoss } from "../storage/world-boss-store.js";
+import type { WorldBossState } from "../../../../shared/types.js";
 import { childLogger } from "../logger.js";
 
 const log = childLogger("admin-routes");
@@ -1034,6 +1038,103 @@ adminRoutes.post("/polling/run", async (_req, res) => {
     res.json({ ok: true, message: "Polling 완료" });
   } catch (err) {
     res.status(500).json({ error: "Polling 실패" });
+  }
+});
+
+// ========== 월드보스(전 유저 공유체력 공동전) ==========
+
+// 월드보스 스폰 — 관리자 수동. 임의의 종/변종/레벨을 HP 배율(hpMultiplier) 또는 절대값(totalHp)으로
+// 뻥튀기해 공유 체력 개체를 만든다(전설/환상 무관하게 허용하되 종/변종 존재는 검증). 진행 중 보스가
+// 있으면(active·미처치) 덮어쓰기를 막는다(중복 스폰 방지) — 먼저 /end로 종료해야 한다.
+adminRoutes.post("/world-boss/spawn", async (req, res) => {
+  try {
+    const { species, variantId, level, hpMultiplier, totalHp, durationHours } = req.body ?? {};
+
+    if (typeof species !== "string" || !species.trim()) {
+      return res.status(400).json({ error: "species가 필요합니다" });
+    }
+    const lv = Number(level);
+    if (!Number.isInteger(lv) || lv < 1 || lv > 100) {
+      return res.status(400).json({ error: "level은 1~100 정수여야 합니다" });
+    }
+    if (variantId != null && typeof variantId !== "string") {
+      return res.status(400).json({ error: "variantId는 문자열이어야 합니다" });
+    }
+    if (hpMultiplier != null && (typeof hpMultiplier !== "number" || !Number.isFinite(hpMultiplier) || hpMultiplier <= 0)) {
+      return res.status(400).json({ error: "hpMultiplier는 양수여야 합니다" });
+    }
+    if (totalHp != null && (typeof totalHp !== "number" || !Number.isFinite(totalHp) || totalHp <= 0)) {
+      return res.status(400).json({ error: "totalHp는 양수여야 합니다" });
+    }
+
+    const existing = await getWorldBoss();
+    if (existing && existing.active && !existing.defeated) {
+      return res.status(409).json({ error: "이미 진행 중인 월드보스가 있습니다. 먼저 종료해주세요." });
+    }
+
+    const config = await getConfig();
+    const hours = typeof durationHours === "number" && durationHours > 0 ? durationHours : config.worldBoss.durationHours;
+
+    let wild;
+    try {
+      wild = buildWorldBossWild(species.trim(), typeof variantId === "string" ? variantId : null, lv, {
+        hpMultiplier: typeof hpMultiplier === "number" ? hpMultiplier : undefined,
+        totalHp: typeof totalHp === "number" ? totalHp : undefined,
+      });
+    } catch {
+      return res.status(400).json({ error: "존재하지 않는 포켓몬/변종입니다" });
+    }
+
+    const now = new Date();
+    const state: WorldBossState = {
+      active: true,
+      bossId: crypto.randomUUID(),
+      species: wild.species,
+      variantId: wild.variantId ?? null,
+      level: wild.level,
+      name: getDisplaySpeciesName(wild.species),
+      startedAt: now.toISOString(),
+      expiresAt: new Date(now.getTime() + hours * 3600000).toISOString(),
+      globalMaxHp: wild.maxHp,
+      globalHp: wild.maxHp,
+      defeated: false,
+      rewardsDistributed: false,
+      wild,
+      contributions: {},
+      attackFeed: [],
+      chat: [],
+    };
+
+    await setWorldBoss(state);
+    res.json({ state });
+  } catch (err) {
+    log.error({ err }, "Admin world-boss spawn error");
+    res.status(500).json({ error: "서버 오류" });
+  }
+});
+
+// 월드보스 즉시 종료 — active면 active=false로 내린다(처치와 무관, 보상 배분도 하지 않음).
+adminRoutes.post("/world-boss/end", async (_req, res) => {
+  try {
+    await mutateWorldBoss((ws) => {
+      ws.active = false;
+      return ws;
+    });
+    res.json({ ok: true });
+  } catch (err) {
+    log.error({ err }, "Admin world-boss end error");
+    res.status(500).json({ error: "서버 오류" });
+  }
+});
+
+// 월드보스 현재 상태(관리자 조회) — 전체 상태 그대로.
+adminRoutes.get("/world-boss", async (_req, res) => {
+  try {
+    const state = await getWorldBoss();
+    res.json({ state });
+  } catch (err) {
+    log.error({ err }, "Admin world-boss get error");
+    res.status(500).json({ error: "서버 오류" });
   }
 });
 
