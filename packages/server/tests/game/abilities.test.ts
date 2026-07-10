@@ -10,9 +10,16 @@ import {
   applyEndOfTurnAbilities,
   getAbilitySpeedMultiplier,
   abilitySurvivesKO,
+  attackerBreaksMold,
+  abilityNullifiesNonSuperEffective,
+  abilityBlocksIndirectDamage,
+  resolveUnawareStages,
+  applyContraryToChange,
+  checkDisguiseBreak,
+  isIronFistMove,
 } from "../../src/game/abilities.js";
 import { defaultStatStages } from "../../src/game/battle.js";
-import type { BattleState, PrimaryStatus } from "../../../../shared/types.js";
+import type { BattleState, PrimaryStatus, StatStages } from "../../../../shared/types.js";
 
 describe("getAbility / hasAbility", () => {
   it("reads abilityId for owned pokemon", () => {
@@ -291,5 +298,173 @@ describe("applySwitchInAbilities", () => {
     applySwitchInAbilities(battle, "player", { abilityId: "electric-surge" }, defaultStatStages(), []);
     expect(battle.terrain).toBe("electric");
     expect(battle.terrainTurns).toBeGreaterThan(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// New abilities (batch 2)
+// ---------------------------------------------------------------------------
+
+describe("getAbilityOffenseMultiplier — context-driven abilities", () => {
+  const frac = 0.5;
+
+  it("null/unknown stays neutral even with a full context", () => {
+    const ctx = { isSuperEffective: true, notVeryEffective: true, isCritical: true, hasSecondary: true, isRecoilMove: true, isPunchMove: true, isContact: true, weather: "sandstorm" as const };
+    expect(getAbilityOffenseMultiplier({}, "rock", "physical", 80, frac, false, false, ctx)).toBe(1);
+    expect(getAbilityOffenseMultiplier({ abilityId: "no-such" }, "rock", "physical", 80, frac, false, false, ctx)).toBe(1);
+  });
+
+  it("omitting the context leaves conditional abilities inert (byte-identical)", () => {
+    // sheer-force only fires when ctx.hasSecondary; with no context → 1
+    expect(getAbilityOffenseMultiplier({ abilityId: "sheer-force" }, "normal", "physical", 80, frac, false, false)).toBe(1);
+    expect(getAbilityOffenseMultiplier({ abilityId: "sniper" }, "normal", "physical", 80, frac, false, false)).toBe(1);
+  });
+
+  it("sheer-force ×1.3 only for damaging moves with a secondary", () => {
+    expect(getAbilityOffenseMultiplier({ abilityId: "sheer-force" }, "normal", "physical", 80, frac, false, false, { hasSecondary: true })).toBeCloseTo(1.3);
+    expect(getAbilityOffenseMultiplier({ abilityId: "sheer-force" }, "normal", "physical", 80, frac, false, false, { hasSecondary: false })).toBe(1);
+    expect(getAbilityOffenseMultiplier({ abilityId: "sheer-force" }, "normal", "status", 0, frac, false, false, { hasSecondary: true })).toBe(1);
+  });
+
+  it("reckless ×1.2 only for recoil moves", () => {
+    expect(getAbilityOffenseMultiplier({ abilityId: "reckless" }, "normal", "physical", 120, frac, false, false, { isRecoilMove: true })).toBeCloseTo(1.2);
+    expect(getAbilityOffenseMultiplier({ abilityId: "reckless" }, "normal", "physical", 120, frac, false, false, { isRecoilMove: false })).toBe(1);
+  });
+
+  it("iron-fist ×1.2 only for punch moves", () => {
+    expect(getAbilityOffenseMultiplier({ abilityId: "iron-fist" }, "fire", "physical", 75, frac, false, false, { isPunchMove: true })).toBeCloseTo(1.2);
+    expect(getAbilityOffenseMultiplier({ abilityId: "iron-fist" }, "fire", "physical", 75, frac, false, false, { isPunchMove: false })).toBe(1);
+  });
+
+  it("tough-claws ×1.3 only on contact", () => {
+    expect(getAbilityOffenseMultiplier({ abilityId: "tough-claws" }, "normal", "physical", 80, frac, false, false, { isContact: true })).toBeCloseTo(1.3);
+    expect(getAbilityOffenseMultiplier({ abilityId: "tough-claws" }, "normal", "special", 80, frac, false, false, { isContact: false })).toBe(1);
+  });
+
+  it("sand-force ×1.3 for rock/ground/steel in sandstorm only", () => {
+    expect(getAbilityOffenseMultiplier({ abilityId: "sand-force" }, "rock", "physical", 80, frac, false, false, { weather: "sandstorm" })).toBeCloseTo(1.3);
+    expect(getAbilityOffenseMultiplier({ abilityId: "sand-force" }, "steel", "physical", 80, frac, false, false, { weather: "sandstorm" })).toBeCloseTo(1.3);
+    expect(getAbilityOffenseMultiplier({ abilityId: "sand-force" }, "water", "physical", 80, frac, false, false, { weather: "sandstorm" })).toBe(1);
+    expect(getAbilityOffenseMultiplier({ abilityId: "sand-force" }, "rock", "physical", 80, frac, false, false, { weather: "rain" })).toBe(1);
+  });
+
+  it("sniper ×1.5 on critical, tinted-lens ×2 on resisted, neuroforce ×1.25 on super-effective", () => {
+    expect(getAbilityOffenseMultiplier({ abilityId: "sniper" }, "normal", "physical", 80, frac, false, false, { isCritical: true })).toBeCloseTo(1.5);
+    expect(getAbilityOffenseMultiplier({ abilityId: "sniper" }, "normal", "physical", 80, frac, false, false, { isCritical: false })).toBe(1);
+    expect(getAbilityOffenseMultiplier({ abilityId: "tinted-lens" }, "normal", "physical", 80, frac, false, false, { notVeryEffective: true })).toBe(2);
+    expect(getAbilityOffenseMultiplier({ abilityId: "tinted-lens" }, "normal", "physical", 80, frac, false, false, { notVeryEffective: false })).toBe(1);
+    expect(getAbilityOffenseMultiplier({ abilityId: "neuroforce" }, "normal", "physical", 80, frac, false, false, { isSuperEffective: true })).toBeCloseTo(1.25);
+  });
+});
+
+describe("isIronFistMove", () => {
+  it("recognizes real punch moves but not sucker-punch", () => {
+    expect(isIronFistMove("fire-punch")).toBe(true);
+    expect(isIronFistMove("mach-punch")).toBe(true);
+    expect(isIronFistMove("sucker-punch")).toBe(false);
+    expect(isIronFistMove("tackle")).toBe(false);
+  });
+});
+
+describe("attackerBreaksMold", () => {
+  it("true for mold-breaker/turboblaze/teravolt, false otherwise", () => {
+    expect(attackerBreaksMold({ abilityId: "mold-breaker" })).toBe(true);
+    expect(attackerBreaksMold({ ability: "turboblaze" })).toBe(true);
+    expect(attackerBreaksMold({ abilityId: "teravolt" })).toBe(true);
+    expect(attackerBreaksMold({ abilityId: "intimidate" })).toBe(false);
+    expect(attackerBreaksMold({})).toBe(false);
+  });
+
+  it("mold-breaker attacker nullifies defensive immunity/defense/sturdy", () => {
+    // breakMold=true → immunity/defense mult/sturdy all revert to neutral
+    expect(checkAbilityImmunity({ abilityId: "levitate" }, "ground", "physical", true).immune).toBe(false);
+    expect(getAbilityDefenseMultiplier({ abilityId: "multiscale" }, "normal", 1, false, true)).toBe(1);
+    expect(abilitySurvivesKO({ abilityId: "sturdy" }, true, true)).toBe(false);
+  });
+});
+
+describe("abilityNullifiesNonSuperEffective (wonder-guard)", () => {
+  it("blocks non-super-effective damaging moves, allows super-effective", () => {
+    expect(abilityNullifiesNonSuperEffective({ abilityId: "wonder-guard" }, "physical", false)).toBe(true);
+    expect(abilityNullifiesNonSuperEffective({ abilityId: "wonder-guard" }, "physical", true)).toBe(false);
+  });
+  it("never blocks status moves and is neutral for other abilities / mold-breaker", () => {
+    expect(abilityNullifiesNonSuperEffective({ abilityId: "wonder-guard" }, "status", false)).toBe(false);
+    expect(abilityNullifiesNonSuperEffective({ abilityId: "levitate" }, "physical", false)).toBe(false);
+    expect(abilityNullifiesNonSuperEffective({ abilityId: "wonder-guard" }, "physical", false, true)).toBe(false);
+    expect(abilityNullifiesNonSuperEffective({}, "physical", false)).toBe(false);
+  });
+});
+
+describe("abilityBlocksIndirectDamage (magic-guard)", () => {
+  it("true only for magic-guard", () => {
+    expect(abilityBlocksIndirectDamage({ abilityId: "magic-guard" })).toBe(true);
+    expect(abilityBlocksIndirectDamage({ ability: "magic-guard" })).toBe(true);
+    expect(abilityBlocksIndirectDamage({ abilityId: "levitate" })).toBe(false);
+    expect(abilityBlocksIndirectDamage({})).toBe(false);
+  });
+});
+
+describe("resolveUnawareStages", () => {
+  function stages(overrides?: Partial<StatStages>): StatStages {
+    return { ...defaultStatStages(), ...overrides };
+  }
+
+  it("returns input references unchanged when neither side is unaware", () => {
+    const atk = stages({ attack: 2 });
+    const def = stages({ defense: 2 });
+    const out = resolveUnawareStages({}, {}, atk, def);
+    expect(out.attackerStages).toBe(atk);
+    expect(out.defenderStages).toBe(def);
+  });
+
+  it("defender unaware → attacker's atk/spAtk stages zeroed (other stages kept)", () => {
+    const atk = stages({ attack: 3, spAttack: 2, speed: 1 });
+    const out = resolveUnawareStages({}, { abilityId: "unaware" }, atk, stages());
+    expect(out.attackerStages).toMatchObject({ attack: 0, spAttack: 0, speed: 1 });
+    // 원본은 불변
+    expect(atk.attack).toBe(3);
+  });
+
+  it("attacker unaware → defender's def/spDef stages zeroed", () => {
+    const def = stages({ defense: 3, spDefense: 2, speed: 1 });
+    const out = resolveUnawareStages({ abilityId: "unaware" }, {}, stages(), def);
+    expect(out.defenderStages).toMatchObject({ defense: 0, spDefense: 0, speed: 1 });
+  });
+});
+
+describe("applyContraryToChange", () => {
+  it("reverses sign only for contrary holders", () => {
+    expect(applyContraryToChange({ abilityId: "contrary" }, -1)).toBe(1);
+    expect(applyContraryToChange({ abilityId: "contrary" }, 2)).toBe(-2);
+    expect(applyContraryToChange({ abilityId: "intimidate" }, -1)).toBe(-1);
+    expect(applyContraryToChange({}, -1)).toBe(-1);
+  });
+});
+
+describe("checkDisguiseBreak (disguise)", () => {
+  it("breaks on the first damaging hit and reports maxHp/8 chip", () => {
+    const r = checkDisguiseBreak({ abilityId: "disguise" }, "physical", 40, false, 80);
+    expect(r.broke).toBe(true);
+    expect(r.chipDamage).toBe(10); // 80/8
+  });
+
+  it("does not break again once already busted", () => {
+    expect(checkDisguiseBreak({ abilityId: "disguise" }, "physical", 40, true, 80).broke).toBe(false);
+  });
+
+  it("ignores status moves and zero-damage hits", () => {
+    expect(checkDisguiseBreak({ abilityId: "disguise" }, "status", 0, false, 80).broke).toBe(false);
+    expect(checkDisguiseBreak({ abilityId: "disguise" }, "physical", 0, false, 80).broke).toBe(false);
+  });
+
+  it("is neutral for other abilities and for mold-breaker attackers", () => {
+    expect(checkDisguiseBreak({ abilityId: "levitate" }, "physical", 40, false, 80).broke).toBe(false);
+    expect(checkDisguiseBreak({}, "physical", 40, false, 80).broke).toBe(false);
+    expect(checkDisguiseBreak({ abilityId: "disguise" }, "physical", 40, false, 80, true).broke).toBe(false);
+  });
+
+  it("chip damage is at least 1 for tiny maxHp", () => {
+    expect(checkDisguiseBreak({ abilityId: "disguise" }, "special", 5, false, 4).chipDamage).toBe(1);
   });
 });

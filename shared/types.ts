@@ -305,6 +305,11 @@ export interface BattleState {
   // 야생이 선공해 풀죽음(flinch)을 유발했는지 알리는 1턴짜리 임시 플래그.
   // doWildAttackAndCheck가 설정하고, 야생 선공 분기에서 소비 즉시 해제한다(영속 저장 안 함).
   playerFlinched?: boolean;
+  // 탈(disguise) 파괴 상태. 특성 disguise 보유 개체는 배틀당 1회 첫 데미지 타격을 무효로 막는데,
+  // 이미 그 1회를 소진(탈이 깨짐)했는지 여부. undefined/false=탈 멀쩡, true=이미 깨짐.
+  // 전투 지속 상태이므로 BattleState에 보존한다(양측 개별). 비-disguise 개체엔 의미 없음.
+  playerDisguiseBusted?: boolean;
+  wildDisguiseBusted?: boolean;
   // 주간보스 전투 표식. isBoss=true면 이 전투의 wild가 주간보스(단일 강력 개체)다 — finishWin이
   // 주(ISO week)당 1회 보상 지급 훅을 태우고 handleCatch를 차단한다. 야생 로직(공격/교체/아이템)은
   // 그대로 재사용된다. bossId는 시작 시점 주간보스의 id로, 보상 지급 가드에 쓰인다.

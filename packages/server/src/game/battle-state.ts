@@ -16,7 +16,10 @@ import {
   hasAbility, getAbilityOffenseMultiplier, checkAbilityImmunity,
   getAbilityDefenseMultiplier, applyContactAbilities, applyEndOfTurnAbilities,
   getAbilitySpeedMultiplier, abilitySurvivesKO, applySwitchInAbilities,
-  abilityBlocksStatus,
+  abilityBlocksStatus, attackerBreaksMold, abilityNullifiesNonSuperEffective,
+  abilityBlocksIndirectDamage, resolveUnawareStages, applyContraryToChange,
+  checkDisguiseBreak, isIronFistMove,
+  type OffenseContext, type AbilityHolder,
 } from "./abilities.js";
 import {
   checkPreAttack, applyEndOfTurn, tickVolatiles, hasVolatile,
@@ -138,13 +141,14 @@ export function applyWeatherEndOfTurn(
   const playerTypes = getEffectiveTypes(myPokemon.species, myPokemon.variantId, battle.playerBattleForm);
   const wildTypes = getEffectiveTypes(battle.wild.species, battle.wild.variantId, battle.wildBattleForm);
 
-  const playerWeatherDmg = getWeatherDamage(battle.weather, playerTypes, myPokemon.maxHp);
+  // 매직가드는 날씨 도트(모래바람/우박)도 무효로 한다.
+  const playerWeatherDmg = abilityBlocksIndirectDamage(myPokemon) ? 0 : getWeatherDamage(battle.weather, playerTypes, myPokemon.maxHp);
   if (playerWeatherDmg > 0) {
     myPokemon.hp = Math.max(0, myPokemon.hp - playerWeatherDmg);
     log.push(`${getDisplaySpeciesName(myPokemon.species)}이(가) 날씨로 ${playerWeatherDmg} 데미지를 받았다!`);
   }
 
-  const wildWeatherDmg = getWeatherDamage(battle.weather, wildTypes, battle.wild.maxHp);
+  const wildWeatherDmg = abilityBlocksIndirectDamage(battle.wild) ? 0 : getWeatherDamage(battle.weather, wildTypes, battle.wild.maxHp);
   if (wildWeatherDmg > 0) {
     battle.wild.hp = Math.max(0, battle.wild.hp - wildWeatherDmg);
     log.push(`야생 ${getDisplaySpeciesName(battle.wild.species)}이(가) 날씨로 ${wildWeatherDmg} 데미지를 받았다!`);
@@ -349,12 +353,17 @@ export function applyMetaEffects(
   return { hpChange, messages };
 }
 
-/** stat change 적용 (statChance 확인 포함, move target에 따라 적용 대상 결정) */
+/**
+ * stat change 적용 (statChance 확인 포함, move target에 따라 적용 대상 결정).
+ * holders를 주면 심술꾸러기(contrary) 보유자에게 적용되는 랭크 변화의 부호를 반전한다.
+ * holders 미제공(레거시/테스트 호출)이면 contrary는 발동하지 않고 종전과 동일하다.
+ */
 export function maybeApplyStatChanges(
   battle: BattleState,
   moveData: { statChanges?: Array<{ stat: string; change: number }>; meta?: { statChance?: number }; target?: string },
   isPlayerMove: boolean,
   log: string[],
+  holders?: { player?: AbilityHolder | null; wild?: AbilityHolder | null },
 ): void {
   const changes = moveData.statChanges;
   if (!changes || changes.length === 0) return;
@@ -366,20 +375,18 @@ export function maybeApplyStatChanges(
 
   for (const { stat, change } of changes) {
     const isSelfBuff = targetsSelf || change > 0;
-    if (isSelfBuff) {
-      if (isPlayerMove) {
-        battle.playerStatStages = applyStatChanges(battle.playerStatStages ?? defaultStatStages(), [{ stat, change }]);
-      } else {
-        battle.wildStatStages = applyStatChanges(battle.wildStatStages ?? defaultStatStages(), [{ stat, change }]);
-      }
+    // 이 변화를 실제로 받는 쪽을 먼저 결정한다(자기 강화면 사용자, 아니면 상대).
+    const recipientIsPlayer = isSelfBuff ? isPlayerMove : !isPlayerMove;
+    // 심술꾸러기: 수령자가 contrary면 부호 반전(로그 방향도 반전 후 값 기준).
+    const recipientHolder = recipientIsPlayer ? holders?.player : holders?.wild;
+    const effectiveChange = recipientHolder ? applyContraryToChange(recipientHolder, change) : change;
+
+    if (recipientIsPlayer) {
+      battle.playerStatStages = applyStatChanges(battle.playerStatStages ?? defaultStatStages(), [{ stat, change: effectiveChange }]);
     } else {
-      if (isPlayerMove) {
-        battle.wildStatStages = applyStatChanges(battle.wildStatStages ?? defaultStatStages(), [{ stat, change }]);
-      } else {
-        battle.playerStatStages = applyStatChanges(battle.playerStatStages ?? defaultStatStages(), [{ stat, change }]);
-      }
+      battle.wildStatStages = applyStatChanges(battle.wildStatStages ?? defaultStatStages(), [{ stat, change: effectiveChange }]);
     }
-    const direction = change > 0 ? "올랐다" : "내려갔다";
+    const direction = effectiveChange > 0 ? "올랐다" : "내려갔다";
     log.push(`${stat} 스탯이 ${direction}!`);
   }
 }
@@ -390,6 +397,41 @@ export function maybeApplyStatChanges(
 
 export interface PlayerAttackResult {
   flinchCaused: boolean;
+}
+
+/**
+ * 기술 메타에서 "부가효과(secondary)" 보유 여부를 판정한다(sheer-force 게이팅).
+ * 상태이상/추가 스탯변화/풀죽음 확률 중 하나라도 있으면 부가효과가 있는 것으로 본다.
+ */
+function moveHasSecondary(moveData: MoveData): boolean {
+  const meta = moveData.meta;
+  const hasAilment = !!meta?.ailment && meta.ailment !== "none" && (meta.ailmentChance ?? 0) > 0;
+  const hasStatChance = (meta?.statChance ?? 0) > 0 && (moveData.statChanges?.length ?? 0) > 0;
+  const hasFlinch = (meta?.flinchChance ?? 0) > 0;
+  return hasAilment || hasStatChance || hasFlinch;
+}
+
+/**
+ * calculateDamage 결과와 기술 메타로부터 조건부 공격 특성(OffenseContext)을 구성한다.
+ * moveId·moveData·데미지 결과(효과/급소)와 현재 날씨를 종합한다.
+ */
+function buildOffenseContext(
+  moveId: string,
+  moveData: MoveData,
+  effectiveness: number,
+  critical: boolean,
+  weather: import("../../../../shared/types.js").BattleWeather | undefined,
+): OffenseContext {
+  return {
+    isSuperEffective: effectiveness > 1,
+    notVeryEffective: effectiveness > 0 && effectiveness < 1,
+    isCritical: critical,
+    hasSecondary: moveHasSecondary(moveData),
+    isRecoilMove: (moveData.meta?.drain ?? 0) < 0,
+    isPunchMove: isIronFistMove(moveId),
+    isContact: moveData.category === "physical",
+    weather,
+  };
 }
 
 /**
@@ -417,11 +459,14 @@ export function executePlayerAttack(
   const playerAtkTypes = getEffectiveTypes(player.species, player.variantId, battle.playerBattleForm);
   const wildDefTypes = getEffectiveTypes(battle.wild.species, battle.wild.variantId, battle.wildBattleForm);
 
+  // 틀깨기(mold-breaker/turboblaze/teravolt): 플레이어가 이 특성이면 야생의 방어 특성을 무시.
+  const playerBreaksMold = attackerBreaksMold(player);
+
   // 특성 방어 면역/흡수(volt-absorb·levitate 등): 데미지 적용 전 판정.
   // 면역이면 데미지 0, 2차효과/접촉/풀죽음을 모두 스킵하고 heal/boost만 적용.
   // status 기술이거나 무특성/미지원이면 immune=false라 종전과 동일하게 진행한다.
   if (moveData.category !== "status") {
-    const immunity = checkAbilityImmunity(battle.wild, moveData.type, moveData.category);
+    const immunity = checkAbilityImmunity(battle.wild, moveData.type, moveData.category, playerBreaksMold);
     if (immunity.immune) {
       // pp는 이미 위에서 차감됨(빗나감과 동일하게 소모).
       log.push(`${getDisplaySpeciesName(battle.wild.species)}에게는 효과가 없는 것 같다...`);
@@ -457,11 +502,15 @@ export function executePlayerAttack(
     ? { teraType: battle.playerTeraType, originalTypes: playerAtkTypes }
     : undefined;
 
+  // 배짱없음(unaware): 공격자(플레이어)가 unaware면 야생 방어 랭크 무시, 야생이 unaware면
+  // 플레이어 공격 랭크 무시. 해당 특성이 없으면 원본 참조 그대로(byte-identical).
+  const playerUnaware = resolveUnawareStages(player, battle.wild, battle.playerStatStages, battle.wildStatStages);
+
   const result = calculateDamage(
     player.level, playerStats, battle.wild.stats, moveData,
     playerAtkTypes,
     wildDefTypes,
-    battle.playerStatStages, battle.wildStatStages,
+    playerUnaware.attackerStages, playerUnaware.defenderStages,
     (playerWeatherMod * playerTerrainMod) / wildSpDefMod,
     playerTeraStab,
   );
@@ -472,25 +521,48 @@ export function executePlayerAttack(
     result.damage = Math.floor(result.damage * playerOffenseMod);
   }
 
-  // 특성 공격 보정(overgrow·technician·huge-power·guts·adaptability 등) — 지닌물건과 동일 패턴.
+  // 특성 공격 보정(overgrow·technician·huge-power·guts·adaptability + 조건부 sheer-force 등).
   const playerAbilityOffenseMod = getAbilityOffenseMultiplier(
     player, moveData.type, moveData.category, moveData.power,
     player.maxHp > 0 ? player.hp / player.maxHp : 0,
     playerAtkTypes.includes(moveData.type),
     player.statusCondition != null,
+    buildOffenseContext(selectedMove.id, moveData, result.effectiveness, result.critical, battle.weather),
   );
   if (playerAbilityOffenseMod !== 1 && result.damage > 0) {
     result.damage = Math.floor(result.damage * playerAbilityOffenseMod);
   }
 
-  // 특성 방어 보정(thick-fat·multiscale·filter 등) — 야생 방어자 기준.
+  // 특성 방어 보정(thick-fat·multiscale·filter 등) — 야생 방어자 기준. 틀깨기면 무시.
   const wildAbilityDefenseMod = getAbilityDefenseMultiplier(
     battle.wild, moveData.type,
     battle.wild.maxHp > 0 ? battle.wild.hp / battle.wild.maxHp : 0,
     result.effectiveness > 1,
+    playerBreaksMold,
   );
   if (wildAbilityDefenseMod !== 1 && result.damage > 0) {
     result.damage = Math.floor(result.damage * wildAbilityDefenseMod);
+  }
+
+  // 원더가드(야생 방어자): 효과가 굉장하지 않은 데미지 기술은 데미지 0. 틀깨기면 무시.
+  // 데미지가 0이 되면 아래 result.damage>0 게이트가 접촉/생명의구슬/2차 효과를 자동 스킵하고,
+  // hitSuppressed가 상태이상/스탯변화(비-데미지 게이트) 부여도 스킵한다.
+  const wildWonderGuardBlocks = abilityNullifiesNonSuperEffective(battle.wild, moveData.category, result.effectiveness > 1, playerBreaksMold);
+  let hitSuppressed = false;
+  if (wildWonderGuardBlocks && result.damage > 0) {
+    result.damage = 0;
+    hitSuppressed = true;
+  }
+
+  // 탈(disguise, 야생 방어자): 아직 탈이 멀쩡하면 이번 데미지 타격을 무효로 막고 탈을 깬다(배틀당 1회).
+  // 면역/원더가드로 이미 0이면 발동하지 않는다(damage>0 게이트). 틀깨기면 무시.
+  const wildDisguise = checkDisguiseBreak(
+    battle.wild, moveData.category, result.damage, battle.wildDisguiseBusted === true, battle.wild.maxHp, playerBreaksMold,
+  );
+  if (wildDisguise.broke) {
+    result.damage = 0;
+    battle.wildDisguiseBusted = true;
+    hitSuppressed = true;
   }
 
   // 기합의띠/기합의머리띠: post-damage HP를 쓰기 전에 일격 버티기 판정
@@ -499,14 +571,23 @@ export function executePlayerAttack(
   if (survive.kind) {
     result.damage = survive.finalDamage;
     if (survive.consumed) battle.wild.heldItem = null;
-  } else if (result.damage >= battle.wild.hp && battle.wild.hp > 0 && abilitySurvivesKO(battle.wild, wildAtFull)) {
-    // 옹골참(sturdy): 풀피에서 일격사를 HP 1로 버틴다(기합의띠 미발동 시).
+  } else if (result.damage >= battle.wild.hp && battle.wild.hp > 0 && abilitySurvivesKO(battle.wild, wildAtFull, playerBreaksMold)) {
+    // 옹골참(sturdy): 풀피에서 일격사를 HP 1로 버틴다(기합의띠 미발동 시). 틀깨기면 무시.
     result.damage = battle.wild.hp - 1;
     log.push(`${getDisplaySpeciesName(battle.wild.species)}은(는) 옹골참으로 버텼다!`);
   }
 
   battle.wild.hp = Math.max(0, battle.wild.hp - result.damage);
   log.push(`${getDisplaySpeciesName(player.species)}의 ${moveData.name}! ${result.missed ? "빗나갔다!" : `${result.damage} 데미지!`}`);
+  if (wildWonderGuardBlocks) log.push(`${getDisplaySpeciesName(battle.wild.species)}은(는) 원더가드로 데미지를 받지 않았다!`);
+  if (wildDisguise.broke) {
+    log.push(`${getDisplaySpeciesName(battle.wild.species)}의 탈이 벗겨졌다!`);
+    // 탈이 깨지면 modern-gen 사양으로 자가 도트(maxHp/8). 매직가드면 도트 무효.
+    if (wildDisguise.chipDamage > 0 && battle.wild.hp > 0 && !abilityBlocksIndirectDamage(battle.wild)) {
+      battle.wild.hp = Math.max(0, battle.wild.hp - wildDisguise.chipDamage);
+      log.push(`야생 ${getDisplaySpeciesName(battle.wild.species)}은(는) 탈이 벗겨지며 ${wildDisguise.chipDamage} 데미지를 받았다!`);
+    }
+  }
   // 급소(크리티컬) — 빗나가지 않은 데미지 기술에서만 표시
   if (!result.missed && result.critical && moveData.category !== "status") log.push("급소에 맞았다!");
   if (result.message) log.push(result.message);
@@ -516,37 +597,42 @@ export function executePlayerAttack(
   let flinchCaused = false;
 
   if (!result.missed) {
-    // 생명의구슬 반동: 데미지를 입힌 비-status 공격 직후 보유자 HP 감소
-    if (moveData.category !== "status" && result.damage > 0) {
+    // 생명의구슬 반동: 데미지를 입힌 비-status 공격 직후 보유자 HP 감소. 매직가드면 반동 무효.
+    if (moveData.category !== "status" && result.damage > 0 && !abilityBlocksIndirectDamage(player)) {
       applyLifeOrbRecoil(player, log);
     }
     // 위기 회복 나무열매(기력의탄산수): 야생이 데미지를 받은 직후 조건 충족 시 회복
     maybeConsumePinchBerry(battle.wild, log, `야생 ${getDisplaySpeciesName(battle.wild.species)}`);
 
-    // Apply meta effects for player
+    // Apply meta effects for player. 매직가드는 기술 반동(음수 hpChange)을 무효로 한다(흡수 회복은 유지).
     const metaResult = applyMetaEffects(moveData, result.damage, player.hp, player.maxHp);
-    if (metaResult.hpChange !== 0) {
-      player.hp = Math.max(0, Math.min(player.maxHp, player.hp + metaResult.hpChange));
+    let playerMetaHpChange = metaResult.hpChange;
+    if (playerMetaHpChange < 0 && abilityBlocksIndirectDamage(player)) playerMetaHpChange = 0;
+    if (playerMetaHpChange !== 0) {
+      player.hp = Math.max(0, Math.min(player.maxHp, player.hp + playerMetaHpChange));
     }
     for (const msg of metaResult.messages) log.push(msg);
 
-    // Apply stat changes for player
-    maybeApplyStatChanges(battle, moveData, true, log);
+    // Apply stat changes for player (원더가드/탈로 타격이 무효화되면 부가효과도 스킵)
+    if (!hitSuppressed) maybeApplyStatChanges(battle, moveData, true, log, { player, wild: battle.wild });
 
-    // Apply ailment to wild from player attack (필드/특성 상태이상 차단 게이팅 포함)
-    const ailmentResult = maybeApplyAilment(
-      moveData,
-      battle.wild.statusCondition,
-      battle.wildVolatile ?? [],
-      log,
-      battle,
-      wildDefTypes,
-      battle.wild,
-    );
-    if (ailmentResult.newStatus) {
-      battle.wild.statusCondition = ailmentResult.newStatus;
+    // Apply ailment to wild from player attack (필드/특성 상태이상 차단 게이팅 포함).
+    // 원더가드/탈로 타격이 무효화되면 상태이상 부여도 스킵한다.
+    if (!hitSuppressed) {
+      const ailmentResult = maybeApplyAilment(
+        moveData,
+        battle.wild.statusCondition,
+        battle.wildVolatile ?? [],
+        log,
+        battle,
+        wildDefTypes,
+        battle.wild,
+      );
+      if (ailmentResult.newStatus) {
+        battle.wild.statusCondition = ailmentResult.newStatus;
+      }
+      battle.wildVolatile = ailmentResult.newVolatiles;
     }
-    battle.wildVolatile = ailmentResult.newVolatiles;
 
     // 접촉(=물리 프록시) 피격 특성: 야생(방어자)의 static/flame-body/poison-point/rough-skin/iron-barbs
     if (moveData.category === "physical" && result.damage > 0) {
@@ -556,7 +642,7 @@ export function executePlayerAttack(
         const names: Record<string, string> = { poison: "독", burn: "화상", paralysis: "마비" };
         log.push(`${getDisplaySpeciesName(player.species)}은(는) ${names[contact.inflictStatus] ?? contact.inflictStatus} 상태가 되었다!`);
       }
-      if (contact.recoilDamage && player.hp > 0) {
+      if (contact.recoilDamage && player.hp > 0 && !abilityBlocksIndirectDamage(player)) {
         player.hp = Math.max(0, player.hp - contact.recoilDamage);
         log.push(`${getDisplaySpeciesName(player.species)}은(는) 상대 특성으로 ${contact.recoilDamage} 데미지를 받았다!`);
       }
@@ -565,8 +651,9 @@ export function executePlayerAttack(
     // Check flinch
     // "apply if under": roll < chance means flinch IS applied
     // inner-focus 특성을 가진 대상(야생)은 풀죽음에 면역이다.
+    // 원더가드/탈로 타격이 무효화되면 풀죽음도 유발하지 않는다.
     const flinchChance = moveData.meta?.flinchChance ?? 0;
-    if (flinchChance > 0 && !hasAbility(battle.wild, "inner-focus") && Math.random() * 100 < flinchChance) {
+    if (!hitSuppressed && flinchChance > 0 && !hasAbility(battle.wild, "inner-focus") && Math.random() * 100 < flinchChance) {
       flinchCaused = true;
     }
 
@@ -761,9 +848,16 @@ export function applyEndOfTurnBattle(
   // poison-heal: 독 데미지(maxHp/8)와 그 메시지를 제거한다.
   let playerEotDamage = playerEot.damage;
   let playerEotMessages = playerEot.messages;
+  let playerLeechHeal = playerEot.opponentHealing;
   if (playerAbilityEot.cancelPoison && myPokemon.statusCondition === "poison") {
     playerEotDamage = Math.max(0, playerEotDamage - Math.max(1, Math.floor(myPokemon.maxHp / 8)));
     playerEotMessages = playerEotMessages.filter((m) => m !== "독 데미지를 받았다!");
+  }
+  // 매직가드(플레이어): 독/화상/씨뿌리기/조이기 등 간접 데미지 무효(씨뿌리기 흡수도 함께 없앤다).
+  if (abilityBlocksIndirectDamage(myPokemon)) {
+    playerEotDamage = 0;
+    playerLeechHeal = 0;
+    playerEotMessages = [];
   }
   if (playerEotDamage > 0) {
     myPokemon.hp = Math.max(0, myPokemon.hp - playerEotDamage);
@@ -771,8 +865,8 @@ export function applyEndOfTurnBattle(
   if (playerEot.healing > 0) {
     myPokemon.hp = Math.min(myPokemon.maxHp, myPokemon.hp + playerEot.healing);
   }
-  if (playerEot.opponentHealing > 0) {
-    battle.wild.hp = Math.min(battle.wild.maxHp, battle.wild.hp + playerEot.opponentHealing);
+  if (playerLeechHeal > 0) {
+    battle.wild.hp = Math.min(battle.wild.maxHp, battle.wild.hp + playerLeechHeal);
   }
   for (const msg of playerEotMessages) log.push(`${getDisplaySpeciesName(myPokemon.species)}: ${msg}`);
 
@@ -785,9 +879,16 @@ export function applyEndOfTurnBattle(
   );
   let wildEotDamage = wildEot.damage;
   let wildEotMessages = wildEot.messages;
+  let wildLeechHeal = wildEot.opponentHealing;
   if (wildAbilityEot.cancelPoison && battle.wild.statusCondition === "poison") {
     wildEotDamage = Math.max(0, wildEotDamage - Math.max(1, Math.floor(battle.wild.maxHp / 8)));
     wildEotMessages = wildEotMessages.filter((m) => m !== "독 데미지를 받았다!");
+  }
+  // 매직가드(야생): 간접 데미지 무효(씨뿌리기 흡수도 함께 없앤다).
+  if (abilityBlocksIndirectDamage(battle.wild)) {
+    wildEotDamage = 0;
+    wildLeechHeal = 0;
+    wildEotMessages = [];
   }
   if (wildEotDamage > 0) {
     battle.wild.hp = Math.max(0, battle.wild.hp - wildEotDamage);
@@ -795,8 +896,8 @@ export function applyEndOfTurnBattle(
   if (wildEot.healing > 0) {
     battle.wild.hp = Math.min(battle.wild.maxHp, battle.wild.hp + wildEot.healing);
   }
-  if (wildEot.opponentHealing > 0) {
-    myPokemon.hp = Math.min(myPokemon.maxHp, myPokemon.hp + wildEot.opponentHealing);
+  if (wildLeechHeal > 0) {
+    myPokemon.hp = Math.min(myPokemon.maxHp, myPokemon.hp + wildLeechHeal);
   }
   for (const msg of wildEotMessages) log.push(`야생 ${getDisplaySpeciesName(battle.wild.species)}: ${msg}`);
 
@@ -869,7 +970,7 @@ export function wildAttack(
   targetBattleForm?: string | null,
   // 대상(플레이어)이 terastallize했으면 그 테라 타입. 주어지면 방어 시 유효 타입을 [teraType]로 치환.
   targetTeraType?: string | null,
-): { damage: number; moveId: string | null; moveData: MoveData | null; message: string; missed?: boolean; critical?: boolean; priority?: number } {
+): { damage: number; moveId: string | null; moveData: MoveData | null; message: string; missed?: boolean; critical?: boolean; priority?: number; effectiveness?: number } {
   const availableMoves = wildMoves.filter((move) => move.pp > 0);
   if (availableMoves.length === 0) {
     return { damage: 0, moveId: null, moveData: null, message: "야생 포켓몬이 쓸 수 있는 기술이 없다!" };
@@ -908,6 +1009,7 @@ export function wildAttack(
     missed: result.missed,
     critical: result.critical,
     priority: moveData.priority ?? 0,
+    effectiveness: result.effectiveness,
   };
 }
 
@@ -983,10 +1085,17 @@ export async function doWildAttackAndCheck(
   // 지닌물건 방어 보정: 플레이어가 돌격조끼 보유 시 특수 데미지 ÷1.5
   const playerSpDefMod = wildMoveData ? getHeldSpDefMultiplier(myPokemon, wildMoveData.category) : 1;
 
+  // 틀깨기(야생 공격자): 야생이 이 특성이면 플레이어 방어 특성을 무시.
+  const wildBreaksMold = attackerBreaksMold(battle.wild);
+
+  // 배짱없음(unaware): 공격자(야생)가 unaware면 플레이어 방어 랭크 무시, 플레이어가 unaware면
+  // 야생 공격 랭크 무시. 없으면 원본 참조 그대로(byte-identical).
+  const wildUnaware = resolveUnawareStages(battle.wild, myPokemon, battle.wildStatStages, battle.playerStatStages);
+
   const wildResult = wildAttack(
     battle.wild.species, battle.wild.level, wildStats,
     battle.wild.moves, myPokemon.stats, myPokemon.species,
-    battle.wildStatStages, battle.playerStatStages,
+    wildUnaware.attackerStages, wildUnaware.defenderStages,
     preSelectedWildMove,
     battle.wild.variantId, myPokemon.variantId,
     (wildWeatherMod * wildTerrainMod) / playerSpDefMod,
@@ -996,9 +1105,9 @@ export async function doWildAttackAndCheck(
   );
 
   // 특성 방어 면역/흡수(플레이어 방어자): 데미지 적용 전 판정.
-  // 면역이면 데미지 0, 2차효과/접촉/풀죽음 스킵하고 heal/boost만 적용.
+  // 면역이면 데미지 0, 2차효과/접촉/풀죽음 스킵하고 heal/boost만 적용. 틀깨기면 무시.
   if (wildResult.moveData && wildResult.moveData.category !== "status") {
-    const immunity = checkAbilityImmunity(myPokemon, wildResult.moveData.type, wildResult.moveData.category);
+    const immunity = checkAbilityImmunity(myPokemon, wildResult.moveData.type, wildResult.moveData.category, wildBreaksMold);
     if (immunity.immune) {
       log.push(`${getDisplaySpeciesName(myPokemon.species)}에게는 효과가 없는 것 같다...`);
       if (immunity.healFraction) {
@@ -1024,25 +1133,49 @@ export async function doWildAttackAndCheck(
     if (wildOffenseMod !== 1) wildResult.damage = Math.floor(wildResult.damage * wildOffenseMod);
   }
 
-  // 특성 공격 보정(야생 공격자) — STAB은 야생 타입 기준, 상태이상 보유 여부 반영.
+  // 특성 공격 보정(야생 공격자) — STAB은 야생 타입 기준, 상태이상 보유 여부 반영 + 조건부(sheer-force 등).
+  const wildEffectiveness = wildResult.effectiveness ?? 1;
   if (wildResult.moveData && wildResult.damage > 0) {
     const wildAbilityOffenseMod = getAbilityOffenseMultiplier(
       battle.wild, wildResult.moveData.type, wildResult.moveData.category, wildResult.moveData.power,
       battle.wild.maxHp > 0 ? battle.wild.hp / battle.wild.maxHp : 0,
       wildAtkTypes.includes(wildResult.moveData.type),
       battle.wild.statusCondition != null,
+      buildOffenseContext(wildResult.moveId ?? "", wildResult.moveData, wildEffectiveness, wildResult.critical ?? false, battle.weather),
     );
     if (wildAbilityOffenseMod !== 1) wildResult.damage = Math.floor(wildResult.damage * wildAbilityOffenseMod);
   }
 
-  // 특성 방어 보정(플레이어 방어자). 야생은 effectiveness 정보가 없어 super-effective 의존 효과는 미적용.
+  // 특성 방어 보정(플레이어 방어자). 이제 wildAttack이 effectiveness를 반환하므로 super-effective 의존
+  // 효과(filter 등)도 정확히 적용된다. 틀깨기면 무시.
   if (wildResult.moveData && wildResult.damage > 0) {
     const playerAbilityDefenseMod = getAbilityDefenseMultiplier(
       myPokemon, wildResult.moveData.type,
       myPokemon.maxHp > 0 ? myPokemon.hp / myPokemon.maxHp : 0,
-      false,
+      wildEffectiveness > 1,
+      wildBreaksMold,
     );
     if (playerAbilityDefenseMod !== 1) wildResult.damage = Math.floor(wildResult.damage * playerAbilityDefenseMod);
+  }
+
+  // 원더가드(플레이어 방어자): 효과가 굉장하지 않은 데미지 기술은 데미지 0. 틀깨기면 무시.
+  let wildHitSuppressed = false;
+  if (wildResult.moveData) {
+    const playerWonderGuardBlocks = abilityNullifiesNonSuperEffective(myPokemon, wildResult.moveData.category, wildEffectiveness > 1, wildBreaksMold);
+    if (playerWonderGuardBlocks && wildResult.damage > 0) {
+      wildResult.damage = 0;
+      wildHitSuppressed = true;
+    }
+  }
+
+  // 탈(disguise, 플레이어 방어자): 아직 탈이 멀쩡하면 이번 데미지 타격을 무효로 막고 탈을 깬다(배틀당 1회).
+  const playerDisguise = wildResult.moveData
+    ? checkDisguiseBreak(myPokemon, wildResult.moveData.category, wildResult.damage, battle.playerDisguiseBusted === true, myPokemon.maxHp, wildBreaksMold)
+    : { broke: false, chipDamage: 0 };
+  if (playerDisguise.broke) {
+    wildResult.damage = 0;
+    battle.playerDisguiseBusted = true;
+    wildHitSuppressed = true;
   }
 
   // 기합의띠/기합의머리띠: post-damage HP를 쓰기 전에 플레이어 일격 버티기 판정
@@ -1051,8 +1184,8 @@ export async function doWildAttackAndCheck(
   if (wildSurvive.kind) {
     wildResult.damage = wildSurvive.finalDamage;
     if (wildSurvive.consumed) myPokemon.heldItem = null;
-  } else if (wildResult.damage >= myPokemon.hp && myPokemon.hp > 0 && abilitySurvivesKO(myPokemon, playerAtFull)) {
-    // 옹골참(sturdy): 풀피에서 일격사를 HP 1로 버틴다.
+  } else if (wildResult.damage >= myPokemon.hp && myPokemon.hp > 0 && abilitySurvivesKO(myPokemon, playerAtFull, wildBreaksMold)) {
+    // 옹골참(sturdy): 풀피에서 일격사를 HP 1로 버틴다. 틀깨기면 무시.
     wildResult.damage = myPokemon.hp - 1;
     log.push(`${getDisplaySpeciesName(myPokemon.species)}은(는) 옹골참으로 버텼다!`);
   }
@@ -1061,12 +1194,21 @@ export async function doWildAttackAndCheck(
   myPokemon.hp = Math.max(0, myPokemon.hp - wildResult.damage);
   recordDamageTaken(myPokemon, previousHp - myPokemon.hp);
   log.push(`야생 ${getDisplaySpeciesName(battle.wild.species)}의 공격! ${wildResult.damage} 데미지!`);
+  if (wildHitSuppressed && !playerDisguise.broke) log.push(`${getDisplaySpeciesName(myPokemon.species)}은(는) 원더가드로 데미지를 받지 않았다!`);
+  if (playerDisguise.broke) {
+    log.push(`${getDisplaySpeciesName(myPokemon.species)}의 탈이 벗겨졌다!`);
+    // 탈이 깨지면 modern-gen 사양으로 자가 도트(maxHp/8). 매직가드면 도트 무효.
+    if (playerDisguise.chipDamage > 0 && myPokemon.hp > 0 && !abilityBlocksIndirectDamage(myPokemon)) {
+      myPokemon.hp = Math.max(0, myPokemon.hp - playerDisguise.chipDamage);
+      log.push(`${getDisplaySpeciesName(myPokemon.species)}은(는) 탈이 벗겨지며 ${playerDisguise.chipDamage} 데미지를 받았다!`);
+    }
+  }
   // 급소(크리티컬) — 빗나가지 않은 데미지 기술에서만 표시
   if (!wildResult.missed && wildResult.critical && wildResult.moveData?.category !== "status") log.push("급소에 맞았다!");
   if (wildSurvive.kind === "focus-sash") log.push("기합의띠로 버텼다!");
   else if (wildSurvive.kind === "focus-band") log.push("기합의머리띠로 버텼다!");
-  // 생명의구슬 반동(야생 보유자용 — 보통 no-op)
-  if (wildResult.moveData && !wildResult.missed && wildResult.moveData.category !== "status" && wildResult.damage > 0) {
+  // 생명의구슬 반동(야생 보유자용 — 보통 no-op). 매직가드면 반동 무효.
+  if (wildResult.moveData && !wildResult.missed && wildResult.moveData.category !== "status" && wildResult.damage > 0 && !abilityBlocksIndirectDamage(battle.wild)) {
     applyLifeOrbRecoil(battle.wild, log);
   }
   // 위기 회복 나무열매: 플레이어가 데미지를 받은 직후 조건 충족 시 회복
@@ -1076,29 +1218,34 @@ export async function doWildAttackAndCheck(
   // Apply meta effects for wild pokemon (only if the attack didn't miss)
   if (wildResult.moveData && !wildResult.missed) {
     const metaResult = applyMetaEffects(wildResult.moveData, wildResult.damage, battle.wild.hp, battle.wild.maxHp);
-    if (metaResult.hpChange !== 0) {
-      battle.wild.hp = Math.max(0, Math.min(battle.wild.maxHp, battle.wild.hp + metaResult.hpChange));
+    let wildMetaHpChange = metaResult.hpChange;
+    if (wildMetaHpChange < 0 && abilityBlocksIndirectDamage(battle.wild)) wildMetaHpChange = 0;
+    if (wildMetaHpChange !== 0) {
+      battle.wild.hp = Math.max(0, Math.min(battle.wild.maxHp, battle.wild.hp + wildMetaHpChange));
     }
     for (const msg of metaResult.messages) log.push(msg);
 
-    // Apply stat changes for wild pokemon
-    maybeApplyStatChanges(battle, wildResult.moveData, false, log);
+    // Apply stat changes for wild pokemon (원더가드/탈로 타격이 무효화되면 부가효과도 스킵)
+    if (!wildHitSuppressed) maybeApplyStatChanges(battle, wildResult.moveData, false, log, { player: myPokemon, wild: battle.wild });
 
-    // Apply ailment to player from wild attack (필드/특성 상태이상 차단 게이팅 포함)
-    const ailmentResult = maybeApplyAilment(
-      wildResult.moveData,
-      myPokemon.statusCondition,
-      battle.playerVolatile ?? [],
-      log,
-      battle,
-      playerDefTypes,
-      myPokemon,
-    );
-    if (ailmentResult.newStatus) {
-      myPokemon.statusCondition = ailmentResult.newStatus;
-      if (ailmentResult.sleepTurns !== undefined) myPokemon.sleepTurns = ailmentResult.sleepTurns;
+    // Apply ailment to player from wild attack (필드/특성 상태이상 차단 게이팅 포함).
+    // 원더가드/탈로 타격이 무효화되면 상태이상 부여도 스킵한다.
+    if (!wildHitSuppressed) {
+      const ailmentResult = maybeApplyAilment(
+        wildResult.moveData,
+        myPokemon.statusCondition,
+        battle.playerVolatile ?? [],
+        log,
+        battle,
+        playerDefTypes,
+        myPokemon,
+      );
+      if (ailmentResult.newStatus) {
+        myPokemon.statusCondition = ailmentResult.newStatus;
+        if (ailmentResult.sleepTurns !== undefined) myPokemon.sleepTurns = ailmentResult.sleepTurns;
+      }
+      battle.playerVolatile = ailmentResult.newVolatiles;
     }
-    battle.playerVolatile = ailmentResult.newVolatiles;
 
     // 접촉(=물리 프록시) 피격 특성: 플레이어(방어자)의 static/flame-body/poison-point/rough-skin/iron-barbs
     if (wildResult.moveData.category === "physical" && wildResult.damage > 0) {
@@ -1108,7 +1255,7 @@ export async function doWildAttackAndCheck(
         const names: Record<string, string> = { poison: "독", burn: "화상", paralysis: "마비" };
         log.push(`야생 ${getDisplaySpeciesName(battle.wild.species)}은(는) ${names[contact.inflictStatus] ?? contact.inflictStatus} 상태가 되었다!`);
       }
-      if (contact.recoilDamage && battle.wild.hp > 0) {
+      if (contact.recoilDamage && battle.wild.hp > 0 && !abilityBlocksIndirectDamage(battle.wild)) {
         battle.wild.hp = Math.max(0, battle.wild.hp - contact.recoilDamage);
         log.push(`야생 ${getDisplaySpeciesName(battle.wild.species)}은(는) 상대 특성으로 ${contact.recoilDamage} 데미지를 받았다!`);
       }
@@ -1116,9 +1263,9 @@ export async function doWildAttackAndCheck(
 
     // 풀죽음(flinch) 판정 — executePlayerAttack와 동일하게 "apply if under"(roll < chance).
     // 야생이 선공한 경우에만 의미가 있으므로 battle.playerFlinched 임시 플래그로 알린다.
-    // inner-focus 특성을 가진 플레이어는 풀죽음에 면역이다.
+    // inner-focus 특성을 가진 플레이어는 풀죽음에 면역이다. 원더가드/탈로 무효화되면 풀죽음도 없음.
     const wildFlinchChance = wildResult.moveData.meta?.flinchChance ?? 0;
-    if (wildFlinchChance > 0 && !hasAbility(myPokemon, "inner-focus") && Math.random() * 100 < wildFlinchChance) {
+    if (!wildHitSuppressed && wildFlinchChance > 0 && !hasAbility(myPokemon, "inner-focus") && Math.random() * 100 < wildFlinchChance) {
       battle.playerFlinched = true;
     }
 

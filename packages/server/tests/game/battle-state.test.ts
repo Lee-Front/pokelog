@@ -888,3 +888,88 @@ describe("confusion self-damage uses pokemon level", () => {
     expect(highResult.selfDamage!).toBeGreaterThan(lowResult.selfDamage!);
   });
 });
+
+// ---------------------------------------------------------------------------
+// executePlayerAttack — new ability integration (disguise / wonder-guard / mold-breaker / contrary)
+// ---------------------------------------------------------------------------
+
+describe("executePlayerAttack — ability integration", () => {
+  let randomSpy: ReturnType<typeof vi.spyOn>;
+  beforeEach(() => { randomSpy = vi.spyOn(Math, "random"); });
+  afterEach(() => { randomSpy.mockRestore(); });
+
+  it("disguise nullifies the first damaging hit, busts, chips maxHp/8, then the second hit lands", () => {
+    randomSpy.mockReturnValue(0.5); // hit, no crit, mid random factor
+    const battle = makeBattle();
+    battle.wild.ability = "disguise";
+    battle.wild.maxHp = 80;
+    battle.wild.hp = 80;
+    const player = makePlayerPokemon();
+    const move = makeMove(); // normal physical, neutral vs rattata
+
+    executePlayerAttack(battle, player, move, { id: "tackle", pp: 35, maxPp: 35 }, []);
+
+    // First hit: no move damage, disguise busts, only the maxHp/8 = 10 chip lands.
+    expect(battle.wildDisguiseBusted).toBe(true);
+    expect(battle.wild.hp).toBe(70);
+
+    // Second hit lands normally now that the disguise is gone.
+    randomSpy.mockReturnValue(0.5);
+    executePlayerAttack(battle, player, move, { id: "tackle", pp: 34, maxPp: 35 }, []);
+    expect(battle.wild.hp).toBeLessThan(70);
+  });
+
+  it("disguise skips the move's secondary status on the busting hit", () => {
+    randomSpy.mockReturnValue(0.01); // everything low: accuracy hit, ailment would apply at 100%
+    const battle = makeBattle();
+    battle.wild.ability = "disguise";
+    const player = makePlayerPokemon();
+    const move = makeMove({ type: "fire", meta: { ailment: "burn", ailmentChance: 100 } });
+
+    executePlayerAttack(battle, player, move, { id: "ember", pp: 25, maxPp: 25 }, []);
+
+    expect(battle.wildDisguiseBusted).toBe(true);
+    // No burn applied because no damage landed (disguise ate the hit).
+    expect(battle.wild.statusCondition).toBeUndefined();
+  });
+
+  it("wonder-guard: non-super-effective damaging move deals 0, super-effective still hits", () => {
+    randomSpy.mockReturnValue(0.5);
+    const battle = makeBattle(); // wild = rattata (normal type)
+    battle.wild.ability = "wonder-guard";
+    const player = makePlayerPokemon();
+
+    // normal move vs a normal-type defender is neutral (not super-effective) → blocked by wonder-guard
+    const neutral = makeMove({ type: "normal" });
+    const hpBefore = battle.wild.hp;
+    executePlayerAttack(battle, player, neutral, { id: "tackle", pp: 35, maxPp: 35 }, []);
+    expect(battle.wild.hp).toBe(hpBefore);
+  });
+
+  it("mold-breaker attacker ignores the wild's sturdy (OHKOs through it)", () => {
+    randomSpy.mockReturnValue(0.5);
+    const battle = makeBattle();
+    battle.wild.ability = "sturdy";
+    battle.wild.hp = battle.wild.maxHp; // full HP → sturdy would normally trigger
+    // Big damage move so it would OHKO absent sturdy.
+    const player = makePlayerPokemon({ abilityId: "mold-breaker", level: 80, stats: makeStats({ attack: 300 }) });
+    const move = makeMove({ power: 120 });
+
+    executePlayerAttack(battle, player, move, { id: "tackle", pp: 35, maxPp: 35 }, []);
+    // Sturdy bypassed → wild can drop to 0.
+    expect(battle.wild.hp).toBe(0);
+  });
+
+  it("contrary reverses an opponent-targeted stat drop into a boost", () => {
+    randomSpy.mockReturnValue(0.5);
+    const battle = makeBattle();
+    battle.wild.ability = "contrary";
+    const player = makePlayerPokemon();
+    // A move that lowers the target's defense by 1 at 100% (opponent-targeted debuff).
+    const move = makeMove({ statChanges: [{ stat: "defense", change: -1 }], meta: { statChance: 100 } });
+
+    executePlayerAttack(battle, player, move, { id: "tackle", pp: 35, maxPp: 35 }, []);
+    // Contrary → the −1 defense becomes +1 on the wild.
+    expect(battle.wildStatStages?.defense).toBe(1);
+  });
+});
