@@ -493,6 +493,7 @@ function runRound(match: PvpMatch, rng: Rng, items: ItemLookup): RoundOutcome["c
     messages,
     challengerHp: match.challenger.team[match.challenger.activeIndex].hp,
     opponentHp: match.opponent.team[match.opponent.activeIndex].hp,
+    hpFrames: outcome.hpFrames,
   });
 
   // 승패 판정: 한쪽이라도 전멸이면 종료.

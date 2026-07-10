@@ -105,6 +105,25 @@ describe("resolveRound — single 모드(1마리씩)", () => {
     // 선공(killer)은 데미지를 입지 않았다.
     expect(killer.team[0].hp).toBe(100);
   });
+
+  it("hpFrames를 실행 순서대로(선공 먼저 깎임) 쌓고 마지막은 최종 HP와 일치한다", () => {
+    fixRandom(0.5);
+    const fast = side([mon({ nickname: "Fast", stats: { attack: 120, defense: 80, speed: 200, spAttack: 80, spDefense: 80 } })]);
+    const slow = side([mon({ nickname: "Slow", stats: { attack: 120, defense: 80, speed: 10, spAttack: 80, spDefense: 80 } })]);
+
+    const outcome = resolveRound(fast, move("tackle"), slow, move("tackle"), constRng(0.5));
+    const f = outcome.hpFrames;
+    // 시작 프레임: 양쪽 풀피
+    expect(f[0]).toEqual({ challengerHp: 100, opponentHp: 100 });
+    // 선공(fast=challenger) 행동 직후엔 상대(opponent)만 깎이고 challenger는 아직 풀피 → 순서 반영
+    expect(f[1].challengerHp).toBe(100);
+    expect(f[1].opponentHp).toBeLessThan(100);
+    // 마지막 프레임 = 최종 활성 HP (클라 스냅 값과 일치)
+    const last = f[f.length - 1];
+    expect(last.challengerHp).toBe(fast.team[0].hp);
+    expect(last.opponentHp).toBe(slow.team[0].hp);
+    expect(last.challengerHp).toBeLessThan(100);
+  });
 });
 
 describe("resolveRound — 교체", () => {

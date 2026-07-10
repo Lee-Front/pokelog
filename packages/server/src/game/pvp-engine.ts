@@ -20,7 +20,7 @@ import {
   rollAilment, isVolatileAilment, addVolatile,
 } from "./status-conditions.js";
 import type {
-  MoveData, PrimaryStatus, PvpAction, PvpCombatant, StatStages,
+  MoveData, PrimaryStatus, PvpAction, PvpCombatant, PvpHpFrame, StatStages,
 } from "../../../../shared/types.js";
 
 /** 주입 가능한 난수원. 기본은 Math.random. */
@@ -119,6 +119,8 @@ export interface RoundOutcome {
    * 효과는 스냅샷에 이미 적용됨 — 여기엔 차감할 itemId만 담긴다.
    */
   consumed: { challenger?: { itemId: string }; opponent?: { itemId: string } };
+  /** HP 변화 타임라인(연출용). 실행 순서대로: [시작, 선공행동후, 후공행동후, 턴종료후]. */
+  hpFrames: PvpHpFrame[];
 }
 
 /** 교체 실행(살아있는 팀원으로). 메시지만 남기고 활성 인덱스 변경. */
@@ -330,6 +332,12 @@ export function resolveRound(
   const messages: string[] = [];
   const consumed: RoundOutcome["consumed"] = {};
 
+  // HP 타임라인 — 실행 순서 그대로 활성 포켓몬 hp 스냅샷을 쌓는다(연출용). 클라가 순차 재생한다.
+  const hpFrames: PvpHpFrame[] = [];
+  const pushFrame = () =>
+    hpFrames.push({ challengerHp: active(challenger).hp, opponentHp: active(opponent).hp });
+  pushFrame(); // 라운드 시작(선공 전) — 클라 재생 시작점(직전 라운드 최종 HP와 일치)
+
   const cMon = active(challenger);
   const oMon = active(opponent);
   const order = resolveActionOrder(cMon, challengerAction, oMon, opponentAction, rng);
@@ -352,11 +360,13 @@ export function resolveRound(
     } else {
       executeMove(turn.side, turn.foe, turn.action.moveId, rng, messages);
     }
+    pushFrame(); // 이 행동(선공/후공) 직후 — 공격 순서대로 게이지가 깎이도록
   }
 
   // 턴 종료 효과 — 양측 활성 포켓몬이 아직 살아있을 때만 적용.
   if (active(challenger).hp > 0) applyEndOfTurnFor(challenger, opponent, messages);
   if (active(opponent).hp > 0) applyEndOfTurnFor(opponent, challenger, messages);
+  pushFrame(); // 턴 종료 데미지/회복(독·화상 등) 반영
 
   const cMonEnd = active(challenger);
   const oMonEnd = active(opponent);
@@ -368,6 +378,7 @@ export function resolveRound(
     challengerFainted: cMonEnd.hp <= 0,
     opponentFainted: oMonEnd.hp <= 0,
     consumed,
+    hpFrames,
   };
 }
 

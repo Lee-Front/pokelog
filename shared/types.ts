@@ -988,6 +988,17 @@ export interface PvpMatch {
   expiresAt?: string;
 }
 
+/**
+ * 라운드 내 HP 변화 타임라인 프레임. 야생전 BattleHpFrame 의 PvP 판(양측 활성 포켓몬 hp).
+ * resolveRound 가 실행 순서대로(선공 공격 → 후공 공격 → 턴종료) 쌓는다. 첫 프레임은 라운드
+ * 시작(선공 전) 상태, 마지막 프레임은 최종 상태. 클라가 이 프레임을 순차 재생해 공격 순서대로
+ * 게이지를 깎는다(강제 교체가 낀 라운드는 마지막 프레임 ≠ 최종 활성 HP 라 클라가 스냅으로 폴백).
+ */
+export interface PvpHpFrame {
+  challengerHp: number;
+  opponentHp: number;
+}
+
 /** 라운드 해결 결과 로그. */
 export interface PvpRoundLog {
   round: number;
@@ -996,6 +1007,8 @@ export interface PvpRoundLog {
   /** 라운드 종료 후 양측 활성 포켓몬 HP 스냅샷(클라 표시용). */
   challengerHp: number;
   opponentHp: number;
+  /** 라운드 내 HP 타임라인(연출용, 순서대로). 없으면 클라가 종전처럼 최종 HP로 스냅. */
+  hpFrames?: PvpHpFrame[];
 }
 
 export interface PvpResult {
