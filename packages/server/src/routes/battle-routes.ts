@@ -13,7 +13,7 @@ import type { BattleHpFrame, BattleState, MoveData, OwnedPokemon, PendingEvent, 
 import { decrementItem, healPokemon, resolveShopItem, applyStatusCure } from "../game/inventory-utils.js";
 import { recordMoveUsage } from "../game/move-usage.js";
 import { grantBattleRewards } from "../game/battle-rewards.js";
-import { BOSSES, getCurrentBoss, getIsoWeek, grantBossRewardOnce } from "../game/weekly-boss.js";
+import { BOSSES, getCurrentBoss, getIsoWeek, grantBossRewardOnce, ballsForRank } from "../game/weekly-boss.js";
 import { registerBossClear } from "../storage/boss-clears-store.js";
 import { getDisplaySpeciesName } from "../game/pokemon-state.js";
 import { checkTurnForm } from "../game/battle-forms.js";
@@ -136,7 +136,7 @@ async function finishWin(
   // 주간보스 처치 훅 — 주(ISO week)당 1회 보상 지급. 이미 이번 주에 처치했다면(멱등 가드)
   // 재지급하지 않고 "이미 수령" 안내만 남긴다. 응답에 boss 요약을 실어 클라가 처치를 인지한다.
   let bossSummary:
-    | { defeated: true; alreadyClaimed: boolean; rank?: number; points?: number }
+    | { defeated: true; alreadyClaimed: boolean; rank?: number; points?: number; capture?: { ballAttempts: number } }
     | undefined;
   if (battle.isBoss && battle.bossId) {
     const now = new Date();
@@ -156,8 +156,23 @@ async function finishWin(
         user.bossDefeatTotal = (user.bossDefeatTotal ?? 0) + 1;
         if (clear.rank === 1) user.bossFirstPlaceTotal = (user.bossFirstPlaceTotal ?? 0) + 1;
 
+        // 이번 주 첫 처치 → 순위(ballsForRank)에 따른 포획 시도권 배분. 월드보스와 달리 유저 락 안(이번 훅
+        // 전체가 per-user 락)에서 지급하면 되고, grant.granted 멱등 가드가 주당 1회만 실어주므로 재지급이 없다.
+        // 실제 싸운 보스(foughtBoss)의 종/변종과 그 전투의 유효 레벨(battle.wild.level)로 개체를 특정한다.
+        const captureBalls = ballsForRank(clear.rank, config.weeklyBoss);
+        user.weeklyBossCapture = {
+          species: foughtBoss.species,
+          variantId: foughtBoss.variantId ?? null,
+          level: battle.wild.level,
+          shiny: false,
+          ballItem: config.weeklyBoss.captureBall,
+          ballAttempts: captureBalls,
+          bossId: boss.id,
+          expiresAt: new Date(Date.now() + 7 * 86400000).toISOString(),
+        };
+
         log.push(`이번 주 ${clear.rank}번째로 처치! 포인트 ${clear.points}을(를) 획득했다!`);
-        bossSummary = { defeated: true, alreadyClaimed: false, rank: clear.rank, points: clear.points };
+        bossSummary = { defeated: true, alreadyClaimed: false, rank: clear.rank, points: clear.points, capture: { ballAttempts: captureBalls } };
       } else {
         log.push("이번 주에는 이미 보스 보상을 받았습니다.");
         bossSummary = { defeated: true, alreadyClaimed: true };

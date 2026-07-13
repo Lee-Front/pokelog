@@ -16,6 +16,7 @@ import type {
   PokemonMove,
   PokemonStats,
   UserData,
+  WeeklyBossConfig,
   WildPokemon,
 } from "../../../../shared/types.js";
 import { getMoveById } from "./data-loader.js";
@@ -263,4 +264,16 @@ export function grantBossRewardOnce(
 
   user.bossDefeat = { week, bossId: boss.id };
   return { granted: true, alreadyDefeated: false };
+}
+
+/**
+ * 이번 주 처치 순위(rank, 1-based)에 배분할 포획 시도권(볼) 개수를 정한다. 1~cfg.captureBallsByRank.length
+ * 위(선착 상위)는 그 배열의 해당 값을, 그 밖(4위 이후 등)은 cfg.participationBalls(참가 보상)를 준다.
+ * 월드보스가 기여도 비례로 나누는 것과 달리 주간보스는 "몇 번째로 깼는가"(선착 랭킹)만으로 결정된다.
+ */
+export function ballsForRank(rank: number, cfg: WeeklyBossConfig): number {
+  if (rank >= 1 && rank <= cfg.captureBallsByRank.length) {
+    return cfg.captureBallsByRank[rank - 1];
+  }
+  return cfg.participationBalls;
 }

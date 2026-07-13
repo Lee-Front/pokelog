@@ -421,6 +421,8 @@ gameRoutes.get("/boss", async (req: AuthRequest, res: Response) => {
         heldItemDescription: (boss.heldItem && HELD_ITEM_EFFECT_KO[boss.heldItem]) ?? null,
       },
       defeatedThisWeek,
+      // 이번 주 처치로 배분받은 포획 시도권(없으면 null). 포털이 이 값으로 포획 UI를 띄운다.
+      weeklyBossCapture: user.weeklyBossCapture ?? null,
       weekLabel: getIsoWeekLabel(now),
       rankPoints: RANK_POINTS,
       participationPoints: PARTICIPATION_POINTS,
@@ -848,6 +850,76 @@ gameRoutes.post("/world-boss/capture", async (req: AuthRequest, res: Response) =
     });
   } catch (err) {
     log.error({ err }, "World-boss capture error");
+    res.status(500).json({ error: "서버 오류가 발생했습니다" });
+  }
+});
+
+// 주간보스 포획 — 이번 주 처치 후 배분받은 시도권(weeklyBossCapture)으로 볼을 던진다. 월드보스 포획과
+// 동형이지만 시도권 출처(주간보스 처치 랭킹)와 기본 확률(config.weeklyBoss.captureBaseRate)만 다르다.
+// 성공: 개체 지급(파티/보관함·도감) + capture 소멸. 실패: ballAttempts 1 차감(0이면 소멸).
+gameRoutes.post("/weekly-boss/capture", async (req: AuthRequest, res: Response) => {
+  try {
+    await withLock(`user:${req.userId!}`, async () => {
+    const user = await getUser(req.userId!);
+    if (!user) {
+      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+      return;
+    }
+
+    const capture = user.weeklyBossCapture;
+    if (!capture || capture.ballAttempts <= 0) {
+      res.status(400).json({ error: "사용할 수 있는 포획 시도권이 없습니다" });
+      return;
+    }
+
+    const config = await getConfig();
+    // 볼은 capture.ballItem(처치 시 config.weeklyBoss.captureBall)로 고정 — 별도 인벤토리 소모는 없다
+    // (시도권 자체가 볼). catchBonus만 볼 메타에서 조회한다.
+    const ballItem = resolveShopItem(config, capture.ballItem);
+    const ballCatchMultiplier = 1 + (ballItem?.catchBonus ?? 0);
+    const guaranteedCatch = ballItem?.guaranteedCatch ?? false;
+
+    // HP 감쇠항이 없는 "알 부화식" 단순 확률 — currentHp=0, maxHp=1을 넣어 (1 - hp/maxHp)=1로 만들고
+    // baseCatchRate를 config.weeklyBoss.captureBaseRate로 명시한다(전설의 낮은 종 catchRate 대신).
+    const baseRate = config.weeklyBoss.captureBaseRate;
+    const caught = guaranteedCatch || attemptCapture(ballCatchMultiplier, 0, 1, baseRate);
+
+    const remainingAttempts = capture.ballAttempts - 1;
+
+    if (caught) {
+      // 배분 시점 정보로 개체를 만든다(레벨·종·변종·이로치). createWildPokemon으로 종/변종·레벨에 맞는
+      // 개체를 만든 뒤(랜덤 성격/IV) 이로치만 배분값으로 고정하고, wildPokemonToOwned로 소유 개체화한다.
+      const wild = createWildPokemon(capture.variantId ?? capture.species, capture.level);
+      wild.isShiny = capture.shiny;
+      const newPokemon = wildPokemonToOwned(wild);
+      newPokemon.isShiny = capture.shiny;
+
+      if (user.party.length < 6) {
+        user.pokemon.push(newPokemon);
+        user.party.push(newPokemon.uid);
+      } else {
+        user.storage.push(newPokemon);
+      }
+      if (!user.pokedex.includes(newPokemon.species)) user.pokedex.push(newPokemon.species);
+
+      // 포획 성공 → 시도권 소멸.
+      user.weeklyBossCapture = undefined;
+      await saveUser(user);
+      res.json({ caught: true, pokemon: newPokemon, ballAttempts: 0, message: `${getDisplaySpeciesName(newPokemon.species)}을(를) 잡았다!` });
+      return;
+    }
+
+    // 실패 → 시도권 1 차감(0이면 소멸).
+    if (remainingAttempts <= 0) {
+      user.weeklyBossCapture = undefined;
+    } else {
+      user.weeklyBossCapture = { ...capture, ballAttempts: remainingAttempts };
+    }
+    await saveUser(user);
+    res.json({ caught: false, ballAttempts: remainingAttempts, message: "아깝다! 잡지 못했다..." });
+    });
+  } catch (err) {
+    log.error({ err }, "Weekly-boss capture error");
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
   }
 });

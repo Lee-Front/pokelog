@@ -430,6 +430,10 @@ export interface UserData {
   // /world-boss/capture가 이를 소진하며 확률 포획을 시도한다. 성공하면 개체를 지급하고 이 필드를 비운다.
   // 없으면 undefined(포획 대상 없음). expiresAt은 참고용(만료돼도 서버는 강제로 지우지 않는다).
   worldBossCapture?: WorldBossCapture;
+  // 주간보스 처치 후 받은 포획 시도권. 이번 주 첫 처치 시 순위(ballsForRank)에 따라 볼 N개(ballAttempts)를
+  // 받고, /weekly-boss/capture가 이를 소진하며 확률 포획을 시도한다. 성공하면 개체를 지급하고 이 필드를 비운다.
+  // 없으면 undefined(포획 대상 없음). expiresAt은 참고용(만료돼도 서버는 강제로 지우지 않는다).
+  weeklyBossCapture?: WeeklyBossCapture;
   // 마지막으로 월드보스에 참전(공격 전투 시작)한 시각(ISO). /world-boss/enter의 참전당 쿨다운 판정에 쓴다.
   // 구 저장본은 미설정(undefined) — 쿨다운 없음으로 취급한다.
   lastWorldBossAttackAt?: string;
@@ -589,6 +593,7 @@ export interface ServerConfig {
   moveChangeCost: number;
   pvp: PvpConfig;
   worldBoss: WorldBossConfig;
+  weeklyBoss: WeeklyBossConfig;
 }
 
 // === PvP 설정(Phase 2) ===
@@ -608,6 +613,18 @@ export interface WorldBossConfig {
   /** 배분된 포획 시도권으로 던지는 볼의 인벤토리 키(catchBonus 조회용). 기본 "greatball". */
   captureBall: string;
   /** 포획 확률의 기본 상수(HP 감쇠항 없이 볼 배수에 더해지는 base). 전설 낮은 catchRate 대신 명시. 기본 0.35. */
+  captureBaseRate: number;
+}
+
+// === 주간보스 설정 ===
+export interface WeeklyBossConfig {
+  /** 순위(1위부터)별 배분 포획 시도권 수. 인덱스 0=1위. 이 길이를 벗어난 순위는 participationBalls. 기본 [5,3,2]. */
+  captureBallsByRank: number[];
+  /** captureBallsByRank 범위 밖(4위 이후) 처치자에게 주는 참가 시도권 수. 기본 1. */
+  participationBalls: number;
+  /** 배분된 포획 시도권으로 던지는 볼의 인벤토리 키(catchBonus 조회용). 기본 "greatball". */
+  captureBall: string;
+  /** 포획 확률의 기본 상수(HP 감쇠항 없이 볼 배수에 더해지는 base). 전설 낮은 catchRate 대신 명시. 기본 0.3. */
   captureBaseRate: number;
 }
 
@@ -1181,6 +1198,26 @@ export interface WorldBossCapture {
   /** 남은 포획 시도 횟수. 성공하면 개체 지급 후 이 필드 삭제, 실패하면 1 차감(0이면 소진). */
   ballAttempts: number;
   /** 소속 보스 스폰 id(중복 배분 방지·표시용). */
+  bossId: string;
+  /** 참고용 만료 시각 ISO(서버는 강제로 지우지 않음). */
+  expiresAt: string;
+}
+
+/**
+ * 주간보스 처치 후 유저에게 배분되는 포획 시도권(UserData.weeklyBossCapture). 월드보스와 구조는
+ * 같지만(볼=포획 시도 횟수) 배분 시점·경로가 다르다 — 이번 주 첫 처치 시 순위(ballsForRank)에 따라
+ * ballAttempts가 정해지고 /weekly-boss/capture가 소진한다. 서로 독립적인 필드라 별도 인터페이스로 둔다.
+ */
+export interface WeeklyBossCapture {
+  species: string;
+  variantId: string | null;
+  level: number;
+  shiny: boolean;
+  /** 던질 볼의 인벤토리 키(config.weeklyBoss.captureBall). catchBonus 조회용. */
+  ballItem: string;
+  /** 남은 포획 시도 횟수. 성공하면 개체 지급 후 이 필드 삭제, 실패하면 1 차감(0이면 소진). */
+  ballAttempts: number;
+  /** 소속 보스 id(표시용). */
   bossId: string;
   /** 참고용 만료 시각 ISO(서버는 강제로 지우지 않음). */
   expiresAt: string;

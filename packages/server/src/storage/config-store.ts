@@ -295,6 +295,15 @@ export const DEFAULT_CONFIG: ServerConfig = {
     captureBall: "greatball",
     captureBaseRate: 0.35,
   },
+  // 주간보스(주 1회 로테이션 레이드) 처치 후 포획 시도권 설정. 이번 주 첫 처치 시 순위에 따라
+  // captureBallsByRank(1~3위)만큼, 그 밖(4위 이후)은 participationBalls만큼 그레이트볼을 받는다.
+  // /weekly-boss/capture가 이를 소진하며 확률(captureBaseRate) 포획을 시도한다. 운영자가 /admin에서 튜닝.
+  weeklyBoss: {
+    captureBallsByRank: [5, 3, 2],
+    participationBalls: 1,
+    captureBall: "greatball",
+    captureBaseRate: 0.3,
+  },
 };
 
 export async function getConfig(): Promise<ServerConfig> {
@@ -376,6 +385,10 @@ export async function getConfig(): Promise<ServerConfig> {
     worldBoss: {
       ...DEFAULT_CONFIG.worldBoss,
       ...config.worldBoss,
+    },
+    weeklyBoss: {
+      ...DEFAULT_CONFIG.weeklyBoss,
+      ...config.weeklyBoss,
     },
   };
 }
