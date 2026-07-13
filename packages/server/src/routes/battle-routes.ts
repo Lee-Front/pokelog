@@ -2,6 +2,7 @@ import { Router } from "express";
 import type { Response } from "express";
 import { authMiddleware, type AuthRequest } from "../middleware/auth-middleware.js";
 import { getUser, saveUser } from "../storage/user-store.js";
+import { withLock } from "../storage/pvp-store.js";
 import { getConfig } from "../storage/config-store.js";
 import { defaultStatStages } from "../game/battle.js";
 import { attemptCapture, getCatchRate } from "../game/capture.js";
@@ -29,8 +30,15 @@ import {
 } from "../game/battle-state.js";
 import { applySwitchInAbilities } from "../game/abilities.js";
 import { appendEvent } from "../storage/event-log.js";
-import { syncWorldBossDamage } from "../game/world-boss-sync.js";
+import { syncWorldBossDamage, distributeWorldBossDefeatRewards } from "../game/world-boss-sync.js";
 import { childLogger } from "../logger.js";
+
+/**
+ * 월드보스 처치 보상 배분 지연 홀더 — handleFight가 이번 턴 막타를 감지하면 대상 bossId를 담고,
+ * /action 핸들러가 배틀 user 락을 '놓은 뒤' distributeWorldBossDefeatRewards로 배분한다.
+ * (배분은 각 유저 락을 잡으므로 배틀 user 락 안에서 하면 user↔user 교차 교착 위험 — 락 순서 규약.)
+ */
+interface DeferredBossDistribution { bossId: string | null }
 
 const log = childLogger("battle-routes");
 
@@ -252,31 +260,33 @@ battleRoutes.post("/start", async (req, res) => {
       return;
     }
 
-    const user = await getUser(userId!);
-    if (!user) {
-      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
-      return;
-    }
+    await withLock(`user:${userId!}`, async () => {
+      const user = await getUser(userId!);
+      if (!user) {
+        res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+        return;
+      }
 
-    const event = user.pendingEvents.find((e) => e.id === eventId);
-    if (!event) {
-      res.status(404).json({ error: "이벤트를 찾을 수 없습니다" });
-      return;
-    }
+      const event = user.pendingEvents.find((e) => e.id === eventId);
+      if (!event) {
+        res.status(404).json({ error: "이벤트를 찾을 수 없습니다" });
+        return;
+      }
 
-    const pokemon = user.pokemon.find((p) => p.uid === pokemonUid);
-    if (!pokemon) {
-      res.status(404).json({ error: "포켓몬을 찾을 수 없습니다" });
-      return;
-    }
+      const pokemon = user.pokemon.find((p) => p.uid === pokemonUid);
+      if (!pokemon) {
+        res.status(404).json({ error: "포켓몬을 찾을 수 없습니다" });
+        return;
+      }
 
-    if (pokemon.hp <= 0) {
-      res.status(400).json({ error: "기절한 포켓몬은 전투에 참여할 수 없습니다" });
-      return;
-    }
+      if (pokemon.hp <= 0) {
+        res.status(400).json({ error: "기절한 포켓몬은 전투에 참여할 수 없습니다" });
+        return;
+      }
 
-    const { battleState, log: startLog } = await startWildBattle(user, event, pokemonUid);
-    res.json({ battleState, log: startLog });
+      const { battleState, log: startLog } = await startWildBattle(user, event, pokemonUid);
+      res.json({ battleState, log: startLog });
+    });
   } catch (err) {
     log.error({ err }, "Battle start error");
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
@@ -286,6 +296,7 @@ battleRoutes.post("/start", async (req, res) => {
 async function handleFight(
   user: UserData, myPokemon: OwnedPokemon, battle: BattleState,
   data: Record<string, unknown>, log: string[], res: Response,
+  deferred: DeferredBossDistribution,
 ) {
   const moveId = data?.moveId;
   if (typeof moveId !== "string") { res.status(400).json({ error: "사용할 기술을 선택해주세요" }); return; }
@@ -423,7 +434,11 @@ async function handleFight(
       const wildHpBefore = battle.wild.hp;
       const attackResult = executePlayerAttack(battle, myPokemon, selectedMoveData, selectedMove, log);
       // 월드보스: 이번 턴 보스HP 감소분을 공유 체력에 반영하고 battle.wild.hp를 새 globalHp로 맞춘다.
-      if (battle.isWorldBoss) await syncWorldBossDamage(battle, user, Math.max(0, wildHpBefore - battle.wild.hp));
+      // 막타면 배분은 지연(락 밖에서 실행) — deferred에 대상 보스만 담는다.
+      if (battle.isWorldBoss) {
+        const sync = await syncWorldBossDamage(battle, user, Math.max(0, wildHpBefore - battle.wild.hp));
+        if (sync.distributePending) deferred.bossId = sync.bossId;
+      }
       pushFrame(); // 플레이어 공격 (야생 hp 감소, 격파 시 0 포함)
       if (battle.wild.hp <= 0) {
         await finishWin(user, myPokemon, battle, log, res, hpFrames);
@@ -455,7 +470,10 @@ async function handleFight(
       const wildHpBefore = battle.wild.hp;
       executePlayerAttack(battle, myPokemon, selectedMoveData, selectedMove, log);
       // 월드보스: 이번 턴 보스HP 감소분을 공유 체력에 반영하고 battle.wild.hp를 새 globalHp로 맞춘다.
-      if (battle.isWorldBoss) await syncWorldBossDamage(battle, user, Math.max(0, wildHpBefore - battle.wild.hp));
+      if (battle.isWorldBoss) {
+        const sync = await syncWorldBossDamage(battle, user, Math.max(0, wildHpBefore - battle.wild.hp));
+        if (sync.distributePending) deferred.bossId = sync.bossId;
+      }
       pushFrame(); // 플레이어 후공 (야생 hp 감소, 격파 시 0 포함)
       if (battle.wild.hp <= 0) {
         await finishWin(user, myPokemon, battle, log, res, hpFrames);
@@ -471,7 +489,10 @@ async function handleFight(
   applyTerrainEndOfTurn(battle, myPokemon, log);
   // 월드보스: 턴 종료 데미지(독·화상·날씨·필드)도 공유 체력에 반영한다. 회복(음수 델타)은 무시하고
   // battle.wild.hp만 globalHp로 되돌린다(단일 플레이어의 회복이 공유체력을 부풀리지 않게).
-  if (battle.isWorldBoss) await syncWorldBossDamage(battle, user, Math.max(0, wildHpBeforeEot - battle.wild.hp));
+  if (battle.isWorldBoss) {
+    const sync = await syncWorldBossDamage(battle, user, Math.max(0, wildHpBeforeEot - battle.wild.hp));
+    if (sync.distributePending) deferred.bossId = sync.bossId;
+  }
   pushFrame(); // 턴 종료 데미지/회복 (독·화상·날씨·필드 등). 변화 없으면 클라가 no-op 프레임으로 스킵.
 
   // Check if end-of-turn damage KO'd anyone
@@ -699,25 +720,38 @@ battleRoutes.post("/action", async (req, res) => {
       return;
     }
 
-    const user = await getUser(userId!);
-    if (!user) { res.status(404).json({ error: "사용자를 찾을 수 없습니다" }); return; }
+    // 배틀 턴의 유저 데이터 읽기-수정-저장을 user 락으로 직렬화한다(폴링/다른 행동과의 lost-update
+    // 방지). 월드보스 처치 보상 배분은 각 유저 락을 잡으므로 이 락 '안'에서 하면 user↔user 교차
+    // 교착 위험 — deferred에 대상 보스만 담아 락을 놓은 뒤(아래) 배분한다(락 순서 규약).
+    const deferred: DeferredBossDistribution = { bossId: null };
+    await withLock(`user:${userId!}`, async () => {
+      const user = await getUser(userId!);
+      if (!user) { res.status(404).json({ error: "사용자를 찾을 수 없습니다" }); return; }
 
-    if (!user.battleState) { res.status(400).json({ error: "전투 중이 아닙니다" }); return; }
+      if (!user.battleState) { res.status(400).json({ error: "전투 중이 아닙니다" }); return; }
 
-    const battle = user.battleState;
-    const myPokemon = user.pokemon.find((p) => p.uid === battle.myPokemonUid);
-    if (!myPokemon) { res.status(400).json({ error: "전투 포켓몬을 찾을 수 없습니다" }); return; }
+      const battle = user.battleState;
+      const myPokemon = user.pokemon.find((p) => p.uid === battle.myPokemonUid);
+      if (!myPokemon) { res.status(400).json({ error: "전투 포켓몬을 찾을 수 없습니다" }); return; }
 
-    const log: string[] = [];
-    battle.turn += 1;
+      const log: string[] = [];
+      battle.turn += 1;
 
-    switch (action) {
-      case "fight":  await handleFight(user, myPokemon, battle, data ?? {}, log, res); break;
-      case "catch":  await handleCatch(user, myPokemon, battle, data ?? {}, log, res); break;
-      case "item":   await handleItem(user, myPokemon, battle, data ?? {}, log, res); break;
-      case "switch": await handleSwitch(user, myPokemon, battle, data ?? {}, log, res); break;
-      case "run":    await handleRun(user, myPokemon, battle, log, res); break;
-      default:       res.status(400).json({ error: "유효하지 않은 행동입니다" });
+      switch (action) {
+        case "fight":  await handleFight(user, myPokemon, battle, data ?? {}, log, res, deferred); break;
+        case "catch":  await handleCatch(user, myPokemon, battle, data ?? {}, log, res); break;
+        case "item":   await handleItem(user, myPokemon, battle, data ?? {}, log, res); break;
+        case "switch": await handleSwitch(user, myPokemon, battle, data ?? {}, log, res); break;
+        case "run":    await handleRun(user, myPokemon, battle, log, res); break;
+        default:       res.status(400).json({ error: "유효하지 않은 행동입니다" });
+      }
+    });
+
+    // 배틀 user 락을 놓은 뒤에 월드보스 처치 보상을 나머지 기여자에게 배분한다(막타였을 때만).
+    // 막타 유저 본인은 finishWin이 락 안에서 이미 저장했으므로 제외한다(userId로 skip). 응답도 락
+    // 안에서 보냈으므로 여기서는 배분만(멱등 — rewardsDistributed 가드가 중복을 막는다).
+    if (deferred.bossId) {
+      await distributeWorldBossDefeatRewards(deferred.bossId, userId!);
     }
   } catch (err) {
     log.error({ err }, "Battle action error");

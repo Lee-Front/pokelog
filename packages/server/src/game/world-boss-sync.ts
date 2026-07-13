@@ -3,7 +3,10 @@
 // 호출한다. 모든 상태 변형은 world-boss-store.mutateWorldBoss(=withLock('world-boss')) 안에서만.
 //
 // 처치(globalHp<=0) 순간에는 rewardsDistributed 가드로 딱 한 번 보상(포획 시도권)을 배분한다.
-// 배분은 전 유저를 로드해야 하므로 mutate 락 밖에서 별도 유저 락으로 저장한다(락 중첩 회피).
+// 배분(distributeWorldBossDefeatRewards)은 각 수령 유저의 user 락에서 이뤄지므로, 배틀 핸들러의
+// user 락을 '놓은 뒤' 호출해야 한다 — 그래야 user↔user 교차 교착(두 유저가 동시에 막타를 넣어
+// 서로의 배틀 락을 기다리는 상황)이 생기지 않는다(락 순서 규약: 배분은 어떤 배틀 user 락도 쥐지
+// 않은 상태에서만 실행). syncWorldBossDamage는 이번 턴이 막타였는지(distribute 필요 여부)만 알린다.
 
 import crypto from "node:crypto";
 import type { BattleState, UserData } from "../../../../shared/types.js";
@@ -28,14 +31,15 @@ const log = childLogger("world-boss-sync");
  * 보스가 이미 처치됐거나(다른 유저가 막타), 이 전투의 worldBossId가 현재 보스와 다르면(새 보스 스폰)
  * globalHp를 건드리지 않고 battle.wild.hp만 현재 globalHp로 맞춘 뒤(또는 0) 반환한다.
  *
- * 처치가 이번 호출로 확정되면(막타) 보상 배분까지 수행한다(rewardsDistributed 1회 가드).
- * 반환값: 이번 호출로 보스를 처치했는지(defeatedNow) — 로깅/응답 참고용.
+ * 처치가 이번 호출로 확정되면(막타) distributePending=true로 알린다. 실제 배분은 호출자가 배틀
+ * user 락을 놓은 뒤 distributeWorldBossDefeatRewards로 수행한다(락 순서 규약 — 위 파일 주석 참조).
+ * 반환값: defeatedNow(이번 호출로 처치했는지), globalHp, distributePending, bossId(배분 대상 보스).
  */
 export async function syncWorldBossDamage(
   battle: BattleState,
   user: UserData,
   damage: number,
-): Promise<{ defeatedNow: boolean; globalHp: number }> {
+): Promise<{ defeatedNow: boolean; globalHp: number; distributePending: boolean; bossId: string | null }> {
   const config = await getConfig();
   let defeatedNow = false;
   let shouldDistribute = false;
@@ -92,35 +96,68 @@ export async function syncWorldBossDamage(
   // 이 전투의 딜을 보스가 받지 않는(교체됨) 경우: battle.wild.hp는 그대로 두고(전투는 로컬 진행)
   // globalHp는 알 수 없으므로 -1로 표기해 호출자가 무시하게 한다.
   if (!state) {
-    return { defeatedNow: false, globalHp: -1 };
+    return { defeatedNow: false, globalHp: -1, distributePending: false, bossId: null };
   }
 
   // 공유 체력 라이브 반영 — 다음 finishWin/응답이 새 globalHp를 기준으로 판단하게 한다.
   battle.wild.hp = Math.min(state.globalHp, battle.wild.maxHp);
 
   if (shouldDistribute) {
-    // battlingUser=user를 넘겨, 막타를 넣은 이 유저의 시도권은 같은 객체 참조에 심는다. 이후
-    // finishWin의 saveUser(user)가 그 값을 영속하므로, 이 함수의 별도 락 저장이 그 user를 덮어쓰는
-    // 경합(stale-save clobber)을 피한다. 나머지 기여자는 개별 유저 락으로 저장한다.
-    await distributeRewardsForDefeat(state.bossId, config.worldBoss.ballPool, config.worldBoss.captureBall, user);
+    // 막타 유저(=이 요청 유저)의 시도권은 지금 이 user 객체에 직접 심는다 — finishWin의 saveUser(user)가
+    // 곧 이 값을 영속하므로 응답 전에 반영된다(추가 user 락 없음, 자기 자신엔 교착 없음). 나머지 기여자
+    // 배분은 호출자가 배틀 user 락을 놓은 뒤 distributeWorldBossDefeatRewards로 수행한다(user↔user 교차
+    // 교착 방지). 배틀러 본인은 그 배분에서 제외된다(여기서 이미 심었으므로).
+    try {
+      const users = await getAllUsers();
+      const merged = users.map((u) => (u.account.id === user.account.id ? user : u));
+      if (!merged.some((u) => u.account.id === user.account.id)) merged.push(user);
+      distributeWorldBossRewards(
+        merged,
+        state.contributions,
+        { bossId: state.bossId, species: state.species, variantId: state.variantId, level: state.level, expiresAt: state.expiresAt },
+        config.worldBoss.ballPool,
+        config.worldBoss.captureBall,
+      );
+      // distributeWorldBossRewards가 merged 각 유저의 worldBossCapture를 in-place로 세팅했다. 배틀러
+      // 본인(user)의 값은 위 merged가 같은 참조라 이미 심겼다. 다른 유저는 아래 지연 배분에서 저장한다.
+    } catch (err) {
+      log.error({ err, bossId: state.bossId }, "world-boss battler capture planting failed");
+    }
   }
 
-  return { defeatedNow, globalHp: state.globalHp };
+  // 다른 기여자 배분은 여기서 하지 않는다 — 호출자가 배틀 user 락을 놓은 뒤
+  // distributeWorldBossDefeatRewards(bossId, battlerId)로 수행한다(user↔user 교차 교착 방지).
+  return {
+    defeatedNow,
+    globalHp: state.globalHp,
+    distributePending: shouldDistribute,
+    bossId: state.bossId,
+  };
+}
+
+/**
+ * 월드보스 처치 보상(포획 시도권)을 막타 유저를 제외한 나머지 기여자에게 배분한다 — 반드시 어떤
+ * 배틀 user 락도 쥐지 않은 상태에서 호출한다(각 수령 유저의 user 락을 잡으므로, 배틀 user 락 안에서
+ * 부르면 user↔user 교차 교착 위험). 각 유저를 자기 user 락 하에 최신값으로 다시 읽어 worldBossCapture만
+ * 심고 저장한다(멱등 — 이미 배분됐으면 skip). 막타 유저(battlerUserId)는 syncWorldBossDamage가 이미
+ * finishWin 경로로 심었으므로 제외한다. distributePending=true였을 때만 호출한다.
+ */
+export async function distributeWorldBossDefeatRewards(bossId: string, battlerUserId: string): Promise<void> {
+  const config = await getConfig();
+  await distributeRewardsForDefeat(bossId, config.worldBoss.ballPool, config.worldBoss.captureBall, battlerUserId);
 }
 
 /**
  * 처치 보상 배분 — 전 유저를 로드해 기여도 비례로 포획 시도권을 배분한다. 보스 상태(contributions/
- * 보스 메타)는 mutate 밖에서 다시 읽어 최신 기여도로 배분한다.
- *
- * battlingUser(막타를 넣은 요청 유저)에게 돌아간 시도권은 그 객체 참조에 직접 심고 저장하지 않는다 —
- * 호출부(finishWin)가 곧 같은 객체를 saveUser하기 때문. (여기서 별도로 저장하면 finishWin의 저장이
- * 이 값을 덮어쓰는 stale-save 경합이 생긴다.) 그 외 기여자만 개별 유저 락으로 재읽기-저장한다.
+ * 보스 메타)는 mutate 밖에서 다시 읽어 최신 기여도로 배분한다. 막타 유저(battlerUserId)는 제외하고,
+ * 나머지 수령 유저를 각자 user 락 하에 최신값으로 다시 읽어 worldBossCapture만 심어 저장한다(멱등).
+ * 반드시 어떤 배틀 user 락도 쥐지 않은 상태에서 호출된다 — user↔user 교차 교착 방지.
  */
 async function distributeRewardsForDefeat(
   bossId: string,
   ballPool: number,
   ballItem: string,
-  battlingUser: UserData,
+  battlerUserId: string,
 ): Promise<void> {
   try {
     // 최신 보스 상태(기여도)를 다시 읽는다 — mutate 이후 다른 딜이 더 들어왔을 수 있으나, 처치
@@ -129,14 +166,11 @@ async function distributeRewardsForDefeat(
     const state = await getWorldBoss();
     if (!state || state.bossId !== bossId) return;
 
+    // 어떤 배틀 user 락도 쥐지 않은 상태에서 호출되므로(락 순서 규약), 막타 유저를 포함한 모든
+    // 수령 유저를 동일하게 각자 user 락 하에 최신값으로 다시 읽어 저장한다(특례 없음).
     const users = await getAllUsers();
-    // 막타 유저는 로드된 사본 대신 요청 객체(battlingUser)를 배분 대상에 넣어, 그 참조에 capture가
-    // 심기게 한다(finishWin의 saveUser가 영속). 사본과 중복되지 않게 교체한다.
-    const merged = users.map((u) => (u.account.id === battlingUser.account.id ? battlingUser : u));
-    if (!merged.some((u) => u.account.id === battlingUser.account.id)) merged.push(battlingUser);
-
     const shares = distributeWorldBossRewards(
-      merged,
+      users,
       state.contributions,
       {
         bossId: state.bossId,
@@ -149,17 +183,23 @@ async function distributeRewardsForDefeat(
       ballItem,
     );
 
-    const rewarded = new Set(shares.map((s) => s.userId));
-    for (const u of merged) {
-      if (!rewarded.has(u.account.id)) continue;
-      // 막타 유저는 finishWin이 저장하므로 여기서 저장하지 않는다(경합 회피).
-      if (u.account.id === battlingUser.account.id) continue;
-      await withLock(`user:${u.account.id}`, async () => {
+    // 배분 결과(유저별 worldBossCapture)를 id로 인덱싱해 락 하 재읽기 후 그대로 심는다.
+    const captureByUser = new Map(
+      users
+        .filter((u) => shares.some((s) => s.userId === u.account.id))
+        .map((u) => [u.account.id, u.worldBossCapture]),
+    );
+
+    for (const share of shares) {
+      if (share.userId === battlerUserId) continue; // 막타 유저는 finishWin이 이미 저장(경합 회피).
+      const capture = captureByUser.get(share.userId);
+      if (!capture) continue;
+      await withLock(`user:${share.userId}`, async () => {
         // 락 하에 최신 유저를 다시 읽어 stale-save를 피하고, 배분 결과(worldBossCapture)만 옮긴다.
-        const fresh = await import("../storage/user-store.js").then((m) => m.getUser(u.account.id));
+        const fresh = await import("../storage/user-store.js").then((m) => m.getUser(share.userId));
         if (!fresh) return;
         if (fresh.worldBossCapture?.bossId === bossId) return; // 이미 배분됨(멱등)
-        fresh.worldBossCapture = u.worldBossCapture;
+        fresh.worldBossCapture = capture;
         await saveUser(fresh, "admin-adjust");
       });
     }
