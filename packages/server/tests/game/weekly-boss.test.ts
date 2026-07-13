@@ -8,11 +8,13 @@ import {
   getIsoWeek,
   getIsoWeekLabel,
   grantBossRewardOnce,
+  ballsForRank,
   type BossDef,
 } from "../../src/game/weekly-boss.js";
 import { buildStats } from "../../src/game/pokemon-stats.js";
 import { getSpeciesByName } from "../../src/game/data-loader.js";
-import type { UserData } from "../../../../shared/types.js";
+import { DEFAULT_CONFIG } from "../../src/storage/config-store.js";
+import type { UserData, WeeklyBossCapture } from "../../../../shared/types.js";
 
 // 주 경계(월요일)마다 정확히 1씩 증가하는 연속 주 인덱스를 쓴다. 2026-01-05는 월요일.
 function mondayOfWeek(i: number): Date {
@@ -191,5 +193,93 @@ describe("grantBossRewardOnce", () => {
 
     expect(nextWeek.granted).toBe(true);
     expect(user.bossDefeat).toEqual({ week: 3001, bossId: boss.id });
+  });
+});
+
+describe("ballsForRank", () => {
+  const cfg = DEFAULT_CONFIG.weeklyBoss;
+
+  it("gives the ranked ball counts for ranks within captureBallsByRank (1→5, 2→3, 3→2)", () => {
+    expect(ballsForRank(1, cfg)).toBe(5);
+    expect(ballsForRank(2, cfg)).toBe(3);
+    expect(ballsForRank(3, cfg)).toBe(2);
+  });
+
+  it("falls back to participationBalls for ranks past the ranked tiers (4, 10 → 1)", () => {
+    expect(ballsForRank(4, cfg)).toBe(cfg.participationBalls);
+    expect(ballsForRank(4, cfg)).toBe(1);
+    expect(ballsForRank(10, cfg)).toBe(1);
+  });
+
+  it("respects a custom cfg (ranked array length + participation fallback)", () => {
+    const custom = { captureBallsByRank: [9, 4], participationBalls: 2, captureBall: "greatball", captureBaseRate: 0.3 };
+    expect(ballsForRank(1, custom)).toBe(9);
+    expect(ballsForRank(2, custom)).toBe(4);
+    expect(ballsForRank(3, custom)).toBe(2); // 배열 밖 → 참가 보상
+  });
+});
+
+// finishWin의 주간보스 훅이 이번 주 첫 처치에 user.weeklyBossCapture를 어떻게 구성하는지 검증한다.
+// 실제 클리어 경로(/boss/start→/battle/action)는 보스 HP가 커서 결정적으로 못 이기므로(전설/환상은 벤치
+// 금지), 훅이 하는 것과 동일한 구성 — grantBossRewardOnce(멱등)로 첫 처치를 인정하고 rank→ballsForRank로
+// 시도권을 실는다 — 을 집중 테스트한다. rank는 finishWin이 registerBossClear로 얻는 값(여기선 직접 대입).
+describe("weekly-boss first-clear capture grant (finishWin hook shape)", () => {
+  const cfg = DEFAULT_CONFIG.weeklyBoss;
+  const boss = BOSSES[0];
+
+  function makeUser(): UserData {
+    return { points: 0, gameMoney: 0, inventory: {} } as unknown as UserData;
+  }
+
+  // finishWin의 grant.granted 분기가 실는 weeklyBossCapture와 같은 형태를 rank로부터 만든다.
+  function grantCapture(rank: number): WeeklyBossCapture {
+    return {
+      species: boss.species,
+      variantId: boss.variantId ?? null,
+      level: boss.level,
+      shiny: false,
+      ballItem: cfg.captureBall,
+      ballAttempts: ballsForRank(rank, cfg),
+      bossId: boss.id,
+      expiresAt: new Date(Date.now() + 7 * 86400000).toISOString(),
+    };
+  }
+
+  it.each([
+    [1, 5],
+    [2, 3],
+    [3, 2],
+    [4, 1],
+  ])("first clear at rank %i grants weeklyBossCapture with ballAttempts=%i", (rank, expectedBalls) => {
+    const user = makeUser();
+    const week = 3100;
+
+    // 첫 처치 인정(멱등 가드) → granted=true일 때만 시도권을 실는다.
+    const grant = grantBossRewardOnce(user, boss, week);
+    expect(grant.granted).toBe(true);
+    user.weeklyBossCapture = grantCapture(rank);
+
+    expect(user.weeklyBossCapture.ballAttempts).toBe(ballsForRank(rank, cfg));
+    expect(user.weeklyBossCapture.ballAttempts).toBe(expectedBalls);
+    expect(user.weeklyBossCapture.species).toBe(boss.species);
+    expect(user.weeklyBossCapture.ballItem).toBe(cfg.captureBall);
+    expect(user.weeklyBossCapture.bossId).toBe(boss.id);
+    expect(user.weeklyBossCapture.shiny).toBe(false);
+  });
+
+  it("does NOT re-grant on a second clear in the same ISO week (idempotent guard)", () => {
+    const user = makeUser();
+    const week = 3100;
+
+    const first = grantBossRewardOnce(user, boss, week);
+    expect(first.granted).toBe(true);
+    user.weeklyBossCapture = grantCapture(1);
+
+    // 같은 주 재처치 → granted=false이므로 finishWin은 시도권 재지급 분기를 타지 않는다.
+    const second = grantBossRewardOnce(user, boss, week);
+    expect(second.granted).toBe(false);
+    expect(second.alreadyDefeated).toBe(true);
+    // 시도권은 첫 처치 값 그대로(재지급 없음).
+    expect(user.weeklyBossCapture.ballAttempts).toBe(5);
   });
 });
