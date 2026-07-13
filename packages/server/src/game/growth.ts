@@ -1,4 +1,4 @@
-import { getMoveById, getSpeciesByName, getEvolutions, getVariantById } from "./data-loader.js";
+import { getMoveById, getSpeciesByName, getEvolutions, getVariantById, getNatures } from "./data-loader.js";
 import { GameRuleError } from "./game-errors.js";
 import { getDamageTakenTotal } from "./battle-progress.js";
 import { getMoveUsageCount } from "./move-usage.js";
@@ -9,7 +9,9 @@ import type {
   EvolutionTimeOfDay,
   OwnedPokemon,
   PokemonGender,
+  PokemonIVs,
   PokemonMove,
+  TuningConfig,
 } from "../../../../shared/types.js";
 
 export { calculateStatsForLevel };
@@ -453,6 +455,113 @@ export function setPokemonMoves(
 
   // 유지 슬롯은 기존 pp/maxPp 를 보존(원래 pp가 감소돼 있어도 유지), 새 기술만 풀 pp.
   pokemon.moves = moveIds.map((id) => pokemon.moves.find((move) => move.id === id) ?? buildMoveSlot(id));
+  user.gameMoney -= cost;
+
+  return { cost };
+}
+
+// ── 개체 튜닝 (IV/성격/특성 자유 변경) — 챔피언스식, 아이템 없이 게임머니로만 ──
+// 개체값(IV)·성격·특성을 상세 모달에서 자유롭게 바꾼다. 아이템(특성캡슐/패치) 기반의 번거로운
+// 방식을 대체한다. 실제로 바꾼 카테고리별 비용(ivCost/natureCost/abilityCost)을 합산해 차감하며,
+// IV·성격 변경은 스탯 재계산이 필요하다(특성은 스탯에 영향 없음).
+
+const IV_KEYS: (keyof PokemonIVs)[] = ["hp", "attack", "defense", "spAttack", "spDefense", "speed"];
+
+/** IV 오브젝트 검증 — 6스탯 모두 존재해야 하고 각 값이 0~31 정수여야 한다. */
+function validateIvs(ivs: unknown): PokemonIVs {
+  if (!ivs || typeof ivs !== "object") {
+    throw new GameRuleError("개체값은 0~31 정수여야 합니다", 400);
+  }
+  const record = ivs as Record<string, unknown>;
+  const result = {} as PokemonIVs;
+  for (const key of IV_KEYS) {
+    const value = record[key];
+    if (!Number.isInteger(value) || (value as number) < 0 || (value as number) > 31) {
+      throw new GameRuleError("개체값은 0~31 정수여야 합니다", 400);
+    }
+    result[key] = value as number;
+  }
+  return result;
+}
+
+/**
+ * 개체 튜닝 실행 — changes에 담긴(존재하는) 카테고리만 적용하고, 그 카테고리 비용의 합만큼
+ * user.gameMoney를 차감한다. 검증·비용 확인을 먼저 모두 통과한 뒤에야 변형하므로 부분 적용이
+ * 없다(원자적). IV/성격이 바뀌면 스탯을 재계산하고 hp를 새 maxHp로 클램프한다. pokemon(및
+ * user.gameMoney)을 변형하며, 저장은 호출부(라우트)가 한다.
+ *  - changes에 유효한 카테고리가 하나도 없으면 GameRuleError(400).
+ *  - ivs: 6스탯 각 0~31 정수(아니면 400).
+ *  - nature: 25성격 id 중 하나(아니면 400).
+ *  - abilityId: 종이 가질 수 있는 특성(normal ∪ hidden) 중 하나(아니면 400).
+ *  - 합산 비용보다 게임머니가 적으면 GameRuleError(400) — 이때 어떤 변경도 일어나지 않는다.
+ */
+export function tunePokemon(
+  user: { gameMoney: number },
+  pokemon: OwnedPokemon,
+  changes: { ivs?: unknown; nature?: unknown; abilityId?: unknown },
+  costs: TuningConfig,
+): { cost: number } {
+  const hasIvs = changes.ivs != null;
+  const hasNature = typeof changes.nature === "string" && changes.nature.length > 0;
+  const hasAbility = typeof changes.abilityId === "string" && changes.abilityId.length > 0;
+
+  if (!hasIvs && !hasNature && !hasAbility) {
+    throw new GameRuleError("변경할 항목이 없습니다", 400);
+  }
+
+  // 1) 검증 — 어떤 변형·차감보다 먼저 모두 통과해야 한다(원자성).
+  let nextIvs: PokemonIVs | undefined;
+  if (hasIvs) {
+    nextIvs = validateIvs(changes.ivs);
+  }
+
+  let nextNature: string | undefined;
+  if (hasNature) {
+    nextNature = changes.nature as string;
+    const natureIds = new Set(getNatures().map((n) => n.id));
+    if (!natureIds.has(nextNature)) {
+      throw new GameRuleError("올바르지 않은 성격입니다", 400);
+    }
+  }
+
+  let nextAbility: string | undefined;
+  if (hasAbility) {
+    nextAbility = changes.abilityId as string;
+    const abilities = getSpeciesByName(pokemon.species)?.abilities;
+    const possible = abilities
+      ? [...abilities.normal, ...(abilities.hidden ? [abilities.hidden] : [])]
+      : [];
+    if (!possible.includes(nextAbility)) {
+      throw new GameRuleError("이 포켓몬이 가질 수 없는 특성입니다", 400);
+    }
+  }
+
+  // 2) 비용 — 바꾼 카테고리 비용의 합. 부족하면 변형 전에 거부한다.
+  const cost = (hasIvs ? costs.ivCost : 0) + (hasNature ? costs.natureCost : 0) + (hasAbility ? costs.abilityCost : 0);
+  if (user.gameMoney < cost) {
+    throw new GameRuleError("게임머니가 부족합니다", 400);
+  }
+
+  // 3) 적용 — 여기부터는 실패하지 않는다.
+  if (nextIvs) pokemon.ivs = nextIvs;
+  if (nextNature) pokemon.nature = nextNature;
+  if (nextAbility) pokemon.abilityId = nextAbility;
+
+  // IV·성격은 스탯에 반영되므로 재계산 후 hp를 새 maxHp로 클램프(특성은 스탯에 영향 없음).
+  if (hasIvs || hasNature) {
+    const recomputed = calculateStatsForLevel(
+      pokemon.species,
+      pokemon.level,
+      pokemon.nature,
+      pokemon.variantId,
+      pokemon.ivs,
+      pokemon.evs,
+    );
+    pokemon.maxHp = recomputed.maxHp;
+    pokemon.hp = Math.min(pokemon.hp, pokemon.maxHp);
+    pokemon.stats = recomputed.stats;
+  }
+
   user.gameMoney -= cost;
 
   return { cost };

@@ -11,7 +11,7 @@ import { createEncounterEvent } from "../game/event-factory.js";
 import { getRegion, getRegionNames, getSpeciesByName, getAbilityById, isWildSpecies, regionSpeciesList } from "../game/data-loader.js";
 import { rollRegionEncounters } from "../game/wild-roll.js";
 import { startWildBattle } from "./battle-routes.js";
-import { buildLevelEvolutionContext, getEvolutionBranchDiagnostics, getAllLearnableMoves, setPokemonMoves } from "../game/growth.js";
+import { buildLevelEvolutionContext, getEvolutionBranchDiagnostics, getAllLearnableMoves, setPokemonMoves, tunePokemon } from "../game/growth.js";
 import { getAvailableEvolutionOptions, prunePendingEvolutions } from "../game/pending-evolution.js";
 import { findPokemonByUid, getPartyPokemon, getDisplaySpeciesName } from "../game/pokemon-state.js";
 import { GameRuleError } from "../game/game-errors.js";
@@ -1107,6 +1107,54 @@ gameRoutes.post("/pokemon/:uid/set-moves", async (req: AuthRequest, res: Respons
   } catch (err) {
     if (err instanceof GameRuleError) { res.status(err.status).json({ error: err.message }); return; }
     log.error({ err }, "Set moves error");
+    res.status(500).json({ error: "서버 오류가 발생했습니다" });
+  }
+});
+
+// 개체 튜닝 정보 — 이 종이 가질 수 있는 특성 목록(normal ∪ hidden), 카테고리별 변경 비용(costs),
+// 보유 게임머니를 내려준다. 포털 상세 모달의 IV/성격/특성 에디터가 특성 드롭다운·비용 표시에 쓴다.
+// (성격 25종은 클라이언트가 고정 목록으로 알고 있어 여기선 특성만 종 의존적으로 계산해 준다.)
+gameRoutes.get("/pokemon/:uid/tunable", async (req: AuthRequest, res: Response) => {
+  try {
+    const user = await getUser(req.userId!);
+    if (!user) { res.status(404).json({ error: "사용자를 찾을 수 없습니다" }); return; }
+    const pokemon = findPokemonByUid(user, req.params.uid);
+    if (!pokemon) { res.status(404).json({ error: "포켓몬을 찾을 수 없습니다" }); return; }
+
+    const config = await getConfig();
+    const speciesAbilities = getSpeciesByName(pokemon.species)?.abilities;
+    const abilities = speciesAbilities
+      ? [...speciesAbilities.normal, ...(speciesAbilities.hidden ? [speciesAbilities.hidden] : [])]
+      : [];
+    res.json({ abilities, costs: config.tuning, gameMoney: user.gameMoney });
+  } catch (err) {
+    log.error({ err }, "Tunable info error");
+    res.status(500).json({ error: "서버 오류가 발생했습니다" });
+  }
+});
+
+// 개체 튜닝 — IV/성격/특성을 게임머니로 자유 변경(아이템 불필요). body에 담긴(존재하는) 카테고리만
+// 적용하고 그 비용의 합만큼 차감한다. IV(0~31 정수)·성격(25종)·특성(종 보유 특성) 검증과 게임머니
+// 부족은 tunePokemon이 GameRuleError(400)로 던지며, 부분 적용 없이 원자적으로 처리한다. IV·성격
+// 변경 시 스탯이 재계산되고 hp가 새 maxHp로 클램프된다.
+gameRoutes.patch("/pokemon/:uid/tune", async (req: AuthRequest, res: Response) => {
+  try {
+    const { ivs, nature, abilityId } = req.body ?? {};
+    await withLock(`user:${req.userId!}`, async () => {
+      const user = await getUser(req.userId!);
+      if (!user) { res.status(404).json({ error: "사용자를 찾을 수 없습니다" }); return; }
+      const pokemon = findPokemonByUid(user, req.params.uid);
+      if (!pokemon) { res.status(404).json({ error: "포켓몬을 찾을 수 없습니다" }); return; }
+
+      const config = await getConfig();
+      const { cost } = tunePokemon(user, pokemon, { ivs, nature, abilityId }, config.tuning);
+      await saveUser(user);
+
+      res.json({ pokemon: { ...pokemon }, gameMoney: user.gameMoney, cost });
+    });
+  } catch (err) {
+    if (err instanceof GameRuleError) { res.status(err.status).json({ error: err.message }); return; }
+    log.error({ err }, "Tune pokemon error");
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
   }
 });

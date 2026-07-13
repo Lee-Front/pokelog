@@ -550,6 +550,15 @@ export interface ServerMeta {
   featureFlags: Record<string, boolean>;
 }
 
+// === 개체 튜닝(IV/성격/특성 자유 변경) 비용(게임머니) ===
+// 아이템 없이 게임머니로만 개체값(IV)·성격·특성을 챔피언스식으로 자유 변경할 때, 실제로 바꾼
+// 카테고리별 비용을 더해 차감한다(예: IV만 바꾸면 ivCost, IV+성격이면 ivCost+natureCost).
+export interface TuningConfig {
+  ivCost: number;
+  natureCost: number;
+  abilityCost: number;
+}
+
 export interface ServerConfig {
   server: {
     port: number;
@@ -591,6 +600,9 @@ export interface ServerConfig {
   // 기술 일괄 교체(4개 자유 편집) 시 "새로 배우는" 기술 1개당 비용(게임머니). 자리 이동·삭제·
   // 유지는 무료이고, 원래 없던 기술을 넣을 때만 개수만큼 차감한다. 운영자가 /admin에서 튜닝(기본 500).
   moveChangeCost: number;
+  // 개체값(IV)/성격/특성 자유 변경 1회 비용(게임머니). 바꾼 카테고리별 비용을 합산해 차감한다.
+  // 운영자가 /admin에서 튜닝(기본 IV 2000·성격 1000·특성 1500).
+  tuning: TuningConfig;
   pvp: PvpConfig;
   worldBoss: WorldBossConfig;
   weeklyBoss: WeeklyBossConfig;
