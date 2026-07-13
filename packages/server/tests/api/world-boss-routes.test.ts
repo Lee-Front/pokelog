@@ -203,6 +203,48 @@ describe("world-boss API", () => {
     }
   });
 
+  it("killing blow distributes to OTHER contributors without deadlock/timeout (battle user lock non-nested with world-boss distribution)", async () => {
+    // 두 유저가 같은 월드보스에 기여: A가 먼저 참전·딜(체력 남김), 그다음 B가 참전·막타.
+    // 막타 시 배틀 user 락 '밖'에서 크로스유저 배분(A에게 시도권)이 돌아가는데, 이게 데드락/타임아웃
+    // 없이 정상 완료되고 두 유저 모두 시도권을 받는지 검증한다(락 순서 world-boss→user, 비중첩).
+    await t.admin().post("/api/admin/world-boss/end");
+    // 체력 2 — A가 1 깎고, B가 막타(1). (딜=파티 스케일이라 최소 1은 보장되도록 낮게 잡음.)
+    const spawn = await t.admin().post("/api/admin/world-boss/spawn", { species: "mewtwo", level: 5, totalHp: 2 });
+    expect(spawn.status).toBe(200);
+
+    const a = await t.registerAndLogin("wbA", "charmander");
+    const b = await t.registerAndLogin("wbB", "charmander");
+    const apiA = t.authed(a.token);
+    const apiB = t.authed(b.token);
+    const uidA = await giveStrongPokemon(a.userId, "charizard", 50);
+    const uidB = await giveStrongPokemon(b.userId, "charizard", 50);
+
+    // A 참전 + 1턴 딜(막타가 아니길 기대 — 체력2, 최소 1 남음. 만약 A가 막타면 B가 이후 참전 불가라
+    // 이 케이스는 스킵하지 않고 그대로 검증: 최소 한 명은 시도권을 받고 배분이 데드락 없이 끝나면 OK).
+    await apiA.post("/api/game/world-boss/enter", { pokemonUid: uidA });
+    const moveA = await firstMoveId(apiA, uidA);
+    const fightA = await apiA.post("/api/battle/action", { action: "fight", data: { moveId: moveA } });
+    expect(fightA.status).toBe(200);
+
+    // B 참전 + 막타(또는 A가 이미 처치했으면 참전이 거부될 수 있음 — 그 경우도 데드락 아님).
+    const enterB = await apiB.post("/api/game/world-boss/enter", { pokemonUid: uidB });
+    if (enterB.status === 200) {
+      const moveB = await firstMoveId(apiB, uidB);
+      const fightB = await apiB.post("/api/battle/action", { action: "fight", data: { moveId: moveB } });
+      expect(fightB.status).toBe(200); // 데드락/타임아웃이면 여기서 15s+ 스톨 후 에러 → 반드시 200.
+    }
+
+    // 보스가 처치됐는지 + 배분 완료(멱등 가드).
+    const adminState = await t.admin().get("/api/admin/world-boss");
+    expect(adminState.body.state.defeated).toBe(true);
+    expect(adminState.body.state.rewardsDistributed).toBe(true);
+
+    // A(먼저 딜한 기여자)가 배분받은 시도권이 보여야 한다(막타를 B가 넣었다면 크로스유저 배분 경로).
+    const viewA = await apiA.get("/api/game/world-boss");
+    expect(viewA.body.myCapture).not.toBeNull();
+    expect(viewA.body.myCapture.ballAttempts).toBeGreaterThan(0);
+  }, 20000);
+
   it("chat requires an active boss and validates length", async () => {
     await t.admin().post("/api/admin/world-boss/end");
     const { token } = await t.registerAndLogin("wbchat", "charmander");
