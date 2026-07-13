@@ -957,6 +957,41 @@ adminRoutes.post("/reset-all-game", async (req, res) => {
   }
 });
 
+// 월드보스 재참전 쿨다운(lastWorldBossAttackAt, config.worldBoss.cooldownMs) 일괄 해제 —
+// 이벤트 운영 중 쿨다운에 걸린 계정을 관리자가 풀어준다. 아직 쿨다운 중인 계정만 대상으로 하고
+// 유저 락 하에 lastWorldBossAttackAt 를 지운다(멀티프로세스 안전, 진행 중 배틀 저장과 경합 방지).
+adminRoutes.post("/world-boss/reset-cooldowns", async (_req, res) => {
+  try {
+    const config = await getConfig();
+    const cooldownMs = config.worldBoss.cooldownMs;
+    const now = Date.now();
+    const all = await getAllUsers();
+    let cleared = 0;
+    const failed: string[] = [];
+    for (const summary of all) {
+      const id = summary.account.id;
+      try {
+        await withLock(`user:${id}`, async () => {
+          const user = await getUser(id);
+          if (!user || !user.lastWorldBossAttackAt) return;
+          const elapsed = now - new Date(user.lastWorldBossAttackAt).getTime();
+          if (elapsed >= cooldownMs) return; // 이미 만료됨 — 재참전 제한 아님, 건드리지 않는다.
+          user.lastWorldBossAttackAt = undefined;
+          await saveUser(user, "admin-adjust");
+          cleared++;
+        });
+      } catch (err) {
+        log.error({ err, userId: id }, "world-boss reset-cooldown failed for user");
+        failed.push(id);
+      }
+    }
+    res.json({ ok: true, total: all.length, cleared, failed });
+  } catch (err) {
+    log.error({ err }, "Admin world-boss reset-cooldowns error");
+    res.status(500).json({ error: "서버 오류" });
+  }
+});
+
 // ========== 공지 ==========
 
 adminRoutes.get("/announcements", async (_req, res) => {
