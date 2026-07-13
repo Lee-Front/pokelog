@@ -9,7 +9,7 @@ import { getUser, saveUser, getAllUsers, deleteUser } from "../storage/user-stor
 import { hashPassword, issueToken } from "../auth/auth.js";
 import { withLock } from "../storage/pvp-store.js";
 import { resetGameData } from "../game/game-reset.js";
-import { getSpeciesByName } from "../game/data-loader.js";
+import { getSpeciesByName, getVariantsByBaseSpecies } from "../game/data-loader.js";
 import {
   getAnnouncements,
   createAnnouncement,
@@ -1144,6 +1144,32 @@ adminRoutes.get("/world-boss", async (_req, res) => {
     res.json({ state });
   } catch (err) {
     log.error({ err }, "Admin world-boss get error");
+    res.status(500).json({ error: "서버 오류" });
+  }
+});
+
+// 종의 실제 변종 목록(관리자) — 월드보스 스폰 UI가 "종당 실제 존재하는 폼"만 고르도록 노출한다.
+// 자유입력/일반 접미사 추측은 서버가 400으로 거르므로(존재하지 않는 폼), 정본(variants.json)을
+// 종별로 열거해 스폰 가능한 변종만 선택지로 준다. exists=false여도 200으로 빈 목록을 준다
+// (검색 결과 표시용). name은 기본 종의 표시명.
+adminRoutes.get("/species/:species/variants", async (req, res) => {
+  try {
+    const species = req.params.species;
+    const base = getSpeciesByName(species);
+    const variants = getVariantsByBaseSpecies(species).map((v) => ({
+      id: v.id,
+      name: v.name,
+      formSuffix: v.formSuffix,
+      category: v.category,
+    }));
+    res.json({
+      species,
+      exists: base != null,
+      name: getDisplaySpeciesName(species),
+      variants,
+    });
+  } catch (err) {
+    log.error({ err }, "Admin species variants error");
     res.status(500).json({ error: "서버 오류" });
   }
 });
