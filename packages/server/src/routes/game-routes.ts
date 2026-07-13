@@ -567,7 +567,7 @@ function worldBossView(state: WorldBossState | null, userId: string, cooldownMs:
 
   return {
     active: s.active,
-    boss: { species: s.species, variantId: s.variantId, level: s.level, name: s.name },
+    boss: { species: s.species, variantId: s.variantId, level: s.level, name: s.name, shiny: s.wild.isShiny ?? false },
     globalHp: s.globalHp,
     globalMaxHp: s.globalMaxHp,
     defeated: s.defeated,

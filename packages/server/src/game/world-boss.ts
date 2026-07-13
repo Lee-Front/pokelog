@@ -35,7 +35,7 @@ export function buildWorldBossWild(
   species: string,
   variantId: string | null | undefined,
   level: number,
-  opts: { hpMultiplier?: number; totalHp?: number },
+  opts: { hpMultiplier?: number; totalHp?: number; shiny?: boolean },
 ): WildPokemon {
   const speciesKey = variantId ?? species;
   const { baseSpecies, variantId: resolvedVariantId, speciesData } = resolveSpeciesOrVariant(speciesKey);
@@ -66,6 +66,7 @@ export function buildWorldBossWild(
     stats: boostedStats,
     moves,
     nature: "hardy",
+    isShiny: opts.shiny ?? false,
   };
 }
 
@@ -115,7 +116,7 @@ export interface WorldBossRewardShare {
 export function distributeWorldBossRewards(
   users: UserData[],
   contributions: Record<string, WorldBossContribution>,
-  boss: { bossId: string; species: string; variantId: string | null; level: number; expiresAt: string },
+  boss: { bossId: string; species: string; variantId: string | null; level: number; shiny?: boolean; expiresAt: string },
   ballPool: number,
   ballItem: string,
 ): WorldBossRewardShare[] {
@@ -137,7 +138,7 @@ export function distributeWorldBossRewards(
       species: boss.species,
       variantId: boss.variantId,
       level: boss.level,
-      shiny: false,
+      shiny: boss.shiny ?? false,
       ballItem,
       ballAttempts: balls,
       bossId: boss.bossId,

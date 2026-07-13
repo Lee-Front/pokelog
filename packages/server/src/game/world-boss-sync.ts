@@ -114,7 +114,7 @@ export async function syncWorldBossDamage(
       distributeWorldBossRewards(
         merged,
         state.contributions,
-        { bossId: state.bossId, species: state.species, variantId: state.variantId, level: state.level, expiresAt: state.expiresAt },
+        { bossId: state.bossId, species: state.species, variantId: state.variantId, level: state.level, shiny: state.wild.isShiny ?? false, expiresAt: state.expiresAt },
         config.worldBoss.ballPool,
         config.worldBoss.captureBall,
       );
@@ -177,6 +177,7 @@ async function distributeRewardsForDefeat(
         species: state.species,
         variantId: state.variantId,
         level: state.level,
+        shiny: state.wild.isShiny ?? false,
         expiresAt: state.expiresAt,
       },
       ballPool,

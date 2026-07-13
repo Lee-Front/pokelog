@@ -68,6 +68,95 @@ describe("world-boss API", () => {
     await t.admin().post("/api/admin/world-boss/end");
   });
 
+  it("spawn rejects a non-boolean shiny", async () => {
+    await t.admin().post("/api/admin/world-boss/end");
+    const bad = await t.admin().post("/api/admin/world-boss/spawn", {
+      species: "mewtwo",
+      level: 70,
+      hpMultiplier: 5,
+      shiny: "yes",
+    });
+    expect(bad.status).toBe(400);
+  });
+
+  it("shiny defaults false when omitted (byte-identical to previous behavior)", async () => {
+    await t.admin().post("/api/admin/world-boss/end");
+    const spawn = await t.admin().post("/api/admin/world-boss/spawn", {
+      species: "mewtwo",
+      level: 70,
+      hpMultiplier: 5,
+    });
+    expect(spawn.status).toBe(200);
+    expect(spawn.body.state.wild.isShiny).toBe(false);
+
+    const { token } = await t.registerAndLogin("wbshinydefault", "charmander");
+    const view = await t.authed(token).get("/api/game/world-boss");
+    expect(view.status).toBe(200);
+    expect(view.body.boss.shiny).toBe(false);
+
+    await t.admin().post("/api/admin/world-boss/end");
+  });
+
+  it("spawning shiny:true makes the boss shiny in state and player view", async () => {
+    await t.admin().post("/api/admin/world-boss/end");
+    const spawn = await t.admin().post("/api/admin/world-boss/spawn", {
+      species: "mewtwo",
+      level: 70,
+      hpMultiplier: 5,
+      shiny: true,
+    });
+    expect(spawn.status).toBe(200);
+    expect(spawn.body.state.wild.isShiny).toBe(true);
+
+    const { token } = await t.registerAndLogin("wbshinyview", "charmander");
+    const view = await t.authed(token).get("/api/game/world-boss");
+    expect(view.status).toBe(200);
+    expect(view.body.boss.shiny).toBe(true);
+
+    await t.admin().post("/api/admin/world-boss/end");
+  });
+
+  it("capturing a shiny world boss yields a shiny pokemon", async () => {
+    await t.admin().post("/api/admin/world-boss/end");
+    // totalHp:1 → 한 방 처치. shiny:true 보스로 스폰해 배분된 시도권이 shiny를 담는지, 그리고
+    // 잡은 개체가 실제로 shiny인지 검증한다(greatball은 guaranteedCatch가 아니므로 시도권을 소진).
+    const spawn = await t.admin().post("/api/admin/world-boss/spawn", {
+      species: "mewtwo",
+      level: 70,
+      totalHp: 1,
+      shiny: true,
+    });
+    expect(spawn.status).toBe(200);
+
+    const { token, userId } = await t.registerAndLogin("wbshinycatch", "charmander");
+    const api = t.authed(token);
+    const uid = await giveStrongPokemon(userId, "charizard", 50);
+
+    await api.post("/api/game/world-boss/enter", { pokemonUid: uid });
+    const moveId = await firstMoveId(api, uid);
+    const fight = await api.post("/api/battle/action", { action: "fight", data: { moveId } });
+    expect(fight.status).toBe(200);
+    expect(fight.body.result).toBe("win");
+
+    // 배분된 시도권이 shiny를 담고 있다.
+    const view = await api.get("/api/game/world-boss");
+    expect(view.body.myCapture).not.toBeNull();
+    expect(view.body.myCapture.shiny).toBe(true);
+    const attempts = view.body.myCapture.ballAttempts;
+
+    // 시도권을 소진하며 포획 — 성공하면 잡힌 개체가 shiny여야 한다.
+    let caught = false;
+    for (let i = 0; i < attempts && !caught; i++) {
+      const cap = await api.post("/api/game/world-boss/capture", { ball: "greatball" });
+      expect(cap.status).toBe(200);
+      if (cap.body.caught) {
+        caught = true;
+        expect(cap.body.pokemon.species).toBe("mewtwo");
+        expect(cap.body.pokemon.isShiny).toBe(true);
+      }
+    }
+  });
+
   it("enter returns 400 when no active boss", async () => {
     await t.admin().post("/api/admin/world-boss/end");
     const { token, userId } = await t.registerAndLogin("wbnoboss", "charmander");

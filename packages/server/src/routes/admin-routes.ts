@@ -1058,7 +1058,7 @@ adminRoutes.post("/polling/run", async (_req, res) => {
 // 있으면(active·미처치) 덮어쓰기를 막는다(중복 스폰 방지) — 먼저 /end로 종료해야 한다.
 adminRoutes.post("/world-boss/spawn", async (req, res) => {
   try {
-    const { species, variantId, level, hpMultiplier, totalHp, durationHours } = req.body ?? {};
+    const { species, variantId, level, hpMultiplier, totalHp, durationHours, shiny } = req.body ?? {};
 
     if (typeof species !== "string" || !species.trim()) {
       return res.status(400).json({ error: "species가 필요합니다" });
@@ -1076,6 +1076,9 @@ adminRoutes.post("/world-boss/spawn", async (req, res) => {
     if (totalHp != null && (typeof totalHp !== "number" || !Number.isFinite(totalHp) || totalHp <= 0)) {
       return res.status(400).json({ error: "totalHp는 양수여야 합니다" });
     }
+    if (shiny != null && typeof shiny !== "boolean") {
+      return res.status(400).json({ error: "shiny는 boolean이어야 합니다" });
+    }
 
     const existing = await getWorldBoss();
     if (existing && existing.active && !existing.defeated) {
@@ -1090,6 +1093,7 @@ adminRoutes.post("/world-boss/spawn", async (req, res) => {
       wild = buildWorldBossWild(species.trim(), typeof variantId === "string" ? variantId : null, lv, {
         hpMultiplier: typeof hpMultiplier === "number" ? hpMultiplier : undefined,
         totalHp: typeof totalHp === "number" ? totalHp : undefined,
+        shiny: shiny === true,
       });
     } catch {
       return res.status(400).json({ error: "존재하지 않는 포켓몬/변종입니다" });
