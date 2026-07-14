@@ -630,6 +630,8 @@ export function executePlayerAttack(
       );
       if (ailmentResult.newStatus) {
         battle.wild.statusCondition = ailmentResult.newStatus;
+        // sleepTurns를 함께 심어야 doWildAttackAndCheck의 기상 로직이 동작한다(누락 시 영원히 안 깸).
+        if (ailmentResult.sleepTurns !== undefined) battle.wild.sleepTurns = ailmentResult.sleepTurns;
       }
       battle.wildVolatile = ailmentResult.newVolatiles;
     }
