@@ -620,8 +620,12 @@ export interface PvpConfig {
 export interface WorldBossConfig {
   /** 참전당 쿨다운(ms). 마지막 참전 이후 이 시간이 지나야 다시 /world-boss/enter 가능. 기본 600000(10분). */
   cooldownMs: number;
-  /** 처치 시 전 기여자에게 배분하는 총 포획 시도권(몬스터볼) 풀. 기여도 비례로 나눈다. 기본 100. */
-  ballPool: number;
+  /** 최소 기여 비율(0~1). 자기 데미지 share가 이 값 미만이면 아무것도(포획 시도권도) 받지 못한다. 기본 0.05(5%). */
+  minContributionPct: number;
+  /** 개인이 받을 수 있는 포획 시도권(몬스터볼) 상한 = 기여 100% 시 받는 개수. 기본 20. */
+  maxBalls: number;
+  /** 기여가 minContributionPct 이상인(=수령 자격이 있는) 개인의 포획 시도권 하한. 기본 2. */
+  minBalls: number;
   /** 스폰 시 durationHours 미지정 시의 기본 수명(시간). 기본 24. */
   durationHours: number;
   /** 배분된 포획 시도권으로 던지는 볼의 인벤토리 키(catchBonus 조회용). 기본 "greatball". */

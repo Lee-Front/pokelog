@@ -9,7 +9,7 @@
 // 않은 상태에서만 실행). syncWorldBossDamage는 이번 턴이 막타였는지(distribute 필요 여부)만 알린다.
 
 import crypto from "node:crypto";
-import type { BattleState, UserData } from "../../../../shared/types.js";
+import type { BattleState, UserData, WorldBossConfig } from "../../../../shared/types.js";
 import { getConfig } from "../storage/config-store.js";
 import { getAllUsers, saveUser } from "../storage/user-store.js";
 import { withLock } from "../storage/pvp-store.js";
@@ -115,7 +115,7 @@ export async function syncWorldBossDamage(
         merged,
         state.contributions,
         { bossId: state.bossId, species: state.species, variantId: state.variantId, level: state.level, shiny: state.wild.isShiny ?? false, expiresAt: state.expiresAt },
-        config.worldBoss.ballPool,
+        config.worldBoss,
         config.worldBoss.captureBall,
       );
       // distributeWorldBossRewards가 merged 각 유저의 worldBossCapture를 in-place로 세팅했다. 배틀러
@@ -144,7 +144,7 @@ export async function syncWorldBossDamage(
  */
 export async function distributeWorldBossDefeatRewards(bossId: string, battlerUserId: string): Promise<void> {
   const config = await getConfig();
-  await distributeRewardsForDefeat(bossId, config.worldBoss.ballPool, config.worldBoss.captureBall, battlerUserId);
+  await distributeRewardsForDefeat(bossId, config.worldBoss, config.worldBoss.captureBall, battlerUserId);
 }
 
 /**
@@ -155,7 +155,7 @@ export async function distributeWorldBossDefeatRewards(bossId: string, battlerUs
  */
 async function distributeRewardsForDefeat(
   bossId: string,
-  ballPool: number,
+  cfg: Pick<WorldBossConfig, "minContributionPct" | "maxBalls" | "minBalls">,
   ballItem: string,
   battlerUserId: string,
 ): Promise<void> {
@@ -180,7 +180,7 @@ async function distributeRewardsForDefeat(
         shiny: state.wild.isShiny ?? false,
         expiresAt: state.expiresAt,
       },
-      ballPool,
+      cfg,
       ballItem,
     );
 

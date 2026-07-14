@@ -360,9 +360,11 @@ describe("admin routes", () => {
     });
   });
 
-  it("allows runtime tuning of world-boss capture (ballPool/captureBaseRate/cooldownMs/durationHours)", async () => {
+  it("allows runtime tuning of world-boss capture (minContributionPct/maxBalls/minBalls/captureBaseRate/cooldownMs/durationHours)", async () => {
     const edits: Array<[string, unknown]> = [
-      ["worldBoss.ballPool", 15],
+      ["worldBoss.minContributionPct", 0.1],
+      ["worldBoss.maxBalls", 25],
+      ["worldBoss.minBalls", 3],
       ["worldBoss.captureBaseRate", 0.3],
       ["worldBoss.cooldownMs", 0],
       ["worldBoss.durationHours", 48],
@@ -372,7 +374,9 @@ describe("admin routes", () => {
       expect(res.status).toBe(200);
     }
     const config = await t.admin().get("/api/admin/config");
-    expect(config.body.worldBoss.ballPool).toBe(15);
+    expect(config.body.worldBoss.minContributionPct).toBe(0.1);
+    expect(config.body.worldBoss.maxBalls).toBe(25);
+    expect(config.body.worldBoss.minBalls).toBe(3);
     expect(config.body.worldBoss.captureBaseRate).toBe(0.3);
     expect(config.body.worldBoss.cooldownMs).toBe(0);
     expect(config.body.worldBoss.durationHours).toBe(48);
@@ -380,13 +384,18 @@ describe("admin routes", () => {
 
   it("rejects out-of-range world-boss edits", async () => {
     const bad: Array<[string, unknown]> = [
-      ["worldBoss.ballPool", 0],          // < 1
-      ["worldBoss.ballPool", 201],        // > 200
-      ["worldBoss.ballPool", 1.5],        // not integer
-      ["worldBoss.captureBaseRate", 1.5], // > 1
-      ["worldBoss.captureBaseRate", -0.1],// < 0
-      ["worldBoss.cooldownMs", -1],       // < 0
-      ["worldBoss.durationHours", 0],     // not > 0
+      ["worldBoss.minContributionPct", 1.5],  // > 1
+      ["worldBoss.minContributionPct", -0.1], // < 0
+      ["worldBoss.maxBalls", 0],              // < 1
+      ["worldBoss.maxBalls", 201],            // > 200
+      ["worldBoss.maxBalls", 1.5],            // not integer
+      ["worldBoss.minBalls", -1],             // < 0
+      ["worldBoss.minBalls", 201],            // > 200
+      ["worldBoss.minBalls", 1.5],            // not integer
+      ["worldBoss.captureBaseRate", 1.5],     // > 1
+      ["worldBoss.captureBaseRate", -0.1],    // < 0
+      ["worldBoss.cooldownMs", -1],           // < 0
+      ["worldBoss.durationHours", 0],         // not > 0
     ];
     for (const [key, value] of bad) {
       const res = await t.admin().put("/api/admin/config", { key, value });
@@ -396,7 +405,9 @@ describe("admin routes", () => {
 
   it("ships GO-like world-boss capture defaults (DEFAULT_CONFIG)", async () => {
     const { DEFAULT_CONFIG } = await import("../../src/storage/config-store.js");
-    expect(DEFAULT_CONFIG.worldBoss.ballPool).toBe(15);
+    expect(DEFAULT_CONFIG.worldBoss.minContributionPct).toBe(0.05);
+    expect(DEFAULT_CONFIG.worldBoss.maxBalls).toBe(20);
+    expect(DEFAULT_CONFIG.worldBoss.minBalls).toBe(2);
     expect(DEFAULT_CONFIG.worldBoss.captureBaseRate).toBe(0.3);
   });
 });

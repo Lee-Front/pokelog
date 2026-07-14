@@ -287,10 +287,13 @@ export const DEFAULT_CONFIG: ServerConfig = {
     elo: { start: 1000, k: 32 },
   },
   // 월드보스(전 유저 공유체력 공동전) 설정. 관리자 수동 스폰·24h 시간제한·참전당 10분 쿨다운.
-  // 처치 시 기여도 비례로 총 ballPool개의 포획 시도권(그레이트볼)을 배분한다. 운영자가 /admin에서 튜닝.
+  // 처치 시 개인별 기여도(share)로 포획 시도권(그레이트볼)을 지급한다: share<minContributionPct면
+  // 지급 없음(자격 미달), 그 이상이면 round(share×maxBalls)를 minBalls~maxBalls로 클램프. 운영자가 /admin에서 튜닝.
   worldBoss: {
     cooldownMs: 600000,
-    ballPool: 15,
+    minContributionPct: 0.05,
+    maxBalls: 20,
+    minBalls: 2,
     durationHours: 24,
     captureBall: "greatball",
     captureBaseRate: 0.3,

@@ -180,9 +180,11 @@ const ALLOWED_CONFIG_PATHS = new Set([
   // PvP(Phase 2) — ELO 시작 레이팅/K 계수(모든 매치 적용).
   "pvp.elo.start",
   "pvp.elo.k",
-  // 월드보스 — 기여 100%가 받는 볼 개수(ballPool)·볼당 플랫 포획확률(captureBaseRate)·
-  // 재참전 쿨다운(cooldownMs)·지속시간(durationHours). 운영자가 포획 난이도를 조절한다.
-  "worldBoss.ballPool",
+  // 월드보스 — 개인별 배분: 최소 기여 임계(minContributionPct)·개인 상한(maxBalls)·개인 하한(minBalls),
+  // 볼당 플랫 포획확률(captureBaseRate)·재참전 쿨다운(cooldownMs)·지속시간(durationHours). 운영자가 포획 난이도를 조절한다.
+  "worldBoss.minContributionPct",
+  "worldBoss.maxBalls",
+  "worldBoss.minBalls",
   "worldBoss.captureBaseRate",
   "worldBoss.cooldownMs",
   "worldBoss.durationHours",
@@ -260,10 +262,24 @@ adminRoutes.put("/config", async (req, res) => {
       }
     }
 
-    // 월드보스 — 기여 100% 시 받는 최대 볼 개수(1~200 정수).
-    if (key === "worldBoss.ballPool") {
+    // 월드보스 — 최소 기여 임계 비율(0~1 사이의 실수). 미만이면 아무것도 배분받지 못한다.
+    if (key === "worldBoss.minContributionPct") {
+      if (typeof value !== "number" || !Number.isFinite(value) || value < 0 || value > 1) {
+        return res.status(400).json({ error: "minContributionPct는 0~1 사이의 숫자여야 합니다" });
+      }
+    }
+
+    // 월드보스 — 개인 상한 볼 개수(기여 100% 시 받는 개수, 1~200 정수).
+    if (key === "worldBoss.maxBalls") {
       if (typeof value !== "number" || !Number.isInteger(value) || value < 1 || value > 200) {
-        return res.status(400).json({ error: "ballPool은 1~200 사이의 정수여야 합니다" });
+        return res.status(400).json({ error: "maxBalls는 1~200 사이의 정수여야 합니다" });
+      }
+    }
+
+    // 월드보스 — 자격이 있는 개인의 하한 볼 개수(0~200 정수).
+    if (key === "worldBoss.minBalls") {
+      if (typeof value !== "number" || !Number.isInteger(value) || value < 0 || value > 200) {
+        return res.status(400).json({ error: "minBalls는 0~200 사이의 정수여야 합니다" });
       }
     }
 
