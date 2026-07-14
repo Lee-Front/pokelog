@@ -32,9 +32,9 @@ function buildSpeciesLookup(): Set<string> {
 }
 
 describe("QA: Data Integrity", () => {
-  it("A1: species.json has 912 entries with all SpeciesData fields", () => {
+  it("A1: species.json has 1025 entries with all SpeciesData fields", () => {
     const species = getSpecies();
-    expect(species).toHaveLength(912);
+    expect(species).toHaveLength(1025);
 
     const baseStatKeys = ["hp", "attack", "defense", "spAttack", "spDefense", "speed"];
 
