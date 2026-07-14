@@ -6372,5 +6372,83 @@
       "spDefense": 95,
       "speed": 85
     }
+  },
+  {
+    "id": "wooper-paldea",
+    "baseSpecies": "wooper",
+    "kind": "regional",
+    "name": "Wooper Paldea",
+    "category": "regional",
+    "sourceArtSlug": "wooper-paldea",
+    "formSuffix": "paldea",
+    "encounterEligible": true,
+    "eggEligible": true,
+    "typing": [
+      "poison",
+      "ground"
+    ],
+    "baseStatsOverride": {}
+  },
+  {
+    "id": "tauros-paldea-combat-breed",
+    "baseSpecies": "tauros",
+    "kind": "regional",
+    "name": "Tauros Paldea Combat Breed",
+    "category": "regional",
+    "sourceArtSlug": "tauros-paldea-combat-breed",
+    "formSuffix": "paldea-combat-breed",
+    "encounterEligible": true,
+    "eggEligible": true,
+    "typing": [
+      "fighting"
+    ],
+    "baseStatsOverride": {
+      "attack": 110,
+      "defense": 105,
+      "spAttack": 30,
+      "speed": 100
+    }
+  },
+  {
+    "id": "tauros-paldea-blaze-breed",
+    "baseSpecies": "tauros",
+    "kind": "regional",
+    "name": "Tauros Paldea Blaze Breed",
+    "category": "regional",
+    "sourceArtSlug": "tauros-paldea-blaze-breed",
+    "formSuffix": "paldea-blaze-breed",
+    "encounterEligible": true,
+    "eggEligible": true,
+    "typing": [
+      "fighting",
+      "fire"
+    ],
+    "baseStatsOverride": {
+      "attack": 110,
+      "defense": 105,
+      "spAttack": 30,
+      "speed": 100
+    }
+  },
+  {
+    "id": "tauros-paldea-aqua-breed",
+    "baseSpecies": "tauros",
+    "kind": "regional",
+    "name": "Tauros Paldea Aqua Breed",
+    "category": "regional",
+    "sourceArtSlug": "tauros-paldea-aqua-breed",
+    "formSuffix": "paldea-aqua-breed",
+    "encounterEligible": true,
+    "eggEligible": true,
+    "typing": [
+      "fighting",
+      "water"
+    ],
+    "baseStatsOverride": {
+      "attack": 110,
+      "defense": 105,
+      "spAttack": 30,
+      "speed": 100
+    }
   }
 ]
