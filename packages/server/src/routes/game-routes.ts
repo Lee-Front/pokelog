@@ -1203,6 +1203,7 @@ gameRoutes.get("/pokedex", async (req: AuthRequest, res: Response) => {
     res.json({
       seen: user.seenSpecies ?? user.pokedex,
       caught: user.pokedex,
+      shinyCaught: user.shinyPokedex ?? [],
       allSpecies: getAllSpecies(),
     });
   } catch (err) {

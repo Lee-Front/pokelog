@@ -393,6 +393,9 @@ export interface UserData {
   pokedex: string[];
   // 영구 "만난적"(발견) 종 집합. 전투에서 야생을 마주하면 추가. normalize가 caught(pokedex) ⊇ 포함을 보장.
   seenSpecies?: string[];
+  // 영구 "이로치 잡은적" 종 집합. normalize가 보유 이로치(파티+보관함)를 단조 합집합해 파생·유지한다
+  // (방생해도 유지). 도감에서 종별 이로치 포획 여부 표시에 쓴다.
+  shinyPokedex?: string[];
   inventory: Record<string, number>;
   pendingEvents: PendingEvent[];
   pendingEvolutions?: PendingEvolution[];

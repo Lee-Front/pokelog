@@ -447,6 +447,12 @@ function normalizeUserData(user: UserData): UserData {
   const ownedSpecies = [...reconciled.pokemon, ...reconciled.storage].map((p) => p.species);
   const caught = [...new Set([...(Array.isArray(user.pokedex) ? user.pokedex : []), ...ownedSpecies])];
   const seen = [...new Set([...(Array.isArray(user.seenSpecies) ? user.seenSpecies : []), ...caught])];
+  // 이로치 도감 — 보유 이로치(파티+보관함) 종을 기존 shinyPokedex에 단조 합집합(방생해도 유지). 포획 시
+  // saveUser가 이 normalize를 태우므로 모든 포획 경로가 자동 기록된다(별도 사이트 수정 불필요).
+  const ownedShinySpecies = [...reconciled.pokemon, ...reconciled.storage]
+    .filter((p) => p.isShiny === true)
+    .map((p) => p.species);
+  const shinyCaught = [...new Set([...(Array.isArray(user.shinyPokedex) ? user.shinyPokedex : []), ...ownedShinySpecies])];
 
   // 댕글링 대기 정리 — 가리키는 포켓몬이 더 이상 존재하지 않는(party/pokemon[]/storage[]
   // 어디에도 없는) pendingEvolutions/pendingMoveLearns를 제거한다. 과거 로스터 손상으로
@@ -489,6 +495,7 @@ function normalizeUserData(user: UserData): UserData {
     storage: reconciled.storage,
     pokedex: caught,
     seenSpecies: seen,
+    shinyPokedex: shinyCaught,
     // 업적 완료 집합 — 구 저장본(필드 없음)은 []로 정규화(후방호환). 1회성 보상 가드로만 쓰인다.
     completedAchievements: Array.isArray(user.completedAchievements) ? user.completedAchievements : [],
     // 주간보스 통산 카운터 — 구 저장본(필드 없음)은 0으로 정규화(업적 조건에서 안전하게 파생).
