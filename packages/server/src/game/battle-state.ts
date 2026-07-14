@@ -1044,6 +1044,20 @@ export async function doWildAttackAndCheck(
   log: string[],
   preSelectedWildMove?: { id: string; pp: number; maxPp: number },
 ): Promise<FaintedResult | null> {
+  // 수면 턴 감소·기상 — 플레이어(resolvePreAttack)와 대칭. checkPreAttack은 수면 턴을 관리하지
+  // 않으므로(status-conditions.ts: "sleepTurns is managed externally") 야생/보스도 여기서 매 턴
+  // sleepTurns를 줄이고 0이 되면 깨워야 한다. 이 처리가 없으면 잠든 야생/보스가 영원히 깨지 않는다.
+  if (battle.wild.statusCondition === "sleep") {
+    if (battle.wild.sleepTurns !== undefined && battle.wild.sleepTurns > 0) {
+      battle.wild.sleepTurns -= 1;
+    }
+    if (battle.wild.sleepTurns !== undefined && battle.wild.sleepTurns <= 0) {
+      battle.wild.statusCondition = null;
+      battle.wild.sleepTurns = undefined;
+      log.push(`야생 ${getDisplaySpeciesName(battle.wild.species)}이(가) 잠에서 깨어났다!`);
+    }
+  }
+
   // Pre-attack status check for wild pokemon
   const wildPreCheck = checkPreAttack(
     battle.wild.statusCondition,

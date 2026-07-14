@@ -108,3 +108,36 @@ describe("doWildAttackAndCheck — wonder-guard on the player's defending pokemo
     expect(player.hp).toBe(100);
   });
 });
+
+// 회귀: 야생/보스의 수면이 매 턴 감소·기상되는지. 과거 야생 경로는 checkPreAttack만 직접 불러
+// sleepTurns를 줄이지 않아, 잠든 야생/보스가 영원히 깨지 않았다(주간보스에서 특히 체감).
+describe("doWildAttackAndCheck — wild sleep wakes (regression)", () => {
+  it("keeps the wild asleep and decrements sleepTurns when > 1 (no attack)", async () => {
+    const player = makePlayer({ hp: 100, maxHp: 100 });
+    const battle = makeBattle();
+    battle.wild.statusCondition = "sleep";
+    battle.wild.sleepTurns = 2;
+    const user = makeUser(player);
+
+    await doWildAttackAndCheck(user, player, battle, [], { id: "tackle", pp: 35, maxPp: 35 });
+
+    expect(battle.wild.statusCondition).toBe("sleep");
+    expect(battle.wild.sleepTurns).toBe(1); // 감소
+    expect(player.hp).toBe(100); // 잠들어 공격 못 함
+  });
+
+  it("wakes the wild when sleepTurns reaches 0", async () => {
+    const player = makePlayer({ hp: 100, maxHp: 100 });
+    const battle = makeBattle();
+    battle.wild.statusCondition = "sleep";
+    battle.wild.sleepTurns = 1;
+    const user = makeUser(player);
+    const log: string[] = [];
+
+    await doWildAttackAndCheck(user, player, battle, log, { id: "tackle", pp: 35, maxPp: 35 });
+
+    expect(battle.wild.statusCondition).toBeNull();
+    expect(battle.wild.sleepTurns).toBeUndefined();
+    expect(log.some((l) => l.includes("잠에서 깨어났다"))).toBe(true);
+  });
+});
