@@ -540,6 +540,10 @@ gameRoutes.post("/boss/start", async (req: AuthRequest, res: Response) => {
 // ========== 월드보스(전 유저 공유체력 공동전) ==========
 
 /** 월드보스 상태 → 플레이어 뷰(요청 유저 관점). 만료 지연 검사 후의 상태를 쓴다. */
+// 아레나(공유 화면)에서 "지금 실시간 전투 중"으로 볼 시간창(ms). lastActiveAt(참전 + 매 공격 시 갱신)이
+// 이 창 안이면 activeInBattle=true. 턴제라 공격 간 간격이 있어 너무 짧으면 깜빡이므로 넉넉히 45s.
+const ARENA_ACTIVE_WINDOW_MS = 45_000;
+
 function worldBossView(state: WorldBossState | null, userId: string, cooldownMs: number): Record<string, unknown> {
   // 활성도 아니고 처치도 아니면(스폰 전/만료 종료) 빈 뷰. 처치 직후에는 active=false여도 아레나/포획
   // 유도를 위해 defeated 상태를 노출한다.
@@ -547,6 +551,7 @@ function worldBossView(state: WorldBossState | null, userId: string, cooldownMs:
     return { active: false, boss: null, defeated: false, participants: [], attackFeed: [], chat: [], myDamage: 0, myCooldownMs: 0, myCapture: null };
   }
   const s = state;
+  const now = Date.now();
   const participants = Object.entries(s.contributions)
     .map(([uid, c]) => ({
       userId: uid,
@@ -555,6 +560,10 @@ function worldBossView(state: WorldBossState | null, userId: string, cooldownMs:
       variantId: c.pokemon.variantId,
       shiny: c.pokemon.shiny,
       damage: c.damage,
+      // 지금 실시간 전투 중인지 — 아레나(공유 화면)는 이 플래그가 true인 참전자만 스프라이트로 띄운다.
+      activeInBattle: c.lastActiveAt
+        ? now - new Date(c.lastActiveAt).getTime() < ARENA_ACTIVE_WINDOW_MS
+        : false,
     }))
     .sort((a, b) => b.damage - a.damage);
 
