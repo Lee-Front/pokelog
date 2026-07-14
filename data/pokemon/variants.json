@@ -6450,5 +6450,251 @@
       "spAttack": 30,
       "speed": 100
     }
+  },
+  {
+    "id": "gimmighoul-roaming",
+    "baseSpecies": "gimmighoul",
+    "kind": "permanent-form",
+    "name": "Gimmighoul Roaming",
+    "category": "regional",
+    "sourceArtSlug": "gimmighoul-roaming",
+    "formSuffix": "roaming",
+    "encounterEligible": false,
+    "eggEligible": false,
+    "typing": [
+      "ghost"
+    ],
+    "baseStatsOverride": {
+      "defense": 25,
+      "spDefense": 45,
+      "speed": 80
+    }
+  },
+  {
+    "id": "maushold-family-of-three",
+    "baseSpecies": "maushold",
+    "kind": "permanent-form",
+    "name": "Maushold Family Of Three",
+    "category": "regional",
+    "sourceArtSlug": "maushold-family-of-three",
+    "formSuffix": "family-of-three",
+    "encounterEligible": false,
+    "eggEligible": false,
+    "typing": [
+      "normal"
+    ],
+    "baseStatsOverride": {}
+  },
+  {
+    "id": "ogerpon-cornerstone-mask",
+    "baseSpecies": "ogerpon",
+    "kind": "permanent-form",
+    "name": "Ogerpon Cornerstone Mask",
+    "category": "regional",
+    "sourceArtSlug": "ogerpon-cornerstone-mask",
+    "formSuffix": "cornerstone-mask",
+    "encounterEligible": false,
+    "eggEligible": false,
+    "typing": [
+      "grass",
+      "rock"
+    ],
+    "baseStatsOverride": {}
+  },
+  {
+    "id": "ogerpon-hearthflame-mask",
+    "baseSpecies": "ogerpon",
+    "kind": "permanent-form",
+    "name": "Ogerpon Hearthflame Mask",
+    "category": "regional",
+    "sourceArtSlug": "ogerpon-hearthflame-mask",
+    "formSuffix": "hearthflame-mask",
+    "encounterEligible": false,
+    "eggEligible": false,
+    "typing": [
+      "grass",
+      "fire"
+    ],
+    "baseStatsOverride": {}
+  },
+  {
+    "id": "ogerpon-wellspring-mask",
+    "baseSpecies": "ogerpon",
+    "kind": "permanent-form",
+    "name": "Ogerpon Wellspring Mask",
+    "category": "regional",
+    "sourceArtSlug": "ogerpon-wellspring-mask",
+    "formSuffix": "wellspring-mask",
+    "encounterEligible": false,
+    "eggEligible": false,
+    "typing": [
+      "grass",
+      "water"
+    ],
+    "baseStatsOverride": {}
+  },
+  {
+    "id": "oinkologne-female",
+    "baseSpecies": "oinkologne",
+    "kind": "permanent-form",
+    "name": "Oinkologne Female",
+    "category": "regional",
+    "sourceArtSlug": "oinkologne-female",
+    "formSuffix": "female",
+    "encounterEligible": false,
+    "eggEligible": false,
+    "typing": [
+      "normal"
+    ],
+    "baseStatsOverride": {
+      "hp": 115,
+      "attack": 90,
+      "defense": 70,
+      "spDefense": 90
+    }
+  },
+  {
+    "id": "palafin-hero",
+    "baseSpecies": "palafin",
+    "kind": "battle-form",
+    "name": "Palafin Hero",
+    "category": "regional",
+    "sourceArtSlug": "palafin-hero",
+    "formSuffix": "hero",
+    "encounterEligible": false,
+    "eggEligible": false,
+    "typing": [
+      "water"
+    ],
+    "baseStatsOverride": {
+      "attack": 160,
+      "defense": 97,
+      "spAttack": 106,
+      "spDefense": 87
+    }
+  },
+  {
+    "id": "squawkabilly-blue-plumage",
+    "baseSpecies": "squawkabilly",
+    "kind": "permanent-form",
+    "name": "Squawkabilly Blue Plumage",
+    "category": "regional",
+    "sourceArtSlug": "squawkabilly-blue-plumage",
+    "formSuffix": "blue-plumage",
+    "encounterEligible": false,
+    "eggEligible": false,
+    "typing": [
+      "normal",
+      "flying"
+    ],
+    "baseStatsOverride": {}
+  },
+  {
+    "id": "squawkabilly-white-plumage",
+    "baseSpecies": "squawkabilly",
+    "kind": "permanent-form",
+    "name": "Squawkabilly White Plumage",
+    "category": "regional",
+    "sourceArtSlug": "squawkabilly-white-plumage",
+    "formSuffix": "white-plumage",
+    "encounterEligible": false,
+    "eggEligible": false,
+    "typing": [
+      "normal",
+      "flying"
+    ],
+    "baseStatsOverride": {}
+  },
+  {
+    "id": "squawkabilly-yellow-plumage",
+    "baseSpecies": "squawkabilly",
+    "kind": "permanent-form",
+    "name": "Squawkabilly Yellow Plumage",
+    "category": "regional",
+    "sourceArtSlug": "squawkabilly-yellow-plumage",
+    "formSuffix": "yellow-plumage",
+    "encounterEligible": false,
+    "eggEligible": false,
+    "typing": [
+      "normal",
+      "flying"
+    ],
+    "baseStatsOverride": {}
+  },
+  {
+    "id": "tatsugiri-droopy",
+    "baseSpecies": "tatsugiri",
+    "kind": "permanent-form",
+    "name": "Tatsugiri Droopy",
+    "category": "regional",
+    "sourceArtSlug": "tatsugiri-droopy",
+    "formSuffix": "droopy",
+    "encounterEligible": false,
+    "eggEligible": false,
+    "typing": [
+      "dragon",
+      "water"
+    ],
+    "baseStatsOverride": {}
+  },
+  {
+    "id": "tatsugiri-stretchy",
+    "baseSpecies": "tatsugiri",
+    "kind": "permanent-form",
+    "name": "Tatsugiri Stretchy",
+    "category": "regional",
+    "sourceArtSlug": "tatsugiri-stretchy",
+    "formSuffix": "stretchy",
+    "encounterEligible": false,
+    "eggEligible": false,
+    "typing": [
+      "dragon",
+      "water"
+    ],
+    "baseStatsOverride": {}
+  },
+  {
+    "id": "terapagos-stellar",
+    "baseSpecies": "terapagos",
+    "kind": "battle-form",
+    "name": "Terapagos Stellar",
+    "category": "regional",
+    "sourceArtSlug": "terapagos-stellar",
+    "formSuffix": "stellar",
+    "encounterEligible": false,
+    "eggEligible": false,
+    "typing": [
+      "normal"
+    ],
+    "baseStatsOverride": {
+      "hp": 160,
+      "attack": 105,
+      "defense": 110,
+      "spAttack": 130,
+      "spDefense": 110,
+      "speed": 85
+    }
+  },
+  {
+    "id": "terapagos-terastal",
+    "baseSpecies": "terapagos",
+    "kind": "battle-form",
+    "name": "Terapagos Terastal",
+    "category": "regional",
+    "sourceArtSlug": "terapagos-terastal",
+    "formSuffix": "terastal",
+    "encounterEligible": false,
+    "eggEligible": false,
+    "typing": [
+      "normal"
+    ],
+    "baseStatsOverride": {
+      "hp": 95,
+      "attack": 95,
+      "defense": 110,
+      "spAttack": 105,
+      "spDefense": 110,
+      "speed": 85
+    }
   }
 ]

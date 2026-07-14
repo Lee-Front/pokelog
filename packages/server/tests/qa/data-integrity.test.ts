@@ -212,9 +212,9 @@ describe("QA: Data Integrity", () => {
     }
   });
 
-  it("A7: variants.json has 428 entries with correct VariantData fields and valid baseSpecies", () => {
+  it("A7: variants.json has 442 entries with correct VariantData fields and valid baseSpecies", () => {
     const variants = getVariants();
-    expect(variants).toHaveLength(428);
+    expect(variants).toHaveLength(442);
 
     const speciesLookup = buildSpeciesLookup();
     const validKinds = new Set(["regional", "permanent-form", "battle-form"]);
