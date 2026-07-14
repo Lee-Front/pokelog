@@ -9,7 +9,7 @@ import { GameRuleError } from "../../src/game/game-errors.js";
 // 결정적 검증을 위해 생성 후 관련 필드를 명시적으로 고정한다.
 //  - pidgey: normal = [keen-eye, tangled-feet], hidden = big-pecks (특성 검증용)
 
-const COSTS: TuningConfig = { ivCost: 2000, natureCost: 1000, abilityCost: 1500 };
+const COSTS: TuningConfig = { ivPointCost: 100, natureCost: 1000, abilityCost: 1500 };
 
 const ZERO_IVS: PokemonIVs = { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 };
 const MAX_IVS: PokemonIVs = { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 };
@@ -28,19 +28,65 @@ function makePidgey() {
 }
 
 describe("tunePokemon — 개체값(IV)", () => {
-  it("IV 0→31 로 올리면 maxHp/스탯이 재계산되고 게임머니에서 ivCost 만큼 차감된다", () => {
-    const pokemon = makePidgey();
-    const user = { gameMoney: 10000 };
+  it("IV 0→31 로 전부 올리면 올린 포인트 합(6×31)×ivPointCost 만큼 차감되고 스탯이 재계산된다", () => {
+    const pokemon = makePidgey(); // 시작 IV 전부 0
+    const user = { gameMoney: 100000 };
     const beforeMaxHp = pokemon.maxHp;
     const beforeAttack = pokemon.stats.attack;
 
     const { cost } = tunePokemon(user, pokemon, { ivs: MAX_IVS }, COSTS);
 
-    expect(cost).toBe(COSTS.ivCost);
-    expect(user.gameMoney).toBe(10000 - COSTS.ivCost);
+    const expected = 6 * 31 * COSTS.ivPointCost; // 순증가분 186 포인트
+    expect(cost).toBe(expected);
+    expect(user.gameMoney).toBe(100000 - expected);
     expect(pokemon.ivs).toEqual(MAX_IVS);
     expect(pokemon.maxHp).toBeGreaterThan(beforeMaxHp);
     expect(pokemon.stats.attack).toBeGreaterThan(beforeAttack);
+  });
+
+  it("일부만 올리면 그 순증가분의 합에만 과금한다(다른 스탯은 그대로)", () => {
+    const pokemon = makePidgey(); // 시작 IV 전부 0
+    const user = { gameMoney: 100000 };
+
+    // attack 만 0→20, 나머지는 0 그대로 → 순증가분 20 포인트.
+    const { cost } = tunePokemon(user, pokemon, { ivs: { ...ZERO_IVS, attack: 20 }, }, COSTS);
+
+    expect(cost).toBe(20 * COSTS.ivPointCost);
+    expect(user.gameMoney).toBe(100000 - 20 * COSTS.ivPointCost);
+    expect(pokemon.ivs).toEqual({ ...ZERO_IVS, attack: 20 });
+  });
+
+  it("내리는 IV 는 무료다(순증가분만 과금 — 음수 없음)", () => {
+    const pokemon = makePidgey();
+    pokemon.ivs = { ...MAX_IVS }; // 시작 전부 31
+    const s = calculateStatsForLevel(pokemon.species, pokemon.level, pokemon.nature, pokemon.variantId, pokemon.ivs, pokemon.evs);
+    pokemon.maxHp = s.maxHp;
+    pokemon.hp = s.maxHp;
+    pokemon.stats = s.stats;
+    const user = { gameMoney: 100000 };
+
+    // 전부 31→0 으로 내림 → 순증가분 0 → 비용 0.
+    const { cost } = tunePokemon(user, pokemon, { ivs: ZERO_IVS }, COSTS);
+
+    expect(cost).toBe(0);
+    expect(user.gameMoney).toBe(100000);
+    expect(pokemon.ivs).toEqual(ZERO_IVS);
+  });
+
+  it("일부는 올리고 일부는 내리면 올린 만큼만 과금한다", () => {
+    const pokemon = makePidgey();
+    pokemon.ivs = { ...ZERO_IVS, defense: 31 }; // defense 만 31, 나머지 0
+    const s = calculateStatsForLevel(pokemon.species, pokemon.level, pokemon.nature, pokemon.variantId, pokemon.ivs, pokemon.evs);
+    pokemon.maxHp = s.maxHp;
+    pokemon.hp = s.maxHp;
+    pokemon.stats = s.stats;
+    const user = { gameMoney: 100000 };
+
+    // attack 0→10(+10), defense 31→0(내림·무료), 나머지 0. 순증가분 = 10.
+    const { cost } = tunePokemon(user, pokemon, { ivs: { ...ZERO_IVS, attack: 10 } }, COSTS);
+
+    expect(cost).toBe(10 * COSTS.ivPointCost);
+    expect(user.gameMoney).toBe(100000 - 10 * COSTS.ivPointCost);
   });
 
   it("hp 를 새 maxHp 로 클램프한다(구 maxHp 만큼 차 있어도 새 maxHp 를 넘지 않음)", () => {
@@ -48,7 +94,7 @@ describe("tunePokemon — 개체값(IV)", () => {
     // 여기선 hp 를 인위로 크게 높였다가 IV 변경 후 새 maxHp 로 클램프되는지 본다.
     const pokemon = makePidgey();
     pokemon.hp = 9999; // 비정상적으로 높은 hp
-    const user = { gameMoney: 10000 };
+    const user = { gameMoney: 100000 };
 
     tunePokemon(user, pokemon, { ivs: MAX_IVS }, COSTS);
 
@@ -144,9 +190,9 @@ describe("tunePokemon — 특성(ability)", () => {
 });
 
 describe("tunePokemon — 비용 합산 · 게임머니 부족 · 빈 요청", () => {
-  it("여러 카테고리를 함께 바꾸면 해당 비용의 합만큼 차감한다", () => {
-    const pokemon = makePidgey();
-    const user = { gameMoney: 10000 };
+  it("여러 카테고리를 함께 바꾸면 해당 비용의 합만큼 차감한다(IV는 포인트당)", () => {
+    const pokemon = makePidgey(); // 시작 IV 전부 0
+    const user = { gameMoney: 100000 };
 
     const { cost } = tunePokemon(
       user,
@@ -155,9 +201,10 @@ describe("tunePokemon — 비용 합산 · 게임머니 부족 · 빈 요청", (
       COSTS,
     );
 
-    const expected = COSTS.ivCost + COSTS.natureCost + COSTS.abilityCost;
+    const ivCost = 6 * 31 * COSTS.ivPointCost; // 순증가분 186 포인트
+    const expected = ivCost + COSTS.natureCost + COSTS.abilityCost;
     expect(cost).toBe(expected);
-    expect(user.gameMoney).toBe(10000 - expected);
+    expect(user.gameMoney).toBe(100000 - expected);
     expect(pokemon.ivs).toEqual(MAX_IVS);
     expect(pokemon.nature).toBe("adamant");
     expect(pokemon.abilityId).toBe("big-pecks");
@@ -165,7 +212,7 @@ describe("tunePokemon — 비용 합산 · 게임머니 부족 · 빈 요청", (
 
   it("게임머니가 부족하면 거부하고 어떤 변경도 하지 않는다(부분 적용 없음)", () => {
     const pokemon = makePidgey();
-    const user = { gameMoney: 500 }; // ivCost(2000) 미달
+    const user = { gameMoney: 500 }; // IV 포인트 비용(186×100)+성격+특성 합에 크게 미달
     const beforeIvs = { ...pokemon.ivs! };
     const beforeNature = pokemon.nature;
     const beforeAbility = pokemon.abilityId;

@@ -462,8 +462,10 @@ export function setPokemonMoves(
 
 // ── 개체 튜닝 (IV/성격/특성 자유 변경) — 챔피언스식, 아이템 없이 게임머니로만 ──
 // 개체값(IV)·성격·특성을 상세 모달에서 자유롭게 바꾼다. 아이템(특성캡슐/패치) 기반의 번거로운
-// 방식을 대체한다. 실제로 바꾼 카테고리별 비용(ivCost/natureCost/abilityCost)을 합산해 차감하며,
-// IV·성격 변경은 스탯 재계산이 필요하다(특성은 스탯에 영향 없음).
+// 방식을 대체한다. 실제로 바꾼 카테고리별 비용을 합산해 차감한다. IV는 정액이 아니라 **올린
+// 개체값 1포인트당** ivPointCost(6스탯의 순증가분 합 × ivPointCost; 내리는 건 무료)이고,
+// 성격/특성은 바꿀 때 각각 natureCost/abilityCost 정액이다. IV·성격 변경은 스탯 재계산이
+// 필요하다(특성은 스탯에 영향 없음).
 
 const IV_KEYS: (keyof PokemonIVs)[] = ["hp", "attack", "defense", "spAttack", "spDefense", "speed"];
 
@@ -490,9 +492,11 @@ function validateIvs(ivs: unknown): PokemonIVs {
  * 없다(원자적). IV/성격이 바뀌면 스탯을 재계산하고 hp를 새 maxHp로 클램프한다. pokemon(및
  * user.gameMoney)을 변형하며, 저장은 호출부(라우트)가 한다.
  *  - changes에 유효한 카테고리가 하나도 없으면 GameRuleError(400).
- *  - ivs: 6스탯 각 0~31 정수(아니면 400).
- *  - nature: 25성격 id 중 하나(아니면 400).
- *  - abilityId: 종이 가질 수 있는 특성(normal ∪ hidden) 중 하나(아니면 400).
+ *  - ivs: 6스탯 각 0~31 정수(아니면 400). 비용은 현재 IV 대비 **올린 만큼**만 물린다
+ *    (Σ max(0, newIv − oldIv) × ivPointCost). 내리거나 그대로 두는 건 무료 — 순증가분이
+ *    0이면 IV 비용은 0이다(스탯은 그대로 재계산·저장).
+ *  - nature: 25성격 id 중 하나(아니면 400). 바꾸면 natureCost 정액.
+ *  - abilityId: 종이 가질 수 있는 특성(normal ∪ hidden) 중 하나(아니면 400). 바꾸면 abilityCost 정액.
  *  - 합산 비용보다 게임머니가 적으면 GameRuleError(400) — 이때 어떤 변경도 일어나지 않는다.
  */
 export function tunePokemon(
@@ -511,8 +515,17 @@ export function tunePokemon(
 
   // 1) 검증 — 어떤 변형·차감보다 먼저 모두 통과해야 한다(원자성).
   let nextIvs: PokemonIVs | undefined;
+  let ivCost = 0;
   if (hasIvs) {
     nextIvs = validateIvs(changes.ivs);
+    // IV 비용은 정액이 아니라 "올린 개체값 1포인트당" — 현재 IV 대비 순증가분의 합에만 물린다.
+    // 내리거나 그대로 두는 스탯은 0(음수 없음). 현재 IV가 미초기화면 0으로 본다.
+    const current = pokemon.ivs;
+    let increase = 0;
+    for (const key of IV_KEYS) {
+      increase += Math.max(0, nextIvs[key] - (current?.[key] ?? 0));
+    }
+    ivCost = increase * costs.ivPointCost;
   }
 
   let nextNature: string | undefined;
@@ -536,8 +549,9 @@ export function tunePokemon(
     }
   }
 
-  // 2) 비용 — 바꾼 카테고리 비용의 합. 부족하면 변형 전에 거부한다.
-  const cost = (hasIvs ? costs.ivCost : 0) + (hasNature ? costs.natureCost : 0) + (hasAbility ? costs.abilityCost : 0);
+  // 2) 비용 — 바꾼 카테고리 비용의 합. IV는 위에서 계산한 포인트당 비용(순증가분 기반),
+  // 성격/특성은 정액. 부족하면 변형 전에 거부한다.
+  const cost = ivCost + (hasNature ? costs.natureCost : 0) + (hasAbility ? costs.abilityCost : 0);
   if (user.gameMoney < cost) {
     throw new GameRuleError("게임머니가 부족합니다", 400);
   }

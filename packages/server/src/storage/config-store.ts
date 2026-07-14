@@ -277,9 +277,10 @@ export const DEFAULT_CONFIG: ServerConfig = {
   moveTeachCost: 800,
   // 기술 일괄 교체(4개 자유 편집) 시 새로 배우는 기술 1개당 비용(게임머니). 자리 이동·삭제·유지는 무료.
   moveChangeCost: 500,
-  // 개체값(IV)/성격/특성 자유 변경 1회 비용(게임머니). 각 카테고리를 바꿀 때만 해당 비용을 더해 차감.
-  // 아이템 없이 게임머니로만 조정하는 챔피언스식 튜닝. 운영자가 /admin에서 튜닝.
-  tuning: { ivCost: 2000, natureCost: 1000, abilityCost: 1500 },
+  // 개체값(IV)/성격/특성 자유 변경 비용(게임머니). 아이템 없이 게임머니로만 조정하는 챔피언스식 튜닝.
+  // IV는 정액이 아니라 **올린 개체값 1포인트당** ivPointCost(6스탯 증가분 합 × 100; 내리는 건 무료) —
+  // 전 스탯 31 만들기가 자연히 비싸진다. 성격/특성은 바꿀 때 각각 정액. 운영자가 /admin에서 튜닝.
+  tuning: { ivPointCost: 100, natureCost: 1000, abilityCost: 1500 },
   // PvP 설정(Phase 2). 모든 매치는 에스크로(내기) 단일 경로 — 빈 stake가 친선.
   // ELO는 시작 1000·K 32. 운영자가 /admin에서 튜닝한다.
   pvp: {

@@ -24,7 +24,7 @@ describe("특성 아이템 상점 제거 (ability-capsule / ability-patch)", () 
     expect(items["leftovers"]).toBeDefined();
   });
 
-  it("튜닝 비용 기본값이 노출된다(IV/성격/특성)", () => {
-    expect(DEFAULT_CONFIG.tuning).toEqual({ ivCost: 2000, natureCost: 1000, abilityCost: 1500 });
+  it("튜닝 비용 기본값이 노출된다(IV 포인트당/성격/특성)", () => {
+    expect(DEFAULT_CONFIG.tuning).toEqual({ ivPointCost: 100, natureCost: 1000, abilityCost: 1500 });
   });
 });

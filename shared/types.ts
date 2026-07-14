@@ -552,9 +552,11 @@ export interface ServerMeta {
 
 // === 개체 튜닝(IV/성격/특성 자유 변경) 비용(게임머니) ===
 // 아이템 없이 게임머니로만 개체값(IV)·성격·특성을 챔피언스식으로 자유 변경할 때, 실제로 바꾼
-// 카테고리별 비용을 더해 차감한다(예: IV만 바꾸면 ivCost, IV+성격이면 ivCost+natureCost).
+// 카테고리별 비용을 더해 차감한다. IV는 정액이 아니라 **올린 개체값 1포인트당** ivPointCost를
+// 물린다(6스탯의 증가분 합 × ivPointCost; 내리는 건 무료) — 그래서 전 스탯 31 만들기가
+// 자연히 비싸진다. 성격/특성은 바꿀 때 각각 natureCost/abilityCost 정액.
 export interface TuningConfig {
-  ivCost: number;
+  ivPointCost: number;
   natureCost: number;
   abilityCost: number;
 }
