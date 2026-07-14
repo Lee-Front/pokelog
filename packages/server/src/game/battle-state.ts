@@ -1207,7 +1207,7 @@ export async function doWildAttackAndCheck(
   const previousHp = myPokemon.hp;
   myPokemon.hp = Math.max(0, myPokemon.hp - wildResult.damage);
   recordDamageTaken(myPokemon, previousHp - myPokemon.hp);
-  log.push(`야생 ${getDisplaySpeciesName(battle.wild.species)}의 공격! ${wildResult.damage} 데미지!`);
+  log.push(`야생 ${getDisplaySpeciesName(battle.wild.species)}의 ${wildResult.moveData?.name ?? "공격"}! ${wildResult.missed ? "빗나갔다!" : `${wildResult.damage} 데미지!`}`);
   if (wildHitSuppressed && !playerDisguise.broke) log.push(`${getDisplaySpeciesName(myPokemon.species)}은(는) 원더가드로 데미지를 받지 않았다!`);
   if (playerDisguise.broke) {
     log.push(`${getDisplaySpeciesName(myPokemon.species)}의 탈이 벗겨졌다!`);
