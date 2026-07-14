@@ -360,9 +360,10 @@ describe("admin routes", () => {
     });
   });
 
-  it("allows runtime tuning of world-boss capture (minContributionPct/maxBalls/minBalls/captureBaseRate/cooldownMs/durationHours)", async () => {
+  it("allows runtime tuning of world-boss capture (ballPool/minContributionPct/maxBalls/minBalls/captureBaseRate/cooldownMs/durationHours)", async () => {
     const edits: Array<[string, unknown]> = [
       ["worldBoss.minContributionPct", 0.1],
+      ["worldBoss.ballPool", 150],
       ["worldBoss.maxBalls", 25],
       ["worldBoss.minBalls", 3],
       ["worldBoss.captureBaseRate", 0.3],
@@ -375,6 +376,7 @@ describe("admin routes", () => {
     }
     const config = await t.admin().get("/api/admin/config");
     expect(config.body.worldBoss.minContributionPct).toBe(0.1);
+    expect(config.body.worldBoss.ballPool).toBe(150);
     expect(config.body.worldBoss.maxBalls).toBe(25);
     expect(config.body.worldBoss.minBalls).toBe(3);
     expect(config.body.worldBoss.captureBaseRate).toBe(0.3);
@@ -386,6 +388,9 @@ describe("admin routes", () => {
     const bad: Array<[string, unknown]> = [
       ["worldBoss.minContributionPct", 1.5],  // > 1
       ["worldBoss.minContributionPct", -0.1], // < 0
+      ["worldBoss.ballPool", 0],              // < 1
+      ["worldBoss.ballPool", 10001],          // > 10000
+      ["worldBoss.ballPool", 1.5],            // not integer
       ["worldBoss.maxBalls", 0],              // < 1
       ["worldBoss.maxBalls", 201],            // > 200
       ["worldBoss.maxBalls", 1.5],            // not integer
@@ -406,6 +411,7 @@ describe("admin routes", () => {
   it("ships GO-like world-boss capture defaults (DEFAULT_CONFIG)", async () => {
     const { DEFAULT_CONFIG } = await import("../../src/storage/config-store.js");
     expect(DEFAULT_CONFIG.worldBoss.minContributionPct).toBe(0.05);
+    expect(DEFAULT_CONFIG.worldBoss.ballPool).toBe(100);
     expect(DEFAULT_CONFIG.worldBoss.maxBalls).toBe(20);
     expect(DEFAULT_CONFIG.worldBoss.minBalls).toBe(2);
     expect(DEFAULT_CONFIG.worldBoss.captureBaseRate).toBe(0.3);

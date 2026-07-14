@@ -288,10 +288,12 @@ export const DEFAULT_CONFIG: ServerConfig = {
   },
   // 월드보스(전 유저 공유체력 공동전) 설정. 관리자 수동 스폰·24h 시간제한·참전당 10분 쿨다운.
   // 처치 시 개인별 기여도(share)로 포획 시도권(그레이트볼)을 지급한다: share<minContributionPct면
-  // 지급 없음(자격 미달), 그 이상이면 round(share×maxBalls)를 minBalls~maxBalls로 클램프. 운영자가 /admin에서 튜닝.
+  // 지급 없음(자격 미달), 그 이상이면 round(share×ballPool)를 minBalls~maxBalls로 클램프. ballPool(총 풀)이
+  // 상한과 분리돼 있어 그룹플레이에서도 상위 기여자가 상한에 닿는다. 운영자가 /admin에서 튜닝.
   worldBoss: {
     cooldownMs: 600000,
     minContributionPct: 0.05,
+    ballPool: 100,
     maxBalls: 20,
     minBalls: 2,
     durationHours: 24,

@@ -622,7 +622,14 @@ export interface WorldBossConfig {
   cooldownMs: number;
   /** 최소 기여 비율(0~1). 자기 데미지 share가 이 값 미만이면 아무것도(포획 시도권도) 받지 못한다. 기본 0.05(5%). */
   minContributionPct: number;
-  /** 개인이 받을 수 있는 포획 시도권(몬스터볼) 상한 = 기여 100% 시 받는 개수. 기본 20. */
+  /**
+   * 배분의 스케일 기준이 되는 "총 볼 풀"(명목 총량). 개인 배분 = round(share × ballPool)을
+   * minBalls~maxBalls로 클램프. 상한과 분리돼 있어야 그룹플레이에서 상위 기여자가 상한에 닿는다
+   * (share×maxBalls만 쓰면 혼자 100% 잡지 않는 한 상한 도달 불가). 실제 총합은 캡/하한/임계로
+   * ballPool 근처에서 오차. 기본 100.
+   */
+  ballPool: number;
+  /** 개인이 받을 수 있는 포획 시도권(몬스터볼) 상한(1인 최대). 기여가 높아도 이 값을 넘지 않는다. 기본 20. */
   maxBalls: number;
   /** 기여가 minContributionPct 이상인(=수령 자격이 있는) 개인의 포획 시도권 하한. 기본 2. */
   minBalls: number;

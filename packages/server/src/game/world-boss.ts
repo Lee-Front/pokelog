@@ -109,9 +109,10 @@ export interface WorldBossRewardShare {
  * 처치 시 개인별 기여도(share)로 포획 시도권을 배분한다(순수 함수 — 파일 I/O 없음). 각 기여자(damage>0)의
  * share = damage / 총damage 를 계산해:
  *   - share < cfg.minContributionPct  → 자격 미달, 아무것도 주지 않는다(포획 시도권 없음).
- *   - 그 외                            → balls = clamp(round(share × cfg.maxBalls), cfg.minBalls, cfg.maxBalls)
+ *   - 그 외                            → balls = clamp(round(share × cfg.ballPool), cfg.minBalls, cfg.maxBalls)
  * 만큼의 시도권으로 그 유저의 worldBossCapture를 세팅하고, users 배열(호출자가 락 하에 로드)에 in-place로
- * 반영한다. 즉 단독 처치(share=1)는 maxBalls, 임계값 부근은 대략 minBalls, 그 사이는 비례한다. 총damage가
+ * 반영한다. ballPool(총 풀)이 스케일 기준이고 maxBalls는 1인 상한이라 서로 분리돼 있다 — 그룹플레이에서
+ * 상위 기여자가 상한에 닿을 수 있다(예: pool 100·상한 20이면 share≥20%가 상한 20). 총damage가
  * 0이거나 기여자가 없으면 아무도 배분받지 못한다(빈 배열 반환).
  *
  * 이미 이 보스(bossId)의 worldBossCapture를 가진 유저는 건너뛴다(중복 배분 방지 — 처치 훅의
@@ -121,7 +122,7 @@ export function distributeWorldBossRewards(
   users: UserData[],
   contributions: Record<string, WorldBossContribution>,
   boss: { bossId: string; species: string; variantId: string | null; level: number; shiny?: boolean; expiresAt: string },
-  cfg: Pick<WorldBossConfig, "minContributionPct" | "maxBalls" | "minBalls">,
+  cfg: Pick<WorldBossConfig, "minContributionPct" | "ballPool" | "maxBalls" | "minBalls">,
   ballItem: string,
 ): WorldBossRewardShare[] {
   const totalDamage = Object.values(contributions).reduce((sum, c) => sum + Math.max(0, c.damage), 0);
@@ -141,7 +142,7 @@ export function distributeWorldBossRewards(
     const share = contribution.damage / totalDamage;
     if (share < cfg.minContributionPct) continue;
 
-    const balls = Math.min(cfg.maxBalls, Math.max(cfg.minBalls, Math.round(share * cfg.maxBalls)));
+    const balls = Math.min(cfg.maxBalls, Math.max(cfg.minBalls, Math.round(share * cfg.ballPool)));
     const capture: WorldBossCapture = {
       species: boss.species,
       variantId: boss.variantId,

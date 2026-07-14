@@ -155,7 +155,7 @@ export async function distributeWorldBossDefeatRewards(bossId: string, battlerUs
  */
 async function distributeRewardsForDefeat(
   bossId: string,
-  cfg: Pick<WorldBossConfig, "minContributionPct" | "maxBalls" | "minBalls">,
+  cfg: Pick<WorldBossConfig, "minContributionPct" | "ballPool" | "maxBalls" | "minBalls">,
   ballItem: string,
   battlerUserId: string,
 ): Promise<void> {

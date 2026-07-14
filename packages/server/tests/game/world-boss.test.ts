@@ -3,10 +3,12 @@ import { distributeWorldBossRewards } from "../../src/game/world-boss.js";
 import { DEFAULT_CONFIG } from "../../src/storage/config-store.js";
 import type { UserData, WorldBossContribution } from "../../../../shared/types.js";
 
-// distributeWorldBossRewards의 개인별 배분식(임계·하한·상한)을 순수 함수 단위로 검증한다.
+// distributeWorldBossRewards의 개인별 배분식을 순수 함수 단위로 검증한다.
+// balls = clamp(round(share × ballPool), minBalls, maxBalls). ballPool(총 풀)이 스케일 기준,
+// maxBalls는 1인 상한이라 분리돼 있다 — 덕분에 그룹플레이(혼자 100% 아님)에서도 상위 기여자가 상한에 닿는다.
 // 배분 로직은 각 유저의 worldBossCapture를 in-place로 세팅하고, 실제 배분된 유저 요약을 반환한다.
 
-const cfg = DEFAULT_CONFIG.worldBoss; // minContributionPct 0.05, maxBalls 20, minBalls 2
+const cfg = DEFAULT_CONFIG.worldBoss; // ballPool 100, minContributionPct 0.05, maxBalls 20, minBalls 2
 
 const boss = {
   bossId: "boss-1",
@@ -40,9 +42,44 @@ describe("distributeWorldBossRewards", () => {
       cfg,
       "greatball",
     );
+    // round(1 × 100)=100 → 상한 20으로 클램프.
     expect(shares).toEqual([{ userId: "solo", ballAttempts: cfg.maxBalls }]);
     expect(user.worldBossCapture?.ballAttempts).toBe(cfg.maxBalls);
     expect(user.worldBossCapture?.bossId).toBe("boss-1");
+  });
+
+  it("lets top contributors reach the cap in group play — the reason ballPool exists", () => {
+    // 3명이 40/35/25로 나눠 잡음(아무도 혼자 100% 아님). pool 100 기준 round(40/35/25)=40/35/25
+    // → 전부 상한 20에 닿는다. share×maxBalls(옛 공식)였다면 각 8/7/5로 짜게 나왔을 케이스.
+    const a = makeUser("a");
+    const b = makeUser("b");
+    const c = makeUser("c");
+    const shares = distributeWorldBossRewards(
+      [a, b, c],
+      { a: contribution(40), b: contribution(35), c: contribution(25) },
+      boss,
+      cfg,
+      "greatball",
+    );
+    expect(a.worldBossCapture?.ballAttempts).toBe(cfg.maxBalls);
+    expect(b.worldBossCapture?.ballAttempts).toBe(cfg.maxBalls);
+    expect(c.worldBossCapture?.ballAttempts).toBe(cfg.maxBalls);
+    expect(shares).toHaveLength(3);
+  });
+
+  it("scales proportionally below the cap", () => {
+    // a=10%, b=90%. pool 100 → a: round(10)=10(상한 미만 그대로), b: round(90)=90 → 상한 20.
+    const a = makeUser("a");
+    const b = makeUser("b");
+    distributeWorldBossRewards(
+      [a, b],
+      { a: contribution(10), b: contribution(90) },
+      boss,
+      cfg,
+      "greatball",
+    );
+    expect(a.worldBossCapture?.ballAttempts).toBe(10);
+    expect(b.worldBossCapture?.ballAttempts).toBe(cfg.maxBalls);
   });
 
   it("skips a below-threshold contributor entirely (no capture, no ball)", () => {
@@ -63,33 +100,20 @@ describe("distributeWorldBossRewards", () => {
   });
 
   it("floors an eligible-but-small share at minBalls", () => {
-    // share = 0.05(=minContributionPct) → round(0.05×20)=1 이지만 minBalls(2)로 올린다.
+    // 작은 풀(10)로 하한이 실제로 바인딩되는 케이스: a=6%(임계 이상) → round(0.06×10)=round(0.6)=1
+    // 이지만 minBalls(2)로 올린다.
+    const smallPool = { ...cfg, ballPool: 10 };
     const a = makeUser("a");
     const b = makeUser("b");
     const shares = distributeWorldBossRewards(
       [a, b],
-      { a: contribution(5), b: contribution(95) },
+      { a: contribution(6), b: contribution(94) },
       boss,
-      cfg,
+      smallPool,
       "greatball",
     );
     expect(shares.find((s) => s.userId === "a")?.ballAttempts).toBe(cfg.minBalls);
     expect(a.worldBossCapture?.ballAttempts).toBe(cfg.minBalls);
-  });
-
-  it("scales proportionally between floor and cap", () => {
-    // 두 명이 정확히 반반(share=0.5) → round(0.5×20)=10, minBalls~maxBalls 범위 안이라 그대로.
-    const a = makeUser("a");
-    const b = makeUser("b");
-    distributeWorldBossRewards(
-      [a, b],
-      { a: contribution(50), b: contribution(50) },
-      boss,
-      cfg,
-      "greatball",
-    );
-    expect(a.worldBossCapture?.ballAttempts).toBe(10);
-    expect(b.worldBossCapture?.ballAttempts).toBe(10);
   });
 
   it("returns nothing when there is no damage", () => {
