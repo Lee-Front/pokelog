@@ -13,6 +13,13 @@ export const AUTO_SEARCH_INTERVAL_MS = 30 * 60 * 1000; // 30분
 const STORED_ENCOUNTER_CAP = 10;
 
 /**
+ * 이로치 상시 보관(autoSearchShinyAny)의 하드 상한. 이로치는 일반 상한(10)을 넘어 여기까지 쌓일 수 있다
+ * ("10마리와 무관"). 이로치 확률이 낮아 실제로 이만큼 쌓이긴 어렵지만, 무한 증식/저장 비대화를 막는
+ * 안전 밸브다.
+ */
+const STORED_ENCOUNTER_SHINY_CAP = 30;
+
+/**
  * 자동 탐색 직렬화 체인(폴링 워커와 동일 패턴). runAutoSearch는 getAllUsers→유저별 load-mutate-save를
  * 하므로 자기 자신끼리도 겹치면 안 된다. 모듈 레벨 프로미스 체인으로 한 실행이 끝난 뒤 다음이 시작한다.
  */
@@ -46,27 +53,43 @@ export async function runAutoSearch(): Promise<void> {
   let hits = 0;
 
   for (const candidate of candidates) {
+    // 자동 탐색이 꺼져 있으면 이로치 상시든 관심종이든 아무것도 하지 않는다(마스터 스위치).
+    if (!candidate.autoSearchEnabled) continue;
     const region = candidate.currentRegion ?? "default";
     const interest = candidate.interestSpecies?.[region] ?? [];
-    if (!candidate.autoSearchEnabled) continue;
-    if (!interest.length) continue;
-    if ((candidate.storedEncounters?.length ?? 0) >= STORED_ENCOUNTER_CAP) continue;
+    const storedCount = candidate.storedEncounters?.length ?? 0;
+    // 평소 경로(관심종 있고 보관함 상한 미만)와 이로치 상시 경로(토글 on, 하드캡 미만) 중 하나라도
+    // 가능해야 굴린다. 둘 다 불가면 이 유저는 할 일이 없다(값싼 스냅샷 1차 필터).
+    const canNormal = interest.length > 0 && storedCount < STORED_ENCOUNTER_CAP;
+    const canShiny = !!candidate.autoSearchShinyAny && storedCount < STORED_ENCOUNTER_SHINY_CAP;
+    if (!canNormal && !canShiny) continue;
 
     try {
       await withLock(`user:${candidate.account.id}`, async () => {
         // 락 하에 최신 유저를 다시 읽어 조건을 재확인한다(스냅샷은 낡았을 수 있다).
         const u = await getUser(candidate.account.id);
-        if (!u) return;
+        if (!u || !u.autoSearchEnabled) return;
         const freshRegion = u.currentRegion ?? "default";
         const freshInterest = u.interestSpecies?.[freshRegion] ?? [];
-        if (!u.autoSearchEnabled || !freshInterest.length) return;
-        if ((u.storedEncounters?.length ?? 0) >= STORED_ENCOUNTER_CAP) return;
+        const stored = u.storedEncounters ?? [];
+        const freshCanNormal = freshInterest.length > 0 && stored.length < STORED_ENCOUNTER_CAP;
+        const freshCanShiny = !!u.autoSearchShinyAny && stored.length < STORED_ENCOUNTER_SHINY_CAP;
+        if (!freshCanNormal && !freshCanShiny) return;
 
         const rolled = await rollRegionEncounters(u, 12);
-        const hit = rolled.find((ev) => freshInterest.includes(ev.pokemon.species));
-        if (!hit) return;
+        // 이로치 상시가 켜져 있으면 종/상한과 무관하게 굴린 것 중 이로치를 우선 보관한다.
+        let pick = freshCanShiny ? rolled.find((ev) => ev.pokemon.isShiny) ?? null : null;
+        // 이로치가 없으면(또는 토글 off) 평소처럼 관심종 첫 매치(보관함 상한 미만일 때만).
+        if (!pick && freshCanNormal) {
+          pick = rolled.find((ev) => freshInterest.includes(ev.pokemon.species)) ?? null;
+        }
+        if (!pick) return;
 
-        u.storedEncounters = [...(u.storedEncounters ?? []), hit].slice(0, STORED_ENCOUNTER_CAP);
+        // 이로치는 하드캡(30)까지, 일반 매치는 상한(10)까지. pick 종류에 맞는 상한으로 최종 확인.
+        const cap = pick.pokemon.isShiny ? STORED_ENCOUNTER_SHINY_CAP : STORED_ENCOUNTER_CAP;
+        if (stored.length >= cap) return;
+
+        u.storedEncounters = [...stored, pick];
         await saveUser(u);
         hits += 1;
       });

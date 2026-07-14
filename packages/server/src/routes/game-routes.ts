@@ -249,6 +249,7 @@ gameRoutes.get("/interests", async (req: AuthRequest, res: Response) => {
     res.json({
       interestSpecies: user.interestSpecies?.[region] ?? [],
       autoSearchEnabled: !!user.autoSearchEnabled,
+      autoSearchShinyAny: !!user.autoSearchShinyAny,
       storedEncounters: user.storedEncounters ?? [],
       regionSpecies: regionSpeciesList(region),
       region,
@@ -322,6 +323,33 @@ gameRoutes.put("/auto-search", async (req: AuthRequest, res: Response) => {
     });
   } catch (err) {
     log.error({ err }, "Auto-search toggle error");
+    res.status(500).json({ error: "서버 오류가 발생했습니다" });
+  }
+});
+
+// 이로치 상시 보관 토글 — 관심종/보관함 상한과 무관하게 이로치를 보관할지 여부. autoSearchEnabled와
+// 별개의 하위 옵션(단순 on/off). 실제 동작은 auto-search-worker가 autoSearchEnabled까지 함께 볼 때만.
+gameRoutes.put("/auto-search-shiny", async (req: AuthRequest, res: Response) => {
+  try {
+    const { enabled } = req.body ?? {};
+    if (typeof enabled !== "boolean") {
+      res.status(400).json({ error: "enabled(boolean)가 필요합니다" });
+      return;
+    }
+
+    await withLock(`user:${req.userId!}`, async () => {
+      const user = await getUser(req.userId!);
+      if (!user) {
+        res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+        return;
+      }
+
+      user.autoSearchShinyAny = enabled;
+      await saveUser(user);
+      res.json({ autoSearchShinyAny: enabled });
+    });
+  } catch (err) {
+    log.error({ err }, "Auto-search shiny toggle error");
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
   }
 });

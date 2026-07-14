@@ -405,6 +405,9 @@ export interface UserData {
   interestSpecies?: Record<string, string[]>;
   storedEncounters?: PendingEvent[];
   autoSearchEnabled?: boolean;
+  // 이로치 상시 보관 — 켜면 관심종/보관함 상한(10)과 무관하게 굴린 것 중 이로치가 나오면 보관한다
+  // (모든 종 대상, 하드캡까지). autoSearchEnabled가 켜져 있어야 동작하는 하위 옵션이다.
+  autoSearchShinyAny?: boolean;
   battleState: BattleState | null;
   storage: OwnedPokemon[];
   log: LogEntry[];

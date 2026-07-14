@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import { setupTestApp, type TestApp } from "../api/test-helpers.js";
 import { getUser, saveUser } from "../../src/storage/user-store.js";
 import { runAutoSearch } from "../../src/polling/auto-search-worker.js";
@@ -95,5 +95,51 @@ describe("runAutoSearch (자동 탐색 30분 스윕)", () => {
     expect(after.storedEncounters).toHaveLength(10);
     // 새로 추가된 게 없어야 한다(모두 pre- 접두 id 유지).
     expect(after.storedEncounters!.every((e) => e.id.startsWith("pre-"))).toBe(true);
+  });
+
+  it("이로치 상시 켜짐이면 관심 종이 없어도 이로치를 보관한다", async () => {
+    // 등록/설정은 실제 랜덤으로(결정적 id 충돌 방지) 하고, 롤만 Math.random=0으로 이로치 강제.
+    const { token, userId } = await app.registerAndLogin();
+    await app.authed(token).put("/api/game/region", { region: "kanto" });
+    // 관심 종은 등록하지 않는다(빈 목록).
+    await app.authed(token).put("/api/game/auto-search", { enabled: true });
+    await app.authed(token).put("/api/game/auto-search-shiny", { enabled: true });
+
+    const spy = vi.spyOn(Math, "random").mockReturnValue(0); // 0 < 1/4096 → 모든 롤이 이로치
+    try {
+      await runAutoSearch();
+    } finally {
+      spy.mockRestore();
+    }
+
+    const after = (await getUser(userId))!;
+    expect(after.storedEncounters).toHaveLength(1);
+    expect(after.storedEncounters![0].pokemon.isShiny).toBe(true);
+  });
+
+  it("이로치 상시는 보관함 10 상한을 넘어서도 이로치를 보관한다", async () => {
+    const { userId } = await enabledUser();
+    // 일반 인카운터로 상한(10)을 미리 채우고 이로치 상시를 켠다.
+    const user = (await getUser(userId))!;
+    user.storedEncounters = Array.from({ length: 10 }, (_, i) => ({
+      id: `pre-${i}`,
+      type: "wild_encounter" as const,
+      pokemon: { species: "abra", level: 5, hp: 1, maxHp: 1, stats: {} as never, moves: [] },
+      createdAt: new Date().toISOString(),
+    }));
+    user.autoSearchShinyAny = true;
+    await saveUser(user);
+
+    const spy = vi.spyOn(Math, "random").mockReturnValue(0); // 롤만 이로치 강제
+    try {
+      await runAutoSearch();
+    } finally {
+      spy.mockRestore();
+    }
+
+    const after = (await getUser(userId))!;
+    // 관심 종 경로는 상한(10)이라 막혀도 이로치 경로는 하드캡 전까지 보관 → 11.
+    expect(after.storedEncounters!.length).toBe(11);
+    expect(after.storedEncounters!.some((e) => e.pokemon.isShiny)).toBe(true);
   });
 });

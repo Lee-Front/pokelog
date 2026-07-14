@@ -503,6 +503,7 @@ function normalizeUserData(user: UserData): UserData {
     interestSpecies: normalizeInterestSpecies(user.interestSpecies, user.currentRegion ?? "default"),
     storedEncounters: Array.isArray(user.storedEncounters) ? user.storedEncounters : [],
     autoSearchEnabled: typeof user.autoSearchEnabled === "boolean" ? user.autoSearchEnabled : false,
+    autoSearchShinyAny: typeof user.autoSearchShinyAny === "boolean" ? user.autoSearchShinyAny : false,
     integrations: Array.isArray(user.integrations)
       ? user.integrations.map(normalizeIntegration)
       : [],
