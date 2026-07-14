@@ -17,6 +17,7 @@ import { findPokemonByUid, getPartyPokemon, getDisplaySpeciesName } from "../gam
 import { GameRuleError } from "../game/game-errors.js";
 import { getAnnouncements } from "../storage/announcement-store.js";
 import { evaluateAchievements } from "../game/achievements.js";
+import { TITLES, evaluateTitles } from "../game/titles.js";
 import { getStats } from "../storage/pvp-stats-store.js";
 import { getCompletedTradeCount } from "../storage/trade-store.js";
 import {
@@ -1244,6 +1245,74 @@ gameRoutes.get("/achievements", async (req: AuthRequest, res: Response) => {
     });
   } catch (err) {
     log.error({ err }, "Achievements error");
+    res.status(500).json({ error: "서버 오류가 발생했습니다" });
+  }
+});
+
+// 칭호 목록 + 장착 상태(읽기 전용). 현재 유저 상태·PvP 승수·트레이드 수로 각 칭호의 획득(earned)/
+// 장착(active) 여부를 지연 파생해 내려준다. 보상 지급이 없으므로 락 불필요(saveUser 없음).
+gameRoutes.get("/titles", async (req: AuthRequest, res: Response) => {
+  try {
+    const user = await getUser(req.userId!);
+    if (!user) {
+      res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+      return;
+    }
+
+    // PvP 승수·트레이드 성사 수는 유저 파일이 아니라 각각 pvp-stats/trade 저장소에 있다.
+    const stats = await getStats(user.account.id);
+    const pvpWins = stats?.wins ?? 0;
+    const tradesCompleted = await getCompletedTradeCount(user.account.id);
+
+    const titles = evaluateTitles(user, pvpWins, tradesCompleted, user.activeTitle ?? null);
+    res.json({ titles, activeTitle: user.activeTitle ?? null });
+  } catch (err) {
+    log.error({ err }, "Titles error");
+    res.status(500).json({ error: "서버 오류가 발생했습니다" });
+  }
+});
+
+// 칭호 장착/해제. body.titleId(문자열=장착, null=해제). 장착 시 해당 칭호가 실제로 획득(earned)
+// 되었는지 서버가 met으로 재검증한다(획득하지 않은 칭호는 거부). 유저 상태를 변형하므로 락으로 감싼다.
+gameRoutes.put("/titles/active", async (req: AuthRequest, res: Response) => {
+  try {
+    const titleId = req.body?.titleId;
+    if (titleId !== null && typeof titleId !== "string") {
+      res.status(400).json({ error: "titleId(문자열 또는 null)가 필요합니다" });
+      return;
+    }
+
+    await withLock(`user:${req.userId!}`, async () => {
+      const user = await getUser(req.userId!);
+      if (!user) {
+        res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+        return;
+      }
+
+      if (titleId === null) {
+        user.activeTitle = null;
+      } else {
+        const def = TITLES.find((t) => t.id === titleId);
+        if (!def) {
+          res.status(400).json({ error: "존재하지 않는 칭호입니다" });
+          return;
+        }
+        // 장착 자격 검증 — PvP 승수·트레이드 수는 pvp-stats/trade 저장소에서 조회해 주입한다.
+        const stats = await getStats(user.account.id);
+        const pvpWins = stats?.wins ?? 0;
+        const tradesCompleted = await getCompletedTradeCount(user.account.id);
+        if (!def.met(user, pvpWins, tradesCompleted)) {
+          res.status(400).json({ error: "획득하지 않은 칭호입니다" });
+          return;
+        }
+        user.activeTitle = titleId;
+      }
+
+      await saveUser(user);
+      res.json({ activeTitle: user.activeTitle ?? null });
+    });
+  } catch (err) {
+    log.error({ err }, "Set active title error");
     res.status(500).json({ error: "서버 오류가 발생했습니다" });
   }
 });

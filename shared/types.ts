@@ -423,6 +423,9 @@ export interface UserData {
   // 지연 평가하며, 여기에 없으면서 조건을 충족한 업적만 evaluateAchievements가 보상을 지급하고
   // 이 배열에 추가한다. 구 저장본 호환을 위해 선택 필드 — normalizeUserData가 []로 정규화한다.
   completedAchievements?: string[];
+  // 장착 중인 칭호 id(TITLES의 id). 없으면 미장착. 조건 충족(earned) 칭호만 장착 가능하며 서버가 검증한다.
+  // normalize가 문자열 아니면 null로 정규화(후방호환).
+  activeTitle?: string | null;
   // 주간보스 처치 기록 — 주(ISO week)당 1회 처치 멱등 가드. finishWin의 보스 훅이 여기 week가
   // 현재 주와 다르거나(또는 없음) bossId가 다를 때만 이번 주 처치를 인정하고 { week, bossId }로 갱신한다.
   // 구 저장본은 미설정(undefined) — normalize는 그대로 통과시킨다(스프레드 보존, 후방호환).

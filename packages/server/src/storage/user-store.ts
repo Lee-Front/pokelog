@@ -498,6 +498,8 @@ function normalizeUserData(user: UserData): UserData {
     shinyPokedex: shinyCaught,
     // 업적 완료 집합 — 구 저장본(필드 없음)은 []로 정규화(후방호환). 1회성 보상 가드로만 쓰인다.
     completedAchievements: Array.isArray(user.completedAchievements) ? user.completedAchievements : [],
+    // 장착 중인 칭호 id — 구 저장본/미장착(문자열 아님)은 null로 정규화(후방호환).
+    activeTitle: typeof user.activeTitle === "string" ? user.activeTitle : null,
     // 주간보스 통산 카운터 — 구 저장본(필드 없음)은 0으로 정규화(업적 조건에서 안전하게 파생).
     bossDefeatTotal: typeof user.bossDefeatTotal === "number" ? user.bossDefeatTotal : 0,
     bossFirstPlaceTotal: typeof user.bossFirstPlaceTotal === "number" ? user.bossFirstPlaceTotal : 0,
