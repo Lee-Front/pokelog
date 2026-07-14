@@ -118,6 +118,8 @@ describe("world-boss API", () => {
 
   it("capturing a shiny world boss yields a shiny pokemon", async () => {
     await t.admin().post("/api/admin/world-boss/end");
+    // 볼당 포획 확률을 1로 고정 → 첫 볼에서 결정적으로 잡힌다(플랫 확률식).
+    await t.admin().put("/api/admin/config", { key: "worldBoss.captureBaseRate", value: 1 });
     // totalHp:1 → 한 방 처치. shiny:true 보스로 스폰해 배분된 시도권이 shiny를 담는지, 그리고
     // 잡은 개체가 실제로 shiny인지 검증한다(greatball은 guaranteedCatch가 아니므로 시도권을 소진).
     const spawn = await t.admin().post("/api/admin/world-boss/spawn", {
@@ -142,19 +144,13 @@ describe("world-boss API", () => {
     const view = await api.get("/api/game/world-boss");
     expect(view.body.myCapture).not.toBeNull();
     expect(view.body.myCapture.shiny).toBe(true);
-    const attempts = view.body.myCapture.ballAttempts;
 
-    // 시도권을 소진하며 포획 — 성공하면 잡힌 개체가 shiny여야 한다.
-    let caught = false;
-    for (let i = 0; i < attempts && !caught; i++) {
-      const cap = await api.post("/api/game/world-boss/capture", { ball: "greatball" });
-      expect(cap.status).toBe(200);
-      if (cap.body.caught) {
-        caught = true;
-        expect(cap.body.pokemon.species).toBe("mewtwo");
-        expect(cap.body.pokemon.isShiny).toBe(true);
-      }
-    }
+    // 확률 1 → 첫 볼에서 잡히고, 잡힌 개체가 shiny여야 한다.
+    const cap = await api.post("/api/game/world-boss/capture", { ball: "greatball" });
+    expect(cap.status).toBe(200);
+    expect(cap.body.caught).toBe(true);
+    expect(cap.body.pokemon.species).toBe("mewtwo");
+    expect(cap.body.pokemon.isShiny).toBe(true);
   });
 
   it("enter returns 400 when no active boss", async () => {
@@ -231,6 +227,9 @@ describe("world-boss API", () => {
   });
 
   it("defeating the boss distributes capture attempts (idempotent) and capture grants a pokemon", async () => {
+    await t.admin().post("/api/admin/world-boss/end");
+    // 먼저 실패(확률 0)로 시도권 1 차감을 결정적으로 관찰한 뒤, 확률 1로 올려 잡는다.
+    await t.admin().put("/api/admin/config", { key: "worldBoss.captureBaseRate", value: 0 });
     // totalHp:1 → 어떤 공격기 한 방으로도 처치.
     const spawn = await t.admin().post("/api/admin/world-boss/spawn", {
       species: "mewtwo",
@@ -262,34 +261,27 @@ describe("world-boss API", () => {
     expect(view.body.myCapture.species).toBe("mewtwo");
     const attempts = view.body.myCapture.ballAttempts;
 
-    // 포획 반복 — guaranteedCatch가 아니므로 실패할 수 있다. 시도권을 소진하며 성공하면 개체 획득.
-    let caught = false;
-    let lastAttempts = attempts;
-    for (let i = 0; i < attempts && !caught; i++) {
-      const cap = await api.post("/api/game/world-boss/capture", { ball: "greatball" });
-      expect(cap.status).toBe(200);
-      if (cap.body.caught) {
-        caught = true;
-        expect(cap.body.pokemon.species).toBe("mewtwo");
-        expect(cap.body.ballAttempts).toBe(0);
-      } else {
-        expect(cap.body.ballAttempts).toBe(lastAttempts - 1);
-        lastAttempts = cap.body.ballAttempts;
-      }
-    }
+    // 확률 0 → 실패, 시도권이 정확히 1 차감된다.
+    const miss = await api.post("/api/game/world-boss/capture", { ball: "greatball" });
+    expect(miss.status).toBe(200);
+    expect(miss.body.caught).toBe(false);
+    expect(miss.body.ballAttempts).toBe(attempts - 1);
 
-    // 시도권 소진 후(또는 포획 성공 후) 추가 포획 시도는 400.
+    // 확률 1로 올리면 다음 볼에서 결정적으로 잡히고, 시도권이 소멸한다.
+    await t.admin().put("/api/admin/config", { key: "worldBoss.captureBaseRate", value: 1 });
+    const cap = await api.post("/api/game/world-boss/capture", { ball: "greatball" });
+    expect(cap.status).toBe(200);
+    expect(cap.body.caught).toBe(true);
+    expect(cap.body.pokemon.species).toBe("mewtwo");
+    expect(cap.body.ballAttempts).toBe(0);
+
+    // 포획 성공 후 시도권 소멸 + 도감/보유 반영, 추가 포획 시도는 400.
     const afterView = await api.get("/api/game/world-boss");
-    if (caught) {
-      expect(afterView.body.myCapture).toBeNull();
-      // 잡은 개체가 도감/보유에 반영됐는지.
-      const dex = await api.get("/api/game/pokedex");
-      expect(dex.status).toBe(200);
-    }
+    expect(afterView.body.myCapture).toBeNull();
+    const dex = await api.get("/api/game/pokedex");
+    expect(dex.status).toBe(200);
     const noAttempts = await api.post("/api/game/world-boss/capture", { ball: "greatball" });
-    if (!afterView.body.myCapture) {
-      expect(noAttempts.status).toBe(400);
-    }
+    expect(noAttempts.status).toBe(400);
   });
 
   it("killing blow distributes to OTHER contributors without deadlock/timeout (battle user lock non-nested with world-boss distribution)", async () => {

@@ -180,6 +180,12 @@ const ALLOWED_CONFIG_PATHS = new Set([
   // PvP(Phase 2) — ELO 시작 레이팅/K 계수(모든 매치 적용).
   "pvp.elo.start",
   "pvp.elo.k",
+  // 월드보스 — 기여 100%가 받는 볼 개수(ballPool)·볼당 플랫 포획확률(captureBaseRate)·
+  // 재참전 쿨다운(cooldownMs)·지속시간(durationHours). 운영자가 포획 난이도를 조절한다.
+  "worldBoss.ballPool",
+  "worldBoss.captureBaseRate",
+  "worldBoss.cooldownMs",
+  "worldBoss.durationHours",
 ]);
 
 // PvP 설정 검증 — ELO start/k는 양수.
@@ -251,6 +257,34 @@ adminRoutes.put("/config", async (req, res) => {
     if (key === "rewards.encounter.wildLegendaryChance") {
       if (typeof value !== "number" || !Number.isFinite(value) || value < 0 || value > 1) {
         return res.status(400).json({ error: "wildLegendaryChance는 0~1 사이의 숫자여야 합니다" });
+      }
+    }
+
+    // 월드보스 — 기여 100% 시 받는 최대 볼 개수(1~200 정수).
+    if (key === "worldBoss.ballPool") {
+      if (typeof value !== "number" || !Number.isInteger(value) || value < 1 || value > 200) {
+        return res.status(400).json({ error: "ballPool은 1~200 사이의 정수여야 합니다" });
+      }
+    }
+
+    // 월드보스 — 볼당 플랫 포획 확률(0~1 사이의 실수).
+    if (key === "worldBoss.captureBaseRate") {
+      if (typeof value !== "number" || !Number.isFinite(value) || value < 0 || value > 1) {
+        return res.status(400).json({ error: "captureBaseRate는 0~1 사이의 숫자여야 합니다" });
+      }
+    }
+
+    // 월드보스 — 재참전 쿨다운(0 이상의 정수 ms).
+    if (key === "worldBoss.cooldownMs") {
+      if (typeof value !== "number" || !Number.isInteger(value) || value < 0) {
+        return res.status(400).json({ error: "cooldownMs는 0 이상의 정수여야 합니다" });
+      }
+    }
+
+    // 월드보스 — 지속 시간(0보다 큰 실수 시간).
+    if (key === "worldBoss.durationHours") {
+      if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
+        return res.status(400).json({ error: "durationHours는 0보다 큰 숫자여야 합니다" });
       }
     }
 

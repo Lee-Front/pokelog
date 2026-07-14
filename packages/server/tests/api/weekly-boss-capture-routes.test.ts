@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from "vitest";
 import { setupTestApp, type TestApp } from "./test-helpers.js";
 import type { WeeklyBossCapture } from "../../../../shared/types.js";
 
@@ -25,6 +25,10 @@ describe("weekly-boss capture API", () => {
 
   afterAll(() => {
     t?.cleanup();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   // finishWin이 실는 것과 동일한 형태의 시도권을 유저 파일에 직접 심는다(레벨 5·1마리 지급).
@@ -66,62 +70,45 @@ describe("weekly-boss capture API", () => {
     expect(res.status).toBe(400);
   });
 
-  it("capturing eventually grants a pokemon (party/pokedex) and clears the field; empties on exhaustion → 400", async () => {
+  it("capturing grants a pokemon (party/pokedex) and clears the field; empties on exhaustion → 400", async () => {
+    // 볼당 포획은 Math.random() < captureBaseRate(0.3) 플랫 확률 → random=0으로 고정하면 결정적 성공.
+    vi.spyOn(Math, "random").mockReturnValue(0);
     const { token, userId } = await t.registerAndLogin("wkbcaprun", "charmander");
     const api = t.authed(token);
 
-    const attempts = 8;
-    await seedCapture(userId, attempts, "pikachu");
+    await seedCapture(userId, 8, "pikachu");
 
-    let caught = false;
-    let lastAttempts = attempts;
-    for (let i = 0; i < attempts && !caught; i++) {
-      const cap = await api.post("/api/game/weekly-boss/capture");
-      expect(cap.status).toBe(200);
-      if (cap.body.caught) {
-        caught = true;
-        expect(cap.body.pokemon.species).toBe("pikachu");
-        expect(cap.body.ballAttempts).toBe(0);
-      } else {
-        // 실패 → 시도권 정확히 1 차감.
-        expect(cap.body.ballAttempts).toBe(lastAttempts - 1);
-        lastAttempts = cap.body.ballAttempts;
-      }
-    }
+    // random=0 → 첫 볼에서 잡히고 시도권 소멸.
+    const cap = await api.post("/api/game/weekly-boss/capture");
+    expect(cap.status).toBe(200);
+    expect(cap.body.caught).toBe(true);
+    expect(cap.body.pokemon.species).toBe("pikachu");
+    expect(cap.body.ballAttempts).toBe(0);
 
+    // 성공 → 시도권 소멸 + 도감/보유 반영.
     const view = await api.get("/api/game/boss");
-    if (caught) {
-      // 성공 → 시도권 소멸 + 도감/보유 반영.
-      expect(view.body.weeklyBossCapture).toBeNull();
-      const dex = await api.get("/api/game/pokedex");
-      expect(dex.status).toBe(200);
-      expect(dex.body.caught).toContain("pikachu");
-    }
+    expect(view.body.weeklyBossCapture).toBeNull();
+    const dex = await api.get("/api/game/pokedex");
+    expect(dex.status).toBe(200);
+    expect(dex.body.caught).toContain("pikachu");
 
-    // 시도권 소진(또는 성공 소멸) 후 추가 시도는 400.
-    if (!view.body.weeklyBossCapture) {
-      const noMore = await api.post("/api/game/weekly-boss/capture");
-      expect(noMore.status).toBe(400);
-    }
+    // 시도권 소멸 후 추가 시도는 400.
+    const noMore = await api.post("/api/game/weekly-boss/capture");
+    expect(noMore.status).toBe(400);
   });
 
   it("a single failed attempt decrements ballAttempts by exactly 1 (persisted to GET /boss)", async () => {
-    // 실패를 결정적으로 관찰하기 위해 여러 번 심어 최소 1회 실패를 확보한다(확률 0.3 기반).
+    // random=0.99 → 0.99 >= captureBaseRate(0.3) 이라 결정적 실패, 시도권이 정확히 1 차감된다.
+    vi.spyOn(Math, "random").mockReturnValue(0.99);
     const { token, userId } = await t.registerAndLogin("wkbcapdec", "charmander");
     const api = t.authed(token);
 
-    let sawFail = false;
-    for (let round = 0; round < 12 && !sawFail; round++) {
-      await seedCapture(userId, 2, "pikachu");
-      const cap = await api.post("/api/game/weekly-boss/capture");
-      expect(cap.status).toBe(200);
-      if (!cap.body.caught) {
-        sawFail = true;
-        expect(cap.body.ballAttempts).toBe(1);
-        const view = await api.get("/api/game/boss");
-        expect(view.body.weeklyBossCapture.ballAttempts).toBe(1);
-      }
-    }
-    expect(sawFail).toBe(true);
+    await seedCapture(userId, 2, "pikachu");
+    const cap = await api.post("/api/game/weekly-boss/capture");
+    expect(cap.status).toBe(200);
+    expect(cap.body.caught).toBe(false);
+    expect(cap.body.ballAttempts).toBe(1);
+    const view = await api.get("/api/game/boss");
+    expect(view.body.weeklyBossCapture.ballAttempts).toBe(1);
   });
 });

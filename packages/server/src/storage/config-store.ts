@@ -289,10 +289,10 @@ export const DEFAULT_CONFIG: ServerConfig = {
   // 처치 시 기여도 비례로 총 ballPool개의 포획 시도권(그레이트볼)을 배분한다. 운영자가 /admin에서 튜닝.
   worldBoss: {
     cooldownMs: 600000,
-    ballPool: 100,
+    ballPool: 15,
     durationHours: 24,
     captureBall: "greatball",
-    captureBaseRate: 0.35,
+    captureBaseRate: 0.3,
   },
   // 주간보스(주 1회 로테이션 레이드) 처치 후 포획 시도권 설정. 이번 주 첫 처치 시 순위에 따라
   // captureBallsByRank(1~3위)만큼, 그 밖(4위 이후)은 participationBalls만큼 그레이트볼을 받는다.

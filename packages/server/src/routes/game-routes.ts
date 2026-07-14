@@ -28,7 +28,6 @@ import { defaultStatStages } from "../game/battle.js";
 import { applySwitchInAbilities } from "../game/abilities.js";
 import { checkPrimalReversion, getTransformedStats } from "../game/battle-transformations.js";
 import { appendEvent } from "../storage/event-log.js";
-import { attemptCapture } from "../game/capture.js";
 import { wildPokemonToOwned } from "../game/pokemon-factory.js";
 import { resolveShopItem } from "../game/inventory-utils.js";
 import {
@@ -804,15 +803,13 @@ gameRoutes.post("/world-boss/capture", async (req: AuthRequest, res: Response) =
 
     const config = await getConfig();
     // 볼은 capture.ballItem(스폰 시 config.worldBoss.captureBall)로 고정 — 별도 인벤토리 소모는 없다
-    // (시도권 자체가 볼). catchBonus만 볼 메타에서 조회한다.
+    // (시도권 자체가 볼). 볼 메타는 guaranteedCatch(마스터볼류) 판정에만 쓴다.
     const ballItem = resolveShopItem(config, capture.ballItem);
-    const ballCatchMultiplier = 1 + (ballItem?.catchBonus ?? 0);
     const guaranteedCatch = ballItem?.guaranteedCatch ?? false;
 
-    // HP 감쇠항이 없는 "알 부화식" 단순 확률 — currentHp=0, maxHp=1을 넣어 (1 - hp/maxHp)=1로 만들고
-    // baseCatchRate를 config.worldBoss.captureBaseRate로 명시한다(전설의 낮은 종 catchRate 대신).
-    const baseRate = config.worldBoss.captureBaseRate;
-    const caught = guaranteedCatch || attemptCapture(ballCatchMultiplier, 0, 1, baseRate);
+    // 볼당 포획 확률은 config.worldBoss.captureBaseRate(0~1) 그대로 쓰는 "플랫" 확률이다.
+    // (HP 감쇠·볼 catchBonus 배율 없음 → GO식 볼 소모형. 운영자가 /admin에서 확률을 낮출 수 있다.)
+    const caught = guaranteedCatch || Math.random() < config.worldBoss.captureBaseRate;
 
     const remainingAttempts = capture.ballAttempts - 1;
 
@@ -874,15 +871,13 @@ gameRoutes.post("/weekly-boss/capture", async (req: AuthRequest, res: Response) 
 
     const config = await getConfig();
     // 볼은 capture.ballItem(처치 시 config.weeklyBoss.captureBall)로 고정 — 별도 인벤토리 소모는 없다
-    // (시도권 자체가 볼). catchBonus만 볼 메타에서 조회한다.
+    // (시도권 자체가 볼). 볼 메타는 guaranteedCatch(마스터볼류) 판정에만 쓴다.
     const ballItem = resolveShopItem(config, capture.ballItem);
-    const ballCatchMultiplier = 1 + (ballItem?.catchBonus ?? 0);
     const guaranteedCatch = ballItem?.guaranteedCatch ?? false;
 
-    // HP 감쇠항이 없는 "알 부화식" 단순 확률 — currentHp=0, maxHp=1을 넣어 (1 - hp/maxHp)=1로 만들고
-    // baseCatchRate를 config.weeklyBoss.captureBaseRate로 명시한다(전설의 낮은 종 catchRate 대신).
-    const baseRate = config.weeklyBoss.captureBaseRate;
-    const caught = guaranteedCatch || attemptCapture(ballCatchMultiplier, 0, 1, baseRate);
+    // 볼당 포획 확률은 config.weeklyBoss.captureBaseRate(0~1) 그대로 쓰는 "플랫" 확률이다.
+    // (HP 감쇠·볼 catchBonus 배율 없음 → GO식 볼 소모형. 운영자가 /admin에서 확률을 낮출 수 있다.)
+    const caught = guaranteedCatch || Math.random() < config.weeklyBoss.captureBaseRate;
 
     const remainingAttempts = capture.ballAttempts - 1;
 
