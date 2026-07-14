@@ -1,0 +1,333 @@
+{
+  "name": "Paldea",
+  "encounters": [
+    {
+      "species": "wooper-paldea",
+      "weight": 80,
+      "levelRange": [
+        2,
+        12
+      ]
+    },
+    {
+      "species": "pichu",
+      "weight": 30,
+      "levelRange": [
+        2,
+        8
+      ]
+    },
+    {
+      "species": "pikachu",
+      "weight": 30,
+      "levelRange": [
+        6,
+        16
+      ]
+    },
+    {
+      "species": "azurill",
+      "weight": 30,
+      "levelRange": [
+        2,
+        8
+      ]
+    },
+    {
+      "species": "marill",
+      "weight": 50,
+      "levelRange": [
+        3,
+        12
+      ]
+    },
+    {
+      "species": "mankey",
+      "weight": 60,
+      "levelRange": [
+        3,
+        14
+      ]
+    },
+    {
+      "species": "growlithe",
+      "weight": 45,
+      "levelRange": [
+        4,
+        14
+      ]
+    },
+    {
+      "species": "dunsparce",
+      "weight": 45,
+      "levelRange": [
+        3,
+        12
+      ]
+    },
+    {
+      "species": "girafarig",
+      "weight": 40,
+      "levelRange": [
+        5,
+        15
+      ]
+    },
+    {
+      "species": "drowzee",
+      "weight": 40,
+      "levelRange": [
+        4,
+        14
+      ]
+    },
+    {
+      "species": "sableye",
+      "weight": 30,
+      "levelRange": [
+        6,
+        16
+      ]
+    },
+    {
+      "species": "drifloon",
+      "weight": 30,
+      "levelRange": [
+        5,
+        15
+      ]
+    },
+    {
+      "species": "bronzor",
+      "weight": 30,
+      "levelRange": [
+        6,
+        16
+      ]
+    },
+    {
+      "species": "applin",
+      "weight": 45,
+      "levelRange": [
+        3,
+        12
+      ]
+    },
+    {
+      "species": "meditite",
+      "weight": 35,
+      "levelRange": [
+        4,
+        14
+      ]
+    },
+    {
+      "species": "bounsweet",
+      "weight": 35,
+      "levelRange": [
+        3,
+        12
+      ]
+    },
+    {
+      "species": "tauros",
+      "weight": 40,
+      "levelRange": [
+        12,
+        24
+      ]
+    },
+    {
+      "species": "tauros-paldea-combat-breed",
+      "weight": 22,
+      "levelRange": [
+        14,
+        26
+      ]
+    },
+    {
+      "species": "tauros-paldea-blaze-breed",
+      "weight": 22,
+      "levelRange": [
+        14,
+        26
+      ]
+    },
+    {
+      "species": "tauros-paldea-aqua-breed",
+      "weight": 22,
+      "levelRange": [
+        14,
+        26
+      ]
+    },
+    {
+      "species": "primeape",
+      "weight": 30,
+      "levelRange": [
+        16,
+        26
+      ]
+    },
+    {
+      "species": "azumarill",
+      "weight": 25,
+      "levelRange": [
+        16,
+        26
+      ]
+    },
+    {
+      "species": "pawniard",
+      "weight": 40,
+      "levelRange": [
+        14,
+        24
+      ]
+    },
+    {
+      "species": "bisharp",
+      "weight": 22,
+      "levelRange": [
+        24,
+        34
+      ]
+    },
+    {
+      "species": "riolu",
+      "weight": 25,
+      "levelRange": [
+        10,
+        20
+      ]
+    },
+    {
+      "species": "lucario",
+      "weight": 15,
+      "levelRange": [
+        26,
+        36
+      ]
+    },
+    {
+      "species": "mienfoo",
+      "weight": 30,
+      "levelRange": [
+        10,
+        22
+      ]
+    },
+    {
+      "species": "mienshao",
+      "weight": 15,
+      "levelRange": [
+        28,
+        38
+      ]
+    },
+    {
+      "species": "larvitar",
+      "weight": 22,
+      "levelRange": [
+        12,
+        22
+      ]
+    },
+    {
+      "species": "pupitar",
+      "weight": 12,
+      "levelRange": [
+        24,
+        34
+      ]
+    },
+    {
+      "species": "duraludon",
+      "weight": 22,
+      "levelRange": [
+        26,
+        38
+      ]
+    },
+    {
+      "species": "annihilape",
+      "weight": 12,
+      "levelRange": [
+        34,
+        46
+      ]
+    },
+    {
+      "species": "clodsire",
+      "weight": 22,
+      "levelRange": [
+        20,
+        32
+      ]
+    },
+    {
+      "species": "farigiraf",
+      "weight": 16,
+      "levelRange": [
+        24,
+        36
+      ]
+    },
+    {
+      "species": "dudunsparce-two-segment",
+      "weight": 16,
+      "levelRange": [
+        20,
+        32
+      ]
+    },
+    {
+      "species": "kingambit",
+      "weight": 8,
+      "levelRange": [
+        40,
+        52
+      ]
+    },
+    {
+      "species": "dipplin",
+      "weight": 16,
+      "levelRange": [
+        18,
+        30
+      ]
+    },
+    {
+      "species": "archaludon",
+      "weight": 8,
+      "levelRange": [
+        40,
+        52
+      ]
+    },
+    {
+      "species": "tyranitar",
+      "weight": 6,
+      "levelRange": [
+        44,
+        56
+      ]
+    },
+    {
+      "species": "dratini",
+      "weight": 15,
+      "levelRange": [
+        12,
+        24
+      ]
+    },
+    {
+      "species": "dragonair",
+      "weight": 8,
+      "levelRange": [
+        26,
+        38
+      ]
+    }
+  ]
+}
