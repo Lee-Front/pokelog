@@ -746,6 +746,11 @@ export function abilitiesNeverMiss(attacker: AbilityHolder, defender: AbilityHol
   return getAbility(attacker) === "no-guard" || getAbility(defender) === "no-guard";
 }
 
+/** serene-grace: 부가효과(풀죽음/상태이상/스탯 변화) 발동 확률 2배. 아니면 1. */
+export function getSecondaryChanceMultiplier(attacker: AbilityHolder): number {
+  return getAbility(attacker) === "serene-grace" ? 2 : 1;
+}
+
 // ---------------------------------------------------------------------------
 // I. 일격 생존(sturdy)
 // ---------------------------------------------------------------------------

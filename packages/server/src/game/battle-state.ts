@@ -21,7 +21,7 @@ import {
   checkDisguiseBreak, isIronFistMove,
   isSlicingMove, isBitingMove, isPulseMove, isSoundMove, getKnockoutBoost,
   applyOnHitDefenderAbilities, getAttackerHitStatus,
-  getAbilityAccuracyMultiplier, abilitiesNeverMiss,
+  getAbilityAccuracyMultiplier, abilitiesNeverMiss, getSecondaryChanceMultiplier,
   type OffenseContext, type AbilityHolder, type OnHitDefenderResult,
 } from "./abilities.js";
 import {
@@ -276,9 +276,11 @@ export function maybeApplyAilment(
   battle?: BattleState,
   targetTypes?: string[],
   targetAbilityHolder?: { abilityId?: string | null; ability?: string | null },
+  secondaryMult: number = 1,
 ): { newStatus: PrimaryStatus | null; newVolatiles: VolatileStatus[]; sleepTurns?: number } {
   const ailment = moveData.meta?.ailment;
-  const chance = moveData.meta?.ailmentChance ?? 0;
+  // serene-grace 등 부가효과 배율(확률 0=보장은 곱해도 0이라 무해).
+  const chance = (moveData.meta?.ailmentChance ?? 0) * secondaryMult;
   if (!ailment || ailment === "none") return { newStatus: null, newVolatiles: targetVolatiles };
 
   const primary = rollAilment(ailment, chance, targetStatus);
@@ -378,10 +380,12 @@ export function maybeApplyStatChanges(
   isPlayerMove: boolean,
   log: string[],
   holders?: { player?: AbilityHolder | null; wild?: AbilityHolder | null },
+  secondaryMult: number = 1,
 ): void {
   const changes = moveData.statChanges;
   if (!changes || changes.length === 0) return;
-  const chance = moveData.meta?.statChance ?? 100;
+  // serene-grace: 부가 스탯확률 2배(보장 100은 곱해도 항상 발동이라 무해).
+  const chance = (moveData.meta?.statChance ?? 100) * secondaryMult;
   // "skip if over": roll >= chance means stat changes do NOT apply
   if (Math.random() * 100 >= chance) return;
 
@@ -723,7 +727,7 @@ export function executePlayerAttack(
     for (const msg of metaResult.messages) log.push(msg);
 
     // Apply stat changes for player (원더가드/탈로 타격이 무효화되면 부가효과도 스킵)
-    if (!hitSuppressed) maybeApplyStatChanges(battle, moveData, true, log, { player, wild: battle.wild });
+    if (!hitSuppressed) maybeApplyStatChanges(battle, moveData, true, log, { player, wild: battle.wild }, getSecondaryChanceMultiplier(player));
 
     // Apply ailment to wild from player attack (필드/특성 상태이상 차단 게이팅 포함).
     // 원더가드/탈로 타격이 무효화되면 상태이상 부여도 스킵한다.
@@ -736,6 +740,7 @@ export function executePlayerAttack(
         battle,
         wildDefTypes,
         battle.wild,
+        getSecondaryChanceMultiplier(player),
       );
       if (ailmentResult.newStatus) {
         battle.wild.statusCondition = ailmentResult.newStatus;
@@ -783,7 +788,7 @@ export function executePlayerAttack(
     // "apply if under": roll < chance means flinch IS applied
     // inner-focus 특성을 가진 대상(야생)은 풀죽음에 면역이다.
     // 원더가드/탈로 타격이 무효화되면 풀죽음도 유발하지 않는다.
-    const flinchChance = moveData.meta?.flinchChance ?? 0;
+    const flinchChance = (moveData.meta?.flinchChance ?? 0) * getSecondaryChanceMultiplier(player);
     if (!hitSuppressed && flinchChance > 0 && !hasAbility(battle.wild, "inner-focus") && Math.random() * 100 < flinchChance) {
       flinchCaused = true;
     }
@@ -1408,7 +1413,7 @@ export async function doWildAttackAndCheck(
     for (const msg of metaResult.messages) log.push(msg);
 
     // Apply stat changes for wild pokemon (원더가드/탈로 타격이 무효화되면 부가효과도 스킵)
-    if (!wildHitSuppressed) maybeApplyStatChanges(battle, wildResult.moveData, false, log, { player: myPokemon, wild: battle.wild });
+    if (!wildHitSuppressed) maybeApplyStatChanges(battle, wildResult.moveData, false, log, { player: myPokemon, wild: battle.wild }, getSecondaryChanceMultiplier(battle.wild));
 
     // Apply ailment to player from wild attack (필드/특성 상태이상 차단 게이팅 포함).
     // 원더가드/탈로 타격이 무효화되면 상태이상 부여도 스킵한다.
@@ -1421,6 +1426,7 @@ export async function doWildAttackAndCheck(
         battle,
         playerDefTypes,
         myPokemon,
+        getSecondaryChanceMultiplier(battle.wild),
       );
       if (ailmentResult.newStatus) {
         myPokemon.statusCondition = ailmentResult.newStatus;
@@ -1464,7 +1470,7 @@ export async function doWildAttackAndCheck(
     // 풀죽음(flinch) 판정 — executePlayerAttack와 동일하게 "apply if under"(roll < chance).
     // 야생이 선공한 경우에만 의미가 있으므로 battle.playerFlinched 임시 플래그로 알린다.
     // inner-focus 특성을 가진 플레이어는 풀죽음에 면역이다. 원더가드/탈로 무효화되면 풀죽음도 없음.
-    const wildFlinchChance = wildResult.moveData.meta?.flinchChance ?? 0;
+    const wildFlinchChance = (wildResult.moveData.meta?.flinchChance ?? 0) * getSecondaryChanceMultiplier(battle.wild);
     if (!wildHitSuppressed && wildFlinchChance > 0 && !hasAbility(myPokemon, "inner-focus") && Math.random() * 100 < wildFlinchChance) {
       battle.playerFlinched = true;
     }

@@ -23,6 +23,7 @@ import {
   getAttackerHitStatus,
   getSwitchOutAbilityEffect,
   getAbilityAccuracyMultiplier, abilitiesNeverMiss,
+  getSecondaryChanceMultiplier,
 } from "../../src/game/abilities.js";
 import { defaultStatStages } from "../../src/game/battle.js";
 import type { BattleState, PrimaryStatus, StatStages } from "../../../../shared/types.js";
@@ -719,5 +720,14 @@ describe("batch11: accuracy abilities", () => {
     expect(abilitiesNeverMiss({}, {})).toBe(false);
     expect(getAbilityOffenseMultiplier({ abilityId: "hustle" }, "normal", "physical", 80, 0.5, false, false)).toBeCloseTo(1.5);
     expect(getAbilityOffenseMultiplier({ abilityId: "hustle" }, "normal", "special", 80, 0.5, false, false)).toBe(1);
+  });
+});
+
+// ── Batch 12: serene-grace(부가효과 2배) ─────────────────────────────────────
+describe("batch12: getSecondaryChanceMultiplier", () => {
+  it("serene-grace doubles, others 1", () => {
+    expect(getSecondaryChanceMultiplier({ abilityId: "serene-grace" })).toBe(2);
+    expect(getSecondaryChanceMultiplier({ abilityId: "intimidate" })).toBe(1);
+    expect(getSecondaryChanceMultiplier({})).toBe(1);
   });
 });
