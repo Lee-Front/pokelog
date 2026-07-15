@@ -1,7 +1,21 @@
 import { describe, expect, it } from "vitest";
-import { distributeWorldBossRewards } from "../../src/game/world-boss.js";
+import { distributeWorldBossRewards, buildWorldBossWild } from "../../src/game/world-boss.js";
+import { getMoveById } from "../../src/game/data-loader.js";
 import { DEFAULT_CONFIG } from "../../src/storage/config-store.js";
 import type { UserData, WorldBossContribution } from "../../../../shared/types.js";
+
+// 회귀: 보스 기술이 상태기만 반복하지 않도록 데미지 기술을 우선 선택해야 한다(뮤츠 레이드 파워스웹 스팸 방지).
+describe("buildWorldBossWild — 보스 기술 데미지 우선", () => {
+  it("뮤츠(고레벨) 레이드가 데미지 기술 위주로 구성된다", () => {
+    const wild = buildWorldBossWild("mewtwo", null, 70, { hpMultiplier: 3 });
+    const damaging = wild.moves.filter((m) => {
+      const md = getMoveById(m.id);
+      return md != null && md.category !== "status" && (md.power ?? 0) > 0;
+    });
+    expect(wild.moves.length).toBeGreaterThan(0);
+    expect(damaging.length).toBeGreaterThanOrEqual(3); // 4개 중 대부분 데미지 기술
+  });
+});
 
 // distributeWorldBossRewards의 개인별 배분식을 순수 함수 단위로 검증한다.
 // balls = clamp(round(share × ballPool), minBalls, maxBalls). ballPool(총 풀)이 스케일 기준,

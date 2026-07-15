@@ -89,7 +89,21 @@ function buildBossMoves(levelUpLearnset: Record<string, string[]>, level: number
       learnable.push(moveId);
     }
   }
-  const selected = learnable.slice(-4);
+  // 데미지 기술을 우선 선택한다 — 과거엔 slice(-4)로 "가장 높은 레벨" 4개만 뽑았는데, 뮤츠 등은
+  // 고레벨 학습기술이 파워스웹/회복 같은 상태기 위주라 보스가 상태기만 반복하는 문제가 있었다.
+  // 최근 학습(고레벨=대체로 강함) 순으로 데미지 기술을 최대 4개 뽑고, 부족하면 상태기로 채운다.
+  const damaging: string[] = [];
+  const statusMoves: string[] = [];
+  for (let i = learnable.length - 1; i >= 0; i--) {
+    const md = getMoveById(learnable[i]);
+    if (md && md.category !== "status" && (md.power ?? 0) > 0) damaging.push(learnable[i]);
+    else statusMoves.push(learnable[i]);
+  }
+  const selected = damaging.slice(0, 4);
+  for (const s of statusMoves) {
+    if (selected.length >= 4) break;
+    selected.push(s);
+  }
   // 학습표가 비면(데이터 이상) tackle 하나로라도 폴백해 "쓸 기술 없음" 무한 방어를 피한다.
   const ids = selected.length > 0 ? selected : ["tackle"];
   return ids.map((id) => {
