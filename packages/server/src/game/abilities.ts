@@ -136,6 +136,25 @@ export function applySwitchInAbilities(
 }
 
 // ---------------------------------------------------------------------------
+// A2. 스위치아웃(switch-out) — 교체로 나가는 포켓몬에 적용
+// ---------------------------------------------------------------------------
+
+export interface SwitchOutResult { heal: number; cureStatus: boolean; }
+
+/**
+ * 교체로 나가는 포켓몬의 특성 효과.
+ * - regenerator: maxHp/3 회복(호출부가 hp>0일 때만 적용)
+ * - natural-cure: 주상태이상 회복
+ * 미특성/미대상이면 {heal:0, cureStatus:false}.
+ */
+export function getSwitchOutAbilityEffect(mon: AbilityHolder, maxHp: number): SwitchOutResult {
+  const ability = getAbility(mon);
+  if (ability === "regenerator") return { heal: Math.max(1, Math.floor(maxHp / 3)), cureStatus: false };
+  if (ability === "natural-cure") return { heal: 0, cureStatus: true };
+  return { heal: 0, cureStatus: false };
+}
+
+// ---------------------------------------------------------------------------
 // B. 공격 데미지 배율(offense) — 지닌물건처럼 result.damage에 post-hoc 적용
 // ---------------------------------------------------------------------------
 

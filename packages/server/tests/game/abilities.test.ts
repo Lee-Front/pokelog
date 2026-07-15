@@ -21,6 +21,7 @@ import {
   getKnockoutBoost,
   applyOnHitDefenderAbilities,
   getAttackerHitStatus,
+  getSwitchOutAbilityEffect,
 } from "../../src/game/abilities.js";
 import { defaultStatStages } from "../../src/game/battle.js";
 import type { BattleState, PrimaryStatus, StatStages } from "../../../../shared/types.js";
@@ -653,5 +654,19 @@ describe("batch6: getAttackerHitStatus", () => {
   it("null for other/absent abilities", () => {
     expect(getAttackerHitStatus({ abilityId: "static" }, "physical", true, lo)).toBeNull();
     expect(getAttackerHitStatus({}, "physical", true, lo)).toBeNull();
+  });
+});
+
+// ── Batch 8: 스위치아웃 특성 ─────────────────────────────────────────────────
+describe("batch8: getSwitchOutAbilityEffect", () => {
+  it("regenerator heals maxHp/3", () => {
+    expect(getSwitchOutAbilityEffect({ abilityId: "regenerator" }, 300)).toEqual({ heal: 100, cureStatus: false });
+  });
+  it("natural-cure flags cureStatus", () => {
+    expect(getSwitchOutAbilityEffect({ abilityId: "natural-cure" }, 300)).toEqual({ heal: 0, cureStatus: true });
+  });
+  it("neutral for others/absent", () => {
+    expect(getSwitchOutAbilityEffect({ abilityId: "intimidate" }, 300)).toEqual({ heal: 0, cureStatus: false });
+    expect(getSwitchOutAbilityEffect({}, 300)).toEqual({ heal: 0, cureStatus: false });
   });
 });

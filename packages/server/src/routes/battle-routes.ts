@@ -28,7 +28,7 @@ import {
   handleFainted, doWildAttackAndCheck,
   type FaintedResult,
 } from "../game/battle-state.js";
-import { applySwitchInAbilities } from "../game/abilities.js";
+import { applySwitchInAbilities, getSwitchOutAbilityEffect } from "../game/abilities.js";
 import { appendEvent } from "../storage/event-log.js";
 import { syncWorldBossDamage, distributeWorldBossDefeatRewards } from "../game/world-boss-sync.js";
 import { childLogger } from "../logger.js";
@@ -691,6 +691,21 @@ async function handleSwitch(
   battle.transformationType = null;
   battle.gmaxTurnsRemaining = undefined;
   battle.playerPreTransformMaxHp = undefined;
+
+  // 교체로 나가는 포켓몬의 스위치아웃 특성(regenerator 1/3 회복, natural-cure 상태회복).
+  // 기절한 포켓몬(강제 교체)엔 적용하지 않는다.
+  if (myPokemon.hp > 0) {
+    const outEffect = getSwitchOutAbilityEffect(myPokemon, myPokemon.maxHp);
+    if (outEffect.heal > 0 && myPokemon.hp < myPokemon.maxHp) {
+      myPokemon.hp = Math.min(myPokemon.maxHp, myPokemon.hp + outEffect.heal);
+      log.push(`${getDisplaySpeciesName(myPokemon.species)}은(는) 재생력으로 체력을 회복했다!`);
+    }
+    if (outEffect.cureStatus && myPokemon.statusCondition) {
+      myPokemon.statusCondition = null;
+      myPokemon.sleepTurns = undefined;
+      log.push(`${getDisplaySpeciesName(myPokemon.species)}은(는) 자연회복으로 상태이상이 나았다!`);
+    }
+  }
 
   battle.myPokemonUid = newUid;
   // 들어온 포켓몬을 참여자로 기록(중복 제거). 승리 시 살아있는 참여자가 풀 EXP를 받는다.
