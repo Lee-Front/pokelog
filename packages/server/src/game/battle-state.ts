@@ -20,7 +20,7 @@ import {
   abilityBlocksIndirectDamage, resolveUnawareStages, applyContraryToChange,
   checkDisguiseBreak, isIronFistMove,
   isSlicingMove, isBitingMove, isPulseMove, isSoundMove, getKnockoutBoost,
-  applyOnHitDefenderAbilities,
+  applyOnHitDefenderAbilities, getAttackerHitStatus,
   type OffenseContext, type AbilityHolder, type OnHitDefenderResult,
 } from "./abilities.js";
 import {
@@ -766,6 +766,15 @@ export function executePlayerAttack(
       applyOnHitDefender(battle, "wild", onHit, `야생 ${getDisplaySpeciesName(battle.wild.species)}`, getDisplaySpeciesName(player.species), log);
     }
 
+    // 공격자(플레이어) 특성 poison-touch/toxic-chain: 피격한 야생을 확률로 독. 무상태·비독강철·면역 아닌 경우.
+    if (!hitSuppressed && battle.wild.hp > 0 && result.damage > 0 && !battle.wild.statusCondition) {
+      const inflict = getAttackerHitStatus(player, moveData.category, moveData.category === "physical");
+      if (inflict && !abilityBlocksStatus(battle.wild, inflict) && !wildDefTypes.includes("poison") && !wildDefTypes.includes("steel")) {
+        battle.wild.statusCondition = inflict;
+        log.push(`야생 ${getDisplaySpeciesName(battle.wild.species)}은(는) 독 상태가 되었다!`);
+      }
+    }
+
     // Check flinch
     // "apply if under": roll < chance means flinch IS applied
     // inner-focus 특성을 가진 대상(야생)은 풀죽음에 면역이다.
@@ -1415,6 +1424,15 @@ export async function doWildAttackAndCheck(
         previousHp, myPokemon.hp, myPokemon.maxHp,
       );
       applyOnHitDefender(battle, "player", onHit, getDisplaySpeciesName(myPokemon.species), `야생 ${getDisplaySpeciesName(battle.wild.species)}`, log);
+    }
+
+    // 공격자(야생) 특성 poison-touch/toxic-chain: 피격한 플레이어를 확률로 독.
+    if (!wildHitSuppressed && myPokemon.hp > 0 && wildResult.damage > 0 && !myPokemon.statusCondition) {
+      const inflict = getAttackerHitStatus(battle.wild, wildResult.moveData.category, wildResult.moveData.category === "physical");
+      if (inflict && !abilityBlocksStatus(myPokemon, inflict) && !playerDefTypes.includes("poison") && !playerDefTypes.includes("steel")) {
+        myPokemon.statusCondition = inflict;
+        log.push(`${getDisplaySpeciesName(myPokemon.species)}은(는) 독 상태가 되었다!`);
+      }
     }
 
     // 풀죽음(flinch) 판정 — executePlayerAttack와 동일하게 "apply if under"(roll < chance).

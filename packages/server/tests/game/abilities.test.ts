@@ -20,6 +20,7 @@ import {
   isSlicingMove, isBitingMove, isPulseMove, isSoundMove,
   getKnockoutBoost,
   applyOnHitDefenderAbilities,
+  getAttackerHitStatus,
 } from "../../src/game/abilities.js";
 import { defaultStatStages } from "../../src/game/battle.js";
 import type { BattleState, PrimaryStatus, StatStages } from "../../../../shared/types.js";
@@ -621,5 +622,24 @@ describe("batch5: applyOnHitDefenderAbilities", () => {
   it("status move or zero damage → empty", () => {
     expect(hit("stamina", { moveCategory: "status" }).selfChanges).toEqual([]);
     expect(hit("stamina", { hpBefore: 70, hpAfter: 70 }).selfChanges).toEqual([]);
+  });
+});
+
+// ── Batch 6: 공격자 접촉/피격 상태부여 ───────────────────────────────────────
+describe("batch6: getAttackerHitStatus", () => {
+  const lo = () => 0.1;  // < 0.3 발동
+  const hi = () => 0.9;  // >= 0.3 미발동
+  it("poison-touch poisons on contact (physical) at 30%", () => {
+    expect(getAttackerHitStatus({ abilityId: "poison-touch" }, "physical", true, lo)).toBe("poison");
+    expect(getAttackerHitStatus({ abilityId: "poison-touch" }, "physical", true, hi)).toBeNull();
+    expect(getAttackerHitStatus({ abilityId: "poison-touch" }, "special", false, lo)).toBeNull(); // 비접촉
+  });
+  it("toxic-chain poisons on any damaging hit at 30%", () => {
+    expect(getAttackerHitStatus({ abilityId: "toxic-chain" }, "special", false, lo)).toBe("poison");
+    expect(getAttackerHitStatus({ abilityId: "toxic-chain" }, "status", false, lo)).toBeNull();
+  });
+  it("null for other/absent abilities", () => {
+    expect(getAttackerHitStatus({ abilityId: "static" }, "physical", true, lo)).toBeNull();
+    expect(getAttackerHitStatus({}, "physical", true, lo)).toBeNull();
   });
 });

@@ -570,6 +570,26 @@ export function applyOnHitDefenderAbilities(
   return res;
 }
 
+/**
+ * 공격자 특성이 피격한 방어자에게 부여하는 주상태이상(호출부가 방어자 무상태·면역·타입을 확인 후 적용).
+ * - poison-touch: 접촉(물리 프록시) 기술 30% 독
+ * - toxic-chain: 데미지 기술 30% 독(맹독은 미모델링이라 일반 독으로 근사)
+ * status 기술/미대상이면 null.
+ */
+export function getAttackerHitStatus(
+  attacker: AbilityHolder,
+  moveCategory: MoveCategory,
+  isContact: boolean,
+  random: () => number = Math.random,
+): PrimaryStatus | null {
+  const ability = getAbility(attacker);
+  if (!ability) return null;
+  if (moveCategory === "status") return null;
+  if (ability === "poison-touch" && isContact && random() < 0.3) return "poison";
+  if (ability === "toxic-chain" && random() < 0.3) return "poison";
+  return null;
+}
+
 // ---------------------------------------------------------------------------
 // G. 턴 종료(end of turn)
 // ---------------------------------------------------------------------------
