@@ -556,6 +556,16 @@ export function executePlayerAttack(
   const playerAtkTypes = getEffectiveTypes(player.species, player.variantId, battle.playerBattleForm);
   const wildDefTypes = getEffectiveTypes(battle.wild.species, battle.wild.variantId, battle.wildBattleForm);
 
+  // 변환(protean/libero): 사용 기술 타입이 항상 STAB이 되도록 STAB 전용 타입에 기술 타입을 더한다.
+  // (날씨·필드 게이팅용 playerAtkTypes는 그대로 두어 부작용 방지. Gen9 1회 제한·방어타입 변경은 미모델링.)
+  const playerHasTypeChange = hasAbility(player, "protean") || hasAbility(player, "libero");
+  const playerStabTypes = playerHasTypeChange && !playerAtkTypes.includes(moveData.type)
+    ? [...playerAtkTypes, moveData.type]
+    : playerAtkTypes;
+  if (playerHasTypeChange && moveData.category !== "status") {
+    log.push(`${getDisplaySpeciesName(player.species)}은(는) ${moveData.name}의 타입이 되었다!`);
+  }
+
   // 틀깨기(mold-breaker/turboblaze/teravolt): 플레이어가 이 특성이면 야생의 방어 특성을 무시.
   const playerBreaksMold = attackerBreaksMold(player);
 
@@ -605,7 +615,7 @@ export function executePlayerAttack(
 
   const result = calculateDamage(
     player.level, playerStats, battle.wild.stats, moveData,
-    playerAtkTypes,
+    playerStabTypes,
     wildDefTypes,
     playerUnaware.attackerStages, playerUnaware.defenderStages,
     (playerWeatherMod * playerTerrainMod) / wildSpDefMod,
@@ -624,7 +634,7 @@ export function executePlayerAttack(
   const playerAbilityOffenseMod = getAbilityOffenseMultiplier(
     player, moveData.type, moveData.category, moveData.power,
     player.maxHp > 0 ? player.hp / player.maxHp : 0,
-    playerAtkTypes.includes(moveData.type),
+    playerStabTypes.includes(moveData.type),
     player.statusCondition != null,
     buildOffenseContext(selectedMove.id, moveData, result.effectiveness, result.critical, battle.weather),
   );

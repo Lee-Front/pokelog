@@ -209,6 +209,32 @@ describe("on-KO 공격 특성", () => {
   });
 });
 
+// 변환 특성(protean/libero) — 사용 기술이 항상 STAB이 되어 데미지가 커진다.
+describe("변환 특성(protean)", () => {
+  const tackle = { id: "tackle", name: "몸통박치기", type: "normal", category: "physical", power: 40, accuracy: 100, pp: 35 } as unknown as MoveData;
+  let randomSpy: ReturnType<typeof vi.spyOn>;
+  beforeEach(() => { randomSpy = vi.spyOn(Math, "random").mockReturnValue(0.5); });
+  afterEach(() => { randomSpy.mockRestore(); });
+
+  it("protean이 비-STAB 노말 기술을 STAB로 만들어 데미지가 커진다", () => {
+    // 기준(무특성 bulbasaur, 노말 기술은 비-STAB)
+    const base = makePlayer({ species: "bulbasaur", stats: makeStats({ attack: 100 }) });
+    const b1 = makeBattle(); b1.wild.hp = 99999; b1.wild.maxHp = 99999;
+    executePlayerAttack(b1, base, tackle, { id: "tackle", pp: 35, maxPp: 35 }, []);
+    const dmgNoProtean = 99999 - b1.wild.hp;
+
+    // protean bulbasaur → 노말 타입이 되어 STAB
+    const prot = makePlayer({ species: "bulbasaur", abilityId: "protean", stats: makeStats({ attack: 100 }) });
+    const b2 = makeBattle(); b2.wild.hp = 99999; b2.wild.maxHp = 99999;
+    const log: string[] = [];
+    executePlayerAttack(b2, prot, tackle, { id: "tackle", pp: 35, maxPp: 35 }, log);
+    const dmgProtean = 99999 - b2.wild.hp;
+
+    expect(dmgProtean).toBeGreaterThan(dmgNoProtean);
+    expect(log.some((l) => l.includes("타입이 되었다"))).toBe(true);
+  });
+});
+
 // 피격 시 방어자 특성 — 야생의 물리 공격을 맞은 플레이어(stamina)가 방어 상승.
 describe("피격 시 방어자 특성(stamina)", () => {
   let randomSpy: ReturnType<typeof vi.spyOn>;
