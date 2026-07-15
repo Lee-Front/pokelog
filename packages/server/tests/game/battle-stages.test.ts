@@ -74,12 +74,16 @@ describe("applyStatChanges", () => {
     expect(result.defense).toBe(-6);
   });
 
-  it("ignores unknown stat names", () => {
+  // 정확도/회피 스탯 추가(StatStages+2) 이후: evasion/accuracy는 이제 유효 스탯이므로
+  // applyStatChanges가 이를 적용한다(과거 "unknown stat 무시" 전제는 폐기됨).
+  it("applies accuracy/evasion stages", () => {
     const stages = defaultStatStages();
     const result = applyStatChanges(stages, [
       { stat: "evasion", change: 1 },
+      { stat: "accuracy", change: -2 },
     ]);
-    expect(result).toEqual(defaultStatStages());
+    expect(result.evasion).toBe(1);
+    expect(result.accuracy).toBe(-2);
   });
 
   it("does not mutate original stages", () => {
