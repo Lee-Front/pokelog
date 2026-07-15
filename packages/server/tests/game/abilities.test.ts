@@ -250,6 +250,12 @@ describe("getAbilitySpeedMultiplier", () => {
     expect(getAbilitySpeedMultiplier({ abilityId: "slush-rush" }, "hail")).toBe(2);
     expect(getAbilitySpeedMultiplier({ abilityId: "swift-swim" }, undefined)).toBe(1);
   });
+  it("surge-surfer doubles on electric terrain; quick-feet ×1.5 when statused", () => {
+    expect(getAbilitySpeedMultiplier({ abilityId: "surge-surfer" }, undefined, "electric", false)).toBe(2);
+    expect(getAbilitySpeedMultiplier({ abilityId: "surge-surfer" }, undefined, "grassy", false)).toBe(1);
+    expect(getAbilitySpeedMultiplier({ abilityId: "quick-feet" }, undefined, undefined, true)).toBe(1.5);
+    expect(getAbilitySpeedMultiplier({ abilityId: "quick-feet" }, undefined, undefined, false)).toBe(1);
+  });
 });
 
 describe("abilitySurvivesKO (sturdy)", () => {

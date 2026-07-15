@@ -696,10 +696,18 @@ const SPEED_WEATHER: Record<string, BattleWeather> = {
  * - swift-swim(비)/chlorophyll(햇살)/sand-rush(모래바람)/slush-rush(우박): ×2
  * 미특성/미지원/날씨 불일치면 1.
  */
-export function getAbilitySpeedMultiplier(mon: AbilityHolder, weather: BattleWeather | undefined): number {
+export function getAbilitySpeedMultiplier(
+  mon: AbilityHolder,
+  weather: BattleWeather | undefined,
+  terrain: BattleTerrain | undefined = undefined,
+  hasStatus = false,
+): number {
   const ability = getAbility(mon);
   if (!ability) return 1;
-  return SPEED_WEATHER[ability] === weather && weather ? 2 : 1;
+  if (SPEED_WEATHER[ability] === weather && weather) return 2;
+  if (ability === "surge-surfer" && terrain === "electric") return 2; // 서지서퍼: 일렉필드 ×2
+  if (ability === "quick-feet" && hasStatus) return 1.5;              // 속보: 주상태이상 시 ×1.5
+  return 1;
 }
 
 // ---------------------------------------------------------------------------

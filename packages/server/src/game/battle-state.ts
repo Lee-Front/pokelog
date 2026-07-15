@@ -894,18 +894,19 @@ export function determineBattleTurnOrder(
   wildMoveData: { priority?: number },
   log: string[] = [],
 ): "player" | "wild" {
+  // 마비 감속(속보/quick-feet는 마비 감속을 무시한다).
   let playerSpeedBase = player.stats.speed;
-  if (player.statusCondition === "paralysis") {
+  if (player.statusCondition === "paralysis" && !hasAbility(player, "quick-feet")) {
     playerSpeedBase = Math.max(1, Math.floor(playerSpeedBase / 2));
   }
   let wildSpeedBase = battle.wild.stats.speed;
-  if (battle.wild.statusCondition === "paralysis") {
+  if (battle.wild.statusCondition === "paralysis" && !hasAbility(battle.wild, "quick-feet")) {
     wildSpeedBase = Math.max(1, Math.floor(wildSpeedBase / 2));
   }
 
-  // 특성 속도 배율(swift-swim·chlorophyll·sand-rush·slush-rush): 날씨 일치 시 ×2.
-  const playerSpeedAbilityMult = getAbilitySpeedMultiplier(player, battle.weather);
-  const wildSpeedAbilityMult = getAbilitySpeedMultiplier(battle.wild, battle.weather);
+  // 특성 속도 배율(swift-swim류 날씨 ×2, surge-surfer 일렉필드 ×2, quick-feet 상태이상 ×1.5).
+  const playerSpeedAbilityMult = getAbilitySpeedMultiplier(player, battle.weather, battle.terrain, player.statusCondition != null);
+  const wildSpeedAbilityMult = getAbilitySpeedMultiplier(battle.wild, battle.weather, battle.terrain, battle.wild.statusCondition != null);
 
   const playerSpeed = applyStatStageMultiplier(playerSpeedBase, battle.playerStatStages?.speed ?? 0) * playerSpeedAbilityMult;
   const wildSpeed = applyStatStageMultiplier(wildSpeedBase, battle.wildStatStages?.speed ?? 0) * wildSpeedAbilityMult;
