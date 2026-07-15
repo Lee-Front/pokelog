@@ -17,6 +17,7 @@ import {
   applyContraryToChange,
   checkDisguiseBreak,
   isIronFistMove,
+  isSlicingMove, isBitingMove, isPulseMove, isSoundMove,
 } from "../../src/game/abilities.js";
 import { defaultStatStages } from "../../src/game/battle.js";
 import type { BattleState, PrimaryStatus, StatStages } from "../../../../shared/types.js";
@@ -522,5 +523,29 @@ describe("batch1: status-blocking abilities", () => {
     expect(abilityBlocksStatus({ abilityId: "thermal-exchange" }, "burn")).toBe(true);
     expect(abilityBlocksStatus({ abilityId: "water-bubble" }, "burn")).toBe(true);
     expect(abilityBlocksStatus({ abilityId: "water-bubble" }, "paralysis")).toBe(false);
+  });
+});
+
+// ── Batch 2: 기술 플래그 기반 위력 특성(buildOffenseContext ctx 경유) ──────────
+describe("batch2: move-flag offense abilities", () => {
+  const frac = 0.5;
+  it("move-flag predicates classify correctly", () => {
+    expect(isSlicingMove("leaf-blade")).toBe(true);
+    expect(isSlicingMove("tackle")).toBe(false);
+    expect(isBitingMove("crunch")).toBe(true);
+    expect(isPulseMove("aura-sphere")).toBe(true);
+    expect(isSoundMove("boomburst")).toBe(true);
+  });
+  it("sharpness ×1.5 only for slicing moves", () => {
+    expect(getAbilityOffenseMultiplier({ abilityId: "sharpness" }, "grass", "physical", 90, frac, false, false, { isSlicing: true })).toBeCloseTo(1.5);
+    expect(getAbilityOffenseMultiplier({ abilityId: "sharpness" }, "grass", "physical", 90, frac, false, false, {})).toBe(1);
+  });
+  it("strong-jaw ×1.5 biting, mega-launcher ×1.5 pulse, punk-rock ×1.3 sound", () => {
+    expect(getAbilityOffenseMultiplier({ abilityId: "strong-jaw" }, "dark", "physical", 80, frac, false, false, { isBiting: true })).toBeCloseTo(1.5);
+    expect(getAbilityOffenseMultiplier({ abilityId: "mega-launcher" }, "fighting", "special", 80, frac, false, false, { isPulse: true })).toBeCloseTo(1.5);
+    expect(getAbilityOffenseMultiplier({ abilityId: "punk-rock" }, "normal", "special", 90, frac, false, false, { isSound: true })).toBeCloseTo(1.3);
+  });
+  it("status-category move gets no flag boost (isDamaging gate)", () => {
+    expect(getAbilityOffenseMultiplier({ abilityId: "punk-rock" }, "normal", "status", 0, frac, false, false, { isSound: true })).toBe(1);
   });
 });

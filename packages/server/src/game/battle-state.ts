@@ -19,6 +19,7 @@ import {
   abilityBlocksStatus, attackerBreaksMold, abilityNullifiesNonSuperEffective,
   abilityBlocksIndirectDamage, resolveUnawareStages, applyContraryToChange,
   checkDisguiseBreak, isIronFistMove,
+  isSlicingMove, isBitingMove, isPulseMove, isSoundMove,
   type OffenseContext, type AbilityHolder,
 } from "./abilities.js";
 import {
@@ -442,6 +443,10 @@ function buildOffenseContext(
     isPunchMove: isIronFistMove(moveId),
     isContact: moveData.category === "physical",
     weather,
+    isSlicing: isSlicingMove(moveId),
+    isBiting: isBitingMove(moveId),
+    isPulse: isPulseMove(moveId),
+    isSound: isSoundMove(moveId),
   };
 }
 

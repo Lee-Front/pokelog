@@ -143,6 +143,10 @@ export interface OffenseContext {
   isPunchMove?: boolean;        // 펀치 계열 기술 — iron-fist
   isContact?: boolean;          // 접촉(물리 프록시) — tough-claws
   weather?: BattleWeather;      // sand-force(모래바람) 판정용
+  isSlicing?: boolean;          // 칼날 계열 — sharpness
+  isBiting?: boolean;           // 엄니 계열 — strong-jaw
+  isPulse?: boolean;            // 파동/오라 계열 — mega-launcher
+  isSound?: boolean;            // 소리 계열 — punk-rock
 }
 
 /** iron-fist가 위력을 올려주는 펀치 계열 기술 id(sucker-punch는 제외 — 본가 미대상). */
@@ -159,6 +163,36 @@ export function isIronFistMove(moveId: string): boolean {
 
 /** sand-force가 위력을 올려주는 타입(모래바람에서 강철·바위·땅). */
 const SAND_FORCE_TYPES = new Set<string>(["rock", "ground", "steel"]);
+
+/** sharpness(칼날 기술 ×1.5) 대상 — 본가 slicing 플래그. */
+const SLICING_MOVES = new Set<string>([
+  "cut", "fury-cutter", "slash", "air-slash", "x-scissor", "night-slash", "psycho-cut",
+  "leaf-blade", "cross-poison", "sacred-sword", "secret-sword", "razor-shell", "solar-blade",
+  "behemoth-blade", "aqua-cutter", "ceaseless-edge", "stone-axe", "bitter-blade", "air-cutter",
+  "kowtow-cleave", "psyblade", "mighty-cleave", "razor-leaf", "razor-wind",
+]);
+/** strong-jaw(엄니 기술 ×1.5) 대상 — 본가 biting 플래그. */
+const BITING_MOVES = new Set<string>([
+  "bite", "crunch", "fire-fang", "ice-fang", "thunder-fang", "poison-fang", "hyper-fang",
+  "psychic-fangs", "fishious-rend", "jaw-lock",
+]);
+/** mega-launcher(파동/오라 기술 ×1.5) 대상 — 본가 pulse 플래그. */
+const PULSE_MOVES = new Set<string>([
+  "aura-sphere", "dark-pulse", "dragon-pulse", "water-pulse", "heal-pulse", "origin-pulse",
+  "terrain-pulse",
+]);
+/** punk-rock(소리 기술 ×1.3) 대상 — 본가 sound 플래그(데미지 기술 위주). */
+const SOUND_MOVES = new Set<string>([
+  "hyper-voice", "boomburst", "bug-buzz", "chatter", "echoed-voice", "overdrive", "relic-song",
+  "round", "snarl", "snore", "sparkling-aria", "uproar", "clanging-scales", "clangorous-soul",
+  "clangorous-soulblaze", "torch-song", "alluring-voice", "psychic-noise", "eerie-spell",
+]);
+
+/** 기술 플래그 서술자 — 호출부(buildOffenseContext)가 moveId로 판정 후 ctx로 전달. */
+export function isSlicingMove(moveId: string): boolean { return SLICING_MOVES.has(moveId); }
+export function isBitingMove(moveId: string): boolean { return BITING_MOVES.has(moveId); }
+export function isPulseMove(moveId: string): boolean { return PULSE_MOVES.has(moveId); }
+export function isSoundMove(moveId: string): boolean { return SOUND_MOVES.has(moveId); }
 
 /**
  * 공격자 특성의 데미지 배율(곱).
@@ -218,6 +252,10 @@ export function getAbilityOffenseMultiplier(
   if (ability === "sniper" && ctx.isCritical) mult *= 1.5;
   if (ability === "tinted-lens" && ctx.notVeryEffective) mult *= 2;
   if (ability === "neuroforce" && ctx.isSuperEffective) mult *= 1.25;
+  if (ability === "sharpness" && isDamaging && ctx.isSlicing) mult *= 1.5;
+  if (ability === "strong-jaw" && isDamaging && ctx.isBiting) mult *= 1.5;
+  if (ability === "mega-launcher" && isDamaging && ctx.isPulse) mult *= 1.5;
+  if (ability === "punk-rock" && isDamaging && ctx.isSound) mult *= 1.3;
 
   return mult;
 }
