@@ -730,6 +730,61 @@ export function getAbilitySpeedMultiplier(
 }
 
 // ---------------------------------------------------------------------------
+// H1. 패러독스(protosynthesis/quark-drive) — 조건 활성 시 최고 스탯 강화
+// ---------------------------------------------------------------------------
+
+type ParadoxStat = "attack" | "defense" | "spAttack" | "spDefense" | "speed";
+interface ParadoxStats { attack: number; defense: number; spAttack: number; spDefense: number; speed: number; }
+
+/**
+ * 패러독스 강화가 활성일 때 강화되는 스탯(최고 스탯). 아니면 null.
+ * - protosynthesis: 강한 햇살(sun) / quark-drive: 일렉트릭필드(electric)
+ * 동률 시 공>방>특공>특방>속도 우선(정렬 안정성).
+ */
+export function getParadoxBoostedStat(
+  mon: AbilityHolder,
+  stats: ParadoxStats,
+  weather: BattleWeather | undefined,
+  terrain: BattleTerrain | undefined,
+): ParadoxStat | null {
+  const ability = getAbility(mon);
+  const active = (ability === "protosynthesis" && weather === "sun")
+    || (ability === "quark-drive" && terrain === "electric");
+  if (!active) return null;
+  const entries: [ParadoxStat, number][] = [
+    ["attack", stats.attack], ["defense", stats.defense],
+    ["spAttack", stats.spAttack], ["spDefense", stats.spDefense], ["speed", stats.speed],
+  ];
+  entries.sort((a, b) => b[1] - a[1]);
+  return entries[0][0];
+}
+
+/** 공격 시: 강화 스탯이 사용 공격 스탯(물리→attack/특수→spAttack)이면 ×1.3. */
+export function getParadoxOffenseMultiplier(
+  attacker: AbilityHolder, stats: ParadoxStats, weather: BattleWeather | undefined, terrain: BattleTerrain | undefined, moveCategory: MoveCategory,
+): number {
+  const boosted = getParadoxBoostedStat(attacker, stats, weather, terrain);
+  if (!boosted) return 1;
+  return boosted === (moveCategory === "physical" ? "attack" : "spAttack") ? 1.3 : 1;
+}
+
+/** 방어 시: 강화 스탯이 관련 방어 스탯이면 받는 데미지 ×(1/1.3). */
+export function getParadoxDefenseMultiplier(
+  defender: AbilityHolder, stats: ParadoxStats, weather: BattleWeather | undefined, terrain: BattleTerrain | undefined, moveCategory: MoveCategory,
+): number {
+  const boosted = getParadoxBoostedStat(defender, stats, weather, terrain);
+  if (!boosted) return 1;
+  return boosted === (moveCategory === "physical" ? "defense" : "spDefense") ? 1 / 1.3 : 1;
+}
+
+/** 턴순서: 강화 스탯이 speed면 ×1.5. */
+export function getParadoxSpeedMultiplier(
+  mon: AbilityHolder, stats: ParadoxStats, weather: BattleWeather | undefined, terrain: BattleTerrain | undefined,
+): number {
+  return getParadoxBoostedStat(mon, stats, weather, terrain) === "speed" ? 1.5 : 1;
+}
+
+// ---------------------------------------------------------------------------
 // H2. 명중(accuracy) 특성
 // ---------------------------------------------------------------------------
 

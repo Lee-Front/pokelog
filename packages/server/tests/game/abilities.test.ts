@@ -26,6 +26,7 @@ import {
   getSecondaryChanceMultiplier,
   getAbilityPriorityBonus,
   getStatDropRetaliation,
+  getParadoxBoostedStat, getParadoxOffenseMultiplier, getParadoxDefenseMultiplier, getParadoxSpeedMultiplier,
 } from "../../src/game/abilities.js";
 import { defaultStatStages } from "../../src/game/battle.js";
 import type { BattleState, PrimaryStatus, StatStages } from "../../../../shared/types.js";
@@ -776,5 +777,31 @@ describe("batch15: getStatDropRetaliation", () => {
   it("null for other/absent", () => {
     expect(getStatDropRetaliation({ abilityId: "intimidate" })).toBeNull();
     expect(getStatDropRetaliation({})).toBeNull();
+  });
+});
+
+// ── Batch 17: 패러독스(protosynthesis/quark-drive) ──────────────────────────
+describe("batch17: paradox abilities", () => {
+  const stats = { attack: 120, defense: 60, spAttack: 80, spDefense: 60, speed: 100 }; // 최고=attack
+  const fastStats = { attack: 80, defense: 60, spAttack: 80, spDefense: 60, speed: 150 }; // 최고=speed
+  it("protosynthesis boosts highest stat only in sun; quark-drive in electric terrain", () => {
+    expect(getParadoxBoostedStat({ abilityId: "protosynthesis" }, stats, "sun", undefined)).toBe("attack");
+    expect(getParadoxBoostedStat({ abilityId: "protosynthesis" }, stats, "rain", undefined)).toBeNull();
+    expect(getParadoxBoostedStat({ abilityId: "quark-drive" }, stats, undefined, "electric")).toBe("attack");
+    expect(getParadoxBoostedStat({ abilityId: "quark-drive" }, stats, undefined, "grassy")).toBeNull();
+  });
+  it("offense ×1.3 when boosted stat matches the used attacking stat", () => {
+    expect(getParadoxOffenseMultiplier({ abilityId: "protosynthesis" }, stats, "sun", undefined, "physical")).toBeCloseTo(1.3);
+    expect(getParadoxOffenseMultiplier({ abilityId: "protosynthesis" }, stats, "sun", undefined, "special")).toBe(1); // 최고=attack이라 특수엔 미적용
+  });
+  it("defense ×(1/1.3) and speed ×1.5", () => {
+    const defStats = { attack: 60, defense: 130, spAttack: 60, spDefense: 60, speed: 60 };
+    expect(getParadoxDefenseMultiplier({ abilityId: "quark-drive" }, defStats, undefined, "electric", "physical")).toBeCloseTo(1 / 1.3);
+    expect(getParadoxSpeedMultiplier({ abilityId: "protosynthesis" }, fastStats, "sun", undefined)).toBe(1.5);
+    expect(getParadoxSpeedMultiplier({ abilityId: "protosynthesis" }, stats, "sun", undefined)).toBe(1); // 최고=attack
+  });
+  it("inert without the ability or the condition", () => {
+    expect(getParadoxBoostedStat({ abilityId: "intimidate" }, stats, "sun", "electric")).toBeNull();
+    expect(getParadoxOffenseMultiplier({}, stats, "sun", "electric", "physical")).toBe(1);
   });
 });

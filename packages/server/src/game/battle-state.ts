@@ -23,6 +23,7 @@ import {
   applyOnHitDefenderAbilities, getAttackerHitStatus,
   getAbilityAccuracyMultiplier, abilitiesNeverMiss, getSecondaryChanceMultiplier,
   getAbilityPriorityBonus, getStatDropRetaliation,
+  getParadoxOffenseMultiplier, getParadoxDefenseMultiplier, getParadoxSpeedMultiplier,
   type OffenseContext, type AbilityHolder, type OnHitDefenderResult,
 } from "./abilities.js";
 import {
@@ -661,6 +662,12 @@ export function executePlayerAttack(
     result.damage = Math.floor(result.damage * playerAbilityOffenseMod);
   }
 
+  // 패러독스 공격(protosynthesis/quark-drive): 강화 스탯이 사용 공격 스탯이면 ×1.3.
+  const playerParadoxOff = getParadoxOffenseMultiplier(player, player.stats, battle.weather, battle.terrain, moveData.category);
+  if (playerParadoxOff !== 1 && result.damage > 0) {
+    result.damage = Math.floor(result.damage * playerParadoxOff);
+  }
+
   // 특성 방어 보정(thick-fat·multiscale·filter 등) — 야생 방어자 기준. 틀깨기면 무시.
   const wildAbilityDefenseMod = getAbilityDefenseMultiplier(
     battle.wild, moveData.type,
@@ -671,6 +678,14 @@ export function executePlayerAttack(
   );
   if (wildAbilityDefenseMod !== 1 && result.damage > 0) {
     result.damage = Math.floor(result.damage * wildAbilityDefenseMod);
+  }
+
+  // 패러독스 방어(야생 방어자): 강화 스탯이 관련 방어 스탯이면 받는 데미지 ×(1/1.3). 틀깨기면 무시.
+  if (!playerBreaksMold) {
+    const wildParadoxDef = getParadoxDefenseMultiplier(battle.wild, battle.wild.stats, battle.weather, battle.terrain, moveData.category);
+    if (wildParadoxDef !== 1 && result.damage > 0) {
+      result.damage = Math.max(1, Math.floor(result.damage * wildParadoxDef));
+    }
   }
 
   // 원더가드(야생 방어자): 효과가 굉장하지 않은 데미지 기술은 데미지 0. 틀깨기면 무시.
@@ -946,8 +961,11 @@ export function determineBattleTurnOrder(
   const playerSpeedAbilityMult = getAbilitySpeedMultiplier(player, battle.weather, battle.terrain, player.statusCondition != null);
   const wildSpeedAbilityMult = getAbilitySpeedMultiplier(battle.wild, battle.weather, battle.terrain, battle.wild.statusCondition != null);
 
-  const playerSpeed = applyStatStageMultiplier(playerSpeedBase, battle.playerStatStages?.speed ?? 0) * playerSpeedAbilityMult;
-  const wildSpeed = applyStatStageMultiplier(wildSpeedBase, battle.wildStatStages?.speed ?? 0) * wildSpeedAbilityMult;
+  // 패러독스 속도(protosynthesis/quark-drive): 강화 스탯이 speed면 ×1.5.
+  const playerParadoxSpeed = getParadoxSpeedMultiplier(player, player.stats, battle.weather, battle.terrain);
+  const wildParadoxSpeed = getParadoxSpeedMultiplier(battle.wild, battle.wild.stats, battle.weather, battle.terrain);
+  const playerSpeed = applyStatStageMultiplier(playerSpeedBase, battle.playerStatStages?.speed ?? 0) * playerSpeedAbilityMult * playerParadoxSpeed;
+  const wildSpeed = applyStatStageMultiplier(wildSpeedBase, battle.wildStatStages?.speed ?? 0) * wildSpeedAbilityMult * wildParadoxSpeed;
 
   // 특성 우선도 보너스(prankster/gale-wings/triage)를 기술 우선도에 더한다.
   const playerPriority = (playerMoveData.priority ?? 0) + getAbilityPriorityBonus(player, playerMoveData, player.hp >= player.maxHp);
@@ -1359,6 +1377,9 @@ export async function doWildAttackAndCheck(
       buildOffenseContext(wildResult.moveId ?? "", wildResult.moveData, wildEffectiveness, wildResult.critical ?? false, battle.weather),
     );
     if (wildAbilityOffenseMod !== 1) wildResult.damage = Math.floor(wildResult.damage * wildAbilityOffenseMod);
+    // 패러독스 공격(야생): 강화 스탯이 사용 공격 스탯이면 ×1.3.
+    const wildParadoxOff = getParadoxOffenseMultiplier(battle.wild, battle.wild.stats, battle.weather, battle.terrain, wildResult.moveData.category);
+    if (wildParadoxOff !== 1) wildResult.damage = Math.floor(wildResult.damage * wildParadoxOff);
   }
 
   // 특성 방어 보정(플레이어 방어자). 이제 wildAttack이 effectiveness를 반환하므로 super-effective 의존
@@ -1372,6 +1393,11 @@ export async function doWildAttackAndCheck(
       wildResult.moveData.category, wildResult.moveData.category === "physical",
     );
     if (playerAbilityDefenseMod !== 1) wildResult.damage = Math.floor(wildResult.damage * playerAbilityDefenseMod);
+    // 패러독스 방어(플레이어): 강화 스탯이 관련 방어 스탯이면 받는 데미지 ×(1/1.3). 틀깨기면 무시.
+    if (!wildBreaksMold) {
+      const playerParadoxDef = getParadoxDefenseMultiplier(myPokemon, myPokemon.stats, battle.weather, battle.terrain, wildResult.moveData.category);
+      if (playerParadoxDef !== 1) wildResult.damage = Math.max(1, Math.floor(wildResult.damage * playerParadoxDef));
+    }
   }
 
   // 원더가드(플레이어 방어자): 효과가 굉장하지 않은 데미지 기술은 데미지 0. 틀깨기면 무시.
