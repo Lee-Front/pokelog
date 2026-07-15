@@ -41,9 +41,10 @@ describe("QA: Schema Alignment", () => {
       expect(pokemon.level).toBe(5);
       expect(typeof pokemon.level).toBe("number");
 
-      // exp
-      expect(pokemon.exp).toBe(0);
+      // exp — createPokemon은 exp를 해당 레벨의 "바닥값"으로 초기화한다(0이 아님).
+      // (Lv5 medium-slow=135 등) 필드 존재·타입·비음수만 검증한다.
       expect(typeof pokemon.exp).toBe("number");
+      expect(pokemon.exp).toBeGreaterThanOrEqual(0);
 
       // hp
       expect(typeof pokemon.hp).toBe("number");
@@ -273,7 +274,9 @@ describe("QA: Schema Alignment", () => {
       const loaded = await userStoreModule.getUser("test-user-b4");
       expect(loaded).not.toBeNull();
 
-      const normalized = loaded!.pokemon[0];
+      // 로스터 모델: 파티에 없는 개체는 reconcileRoster가 storage[]로 옮긴다(pokemon[]=파티).
+      // 이 개체는 party 미참조라 storage[0]에 정규화되어 들어간다.
+      const normalized = loaded!.storage[0];
 
       // nature defaults to "hardy"
       expect(normalized.nature).toBe("hardy");

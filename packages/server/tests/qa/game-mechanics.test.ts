@@ -305,8 +305,8 @@ describe("QA: Game Mechanics", () => {
       vi.restoreAllMocks();
     });
 
-    it("common cost=120, rare cost=450, legend cost=3200", () => {
-      const summaries = getEggTierSummaries();
+    it("common cost=120, rare cost=450, legend cost=3200", async () => {
+      const summaries = await getEggTierSummaries();
 
       const common = summaries.find((s) => s.tier === "common");
       const rare = summaries.find((s) => s.tier === "rare");
@@ -321,7 +321,7 @@ describe("QA: Game Mechanics", () => {
       expect(legend!.cost).toBe(3200);
     });
 
-    it("tier level ranges are correct: common [1,6], rare [5,12], legend [15,25]", () => {
+    it("tier level ranges are correct: common [1,6], rare [5,12], legend [15,25]", async () => {
       // Verify level ranges by hatching eggs at min random values.
       // We test by creating pokemon from egg hatch and verifying levels
       // fall within expected ranges. Since hatchEgg picks a random level
@@ -329,28 +329,28 @@ describe("QA: Game Mechanics", () => {
       vi.spyOn(Math, "random").mockReturnValue(0);
 
       // At random=0, rollLevel returns minLevel
-      const commonResult = hatchEgg({ id: "e1", tier: "common", createdAt: new Date().toISOString() });
+      const commonResult = await hatchEgg({ id: "e1", tier: "common", createdAt: new Date().toISOString() });
       expect(commonResult.pokemon.level).toBe(1);
 
-      const rareResult = hatchEgg({ id: "e2", tier: "rare", createdAt: new Date().toISOString() });
+      const rareResult = await hatchEgg({ id: "e2", tier: "rare", createdAt: new Date().toISOString() });
       expect(rareResult.pokemon.level).toBe(5);
 
-      const legendResult = hatchEgg({ id: "e3", tier: "legend", createdAt: new Date().toISOString() });
+      const legendResult = await hatchEgg({ id: "e3", tier: "legend", createdAt: new Date().toISOString() });
       expect(legendResult.pokemon.level).toBe(15);
 
       // At random=0.999..., rollLevel returns maxLevel
       vi.spyOn(Math, "random").mockReturnValue(0.999);
       clearEggGachaCache();
 
-      const commonMax = hatchEgg({ id: "e4", tier: "common", createdAt: new Date().toISOString() });
+      const commonMax = await hatchEgg({ id: "e4", tier: "common", createdAt: new Date().toISOString() });
       expect(commonMax.pokemon.level).toBeGreaterThanOrEqual(1);
       expect(commonMax.pokemon.level).toBeLessThanOrEqual(6);
 
-      const rareMax = hatchEgg({ id: "e5", tier: "rare", createdAt: new Date().toISOString() });
+      const rareMax = await hatchEgg({ id: "e5", tier: "rare", createdAt: new Date().toISOString() });
       expect(rareMax.pokemon.level).toBeGreaterThanOrEqual(5);
       expect(rareMax.pokemon.level).toBeLessThanOrEqual(12);
 
-      const legendMax = hatchEgg({ id: "e6", tier: "legend", createdAt: new Date().toISOString() });
+      const legendMax = await hatchEgg({ id: "e6", tier: "legend", createdAt: new Date().toISOString() });
       expect(legendMax.pokemon.level).toBeGreaterThanOrEqual(15);
       expect(legendMax.pokemon.level).toBeLessThanOrEqual(25);
     });

@@ -132,8 +132,9 @@ describe("QA: Cross-System Consistency", () => {
       const variants = getVariants();
       const eggEligibleVariants = variants.filter((v) => v.eggEligible === true);
 
-      // Confirm the exact count of regional egg-eligible variants
-      expect(eggEligibleVariants.length).toBe(59);
+      // Confirm the exact count of egg-eligible variants
+      // (팔데아 폼 등 추가로 증가; 데이터 추가 시 함께 갱신)
+      expect(eggEligibleVariants.length).toBe(63);
 
       // The egg-gacha runtime uses getSpecies() to build its pools.
       // getSpecies() returns SpeciesData[], NOT variants.
