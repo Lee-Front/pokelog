@@ -873,6 +873,18 @@ export function resolveUnawareStages(
   return { attackerStages: outAttacker, defenderStages: outDefender };
 }
 
+/**
+ * 상대가 자신의 스탯을 낮췄을 때의 반격 상승(defiant/competitive).
+ * - defiant: 공격 +2 / competitive: 특수공격 +2
+ * 미대상이면 null. (스탯 하락 1회당 1번 트리거는 호출부가 보장)
+ */
+export function getStatDropRetaliation(mon: AbilityHolder): { stat: keyof StatStages; change: number } | null {
+  const ability = getAbility(mon);
+  if (ability === "defiant") return { stat: "attack", change: 2 };
+  if (ability === "competitive") return { stat: "spAttack", change: 2 };
+  return null;
+}
+
 // ---------------------------------------------------------------------------
 // N. 심술꾸러기(contrary) — 자신에 대한 랭크 변화가 반대로
 // ---------------------------------------------------------------------------

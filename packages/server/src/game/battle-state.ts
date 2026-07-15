@@ -22,7 +22,7 @@ import {
   isSlicingMove, isBitingMove, isPulseMove, isSoundMove, getKnockoutBoost,
   applyOnHitDefenderAbilities, getAttackerHitStatus,
   getAbilityAccuracyMultiplier, abilitiesNeverMiss, getSecondaryChanceMultiplier,
-  getAbilityPriorityBonus,
+  getAbilityPriorityBonus, getStatDropRetaliation,
   type OffenseContext, type AbilityHolder, type OnHitDefenderResult,
 } from "./abilities.js";
 import {
@@ -392,6 +392,9 @@ export function maybeApplyStatChanges(
 
   const targetsSelf = moveData.target === "user" || moveData.target === "user-and-allies" || moveData.target === "users-field";
 
+  // defiant/competitive: 상대가 자신의 스탯을 낮추면 반격 상승. 여러 스탯이 깎여도 1회만 트리거.
+  let foeDroppedSide: "player" | "wild" | null = null;
+
   for (const { stat, change } of changes) {
     const isSelfBuff = targetsSelf || change > 0;
     // 이 변화를 실제로 받는 쪽을 먼저 결정한다(자기 강화면 사용자, 아니면 상대).
@@ -407,6 +410,22 @@ export function maybeApplyStatChanges(
     }
     const direction = effectiveChange > 0 ? "올랐다" : "내려갔다";
     log.push(`${stat} 스탯이 ${direction}!`);
+    // 상대가 낮춘(비-자기강화 & 실제 하락) 경우 반격 대상 기록.
+    if (!isSelfBuff && effectiveChange < 0) foeDroppedSide = recipientIsPlayer ? "player" : "wild";
+  }
+
+  // defiant/competitive 반격(스탯 하락 1회당 1번).
+  if (foeDroppedSide) {
+    const recipientHolder = foeDroppedSide === "player" ? holders?.player : holders?.wild;
+    const retal = recipientHolder ? getStatDropRetaliation(recipientHolder) : null;
+    if (retal) {
+      if (foeDroppedSide === "player") {
+        battle.playerStatStages = applyStatChanges(battle.playerStatStages ?? defaultStatStages(), [retal]);
+      } else {
+        battle.wildStatStages = applyStatChanges(battle.wildStatStages ?? defaultStatStages(), [retal]);
+      }
+      log.push("상대가 능력을 낮춰 특성으로 크게 올랐다!");
+    }
   }
 }
 

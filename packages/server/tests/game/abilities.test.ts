@@ -25,6 +25,7 @@ import {
   getAbilityAccuracyMultiplier, abilitiesNeverMiss,
   getSecondaryChanceMultiplier,
   getAbilityPriorityBonus,
+  getStatDropRetaliation,
 } from "../../src/game/abilities.js";
 import { defaultStatStages } from "../../src/game/battle.js";
 import type { BattleState, PrimaryStatus, StatStages } from "../../../../shared/types.js";
@@ -751,5 +752,17 @@ describe("batch13: getAbilityPriorityBonus", () => {
   it("0 for other/absent abilities", () => {
     expect(getAbilityPriorityBonus({ abilityId: "intimidate" }, { category: "status" }, true)).toBe(0);
     expect(getAbilityPriorityBonus({}, { category: "status" }, true)).toBe(0);
+  });
+});
+
+// ── Batch 15: defiant/competitive ────────────────────────────────────────────
+describe("batch15: getStatDropRetaliation", () => {
+  it("defiant +2 attack, competitive +2 spAttack", () => {
+    expect(getStatDropRetaliation({ abilityId: "defiant" })).toEqual({ stat: "attack", change: 2 });
+    expect(getStatDropRetaliation({ abilityId: "competitive" })).toEqual({ stat: "spAttack", change: 2 });
+  });
+  it("null for other/absent", () => {
+    expect(getStatDropRetaliation({ abilityId: "intimidate" })).toBeNull();
+    expect(getStatDropRetaliation({})).toBeNull();
   });
 });
