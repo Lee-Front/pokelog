@@ -162,6 +162,6 @@ export function wildPokemonToOwned(wild: WildPokemon): OwnedPokemon {
   };
 }
 
-export function getAllSpecies(): Array<{ id: number; species: string; name: string }> {
+export function getAllSpecies(): Array<{ id: number; species: string; name: string; isLegendary: boolean; isMythical: boolean }> {
   return getAllSpeciesList();
 }

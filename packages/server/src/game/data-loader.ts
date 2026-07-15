@@ -420,8 +420,14 @@ export function getRegionNames(): string[] {
   }
 }
 
-export function getAllSpeciesList(): Array<{ id: number; species: string; name: string }> {
-  return getSpecies().map((s) => ({ id: s.id, species: s.species, name: s.name }));
+export function getAllSpeciesList(): Array<{ id: number; species: string; name: string; isLegendary: boolean; isMythical: boolean }> {
+  return getSpecies().map((s) => ({
+    id: s.id,
+    species: s.species,
+    name: s.name,
+    isLegendary: s.isLegendary === true,
+    isMythical: s.isMythical === true,
+  }));
 }
 
 /** 해당 종이 지역 출몰 풀에 있는지(자동 탐색 관심종 등록 검증용). */
