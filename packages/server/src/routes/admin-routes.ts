@@ -1077,6 +1077,31 @@ adminRoutes.post("/world-boss/reset-cooldown", async (req, res) => {
   }
 });
 
+// 현재 월드보스 재참전 쿨다운 중인 유저 목록 — 관리자 UI가 이 목록에서 골라 초기화한다.
+// 남은 시간(remainingMs) 내림차순. 소규모(사내) 유저 기준으로 유저별 로드해 필터한다.
+adminRoutes.get("/world-boss/cooldowns", async (_req, res) => {
+  try {
+    const config = await getConfig();
+    const cooldownMs = config.worldBoss.cooldownMs;
+    const now = Date.now();
+    const all = await getAllUsers();
+    const users: { userId: string; nickname: string; remainingMs: number }[] = [];
+    for (const summary of all) {
+      const id = summary.account.id;
+      const user = await getUser(id);
+      if (!user || !user.lastWorldBossAttackAt) continue;
+      const elapsed = now - new Date(user.lastWorldBossAttackAt).getTime();
+      if (elapsed >= cooldownMs) continue;
+      users.push({ userId: id, nickname: user.account.nickname ?? id, remainingMs: cooldownMs - elapsed });
+    }
+    users.sort((a, b) => b.remainingMs - a.remainingMs);
+    res.json({ cooldownMs, users });
+  } catch (err) {
+    log.error({ err }, "Admin world-boss cooldowns list error");
+    res.status(500).json({ error: "서버 오류" });
+  }
+});
+
 // ========== 공지 ==========
 
 adminRoutes.get("/announcements", async (_req, res) => {

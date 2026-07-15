@@ -1015,7 +1015,14 @@ gameRoutes.get("/party", async (req: AuthRequest, res: Response) => {
     // 스프레드 복제본에만 얹는다(user.pokemon 참조를 직접 건드리면 saveUser에 새 필드가 샌다).
     const withEvolution = party.map((p) => {
       const options = getAvailableEvolutionOptions(user, p, { region });
-      return { ...p, evolutionAvailable: options.length > 0, evolutionOptions: options };
+      const sp = getSpeciesByName(p.species);
+      return {
+        ...p,
+        evolutionAvailable: options.length > 0,
+        evolutionOptions: options,
+        isLegendary: sp?.isLegendary === true,
+        isMythical: sp?.isMythical === true,
+      };
     });
 
     res.json({ party: withEvolution });

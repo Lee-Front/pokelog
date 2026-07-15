@@ -4,6 +4,7 @@ import { authMiddleware, type AuthRequest } from "../middleware/auth-middleware.
 import { getUser, saveUser } from "../storage/user-store.js";
 import { withLock } from "../storage/pvp-store.js";
 import { getAvailableEvolutionOptions } from "../game/pending-evolution.js";
+import { getSpeciesByName } from "../game/data-loader.js";
 import { childLogger } from "../logger.js";
 const log = childLogger("storage-routes");
 
@@ -25,7 +26,14 @@ storageRoutes.get("/storage", async (req: AuthRequest, res: Response) => {
     // 계산 전용(비영속) 진화 가능 여부/선택지를 응답용 스프레드 복제본에만 부착한다(저장 객체 불변).
     const withEvolution = user.storage.map((p) => {
       const options = getAvailableEvolutionOptions(user, p, { region });
-      return { ...p, evolutionAvailable: options.length > 0, evolutionOptions: options };
+      const sp = getSpeciesByName(p.species);
+      return {
+        ...p,
+        evolutionAvailable: options.length > 0,
+        evolutionOptions: options,
+        isLegendary: sp?.isLegendary === true,
+        isMythical: sp?.isMythical === true,
+      };
     });
 
     res.json({ storage: withEvolution });
