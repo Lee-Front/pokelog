@@ -21,13 +21,14 @@ import {
   checkDisguiseBreak, isIronFistMove,
   isSlicingMove, isBitingMove, isPulseMove, isSoundMove, getKnockoutBoost,
   applyOnHitDefenderAbilities, getAttackerHitStatus,
+  getAbilityAccuracyMultiplier, abilitiesNeverMiss,
   type OffenseContext, type AbilityHolder, type OnHitDefenderResult,
 } from "./abilities.js";
 import {
   checkPreAttack, applyEndOfTurn, tickVolatiles, hasVolatile,
   rollAilment, isVolatileAilment, addVolatile, rollSleepTurns, rollConfusionTurns, rollTrapTurns,
 } from "./status-conditions.js";
-import type { BattleState, MoveData, OwnedPokemon, PrimaryStatus, StatStages, UserData, VolatileStatus } from "../../../../shared/types.js";
+import type { BattleState, BattleWeather, MoveData, OwnedPokemon, PrimaryStatus, StatStages, UserData, VolatileStatus } from "../../../../shared/types.js";
 import { recordDamageTaken } from "./battle-progress.js";
 import { saveUser } from "../storage/user-store.js";
 
@@ -604,6 +605,8 @@ export function executePlayerAttack(
     playerUnaware.attackerStages, playerUnaware.defenderStages,
     (playerWeatherMod * playerTerrainMod) / wildSpDefMod,
     playerTeraStab,
+    getAbilityAccuracyMultiplier({ attacker: player, defender: battle.wild, moveCategory: moveData.category, weather: battle.weather }),
+    abilitiesNeverMiss(player, battle.wild),
   );
 
   // 지닌물건 공격 보정: 생명의구슬/힘의머리띠/박식안경/달인의띠
@@ -1111,6 +1114,10 @@ export function wildAttack(
   targetBattleForm?: string | null,
   // 대상(플레이어)이 terastallize했으면 그 테라 타입. 주어지면 방어 시 유효 타입을 [teraType]로 치환.
   targetTeraType?: string | null,
+  // 명중 특성 판정용(선택): 야생/대상 특성 슬러그와 현재 날씨.
+  wildAbility?: string | null,
+  targetAbility?: string | null,
+  weather?: BattleWeather,
 ): { damage: number; moveId: string | null; moveData: MoveData | null; message: string; missed?: boolean; critical?: boolean; priority?: number; effectiveness?: number } {
   const availableMoves = wildMoves.filter((move) => move.pp > 0);
   if (availableMoves.length === 0) {
@@ -1140,6 +1147,9 @@ export function wildAttack(
     attackerStages,
     defenderStages,
     weatherModifier,
+    undefined, // teraStab (야생은 미사용)
+    getAbilityAccuracyMultiplier({ attacker: { ability: wildAbility }, defender: { ability: targetAbility }, moveCategory: moveData.category, weather }),
+    abilitiesNeverMiss({ ability: wildAbility }, { ability: targetAbility }),
   );
 
   return {
@@ -1272,6 +1282,7 @@ export async function doWildAttackAndCheck(
     battle.wildBattleForm, battle.playerBattleForm,
     // 플레이어가 terastallize했으면 방어 유효 타입을 [teraType]로 치환(데미지 타입상성용).
     (battle.playerTerastallized && battle.playerTeraType) ? battle.playerTeraType : null,
+    battle.wild.ability, myPokemon.abilityId, battle.weather,
   );
 
   // 특성 방어 면역/흡수(플레이어 방어자): 데미지 적용 전 판정.

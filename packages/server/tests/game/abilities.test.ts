@@ -22,6 +22,7 @@ import {
   applyOnHitDefenderAbilities,
   getAttackerHitStatus,
   getSwitchOutAbilityEffect,
+  getAbilityAccuracyMultiplier, abilitiesNeverMiss,
 } from "../../src/game/abilities.js";
 import { defaultStatStages } from "../../src/game/battle.js";
 import type { BattleState, PrimaryStatus, StatStages } from "../../../../shared/types.js";
@@ -692,5 +693,31 @@ describe("batch9: category/contact defense reduction", () => {
     expect(getAbilityDefenseMultiplier({ abilityId: "fluffy" }, "normal", 1, false, false, "physical", true)).toBe(0.5);
     expect(getAbilityDefenseMultiplier({ abilityId: "fluffy" }, "fire", 1, false, false, "special", false)).toBe(2);
     expect(getAbilityDefenseMultiplier({ abilityId: "fluffy" }, "fire", 1, false, false, "physical", true)).toBe(1);
+  });
+});
+
+// ── Batch 11: 명중 특성 + hustle 위력 ────────────────────────────────────────
+describe("batch11: accuracy abilities", () => {
+  const acc = (attacker: string | null, defender: string | null, moveCategory = "physical", weather?: "sandstorm" | "hail") =>
+    getAbilityAccuracyMultiplier({ attacker: { abilityId: attacker }, defender: { abilityId: defender }, moveCategory, weather });
+  it("attacker compound-eyes ×1.3, victory-star ×1.1, hustle(물리) ×0.8", () => {
+    expect(acc("compound-eyes", null)).toBeCloseTo(1.3);
+    expect(acc("victory-star", null)).toBeCloseTo(1.1);
+    expect(acc("hustle", null, "physical")).toBeCloseTo(0.8);
+    expect(acc("hustle", null, "special")).toBe(1);
+  });
+  it("defender wonder-skin(상태기) ×0.5, sand-veil/snow-cloak ×0.8 in weather", () => {
+    expect(acc(null, "wonder-skin", "status")).toBe(0.5);
+    expect(acc(null, "wonder-skin", "physical")).toBe(1);
+    expect(acc(null, "sand-veil", "physical", "sandstorm")).toBeCloseTo(0.8);
+    expect(acc(null, "snow-cloak", "physical", "hail")).toBeCloseTo(0.8);
+    expect(acc(null, "sand-veil", "physical")).toBe(1);
+  });
+  it("no-guard on either side never misses; hustle boosts physical ×1.5", () => {
+    expect(abilitiesNeverMiss({ abilityId: "no-guard" }, {})).toBe(true);
+    expect(abilitiesNeverMiss({}, { abilityId: "no-guard" })).toBe(true);
+    expect(abilitiesNeverMiss({}, {})).toBe(false);
+    expect(getAbilityOffenseMultiplier({ abilityId: "hustle" }, "normal", "physical", 80, 0.5, false, false)).toBeCloseTo(1.5);
+    expect(getAbilityOffenseMultiplier({ abilityId: "hustle" }, "normal", "special", 80, 0.5, false, false)).toBe(1);
   });
 });

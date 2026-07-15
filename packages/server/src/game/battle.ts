@@ -78,18 +78,21 @@ export function calculateDamage(
   defenderStages?: StatStages,
   weatherModifier: number = 1,
   teraStab?: TeraStab,
+  accuracyMultiplier: number = 1,
+  alwaysHit: boolean = false,
 ): DamageResult {
   const typeChart = getTypeChart();
 
   // Accuracy check. 본가에서 accuracy "—"(0/null)은 "필중"을 뜻한다(Swift·검무 등).
   // accuracy가 양수일 때만 명중 굴림을 하고, 0 이하면 반드시 명중시킨다.
-  // 본가식: 유효명중 = 기술명중 × 단계배율, 단계 = (사용자 명중 − 상대 회피), −6~+6 클램프.
-  if (move.accuracy > 0) {
+  // 본가식: 유효명중 = 기술명중 × 단계배율 × 특성배율, 단계 = (사용자 명중 − 상대 회피), −6~+6 클램프.
+  // alwaysHit(no-guard 등)이면 명중 굴림을 건너뛴다.
+  if (move.accuracy > 0 && !alwaysHit) {
     const combinedStage = Math.max(
       -6,
       Math.min(6, (attackerStages?.accuracy ?? 0) - (defenderStages?.evasion ?? 0)),
     );
-    const effectiveAccuracy = move.accuracy * accuracyStageMultiplier(combinedStage);
+    const effectiveAccuracy = move.accuracy * accuracyStageMultiplier(combinedStage) * accuracyMultiplier;
     const accuracyRoll = Math.random() * 100;
     if (accuracyRoll >= effectiveAccuracy) {
       return { damage: 0, missed: true, effectiveness: 1, message: "공격이 빗나갔다!", critical: false };

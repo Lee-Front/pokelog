@@ -271,6 +271,7 @@ export function getAbilityOffenseMultiplier(
   if (ability === "technician" && movePower > 0 && movePower <= 60) mult *= 1.5;
 
   if ((ability === "huge-power" || ability === "pure-power") && moveCategory === "physical") mult *= 2;
+  if (ability === "hustle" && moveCategory === "physical") mult *= 1.5; // 근성(허슬): 물리 ×1.5(명중 ×0.8은 명중식)
 
   if (ability === "guts" && moveCategory === "physical" && hasPrimaryStatus) mult *= 1.5;
 
@@ -708,6 +709,41 @@ export function getAbilitySpeedMultiplier(
   if (ability === "surge-surfer" && terrain === "electric") return 2; // 서지서퍼: 일렉필드 ×2
   if (ability === "quick-feet" && hasStatus) return 1.5;              // 속보: 주상태이상 시 ×1.5
   return 1;
+}
+
+// ---------------------------------------------------------------------------
+// H2. 명중(accuracy) 특성
+// ---------------------------------------------------------------------------
+
+export interface AccuracyContext {
+  attacker: AbilityHolder;
+  defender: AbilityHolder;
+  moveCategory: MoveCategory;
+  weather?: BattleWeather;
+}
+
+/**
+ * 명중률 배율(유효명중에 곱).
+ * - 공격자: compound-eyes ×1.3, victory-star ×1.1, hustle(물리) ×0.8
+ * - 방어자: wonder-skin(상태기) ×0.5, sand-veil(모래바람) ×0.8, snow-cloak(우박) ×0.8
+ * 미대상이면 1.
+ */
+export function getAbilityAccuracyMultiplier(ctx: AccuracyContext): number {
+  const atk = getAbility(ctx.attacker);
+  const def = getAbility(ctx.defender);
+  let mult = 1;
+  if (atk === "compound-eyes") mult *= 1.3;
+  if (atk === "victory-star") mult *= 1.1;
+  if (atk === "hustle" && ctx.moveCategory === "physical") mult *= 0.8;
+  if (def === "wonder-skin" && ctx.moveCategory === "status") mult *= 0.5;
+  if (def === "sand-veil" && ctx.weather === "sandstorm") mult *= 0.8;
+  if (def === "snow-cloak" && ctx.weather === "hail") mult *= 0.8;
+  return mult;
+}
+
+/** no-guard: 공격자·방어자 어느 쪽이든 있으면 기술이 반드시 명중한다. */
+export function abilitiesNeverMiss(attacker: AbilityHolder, defender: AbilityHolder): boolean {
+  return getAbility(attacker) === "no-guard" || getAbility(defender) === "no-guard";
 }
 
 // ---------------------------------------------------------------------------
