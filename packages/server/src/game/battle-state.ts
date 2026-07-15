@@ -962,8 +962,8 @@ export function applyEndOfTurnBattle(
 ): void {
   // 특성 턴 종료 효과(poison-heal·rain-dish·dry-skin·ice-body·speed-boost) — 양측 선계산.
   // poison-heal은 기존 독 데미지를 취소하고 회복으로 대체하므로 EOT 데미지 적용 전에 처리한다.
-  const playerAbilityEot = applyEndOfTurnAbilities(myPokemon, battle.weather, myPokemon.statusCondition === "poison", myPokemon.maxHp);
-  const wildAbilityEot = applyEndOfTurnAbilities(battle.wild, battle.weather, battle.wild.statusCondition === "poison", battle.wild.maxHp);
+  const playerAbilityEot = applyEndOfTurnAbilities(myPokemon, battle.weather, myPokemon.statusCondition === "poison", myPokemon.maxHp, myPokemon.statusCondition ?? null);
+  const wildAbilityEot = applyEndOfTurnAbilities(battle.wild, battle.weather, battle.wild.statusCondition === "poison", battle.wild.maxHp, battle.wild.statusCondition ?? null);
 
   // Player end-of-turn status/volatile effects
   const playerEot = applyEndOfTurn(
@@ -1041,6 +1041,18 @@ export function applyEndOfTurnBattle(
   if (wildAbilityEot.speedBoost && battle.wild.hp > 0) {
     battle.wildStatStages = applyStatChanges(battle.wildStatStages ?? defaultStatStages(), [{ stat: "speed", change: 1 }]);
     log.push(`야생 ${getDisplaySpeciesName(battle.wild.species)}의 스피드가 올랐다!`);
+  }
+
+  // 턴 종료 상태이상 회복(shed-skin/hydration) — 이번 턴 상태 도트는 이미 위에서 적용됨.
+  if (playerAbilityEot.cureStatus && myPokemon.hp > 0 && myPokemon.statusCondition) {
+    myPokemon.statusCondition = null;
+    myPokemon.sleepTurns = undefined;
+    if (playerAbilityEot.message) log.push(`${getDisplaySpeciesName(myPokemon.species)}: ${playerAbilityEot.message}`);
+  }
+  if (wildAbilityEot.cureStatus && battle.wild.hp > 0 && battle.wild.statusCondition) {
+    battle.wild.statusCondition = null;
+    battle.wild.sleepTurns = undefined;
+    if (wildAbilityEot.message) log.push(`야생 ${getDisplaySpeciesName(battle.wild.species)}: ${wildAbilityEot.message}`);
   }
 
   // 지닌물건 턴 종료 회복(먹다남은음식) — 양측

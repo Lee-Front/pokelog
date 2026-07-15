@@ -195,7 +195,7 @@ describe("applyContactAbilities (injected random)", () => {
 
 describe("applyEndOfTurnAbilities", () => {
   it("null/unknown ability is neutral", () => {
-    expect(applyEndOfTurnAbilities({}, "rain", false, 100)).toEqual({ healing: 0, cancelPoison: false, speedBoost: false });
+    expect(applyEndOfTurnAbilities({}, "rain", false, 100)).toEqual({ healing: 0, cancelPoison: false, speedBoost: false, cureStatus: false });
   });
 
   it("speed-boost flags speedBoost", () => {
@@ -221,6 +221,18 @@ describe("applyEndOfTurnAbilities", () => {
   it("poison-heal cancels poison and heals 1/8 when poisoned", () => {
     expect(applyEndOfTurnAbilities({ abilityId: "poison-heal" }, undefined, true, 80)).toMatchObject({ healing: 10, cancelPoison: true });
     expect(applyEndOfTurnAbilities({ abilityId: "poison-heal" }, undefined, false, 80)).toMatchObject({ healing: 0, cancelPoison: false });
+  });
+
+  it("shed-skin cures status 1/3 of the time (and only when statused)", () => {
+    expect(applyEndOfTurnAbilities({ abilityId: "shed-skin" }, undefined, false, 80, "burn", () => 0.1).cureStatus).toBe(true);
+    expect(applyEndOfTurnAbilities({ abilityId: "shed-skin" }, undefined, false, 80, "burn", () => 0.9).cureStatus).toBe(false);
+    expect(applyEndOfTurnAbilities({ abilityId: "shed-skin" }, undefined, false, 80, null, () => 0.1).cureStatus).toBe(false);
+  });
+
+  it("hydration cures status in rain only", () => {
+    expect(applyEndOfTurnAbilities({ abilityId: "hydration" }, "rain", false, 80, "sleep").cureStatus).toBe(true);
+    expect(applyEndOfTurnAbilities({ abilityId: "hydration" }, "sun", false, 80, "sleep").cureStatus).toBe(false);
+    expect(applyEndOfTurnAbilities({ abilityId: "hydration" }, "rain", false, 80, null).cureStatus).toBe(false);
   });
 });
 

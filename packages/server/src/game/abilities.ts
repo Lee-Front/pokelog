@@ -598,19 +598,20 @@ export interface EndOfTurnAbilityResult {
   healing: number;        // 회복량(절대값)
   cancelPoison: boolean;  // poison-heal: 기존 독 데미지를 취소하고 healing으로 대체
   speedBoost: boolean;    // speed-boost: speed 단계 +1
+  cureStatus: boolean;    // shed-skin/hydration: 주상태이상 회복
   message?: string;
 }
 
-const NEUTRAL_EOT: EndOfTurnAbilityResult = { healing: 0, cancelPoison: false, speedBoost: false };
+const NEUTRAL_EOT: EndOfTurnAbilityResult = { healing: 0, cancelPoison: false, speedBoost: false, cureStatus: false };
 
 /**
  * 턴 종료 특성 효과(데미지 적용/스탯 변화는 호출부가 처리).
  * - speed-boost: speed 단계 +1(상한 호출부 cap)
- * - rain-dish: 비일 때 1/16 회복
- * - ice-body: 우박일 때 1/16 회복
+ * - rain-dish: 비일 때 1/16 회복 / ice-body: 우박일 때 1/16 회복
  * - dry-skin: 비 1/8 회복 / 강한 햇살 1/8 데미지(음수 healing)
  * - poison-heal: 중독 시 독 데미지 취소하고 1/8 회복
- * weather는 battle.weather, isPoisoned는 주상태이상이 poison인지.
+ * - shed-skin: 주상태이상 있으면 1/3 확률로 회복 / hydration: 비일 때 주상태이상 회복
+ * weather는 battle.weather, isPoisoned는 주상태이상이 poison인지, status는 현재 주상태이상.
  * 미특성/미지원이면 중립값.
  */
 export function applyEndOfTurnAbilities(
@@ -618,25 +619,33 @@ export function applyEndOfTurnAbilities(
   weather: BattleWeather | undefined,
   isPoisoned: boolean,
   maxHp: number,
+  status: PrimaryStatus | null = null,
+  random: () => number = Math.random,
 ): EndOfTurnAbilityResult {
   const ability = getAbility(mon);
   if (!ability) return NEUTRAL_EOT;
 
   switch (ability) {
     case "speed-boost":
-      return { healing: 0, cancelPoison: false, speedBoost: true };
+      return { ...NEUTRAL_EOT, speedBoost: true };
     case "rain-dish":
-      if (weather === "rain") return { healing: Math.max(1, Math.floor(maxHp / 16)), cancelPoison: false, speedBoost: false, message: "비로 체력을 회복했다!" };
+      if (weather === "rain") return { ...NEUTRAL_EOT, healing: Math.max(1, Math.floor(maxHp / 16)), message: "비로 체력을 회복했다!" };
       return NEUTRAL_EOT;
     case "ice-body":
-      if (weather === "hail") return { healing: Math.max(1, Math.floor(maxHp / 16)), cancelPoison: false, speedBoost: false, message: "우박으로 체력을 회복했다!" };
+      if (weather === "hail") return { ...NEUTRAL_EOT, healing: Math.max(1, Math.floor(maxHp / 16)), message: "우박으로 체력을 회복했다!" };
       return NEUTRAL_EOT;
     case "dry-skin":
-      if (weather === "rain") return { healing: Math.max(1, Math.floor(maxHp / 8)), cancelPoison: false, speedBoost: false, message: "건조피부로 체력을 회복했다!" };
-      if (weather === "sun") return { healing: -Math.max(1, Math.floor(maxHp / 8)), cancelPoison: false, speedBoost: false, message: "건조피부로 데미지를 받았다!" };
+      if (weather === "rain") return { ...NEUTRAL_EOT, healing: Math.max(1, Math.floor(maxHp / 8)), message: "건조피부로 체력을 회복했다!" };
+      if (weather === "sun") return { ...NEUTRAL_EOT, healing: -Math.max(1, Math.floor(maxHp / 8)), message: "건조피부로 데미지를 받았다!" };
       return NEUTRAL_EOT;
     case "poison-heal":
-      if (isPoisoned) return { healing: Math.max(1, Math.floor(maxHp / 8)), cancelPoison: true, speedBoost: false, message: "포이즌힐로 체력을 회복했다!" };
+      if (isPoisoned) return { ...NEUTRAL_EOT, healing: Math.max(1, Math.floor(maxHp / 8)), cancelPoison: true, message: "포이즌힐로 체력을 회복했다!" };
+      return NEUTRAL_EOT;
+    case "shed-skin":
+      if (status != null && random() < 1 / 3) return { ...NEUTRAL_EOT, cureStatus: true, message: "탈피로 상태이상이 나았다!" };
+      return NEUTRAL_EOT;
+    case "hydration":
+      if (status != null && weather === "rain") return { ...NEUTRAL_EOT, cureStatus: true, message: "하이드레이션으로 상태이상이 나았다!" };
       return NEUTRAL_EOT;
     default:
       return NEUTRAL_EOT;
