@@ -33,7 +33,21 @@ function buildMoves(species: SpeciesData, level: number): PokemonMove[] {
     }
   }
 
-  const selectedIds = learnableMoves.slice(-4);
+  // 데미지 기술 우선 — 과거 slice(-4)는 "가장 높은 레벨" 4개만 뽑아, 고레벨 상태기가 몰린 종(뮤츠 등)은
+  // 야생/개체가 상태기만 쓰게 됐다. 최근 학습(고레벨=대체로 강함) 순으로 데미지 기술을 최대 4개 뽑고,
+  // 부족하면 상태기로 채운다. (본가 야생은 랜덤 선택이라 선택 AI 없이 기술셋만 개선하면 충분.)
+  const damaging: string[] = [];
+  const statusMoves: string[] = [];
+  for (let i = learnableMoves.length - 1; i >= 0; i--) {
+    const md = moveMap.get(learnableMoves[i]);
+    if (md && md.category !== "status" && (md.power ?? 0) > 0) damaging.push(learnableMoves[i]);
+    else statusMoves.push(learnableMoves[i]);
+  }
+  const selectedIds = damaging.slice(0, 4);
+  for (const s of statusMoves) {
+    if (selectedIds.length >= 4) break;
+    selectedIds.push(s);
+  }
   return selectedIds.map((id) => {
     const moveData = moveMap.get(id);
     const pp = moveData?.pp ?? 10;

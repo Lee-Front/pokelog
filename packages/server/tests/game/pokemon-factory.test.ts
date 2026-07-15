@@ -1,6 +1,20 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createPokemon, createWildPokemon, wildPokemonToOwned } from "../../src/game/pokemon-factory.js";
 import { getExpForLevelInGroup, getSpeciesExpGroup } from "../../src/game/growth.js";
+import { getMoveById } from "../../src/game/data-loader.js";
+
+// 회귀: 기술셋을 데미지 우선으로 뽑는다(뮤츠 등 고레벨 상태기 종이 상태기만 쓰던 문제 방지).
+describe("buildMoves — 데미지 기술 우선(야생/개체)", () => {
+  it("고레벨 뮤츠 야생은 데미지 기술 위주로 구성된다", () => {
+    const wild = createWildPokemon("mewtwo", 70);
+    const damaging = wild.moves.filter((m) => {
+      const md = getMoveById(m.id);
+      return md != null && md.category !== "status" && (md.power ?? 0) > 0;
+    });
+    expect(wild.moves.length).toBeGreaterThan(0);
+    expect(damaging.length).toBeGreaterThanOrEqual(3);
+  });
+});
 
 describe("createPokemon", () => {
   afterEach(() => {
