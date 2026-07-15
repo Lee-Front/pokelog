@@ -421,6 +421,8 @@ export function getAbilityDefenseMultiplier(
   defenderHpFraction: number,
   isSuperEffective: boolean,
   breakMold = false,
+  moveCategory: MoveCategory = "physical",
+  isContact = false,
 ): number {
   const ability = getAbility(defender);
   if (!ability) return 1;
@@ -435,6 +437,13 @@ export function getAbilityDefenseMultiplier(
   if (ability === "purifying-salt" && moveType === "ghost") mult *= 0.5;
   if (ability === "multiscale" && defenderHpFraction === 1) mult *= 0.5;
   if ((ability === "filter" || ability === "solid-rock" || ability === "prism-armor") && isSuperEffective) mult *= 0.75;
+  // 카테고리/접촉 기반 경감:
+  if (ability === "fur-coat" && moveCategory === "physical") mult *= 0.5;   // 퍼코트: 물리 절반
+  if (ability === "ice-scales" && moveCategory === "special") mult *= 0.5;  // 아이스스케일: 특수 절반
+  if (ability === "fluffy") {                                               // 복슬복슬: 접촉 절반 + 불꽃 2배
+    if (isContact) mult *= 0.5;
+    if (moveType === "fire") mult *= 2;
+  }
 
   return mult;
 }

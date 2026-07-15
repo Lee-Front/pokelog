@@ -630,6 +630,7 @@ export function executePlayerAttack(
     battle.wild.maxHp > 0 ? battle.wild.hp / battle.wild.maxHp : 0,
     result.effectiveness > 1,
     playerBreaksMold,
+    moveData.category, moveData.category === "physical",
   );
   if (wildAbilityDefenseMod !== 1 && result.damage > 0) {
     result.damage = Math.floor(result.damage * wildAbilityDefenseMod);
@@ -1322,6 +1323,7 @@ export async function doWildAttackAndCheck(
       myPokemon.maxHp > 0 ? myPokemon.hp / myPokemon.maxHp : 0,
       wildEffectiveness > 1,
       wildBreaksMold,
+      wildResult.moveData.category, wildResult.moveData.category === "physical",
     );
     if (playerAbilityDefenseMod !== 1) wildResult.damage = Math.floor(wildResult.damage * playerAbilityDefenseMod);
   }

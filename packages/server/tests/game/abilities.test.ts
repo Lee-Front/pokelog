@@ -670,3 +670,21 @@ describe("batch8: getSwitchOutAbilityEffect", () => {
     expect(getSwitchOutAbilityEffect({}, 300)).toEqual({ heal: 0, cureStatus: false });
   });
 });
+
+// ── Batch 9: 카테고리/접촉 기반 경감 ─────────────────────────────────────────
+describe("batch9: category/contact defense reduction", () => {
+  // getAbilityDefenseMultiplier(defender, moveType, hpFrac, superEff, breakMold, category, isContact)
+  it("fur-coat halves physical only", () => {
+    expect(getAbilityDefenseMultiplier({ abilityId: "fur-coat" }, "normal", 1, false, false, "physical", true)).toBe(0.5);
+    expect(getAbilityDefenseMultiplier({ abilityId: "fur-coat" }, "normal", 1, false, false, "special", false)).toBe(1);
+  });
+  it("ice-scales halves special only", () => {
+    expect(getAbilityDefenseMultiplier({ abilityId: "ice-scales" }, "normal", 1, false, false, "special", false)).toBe(0.5);
+    expect(getAbilityDefenseMultiplier({ abilityId: "ice-scales" }, "normal", 1, false, false, "physical", true)).toBe(1);
+  });
+  it("fluffy: contact ×0.5, non-contact fire ×2, contact fire ×1", () => {
+    expect(getAbilityDefenseMultiplier({ abilityId: "fluffy" }, "normal", 1, false, false, "physical", true)).toBe(0.5);
+    expect(getAbilityDefenseMultiplier({ abilityId: "fluffy" }, "fire", 1, false, false, "special", false)).toBe(2);
+    expect(getAbilityDefenseMultiplier({ abilityId: "fluffy" }, "fire", 1, false, false, "physical", true)).toBe(1);
+  });
+});
