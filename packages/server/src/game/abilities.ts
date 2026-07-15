@@ -189,6 +189,15 @@ export function getAbilityOffenseMultiplier(
   const pinchType = PINCH_TYPE[ability];
   if (pinchType && moveType === pinchType && attackerHpFraction <= 1 / 3) mult *= 1.5;
 
+  // 타입 강화 특성(moveType만으로 판정 — 무보정 컨텍스트).
+  if (ability === "steelworker" && moveType === "steel") mult *= 1.5;
+  if (ability === "dragons-maw" && moveType === "dragon") mult *= 1.5;
+  if (ability === "rocky-payload" && moveType === "rock") mult *= 1.5;
+  if (ability === "transistor" && moveType === "electric") mult *= 1.3;
+  if (ability === "water-bubble" && moveType === "water") mult *= 2;
+  // gorilla-tactics: 물리 ×1.5(첫 기술 고정 페널티는 미구현, 위력 부분만).
+  if (ability === "gorilla-tactics" && moveCategory === "physical") mult *= 1.5;
+
   if (ability === "technician" && movePower > 0 && movePower <= 60) mult *= 1.5;
 
   if ((ability === "huge-power" || ability === "pure-power") && moveCategory === "physical") mult *= 2;
@@ -267,6 +276,12 @@ export function checkAbilityImmunity(
       return moveType === "electric" ? { immune: true, boostStat: "speed" } : NEUTRAL_IMMUNITY;
     case "sap-sipper":
       return moveType === "grass" ? { immune: true, boostStat: "attack" } : NEUTRAL_IMMUNITY;
+    case "earth-eater":
+      // 흙먹기: 땅 면역 + 1/4 회복(volt-absorb 계열).
+      return moveType === "ground" ? { immune: true, healFraction: 1 / 4 } : NEUTRAL_IMMUNITY;
+    case "well-baked-body":
+      // 잘구워진몸: 불꽃 면역 + 방어 상승(본가 +2, 본 훅은 +1 단계 부여).
+      return moveType === "fire" ? { immune: true, boostStat: "defense" } : NEUTRAL_IMMUNITY;
     default:
       return NEUTRAL_IMMUNITY;
   }
@@ -299,6 +314,9 @@ export function getAbilityDefenseMultiplier(
 
   if (ability === "thick-fat" && (moveType === "fire" || moveType === "ice")) mult *= 0.5;
   if (ability === "heatproof" && moveType === "fire") mult *= 0.5;
+  // water-bubble: 자신이 받는 불꽃 데미지 절반. purifying-salt: 고스트 데미지 절반.
+  if (ability === "water-bubble" && moveType === "fire") mult *= 0.5;
+  if (ability === "purifying-salt" && moveType === "ghost") mult *= 0.5;
   if (ability === "multiscale" && defenderHpFraction === 1) mult *= 0.5;
   if ((ability === "filter" || ability === "solid-rock" || ability === "prism-armor") && isSuperEffective) mult *= 0.75;
 
@@ -316,6 +334,10 @@ const STATUS_BLOCKERS: Record<string, PrimaryStatus> = {
   "vital-spirit": "sleep",
   "water-veil": "burn",
   "magma-armor": "freeze",
+  "sweet-veil": "sleep",
+  "pastel-veil": "poison",
+  "thermal-exchange": "burn",
+  "water-bubble": "burn",
 };
 
 /**

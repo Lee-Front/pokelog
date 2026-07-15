@@ -468,3 +468,59 @@ describe("checkDisguiseBreak (disguise)", () => {
     expect(checkDisguiseBreak({ abilityId: "disguise" }, "special", 5, false, 4).chipDamage).toBe(1);
   });
 });
+
+// ── Batch 1: 기존 훅에 추가된 특성(호출부 변경 없음) ──────────────────────────
+describe("batch1: type-boost offense abilities", () => {
+  const frac = 0.5;
+  it("steelworker/dragons-maw/rocky-payload ×1.5 on their type", () => {
+    expect(getAbilityOffenseMultiplier({ abilityId: "steelworker" }, "steel", "physical", 80, frac, false, false)).toBeCloseTo(1.5);
+    expect(getAbilityOffenseMultiplier({ abilityId: "dragons-maw" }, "dragon", "special", 80, frac, false, false)).toBeCloseTo(1.5);
+    expect(getAbilityOffenseMultiplier({ abilityId: "rocky-payload" }, "rock", "physical", 80, frac, false, false)).toBeCloseTo(1.5);
+  });
+  it("transistor ×1.3 electric, water-bubble ×2 water", () => {
+    expect(getAbilityOffenseMultiplier({ abilityId: "transistor" }, "electric", "special", 80, frac, false, false)).toBeCloseTo(1.3);
+    expect(getAbilityOffenseMultiplier({ abilityId: "water-bubble" }, "water", "special", 80, frac, false, false)).toBe(2);
+  });
+  it("gorilla-tactics ×1.5 physical only", () => {
+    expect(getAbilityOffenseMultiplier({ abilityId: "gorilla-tactics" }, "normal", "physical", 80, frac, false, false)).toBeCloseTo(1.5);
+    expect(getAbilityOffenseMultiplier({ abilityId: "gorilla-tactics" }, "normal", "special", 80, frac, false, false)).toBe(1);
+  });
+  it("off-type / unknown stays neutral", () => {
+    expect(getAbilityOffenseMultiplier({ abilityId: "steelworker" }, "fire", "physical", 80, frac, false, false)).toBe(1);
+  });
+});
+
+describe("batch1: defense reduction abilities", () => {
+  it("water-bubble halves fire taken", () => {
+    expect(getAbilityDefenseMultiplier({ abilityId: "water-bubble" }, "fire", 1, false)).toBe(0.5);
+    expect(getAbilityDefenseMultiplier({ abilityId: "water-bubble" }, "water", 1, false)).toBe(1);
+  });
+  it("purifying-salt halves ghost taken", () => {
+    expect(getAbilityDefenseMultiplier({ abilityId: "purifying-salt" }, "ghost", 1, false)).toBe(0.5);
+    expect(getAbilityDefenseMultiplier({ abilityId: "purifying-salt" }, "dark", 1, false)).toBe(1);
+  });
+});
+
+describe("batch1: immunity abilities", () => {
+  it("earth-eater: ground immune + 1/4 heal", () => {
+    expect(checkAbilityImmunity({ abilityId: "earth-eater" }, "ground", "physical")).toEqual({ immune: true, healFraction: 1 / 4 });
+    expect(checkAbilityImmunity({ abilityId: "earth-eater" }, "rock", "physical").immune).toBe(false);
+  });
+  it("well-baked-body: fire immune + defense boost", () => {
+    expect(checkAbilityImmunity({ abilityId: "well-baked-body" }, "fire", "special")).toEqual({ immune: true, boostStat: "defense" });
+    expect(checkAbilityImmunity({ abilityId: "well-baked-body" }, "water", "special").immune).toBe(false);
+  });
+});
+
+describe("batch1: status-blocking abilities", () => {
+  it("sweet-veil blocks sleep, pastel-veil blocks poison", () => {
+    expect(abilityBlocksStatus({ abilityId: "sweet-veil" }, "sleep")).toBe(true);
+    expect(abilityBlocksStatus({ abilityId: "sweet-veil" }, "burn")).toBe(false);
+    expect(abilityBlocksStatus({ abilityId: "pastel-veil" }, "poison")).toBe(true);
+  });
+  it("thermal-exchange and water-bubble block burn", () => {
+    expect(abilityBlocksStatus({ abilityId: "thermal-exchange" }, "burn")).toBe(true);
+    expect(abilityBlocksStatus({ abilityId: "water-bubble" }, "burn")).toBe(true);
+    expect(abilityBlocksStatus({ abilityId: "water-bubble" }, "paralysis")).toBe(false);
+  });
+});
