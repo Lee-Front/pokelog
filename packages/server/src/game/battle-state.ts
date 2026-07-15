@@ -247,12 +247,31 @@ export function revertBattleForms(
     battle.playerTraced = null;
   }
 
+  // 야생 변신(Transform) 원복 — 도주/종료 경로에서도 야생을 원래 종으로 되돌린다(표시 일관성).
+  revertWildTransform(battle);
+
   battle.transformationType = null;
   battle.transformationUsed = undefined;
   battle.gmaxTurnsRemaining = undefined;
   battle.playerPreTransformMaxHp = undefined;
   battle.playerBattleForm = undefined;
   battle.wildBattleForm = undefined;
+}
+
+/**
+ * 야생 변신(Transform) 원복 — 야생의 종/폼/스탯/기술/특성을 wildPreTransform 원본으로 되돌린다.
+ * HP·maxHp는 변신 중에도 야생(메타몽) 것을 유지하므로 건드리지 않는다. 포획 직전에 호출하면
+ * 변신한 종이 아니라 원래 종(메타몽)이 잡힌다(본가 사양). 저장이 없으면 no-op.
+ */
+export function revertWildTransform(battle: BattleState): void {
+  if (!battle.wildPreTransform || !battle.wild) return;
+  const w = battle.wild;
+  w.species = battle.wildPreTransform.species;
+  w.variantId = battle.wildPreTransform.variantId ?? null;
+  w.stats = battle.wildPreTransform.stats;
+  w.moves = battle.wildPreTransform.moves;
+  w.ability = battle.wildPreTransform.ability ?? undefined;
+  battle.wildPreTransform = null;
 }
 
 // ---------------------------------------------------------------------------
@@ -1323,12 +1342,21 @@ export async function doWildAttackAndCheck(
     return await handleFainted(user, myPokemon, battle, log);
   }
 
-  // 야생 변신(Transform): 야생이 플레이어를 복사한다(HP는 자신 것 유지). 야생은 전투 종료 시 폐기되므로
-  // 원복 저장이 불필요하다. 공격 대신 변신하고 턴을 마친다.
+  // 야생 변신(Transform): 야생이 플레이어를 복사한다(HP는 자신 것 유지). 공격 대신 변신하고 턴을 마친다.
+  // 원본(종/스탯/기술/특성)을 wildPreTransform에 저장 — 포획 시 revertWildTransform으로 원래 종을 잡는다.
   if (preSelectedWildMove?.id === "transform") {
     if (preSelectedWildMove) preSelectedWildMove.pp -= 1;
     const w = battle.wild;
     const originalName = getDisplaySpeciesName(w.species);
+    if (!battle.wildPreTransform) {
+      battle.wildPreTransform = {
+        species: w.species,
+        variantId: w.variantId ?? null,
+        stats: { ...w.stats },
+        moves: w.moves.map((m) => ({ ...m })),
+        ability: w.ability ?? null,
+      };
+    }
     w.species = myPokemon.species;
     w.variantId = myPokemon.variantId ?? null;
     w.stats = { ...myPokemon.stats };

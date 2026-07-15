@@ -306,6 +306,15 @@ export interface BattleState {
   // trace(트레이스): 스위치인 시 상대 특성을 복사하며 원래 특성을 여기 보관하고,
   // 전투 종료/교체 시 revertBattleForms가 abilityId를 원복한다(미원복 시 저장 개체 특성 오염 방지).
   playerTraced?: { original: string | null } | null;
+  // 야생 변신(Transform/imposter): 야생이 플레이어를 복사하면 여기 원본(종/폼/스탯/기술/특성)을 저장한다.
+  // 포획 시 이 원본으로 되돌려 잡으므로(본가처럼) 변신한 종이 아니라 원래 종(메타몽 등)이 잡힌다.
+  wildPreTransform?: {
+    species: string;
+    variantId?: string | null;
+    stats: PokemonStats;
+    moves: PokemonMove[];
+    ability?: string | null;
+  } | null;
   // 테라스탈(플레이어 전용·배틀당 1회). 메가/거다이 게이트(transformationUsed)와 독립.
   // playerTerastallized=true면 공격 STAB 계산이 teraType 기반으로 바뀌고, 방어 시 유효
   // 타입이 [playerTeraType]로 치환된다. 스탯은 안 바뀌므로 전투 종료 시 그냥 사라진다(되돌릴 것 없음).

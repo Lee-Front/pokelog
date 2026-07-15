@@ -26,6 +26,7 @@ import {
   revertBattleForms,
   executePlayerAttack, resolvePreAttack, determineBattleTurnOrder, applyEndOfTurnBattle,
   handleFainted, doWildAttackAndCheck, applyImposterOnSwitchIn, applyTraceOnSwitchIn,
+  revertWildTransform,
   type FaintedResult,
 } from "../game/battle-state.js";
 import { applySwitchInAbilities, getSwitchOutAbilityEffect } from "../game/abilities.js";
@@ -557,6 +558,9 @@ async function handleCatch(
   const caught = guaranteedCatch || attemptCapture(ballCatchMultiplier, battle.wild.hp, battle.wild.maxHp, baseCatchRate);
 
   if (caught) {
+    // 변신(Transform)한 야생은 잡히는 순간 원래 종(메타몽 등)으로 되돌아간다 — 본가 사양.
+    // 원복 후 종/스탯/기술/특성으로 개체화해야 변신한 종이 잘못 잡히지 않는다.
+    revertWildTransform(battle);
     log.push(`야생 ${getDisplaySpeciesName(battle.wild.species)}을(를) 잡았다!`);
     const newPokemon = wildPokemonToOwned(battle.wild);
 

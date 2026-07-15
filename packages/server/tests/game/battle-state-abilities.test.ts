@@ -6,7 +6,7 @@ vi.mock("../../src/storage/user-store.js", () => ({
   saveUser: vi.fn(async () => {}),
 }));
 
-import { doWildAttackAndCheck, executePlayerAttack, revertBattleForms, applyImposterOnSwitchIn, applyTraceOnSwitchIn } from "../../src/game/battle-state.js";
+import { doWildAttackAndCheck, executePlayerAttack, revertBattleForms, applyImposterOnSwitchIn, applyTraceOnSwitchIn, revertWildTransform } from "../../src/game/battle-state.js";
 import type { BattleState, MoveData, OwnedPokemon, UserData } from "../../../../shared/types.js";
 
 function makeStats(overrides?: Partial<{ attack: number; defense: number; speed: number; spAttack: number; spDefense: number }>) {
@@ -270,6 +270,28 @@ describe("trace(트레이스)", () => {
     const b2 = makeBattle(); // 야생 무특성
     applyTraceOnSwitchIn(b2, p2, []);
     expect(p2.abilityId).toBe("trace");
+  });
+});
+
+// 야생 Transform 포획 — 변신한 야생을 잡으면 원래 종(메타몽)으로 복원되어야 한다.
+describe("야생 Transform 포획 원복", () => {
+  it("야생이 변신하면 원본을 저장하고, revertWildTransform으로 원래 종·스탯을 복원한다", async () => {
+    const player = makePlayer({ species: "bulbasaur", stats: makeStats({ attack: 77 }) });
+    const battle = makeBattle(); // wild=rattata (attack 200), 변신 대상
+    battle.wild.moves = [{ id: "transform", pp: 10, maxPp: 10 }];
+    const user = makeUser(player);
+
+    await doWildAttackAndCheck(user, player, battle, [], { id: "transform", pp: 10, maxPp: 10 });
+
+    // 야생이 플레이어(bulbasaur)로 변신 + 원본(rattata) 저장
+    expect(battle.wild.species).toBe("bulbasaur");
+    expect(battle.wildPreTransform?.species).toBe("rattata");
+
+    // 포획 직전 원복 → 원래 종/스탯으로 잡힌다
+    revertWildTransform(battle);
+    expect(battle.wild.species).toBe("rattata");
+    expect(battle.wild.stats.attack).toBe(200);
+    expect(battle.wildPreTransform).toBeNull();
   });
 });
 
