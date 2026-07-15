@@ -491,6 +491,86 @@ export function applyContactAbilities(
 }
 
 // ---------------------------------------------------------------------------
+// F2. 피격 시 방어자 자기강화/역풍(데미지 기술에 맞았을 때)
+// ---------------------------------------------------------------------------
+
+export interface OnHitDefenderResult {
+  selfChanges: { stat: keyof StatStages; change: number }[]; // 방어자 자신의 스탯 변화
+  attackerSpeedDrop: number;   // 공격자 speed 하락 단계(gooey/tangling-hair 접촉, cotton-down 피격)
+  setWeather?: BattleWeather;  // sand-spit: 모래바람
+  setTerrain?: BattleTerrain;  // seed-sower: 그래스필드
+  messages: string[];
+}
+
+const EMPTY_ON_HIT: OnHitDefenderResult = { selfChanges: [], attackerSpeedDrop: 0, messages: [] };
+
+/**
+ * 방어자가 데미지 기술에 맞았을 때(damage>0) 발동하는 특성.
+ * - stamina: 방어 +1 / weak-armor: 물리 피격 시 방어 −1·speed +2 / steam-engine: 불·물 피격 speed +6
+ * - berserk: 이 피격으로 HP가 절반 이하로 처음 떨어지면 특공 +1
+ * - anger-shell: 절반 이하로 처음 떨어지면 공/특공/speed +1, 방/특방 −1
+ * - thermal-exchange: 불 피격 시 공격 +1(화상 면역은 별도) / seed-sower: 그래스필드 / sand-spit: 모래바람
+ * - gooey/tangling-hair: 접촉 피격 시 공격자 speed −1 / cotton-down: 피격 시 공격자 speed −1
+ * status 기술이나 실제 데미지가 없으면 빈 결과.
+ */
+export function applyOnHitDefenderAbilities(
+  defender: AbilityHolder,
+  moveType: string,
+  moveCategory: MoveCategory,
+  isContact: boolean,
+  hpBefore: number,
+  hpAfter: number,
+  maxHp: number,
+): OnHitDefenderResult {
+  const ability = getAbility(defender);
+  if (!ability) return EMPTY_ON_HIT;
+  if (moveCategory === "status") return EMPTY_ON_HIT;
+  if (hpAfter >= hpBefore) return EMPTY_ON_HIT; // 실제 데미지를 받았을 때만
+
+  const res: OnHitDefenderResult = { selfChanges: [], attackerSpeedDrop: 0, messages: [] };
+  // 이번 피격으로 HP가 "처음" 절반 이하로 떨어졌는지(기절 제외).
+  const crossedHalf = hpBefore > maxHp / 2 && hpAfter <= maxHp / 2 && hpAfter > 0;
+
+  switch (ability) {
+    case "stamina":
+      res.selfChanges.push({ stat: "defense", change: 1 });
+      break;
+    case "weak-armor":
+      if (moveCategory === "physical") res.selfChanges.push({ stat: "defense", change: -1 }, { stat: "speed", change: 2 });
+      break;
+    case "steam-engine":
+      if (moveType === "fire" || moveType === "water") res.selfChanges.push({ stat: "speed", change: 6 });
+      break;
+    case "berserk":
+      if (crossedHalf) res.selfChanges.push({ stat: "spAttack", change: 1 });
+      break;
+    case "anger-shell":
+      if (crossedHalf) res.selfChanges.push(
+        { stat: "attack", change: 1 }, { stat: "spAttack", change: 1 }, { stat: "speed", change: 1 },
+        { stat: "defense", change: -1 }, { stat: "spDefense", change: -1 },
+      );
+      break;
+    case "thermal-exchange":
+      if (moveType === "fire") res.selfChanges.push({ stat: "attack", change: 1 });
+      break;
+    case "seed-sower":
+      res.setTerrain = "grassy";
+      break;
+    case "sand-spit":
+      res.setWeather = "sandstorm";
+      break;
+    case "gooey":
+    case "tangling-hair":
+      if (isContact) res.attackerSpeedDrop = 1;
+      break;
+    case "cotton-down":
+      res.attackerSpeedDrop = 1;
+      break;
+  }
+  return res;
+}
+
+// ---------------------------------------------------------------------------
 // G. 턴 종료(end of turn)
 // ---------------------------------------------------------------------------
 

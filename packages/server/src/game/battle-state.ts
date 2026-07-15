@@ -20,7 +20,8 @@ import {
   abilityBlocksIndirectDamage, resolveUnawareStages, applyContraryToChange,
   checkDisguiseBreak, isIronFistMove,
   isSlicingMove, isBitingMove, isPulseMove, isSoundMove, getKnockoutBoost,
-  type OffenseContext, type AbilityHolder,
+  applyOnHitDefenderAbilities,
+  type OffenseContext, type AbilityHolder, type OnHitDefenderResult,
 } from "./abilities.js";
 import {
   checkPreAttack, applyEndOfTurn, tickVolatiles, hasVolatile,
@@ -479,6 +480,49 @@ function applyPlayerTransform(battle: BattleState, player: OwnedPokemon, log: st
 }
 
 /**
+ * 피격 시 방어자 특성(stamina·weak-armor·berserk 등)의 결과를 전투 상태에 반영한다.
+ * defenderSide가 맞은 쪽. selfChanges는 방어자 스탯, attackerSpeedDrop은 공격자 speed 하락,
+ * setWeather/setTerrain은 없을 때만 설정. 무특성/빈 결과면 no-op.
+ */
+function applyOnHitDefender(
+  battle: BattleState,
+  defenderSide: "player" | "wild",
+  result: OnHitDefenderResult,
+  defenderName: string,
+  attackerName: string,
+  log: string[],
+): void {
+  if (result.selfChanges.length > 0) {
+    if (defenderSide === "player") {
+      battle.playerStatStages = applyStatChanges(battle.playerStatStages ?? defaultStatStages(), result.selfChanges);
+    } else {
+      battle.wildStatStages = applyStatChanges(battle.wildStatStages ?? defaultStatStages(), result.selfChanges);
+    }
+    log.push(`${defenderName}의 특성이 발동했다!`);
+  }
+  if (result.attackerSpeedDrop > 0) {
+    const drop = [{ stat: "speed" as keyof StatStages, change: -result.attackerSpeedDrop }];
+    if (defenderSide === "player") {
+      battle.wildStatStages = applyStatChanges(battle.wildStatStages ?? defaultStatStages(), drop);
+    } else {
+      battle.playerStatStages = applyStatChanges(battle.playerStatStages ?? defaultStatStages(), drop);
+    }
+    log.push(`${attackerName}의 속도가 떨어졌다!`);
+  }
+  if (result.setWeather && !battle.weather) {
+    battle.weather = result.setWeather;
+    battle.weatherTurns = getDefaultWeatherTurns();
+    log.push(`${defenderName}의 특성으로 날씨가 바뀌었다!`);
+  }
+  if (result.setTerrain && !battle.terrain) {
+    battle.terrain = result.setTerrain;
+    battle.terrainTurns = getDefaultTerrainTurns();
+    log.push(`${defenderName}의 특성으로 필드가 바뀌었다!`);
+  }
+  for (const m of result.messages) log.push(m);
+}
+
+/**
  * Execute the player's attack for this turn.
  * Encapsulates: damage calculation, weather modifier, stat stage application,
  * HP mutation, status/ailment application, form changes, meta effects (drain/healing).
@@ -624,6 +668,7 @@ export function executePlayerAttack(
     log.push(`${getDisplaySpeciesName(battle.wild.species)}은(는) 옹골참으로 버텼다!`);
   }
 
+  const wildHpBefore = battle.wild.hp;
   battle.wild.hp = Math.max(0, battle.wild.hp - result.damage);
   log.push(`${getDisplaySpeciesName(player.species)}의 ${moveData.name}! ${result.missed ? "빗나갔다!" : `${result.damage} 데미지!`}`);
   if (wildWonderGuardBlocks) log.push(`${getDisplaySpeciesName(battle.wild.species)}은(는) 원더가드로 데미지를 받지 않았다!`);
@@ -708,6 +753,17 @@ export function executePlayerAttack(
         player.hp = Math.max(0, player.hp - contact.recoilDamage);
         log.push(`${getDisplaySpeciesName(player.species)}은(는) 상대 특성으로 ${contact.recoilDamage} 데미지를 받았다!`);
       }
+    }
+
+    // 피격 시 방어자(야생) 특성: stamina·weak-armor·steam-engine·berserk·anger-shell·
+    // thermal-exchange·seed-sower·sand-spit + gooey/tangling-hair/cotton-down(공격자 speed↓).
+    // 원더가드/탈로 무효화(hitSuppressed)면 발동하지 않고, 기절한 야생도 스킵.
+    if (!hitSuppressed && battle.wild.hp > 0 && result.damage > 0) {
+      const onHit = applyOnHitDefenderAbilities(
+        battle.wild, moveData.type, moveData.category, moveData.category === "physical",
+        wildHpBefore, battle.wild.hp, battle.wild.maxHp,
+      );
+      applyOnHitDefender(battle, "wild", onHit, `야생 ${getDisplaySpeciesName(battle.wild.species)}`, getDisplaySpeciesName(player.species), log);
     }
 
     // Check flinch
@@ -1350,6 +1406,15 @@ export async function doWildAttackAndCheck(
         battle.wild.hp = Math.max(0, battle.wild.hp - contact.recoilDamage);
         log.push(`야생 ${getDisplaySpeciesName(battle.wild.species)}은(는) 상대 특성으로 ${contact.recoilDamage} 데미지를 받았다!`);
       }
+    }
+
+    // 피격 시 방어자(플레이어) 특성: stamina·weak-armor·berserk 등 + gooey류(공격자 speed↓).
+    if (!wildHitSuppressed && myPokemon.hp > 0 && wildResult.damage > 0) {
+      const onHit = applyOnHitDefenderAbilities(
+        myPokemon, wildResult.moveData.type, wildResult.moveData.category, wildResult.moveData.category === "physical",
+        previousHp, myPokemon.hp, myPokemon.maxHp,
+      );
+      applyOnHitDefender(battle, "player", onHit, getDisplaySpeciesName(myPokemon.species), `야생 ${getDisplaySpeciesName(battle.wild.species)}`, log);
     }
 
     // 풀죽음(flinch) 판정 — executePlayerAttack와 동일하게 "apply if under"(roll < chance).

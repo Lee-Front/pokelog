@@ -208,3 +208,22 @@ describe("on-KO 공격 특성", () => {
     expect(battle.playerStatStages.attack).toBe(0);
   });
 });
+
+// 피격 시 방어자 특성 — 야생의 물리 공격을 맞은 플레이어(stamina)가 방어 상승.
+describe("피격 시 방어자 특성(stamina)", () => {
+  let randomSpy: ReturnType<typeof vi.spyOn>;
+  beforeEach(() => { randomSpy = vi.spyOn(Math, "random").mockReturnValue(0.5); });
+  afterEach(() => { randomSpy.mockRestore(); });
+
+  it("stamina로 야생의 물리 공격을 맞으면 방어 랭크가 +1 된다", async () => {
+    const player = makePlayer({ abilityId: "stamina", hp: 500, maxHp: 500 });
+    const battle = makeBattle();
+    const user = makeUser(player);
+
+    await doWildAttackAndCheck(user, player, battle, [], { id: "tackle", pp: 35, maxPp: 35 });
+
+    expect(player.hp).toBeLessThan(500); // 데미지는 받았고
+    expect(player.hp).toBeGreaterThan(0); // 생존
+    expect(battle.playerStatStages.defense).toBe(1);
+  });
+});

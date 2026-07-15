@@ -19,6 +19,7 @@ import {
   isIronFistMove,
   isSlicingMove, isBitingMove, isPulseMove, isSoundMove,
   getKnockoutBoost,
+  applyOnHitDefenderAbilities,
 } from "../../src/game/abilities.js";
 import { defaultStatStages } from "../../src/game/battle.js";
 import type { BattleState, PrimaryStatus, StatStages } from "../../../../shared/types.js";
@@ -582,5 +583,43 @@ describe("batch3: getKnockoutBoost", () => {
   it("null for non-KO abilities", () => {
     expect(getKnockoutBoost({ abilityId: "intimidate" })).toBeNull();
     expect(getKnockoutBoost({})).toBeNull();
+  });
+});
+
+// ── Batch 5: 피격 시 방어자 특성 ─────────────────────────────────────────────
+describe("batch5: applyOnHitDefenderAbilities", () => {
+  // 데미지: hpBefore=100 → hpAfter=70 (maxHp=100), 물리 접촉 기본
+  const hit = (ability: string, over?: Partial<{ moveType: string; moveCategory: string; isContact: boolean; hpBefore: number; hpAfter: number; maxHp: number }>) => {
+    const o = { moveType: "normal", moveCategory: "physical", isContact: true, hpBefore: 100, hpAfter: 70, maxHp: 100, ...over };
+    return applyOnHitDefenderAbilities({ abilityId: ability }, o.moveType, o.moveCategory, o.isContact, o.hpBefore, o.hpAfter, o.maxHp);
+  };
+
+  it("stamina raises defense on any damaging hit", () => {
+    expect(hit("stamina").selfChanges).toEqual([{ stat: "defense", change: 1 }]);
+  });
+  it("weak-armor: physical → def-1 spd+2, special → nothing", () => {
+    expect(hit("weak-armor").selfChanges).toEqual([{ stat: "defense", change: -1 }, { stat: "speed", change: 2 }]);
+    expect(hit("weak-armor", { moveCategory: "special", isContact: false }).selfChanges).toEqual([]);
+  });
+  it("steam-engine +6 speed on fire/water only", () => {
+    expect(hit("steam-engine", { moveType: "fire" }).selfChanges).toEqual([{ stat: "speed", change: 6 }]);
+    expect(hit("steam-engine", { moveType: "grass" }).selfChanges).toEqual([]);
+  });
+  it("berserk raises spAttack only when crossing to half", () => {
+    expect(hit("berserk", { hpBefore: 100, hpAfter: 40 }).selfChanges).toEqual([{ stat: "spAttack", change: 1 }]);
+    expect(hit("berserk", { hpBefore: 40, hpAfter: 30 }).selfChanges).toEqual([]); // 이미 절반 이하였음
+  });
+  it("gooey/tangling-hair drop attacker speed on contact only", () => {
+    expect(hit("gooey").attackerSpeedDrop).toBe(1);
+    expect(hit("gooey", { isContact: false }).attackerSpeedDrop).toBe(0);
+    expect(hit("cotton-down", { isContact: false }).attackerSpeedDrop).toBe(1); // 접촉 무관
+  });
+  it("sand-spit/seed-sower set weather/terrain", () => {
+    expect(hit("sand-spit").setWeather).toBe("sandstorm");
+    expect(hit("seed-sower").setTerrain).toBe("grassy");
+  });
+  it("status move or zero damage → empty", () => {
+    expect(hit("stamina", { moveCategory: "status" }).selfChanges).toEqual([]);
+    expect(hit("stamina", { hpBefore: 70, hpAfter: 70 }).selfChanges).toEqual([]);
   });
 });
