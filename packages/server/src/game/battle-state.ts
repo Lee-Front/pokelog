@@ -506,6 +506,18 @@ function applyPlayerTransform(battle: BattleState, player: OwnedPokemon, log: st
 }
 
 /**
+ * imposter(변신둔갑): 등장(스위치인/전투시작) 시 상대(야생)로 즉시 변신한다.
+ * Transform과 동일한 저장/원복 경로(playerPreTransform + revertBattleForms)를 재사용한다.
+ * 특성이 imposter가 아니거나 이미 변신한 상태면 no-op.
+ */
+export function applyImposterOnSwitchIn(battle: BattleState, player: OwnedPokemon, log: string[]): void {
+  if (!hasAbility(player, "imposter")) return;
+  if (battle.playerPreTransform) return;
+  if (!battle.wild) return;
+  applyPlayerTransform(battle, player, log);
+}
+
+/**
  * 피격 시 방어자 특성(stamina·weak-armor·berserk 등)의 결과를 전투 상태에 반영한다.
  * defenderSide가 맞은 쪽. selfChanges는 방어자 스탯, attackerSpeedDrop은 공격자 speed 하락,
  * setWeather/setTerrain은 없을 때만 설정. 무특성/빈 결과면 no-op.

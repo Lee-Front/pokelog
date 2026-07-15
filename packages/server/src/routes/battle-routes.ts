@@ -25,7 +25,7 @@ import {
   applyBattleFormChange, applyWeatherEndOfTurn, applyTerrainEndOfTurn,
   revertBattleForms,
   executePlayerAttack, resolvePreAttack, determineBattleTurnOrder, applyEndOfTurnBattle,
-  handleFainted, doWildAttackAndCheck,
+  handleFainted, doWildAttackAndCheck, applyImposterOnSwitchIn,
   type FaintedResult,
 } from "../game/battle-state.js";
 import { applySwitchInAbilities, getSwitchOutAbilityEffect } from "../game/abilities.js";
@@ -246,6 +246,7 @@ export async function startWildBattle(
   // 무특성/미지원이면 no-op이라 종전 동작과 동일하다.
   const startLog: string[] = [];
   battleState.wildStatStages = applySwitchInAbilities(battleState, "player", pokemon, battleState.wildStatStages!, startLog);
+  applyImposterOnSwitchIn(battleState, pokemon, startLog); // 변신둔갑: 등장 즉시 야생으로 변신
   battleState.playerStatStages = applySwitchInAbilities(battleState, "wild", battleState.wild, battleState.playerStatStages!, startLog);
 
   user.battleState = battleState;
@@ -718,6 +719,7 @@ async function handleSwitch(
 
   // 교체로 들어온 포켓몬의 스위치인 특성(intimidate·날씨/필드 세터): 야생 스탯을 깎는다.
   battle.wildStatStages = applySwitchInAbilities(battle, "player", newPokemon, battle.wildStatStages, log);
+  applyImposterOnSwitchIn(battle, newPokemon, log); // 변신둔갑: 교체 등장 시 야생으로 변신
 
   if (!forced) {
     const wildResult = await doWildAttackAndCheck(user, newPokemon, battle, log);

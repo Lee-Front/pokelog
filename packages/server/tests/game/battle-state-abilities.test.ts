@@ -6,7 +6,7 @@ vi.mock("../../src/storage/user-store.js", () => ({
   saveUser: vi.fn(async () => {}),
 }));
 
-import { doWildAttackAndCheck, executePlayerAttack, revertBattleForms } from "../../src/game/battle-state.js";
+import { doWildAttackAndCheck, executePlayerAttack, revertBattleForms, applyImposterOnSwitchIn } from "../../src/game/battle-state.js";
 import type { BattleState, MoveData, OwnedPokemon, UserData } from "../../../../shared/types.js";
 
 function makeStats(overrides?: Partial<{ attack: number; defense: number; speed: number; spAttack: number; spDefense: number }>) {
@@ -206,6 +206,36 @@ describe("on-KO 공격 특성", () => {
     executePlayerAttack(battle, player, tackle, player.moves[0], []);
     expect(battle.wild.hp).toBe(0);
     expect(battle.playerStatStages.attack).toBe(0);
+  });
+});
+
+// imposter(변신둔갑) — 등장 시 상대(야생)로 변신, revert로 원복.
+describe("imposter(변신둔갑)", () => {
+  it("등장 시 야생으로 변신하고 revert로 원복한다", () => {
+    const player = makePlayer({ species: "ditto", abilityId: "imposter", stats: makeStats({ attack: 10 }), moves: [{ id: "transform", pp: 10, maxPp: 10 }] });
+    const battle = makeBattle(); // wild=rattata, attack 200, moves=[tackle]
+    const log: string[] = [];
+
+    applyImposterOnSwitchIn(battle, player, log);
+
+    expect(battle.playerPreTransform).toBeTruthy();
+    expect(player.species).toBe("rattata");
+    expect(player.stats.attack).toBe(200);
+    expect(player.moves.map((m) => m.id)).toEqual(["tackle"]);
+    expect(log.some((l) => l.includes("변신했다"))).toBe(true);
+
+    revertBattleForms(battle, player);
+    expect(player.species).toBe("ditto");
+    expect(player.stats.attack).toBe(10);
+    expect(battle.playerPreTransform).toBeNull();
+  });
+
+  it("imposter가 아니거나 이미 변신했으면 no-op", () => {
+    const noImp = makePlayer({ species: "ditto" });
+    const b1 = makeBattle();
+    applyImposterOnSwitchIn(b1, noImp, []);
+    expect(b1.playerPreTransform).toBeFalsy();
+    expect(noImp.species).toBe("ditto");
   });
 });
 
