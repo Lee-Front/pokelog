@@ -178,3 +178,33 @@ describe("Transform (변신)", () => {
     expect(log.some((l) => l.includes("이미 변신"))).toBe(true);
   });
 });
+
+// on-KO 특성(자신감/moxie 등) — 야생을 쓰러뜨리면 공격자 스탯 상승.
+describe("on-KO 공격 특성", () => {
+  const tackle = { id: "tackle", name: "몸통박치기", type: "normal", category: "physical", power: 40, accuracy: 100, pp: 35 } as unknown as MoveData;
+  let randomSpy: ReturnType<typeof vi.spyOn>;
+  beforeEach(() => { randomSpy = vi.spyOn(Math, "random").mockReturnValue(0.5); });
+  afterEach(() => { randomSpy.mockRestore(); });
+
+  it("moxie로 야생을 쓰러뜨리면 공격 랭크가 +1 된다", () => {
+    const player = makePlayer({ abilityId: "moxie", stats: makeStats({ attack: 120 }) });
+    const battle = makeBattle();
+    battle.wild.hp = 1; // 한 방에 쓰러지게
+    const log: string[] = [];
+
+    executePlayerAttack(battle, player, tackle, player.moves[0], log);
+
+    expect(battle.wild.hp).toBe(0);
+    expect(battle.playerStatStages.attack).toBe(1);
+    expect(log.some((l) => l.includes("능력이 올랐다"))).toBe(true);
+  });
+
+  it("특성이 없으면 격파해도 스탯이 그대로다", () => {
+    const player = makePlayer({ stats: makeStats({ attack: 120 }) });
+    const battle = makeBattle();
+    battle.wild.hp = 1;
+    executePlayerAttack(battle, player, tackle, player.moves[0], []);
+    expect(battle.wild.hp).toBe(0);
+    expect(battle.playerStatStages.attack).toBe(0);
+  });
+});

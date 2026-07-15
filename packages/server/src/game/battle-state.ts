@@ -19,7 +19,7 @@ import {
   abilityBlocksStatus, attackerBreaksMold, abilityNullifiesNonSuperEffective,
   abilityBlocksIndirectDamage, resolveUnawareStages, applyContraryToChange,
   checkDisguiseBreak, isIronFistMove,
-  isSlicingMove, isBitingMove, isPulseMove, isSoundMove,
+  isSlicingMove, isBitingMove, isPulseMove, isSoundMove, getKnockoutBoost,
   type OffenseContext, type AbilityHolder,
 } from "./abilities.js";
 import {
@@ -635,6 +635,19 @@ export function executePlayerAttack(
       log.push(`야생 ${getDisplaySpeciesName(battle.wild.species)}은(는) 탈이 벗겨지며 ${wildDisguise.chipDamage} 데미지를 받았다!`);
     }
   }
+  // on-KO 공격 특성: 플레이어의 데미지 기술이 야생을 쓰러뜨리면 공격자 스탯 상승
+  // (moxie/기죽이는울음소리 → 공격, grim-neigh/소울하트 → 특수공격, beast-boost → 최고 스탯).
+  if (battle.wild.hp === 0 && result.damage > 0) {
+    const koBoost = getKnockoutBoost(player, player.stats);
+    if (koBoost) {
+      battle.playerStatStages = applyStatChanges(
+        battle.playerStatStages ?? defaultStatStages(),
+        [{ stat: koBoost.stat, change: koBoost.amount }],
+      );
+      log.push(`${getDisplaySpeciesName(player.species)}은(는) 특성으로 능력이 올랐다!`);
+    }
+  }
+
   // 급소(크리티컬) — 빗나가지 않은 데미지 기술에서만 표시
   if (!result.missed && result.critical && moveData.category !== "status") log.push("급소에 맞았다!");
   if (result.message) log.push(result.message);

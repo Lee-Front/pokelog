@@ -261,6 +261,48 @@ export function getAbilityOffenseMultiplier(
 }
 
 // ---------------------------------------------------------------------------
+// B2. 격파(on-KO) 시 공격자 스탯 상승 — 상대를 쓰러뜨린 직후 발동
+// ---------------------------------------------------------------------------
+
+export interface KnockoutBoost { stat: keyof StatStages; amount: number; }
+
+/** 고정 스탯을 올리는 on-KO 특성(슬러그→스탯). beast-boost는 최고 스탯이라 별도 처리. */
+const KO_FIXED_BOOST: Record<string, keyof StatStages> = {
+  "moxie": "attack",
+  "chilling-neigh": "attack",
+  "grim-neigh": "spAttack",
+  "as-one-glastrier": "attack",   // as-one(글라스트리에) = unnerve + chilling-neigh
+  "as-one-spectrier": "spAttack", // as-one(스펙트리에) = unnerve + grim-neigh
+  "soul-heart": "spAttack",
+};
+
+/**
+ * 상대를 쓰러뜨린 공격자가 받는 스탯 상승(+1 단계).
+ * - moxie/chilling-neigh: 공격, grim-neigh/soul-heart: 특수공격
+ * - beast-boost: 자신의 가장 높은 스탯(HP 제외 5종)
+ * 미특성/미대상이면 null. stats 미제공 시 beast-boost는 공격으로 기본.
+ */
+export function getKnockoutBoost(
+  attacker: AbilityHolder,
+  stats?: { attack: number; defense: number; spAttack: number; spDefense: number; speed: number },
+): KnockoutBoost | null {
+  const ability = getAbility(attacker);
+  if (!ability) return null;
+  const fixed = KO_FIXED_BOOST[ability];
+  if (fixed) return { stat: fixed, amount: 1 };
+  if (ability === "beast-boost") {
+    if (!stats) return { stat: "attack", amount: 1 };
+    const entries: [keyof StatStages, number][] = [
+      ["attack", stats.attack], ["defense", stats.defense],
+      ["spAttack", stats.spAttack], ["spDefense", stats.spDefense], ["speed", stats.speed],
+    ];
+    entries.sort((a, b) => b[1] - a[1]);
+    return { stat: entries[0][0], amount: 1 };
+  }
+  return null;
+}
+
+// ---------------------------------------------------------------------------
 // C. 방어 면역/흡수(immunity) — 데미지 적용 전 검사
 // ---------------------------------------------------------------------------
 

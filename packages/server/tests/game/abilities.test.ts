@@ -18,6 +18,7 @@ import {
   checkDisguiseBreak,
   isIronFistMove,
   isSlicingMove, isBitingMove, isPulseMove, isSoundMove,
+  getKnockoutBoost,
 } from "../../src/game/abilities.js";
 import { defaultStatStages } from "../../src/game/battle.js";
 import type { BattleState, PrimaryStatus, StatStages } from "../../../../shared/types.js";
@@ -547,5 +548,25 @@ describe("batch2: move-flag offense abilities", () => {
   });
   it("status-category move gets no flag boost (isDamaging gate)", () => {
     expect(getAbilityOffenseMultiplier({ abilityId: "punk-rock" }, "normal", "status", 0, frac, false, false, { isSound: true })).toBe(1);
+  });
+});
+
+// ── Batch 3: 격파(on-KO) 시 공격자 스탯 상승 ─────────────────────────────────
+describe("batch3: getKnockoutBoost", () => {
+  it("moxie/chilling-neigh raise attack, grim-neigh/soul-heart raise spAttack", () => {
+    expect(getKnockoutBoost({ abilityId: "moxie" })).toEqual({ stat: "attack", amount: 1 });
+    expect(getKnockoutBoost({ abilityId: "chilling-neigh" })).toEqual({ stat: "attack", amount: 1 });
+    expect(getKnockoutBoost({ abilityId: "grim-neigh" })).toEqual({ stat: "spAttack", amount: 1 });
+    expect(getKnockoutBoost({ abilityId: "soul-heart" })).toEqual({ stat: "spAttack", amount: 1 });
+  });
+  it("beast-boost picks the highest of the 5 stats", () => {
+    const stats = { attack: 60, defense: 40, spAttack: 120, spDefense: 50, speed: 100 };
+    expect(getKnockoutBoost({ abilityId: "beast-boost" }, stats)).toEqual({ stat: "spAttack", amount: 1 });
+    const fast = { attack: 90, defense: 40, spAttack: 50, spDefense: 50, speed: 130 };
+    expect(getKnockoutBoost({ abilityId: "beast-boost" }, fast)).toEqual({ stat: "speed", amount: 1 });
+  });
+  it("null for non-KO abilities", () => {
+    expect(getKnockoutBoost({ abilityId: "intimidate" })).toBeNull();
+    expect(getKnockoutBoost({})).toBeNull();
   });
 });
