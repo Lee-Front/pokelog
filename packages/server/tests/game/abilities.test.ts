@@ -24,6 +24,7 @@ import {
   getSwitchOutAbilityEffect,
   getAbilityAccuracyMultiplier, abilitiesNeverMiss,
   getSecondaryChanceMultiplier,
+  getAbilityPriorityBonus,
 } from "../../src/game/abilities.js";
 import { defaultStatStages } from "../../src/game/battle.js";
 import type { BattleState, PrimaryStatus, StatStages } from "../../../../shared/types.js";
@@ -729,5 +730,26 @@ describe("batch12: getSecondaryChanceMultiplier", () => {
     expect(getSecondaryChanceMultiplier({ abilityId: "serene-grace" })).toBe(2);
     expect(getSecondaryChanceMultiplier({ abilityId: "intimidate" })).toBe(1);
     expect(getSecondaryChanceMultiplier({})).toBe(1);
+  });
+});
+
+// ── Batch 13: 우선도 특성 ─────────────────────────────────────────────────────
+describe("batch13: getAbilityPriorityBonus", () => {
+  it("prankster +1 for status moves only", () => {
+    expect(getAbilityPriorityBonus({ abilityId: "prankster" }, { category: "status" }, true)).toBe(1);
+    expect(getAbilityPriorityBonus({ abilityId: "prankster" }, { category: "physical" }, true)).toBe(0);
+  });
+  it("gale-wings +1 for flying moves only at full HP", () => {
+    expect(getAbilityPriorityBonus({ abilityId: "gale-wings" }, { type: "flying" }, true)).toBe(1);
+    expect(getAbilityPriorityBonus({ abilityId: "gale-wings" }, { type: "flying" }, false)).toBe(0);
+    expect(getAbilityPriorityBonus({ abilityId: "gale-wings" }, { type: "normal" }, true)).toBe(0);
+  });
+  it("triage +3 for healing moves only", () => {
+    expect(getAbilityPriorityBonus({ abilityId: "triage" }, { meta: { healing: 50 } }, false)).toBe(3);
+    expect(getAbilityPriorityBonus({ abilityId: "triage" }, { meta: { healing: 0 } }, false)).toBe(0);
+  });
+  it("0 for other/absent abilities", () => {
+    expect(getAbilityPriorityBonus({ abilityId: "intimidate" }, { category: "status" }, true)).toBe(0);
+    expect(getAbilityPriorityBonus({}, { category: "status" }, true)).toBe(0);
   });
 });

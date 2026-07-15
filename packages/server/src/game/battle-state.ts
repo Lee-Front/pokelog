@@ -22,6 +22,7 @@ import {
   isSlicingMove, isBitingMove, isPulseMove, isSoundMove, getKnockoutBoost,
   applyOnHitDefenderAbilities, getAttackerHitStatus,
   getAbilityAccuracyMultiplier, abilitiesNeverMiss, getSecondaryChanceMultiplier,
+  getAbilityPriorityBonus,
   type OffenseContext, type AbilityHolder, type OnHitDefenderResult,
 } from "./abilities.js";
 import {
@@ -898,8 +899,8 @@ export function resolvePreAttack(
 export function determineBattleTurnOrder(
   battle: BattleState,
   player: OwnedPokemon,
-  playerMoveData: { priority?: number },
-  wildMoveData: { priority?: number },
+  playerMoveData: { priority?: number; type?: string; category?: string; meta?: { healing?: number } },
+  wildMoveData: { priority?: number; type?: string; category?: string; meta?: { healing?: number } },
   log: string[] = [],
 ): "player" | "wild" {
   // 마비 감속(속보/quick-feet는 마비 감속을 무시한다).
@@ -919,10 +920,12 @@ export function determineBattleTurnOrder(
   const playerSpeed = applyStatStageMultiplier(playerSpeedBase, battle.playerStatStages?.speed ?? 0) * playerSpeedAbilityMult;
   const wildSpeed = applyStatStageMultiplier(wildSpeedBase, battle.wildStatStages?.speed ?? 0) * wildSpeedAbilityMult;
 
+  // 특성 우선도 보너스(prankster/gale-wings/triage)를 기술 우선도에 더한다.
+  const playerPriority = (playerMoveData.priority ?? 0) + getAbilityPriorityBonus(player, playerMoveData, player.hp >= player.maxHp);
+  const wildPriority = (wildMoveData.priority ?? 0) + getAbilityPriorityBonus(battle.wild, wildMoveData, battle.wild.hp >= battle.wild.maxHp);
+
   // 선제공격손톱(quick-claw): 속도 비교 전 20% 확률로 선공.
   // 우선도(priority)가 같을 때만 의미가 있으므로 동일 우선도에서 판정한다.
-  const playerPriority = playerMoveData.priority ?? 0;
-  const wildPriority = wildMoveData.priority ?? 0;
   if (playerPriority === wildPriority) {
     if (quickClawTriggers(player)) {
       log.push("빠른발톱이 발동!");
@@ -934,10 +937,7 @@ export function determineBattleTurnOrder(
     }
   }
 
-  return determineTurnOrder(
-    playerSpeed, wildSpeed,
-    playerMoveData.priority ?? 0, wildMoveData.priority ?? 0,
-  );
+  return determineTurnOrder(playerSpeed, wildSpeed, playerPriority, wildPriority);
 }
 
 /**

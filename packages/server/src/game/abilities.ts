@@ -751,6 +751,24 @@ export function getSecondaryChanceMultiplier(attacker: AbilityHolder): number {
   return getAbility(attacker) === "serene-grace" ? 2 : 1;
 }
 
+/**
+ * 특성 우선도 보너스(기술 priority에 더함).
+ * - prankster: 상태 기술 +1 / gale-wings: 비행 기술 & 풀피 +1 / triage: 회복 기술 +3
+ * 미대상이면 0.
+ */
+export function getAbilityPriorityBonus(
+  attacker: AbilityHolder,
+  move: { type?: string; category?: string; meta?: { healing?: number } },
+  atFullHp: boolean,
+): number {
+  const ability = getAbility(attacker);
+  if (!ability) return 0;
+  if (ability === "prankster" && move.category === "status") return 1;
+  if (ability === "gale-wings" && move.type === "flying" && atFullHp) return 1;
+  if (ability === "triage" && (move.meta?.healing ?? 0) > 0) return 3;
+  return 0;
+}
+
 // ---------------------------------------------------------------------------
 // I. 일격 생존(sturdy)
 // ---------------------------------------------------------------------------
