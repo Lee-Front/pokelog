@@ -6,8 +6,8 @@ vi.mock("../../src/storage/user-store.js", () => ({
   saveUser: vi.fn(async () => {}),
 }));
 
-import { doWildAttackAndCheck } from "../../src/game/battle-state.js";
-import type { BattleState, OwnedPokemon, UserData } from "../../../../shared/types.js";
+import { doWildAttackAndCheck, executePlayerAttack, revertBattleForms } from "../../src/game/battle-state.js";
+import type { BattleState, MoveData, OwnedPokemon, UserData } from "../../../../shared/types.js";
 
 function makeStats(overrides?: Partial<{ attack: number; defense: number; speed: number; spAttack: number; spDefense: number }>) {
   return { attack: 50, defense: 50, speed: 50, spAttack: 50, spDefense: 50, ...overrides };
@@ -139,5 +139,42 @@ describe("doWildAttackAndCheck — wild sleep wakes (regression)", () => {
     expect(battle.wild.statusCondition).toBeNull();
     expect(battle.wild.sleepTurns).toBeUndefined();
     expect(log.some((l) => l.includes("잠에서 깨어났다"))).toBe(true);
+  });
+});
+
+// 변신(Transform) — 상대의 종/스탯/기술을 복사하고 전투 종료 시 원복.
+describe("Transform (변신)", () => {
+  const transformMove = { id: "transform", name: "변신", type: "normal", category: "status", power: 0, accuracy: null, pp: 10 } as unknown as MoveData;
+
+  it("플레이어 변신: 야생의 종/스탯/기술을 복사하고 revert 시 원복한다", () => {
+    const player = makePlayer({ species: "ditto", stats: makeStats({ attack: 10 }), moves: [{ id: "transform", pp: 10, maxPp: 10 }] });
+    const battle = makeBattle(); // wild=rattata, attack 200, moves=[tackle]
+    const log: string[] = [];
+
+    executePlayerAttack(battle, player, transformMove, player.moves[0], log);
+
+    expect(battle.playerPreTransform).toBeTruthy();
+    expect(player.species).toBe("rattata");
+    expect(player.stats.attack).toBe(200);            // 야생 스탯 복사
+    expect(player.moves.map((m) => m.id)).toEqual(["tackle"]);
+    expect(player.moves[0].maxPp).toBe(5);            // 복사 기술 PP=5
+    expect(log.some((l) => l.includes("변신했다"))).toBe(true);
+
+    revertBattleForms(battle, player);
+    expect(player.species).toBe("ditto");             // 원복
+    expect(player.stats.attack).toBe(10);
+    expect(player.moves.map((m) => m.id)).toEqual(["transform"]);
+    expect(battle.playerPreTransform).toBeNull();
+  });
+
+  it("이미 변신했으면 다시 변신하지 않는다", () => {
+    const player = makePlayer({ species: "ditto", moves: [{ id: "transform", pp: 10, maxPp: 10 }] });
+    const battle = makeBattle();
+    const log: string[] = [];
+    executePlayerAttack(battle, player, transformMove, player.moves[0], log);
+    const afterFirst = player.species;
+    executePlayerAttack(battle, player, transformMove, { id: "transform", pp: 5, maxPp: 5 }, log);
+    expect(player.species).toBe(afterFirst);
+    expect(log.some((l) => l.includes("이미 변신"))).toBe(true);
   });
 });

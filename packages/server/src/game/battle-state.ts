@@ -225,6 +225,17 @@ export function revertBattleForms(
     }
   }
 
+  // 변신(Transform) 복원 — 종/폼/스탯/기술/특성을 원본으로 되돌린다(HP는 그대로). 영속 개체가
+  // 변신 상태로 저장되지 않게 모든 종료/교체 경로가 이 함수를 거친다.
+  if (battle.playerPreTransform) {
+    myPokemon.species = battle.playerPreTransform.species;
+    myPokemon.variantId = battle.playerPreTransform.variantId ?? null;
+    myPokemon.stats = battle.playerPreTransform.stats;
+    myPokemon.moves = battle.playerPreTransform.moves;
+    myPokemon.abilityId = battle.playerPreTransform.abilityId ?? null;
+    battle.playerPreTransform = null;
+  }
+
   battle.transformationType = null;
   battle.transformationUsed = undefined;
   battle.gmaxTurnsRemaining = undefined;
@@ -435,6 +446,34 @@ function buildOffenseContext(
 }
 
 /**
+ * 변신(Transform) — 플레이어가 야생을 복사한다. 원본은 battle.playerPreTransform에 저장하고
+ * (revertBattleForms가 전투 종료/교체 시 복원), 종/폼/스탯/기술/특성을 야생 것으로 덮어쓴다.
+ * HP·최대HP는 자신 것을 유지(본가 규칙). 복사한 기술 PP는 5로 클램프. 이미 변신했으면 실패.
+ */
+function applyPlayerTransform(battle: BattleState, player: OwnedPokemon, log: string[]): PlayerAttackResult {
+  if (battle.playerPreTransform) {
+    log.push(`${getDisplaySpeciesName(player.species)}은(는) 이미 변신한 상태다!`);
+    return { flinchCaused: false };
+  }
+  battle.playerPreTransform = {
+    species: player.species,
+    variantId: player.variantId ?? null,
+    stats: { ...player.stats },
+    moves: player.moves.map((m) => ({ ...m })),
+    abilityId: player.abilityId ?? null,
+  };
+  const target = battle.wild;
+  const originalName = getDisplaySpeciesName(player.species);
+  player.species = target.species;
+  player.variantId = target.variantId ?? null;
+  player.stats = { ...target.stats };
+  player.moves = target.moves.map((m) => ({ id: m.id, pp: Math.min(5, m.maxPp), maxPp: Math.min(5, m.maxPp) }));
+  player.abilityId = target.ability ?? player.abilityId;
+  log.push(`${originalName}은(는) ${getDisplaySpeciesName(target.species)}(으)로 변신했다!`);
+  return { flinchCaused: false };
+}
+
+/**
  * Execute the player's attack for this turn.
  * Encapsulates: damage calculation, weather modifier, stat stage application,
  * HP mutation, status/ailment application, form changes, meta effects (drain/healing).
@@ -448,6 +487,9 @@ export function executePlayerAttack(
   log: string[],
 ): PlayerAttackResult {
   selectedMove.pp -= 1;
+
+  // 변신(Transform): 상대(야생)의 종/스탯/기술/특성/외형을 복사한다(HP·최대HP는 자신 것 유지).
+  if (moveData.id === "transform") return applyPlayerTransform(battle, player, log);
 
   // Burn modifier: halve attack for physical moves
   const playerStats = { ...player.stats };
@@ -1077,6 +1119,21 @@ export async function doWildAttackAndCheck(
       battle.wild.hp = Math.max(0, battle.wild.hp - wildPreCheck.selfDamage);
       log.push(`야생 ${getDisplaySpeciesName(battle.wild.species)}이(가) ${wildPreCheck.selfDamage} 데미지를 받았다!`);
     }
+    return await handleFainted(user, myPokemon, battle, log);
+  }
+
+  // 야생 변신(Transform): 야생이 플레이어를 복사한다(HP는 자신 것 유지). 야생은 전투 종료 시 폐기되므로
+  // 원복 저장이 불필요하다. 공격 대신 변신하고 턴을 마친다.
+  if (preSelectedWildMove?.id === "transform") {
+    if (preSelectedWildMove) preSelectedWildMove.pp -= 1;
+    const w = battle.wild;
+    const originalName = getDisplaySpeciesName(w.species);
+    w.species = myPokemon.species;
+    w.variantId = myPokemon.variantId ?? null;
+    w.stats = { ...myPokemon.stats };
+    w.moves = myPokemon.moves.map((m) => ({ id: m.id, pp: Math.min(5, m.maxPp), maxPp: Math.min(5, m.maxPp) }));
+    w.ability = myPokemon.abilityId ?? w.ability;
+    log.push(`야생 ${originalName}은(는) ${getDisplaySpeciesName(myPokemon.species)}(으)로 변신했다!`);
     return await handleFainted(user, myPokemon, battle, log);
   }
 

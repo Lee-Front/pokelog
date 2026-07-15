@@ -294,6 +294,15 @@ export interface BattleState {
   transformationUsed?: boolean;
   gmaxTurnsRemaining?: number;
   playerPreTransformMaxHp?: number;
+  // 변신(Transform 기술) 전 플레이어 원본 — 변신 시 저장하고 전투 종료/교체 시 revertBattleForms가
+  // 복원한다(영속 개체를 원상복구). 야생 변신은 battle.wild를 덮어쓰되 종료 시 폐기되므로 저장 불필요.
+  playerPreTransform?: {
+    species: string;
+    variantId?: string | null;
+    stats: PokemonStats;
+    moves: PokemonMove[];
+    abilityId?: string | null;
+  } | null;
   // 테라스탈(플레이어 전용·배틀당 1회). 메가/거다이 게이트(transformationUsed)와 독립.
   // playerTerastallized=true면 공격 STAB 계산이 teraType 기반으로 바뀌고, 방어 시 유효
   // 타입이 [playerTeraType]로 치환된다. 스탯은 안 바뀌므로 전투 종료 시 그냥 사라진다(되돌릴 것 없음).
