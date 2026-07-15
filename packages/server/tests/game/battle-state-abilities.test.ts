@@ -6,7 +6,7 @@ vi.mock("../../src/storage/user-store.js", () => ({
   saveUser: vi.fn(async () => {}),
 }));
 
-import { doWildAttackAndCheck, executePlayerAttack, revertBattleForms, applyImposterOnSwitchIn } from "../../src/game/battle-state.js";
+import { doWildAttackAndCheck, executePlayerAttack, revertBattleForms, applyImposterOnSwitchIn, applyTraceOnSwitchIn } from "../../src/game/battle-state.js";
 import type { BattleState, MoveData, OwnedPokemon, UserData } from "../../../../shared/types.js";
 
 function makeStats(overrides?: Partial<{ attack: number; defense: number; speed: number; spAttack: number; spDefense: number }>) {
@@ -236,6 +236,40 @@ describe("imposter(변신둔갑)", () => {
     applyImposterOnSwitchIn(b1, noImp, []);
     expect(b1.playerPreTransform).toBeFalsy();
     expect(noImp.species).toBe("ditto");
+  });
+});
+
+// trace(트레이스) — 등장 시 상대 특성 복사, revert로 원복.
+describe("trace(트레이스)", () => {
+  it("상대 특성을 복사하고 revert로 원래 특성으로 되돌린다", () => {
+    const player = makePlayer({ species: "gardevoir", abilityId: "trace" });
+    const battle = makeBattle();
+    battle.wild.ability = "static";
+    const log: string[] = [];
+
+    applyTraceOnSwitchIn(battle, player, log);
+
+    expect(player.abilityId).toBe("static");
+    expect(battle.playerTraced).toEqual({ original: "trace" });
+    expect(log.some((l) => l.includes("트레이스"))).toBe(true);
+
+    revertBattleForms(battle, player);
+    expect(player.abilityId).toBe("trace");
+    expect(battle.playerTraced).toBeNull();
+  });
+
+  it("복사 불가 특성(disguise 등)이나 상대 무특성이면 no-op", () => {
+    const p1 = makePlayer({ abilityId: "trace" });
+    const b1 = makeBattle();
+    b1.wild.ability = "disguise";
+    applyTraceOnSwitchIn(b1, p1, []);
+    expect(p1.abilityId).toBe("trace");
+    expect(b1.playerTraced).toBeFalsy();
+
+    const p2 = makePlayer({ abilityId: "trace" });
+    const b2 = makeBattle(); // 야생 무특성
+    applyTraceOnSwitchIn(b2, p2, []);
+    expect(p2.abilityId).toBe("trace");
   });
 });
 

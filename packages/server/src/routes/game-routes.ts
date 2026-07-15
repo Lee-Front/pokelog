@@ -27,7 +27,7 @@ import {
 import { getClears, RANK_POINTS, PARTICIPATION_POINTS } from "../storage/boss-clears-store.js";
 import { defaultStatStages } from "../game/battle.js";
 import { applySwitchInAbilities } from "../game/abilities.js";
-import { applyImposterOnSwitchIn } from "../game/battle-state.js";
+import { applyImposterOnSwitchIn, applyTraceOnSwitchIn } from "../game/battle-state.js";
 import { checkPrimalReversion, getTransformedStats } from "../game/battle-transformations.js";
 import { appendEvent } from "../storage/event-log.js";
 import { wildPokemonToOwned } from "../game/pokemon-factory.js";
@@ -540,6 +540,7 @@ gameRoutes.post("/boss/start", async (req: AuthRequest, res: Response) => {
       battleState, "player", lead, battleState.wildStatStages!, startLog,
     );
     applyImposterOnSwitchIn(battleState, lead, startLog); // 변신둔갑
+    applyTraceOnSwitchIn(battleState, lead, startLog); // 트레이스
     battleState.playerStatStages = applySwitchInAbilities(
       battleState, "wild", wild, battleState.playerStatStages!, startLog,
     );
@@ -735,6 +736,7 @@ gameRoutes.post("/world-boss/enter", async (req: AuthRequest, res: Response) => 
       const startLog: string[] = [`월드보스 ${state.name}에게 도전한다!`];
       battleState.wildStatStages = applySwitchInAbilities(battleState, "player", pokemon, battleState.wildStatStages!, startLog);
       applyImposterOnSwitchIn(battleState, pokemon, startLog); // 변신둔갑
+      applyTraceOnSwitchIn(battleState, pokemon, startLog); // 트레이스
       battleState.playerStatStages = applySwitchInAbilities(battleState, "wild", wild, battleState.playerStatStages!, startLog);
 
       const seenList = user.seenSpecies ?? (user.seenSpecies = []);

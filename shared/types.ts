@@ -303,6 +303,9 @@ export interface BattleState {
     moves: PokemonMove[];
     abilityId?: string | null;
   } | null;
+  // trace(트레이스): 스위치인 시 상대 특성을 복사하며 원래 특성을 여기 보관하고,
+  // 전투 종료/교체 시 revertBattleForms가 abilityId를 원복한다(미원복 시 저장 개체 특성 오염 방지).
+  playerTraced?: { original: string | null } | null;
   // 테라스탈(플레이어 전용·배틀당 1회). 메가/거다이 게이트(transformationUsed)와 독립.
   // playerTerastallized=true면 공격 STAB 계산이 teraType 기반으로 바뀌고, 방어 시 유효
   // 타입이 [playerTeraType]로 치환된다. 스탯은 안 바뀌므로 전투 종료 시 그냥 사라진다(되돌릴 것 없음).

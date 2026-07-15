@@ -241,6 +241,12 @@ export function revertBattleForms(
     battle.playerPreTransform = null;
   }
 
+  // trace 원복: 복사한 상대 특성을 원래 특성으로 되돌린다(저장 개체 오염 방지).
+  if (battle.playerTraced) {
+    myPokemon.abilityId = battle.playerTraced.original;
+    battle.playerTraced = null;
+  }
+
   battle.transformationType = null;
   battle.transformationUsed = undefined;
   battle.gmaxTurnsRemaining = undefined;
@@ -515,6 +521,30 @@ export function applyImposterOnSwitchIn(battle: BattleState, player: OwnedPokemo
   if (battle.playerPreTransform) return;
   if (!battle.wild) return;
   applyPlayerTransform(battle, player, log);
+}
+
+// trace가 복사하지 못하는 특성(본가). 이 특성을 가진 상대에겐 발동하지 않는다.
+const UNTRACEABLE = new Set<string>([
+  "trace", "imposter", "multitype", "rks-system", "flower-gift", "forecast",
+  "zen-mode", "stance-change", "power-of-alchemy", "receiver", "disguise",
+  "power-construct", "schooling", "comatose", "shields-down", "battle-bond",
+  "ice-face", "gulp-missile", "neutralizing-gas", "as-one-glastrier", "as-one-spectrier",
+  "zero-to-hero", "hunger-switch", "commander", "poison-puppeteer", "tera-shift",
+]);
+
+/**
+ * trace(트레이스): 등장 시 상대(야생) 특성을 복사한다. 원래 특성은 battle.playerTraced에 저장,
+ * revertBattleForms가 전투 종료/교체 시 원복한다. 상대가 특성이 없거나 복사불가면 no-op.
+ * 이미 복사(playerTraced)했거나 변신(imposter) 중이면 발동하지 않는다.
+ */
+export function applyTraceOnSwitchIn(battle: BattleState, player: OwnedPokemon, log: string[]): void {
+  if (!hasAbility(player, "trace")) return;
+  if (battle.playerTraced || battle.playerPreTransform) return;
+  const wildAbility = battle.wild?.ability;
+  if (!wildAbility || UNTRACEABLE.has(wildAbility)) return;
+  battle.playerTraced = { original: player.abilityId ?? null };
+  player.abilityId = wildAbility;
+  log.push(`${getDisplaySpeciesName(player.species)}은(는) 트레이스로 ${getDisplaySpeciesName(battle.wild.species)}의 특성을 복사했다!`);
 }
 
 /**
