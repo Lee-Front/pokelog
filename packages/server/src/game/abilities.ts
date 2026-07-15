@@ -83,9 +83,14 @@ const TERRAIN_NAMES: Record<BattleTerrain, string> = {
  * oppStages를 mutate하지 않고 갱신된 StatStages를 반환한다(호출부가 대입).
  * 미특성/미지원이면 oppStages를 그대로 반환하고 battle/log를 건드리지 않는다.
  */
+const SELF_SWITCHIN_BOOST: Record<string, { stat: keyof StatStages; change: number }> = {
+  "intrepid-sword": { stat: "attack", change: 1 },   // 불요의검(자시안): 등장 시 공격 +1
+  "dauntless-shield": { stat: "defense", change: 1 }, // 불굴의방패(자마젠타): 등장 시 방어 +1
+};
+
 export function applySwitchInAbilities(
   battle: BattleState,
-  _side: "player" | "wild",
+  side: "player" | "wild",
   selfMon: AbilityHolder,
   oppStages: StatStages | undefined,
   log: string[],
@@ -97,6 +102,18 @@ export function applySwitchInAbilities(
     const next = applyStatChanges(oppStages ?? defaultStatStages(), [{ stat: "attack", change: -1 }]);
     log.push("위협으로 상대의 공격이 떨어졌다!");
     return next;
+  }
+
+  // 자기강화 스위치인(불요의검/불굴의방패): 등장한 쪽(side)의 스탯을 올린다.
+  const selfBoost = SELF_SWITCHIN_BOOST[ability];
+  if (selfBoost) {
+    if (side === "player") {
+      battle.playerStatStages = applyStatChanges(battle.playerStatStages ?? defaultStatStages(), [selfBoost]);
+    } else {
+      battle.wildStatStages = applyStatChanges(battle.wildStatStages ?? defaultStatStages(), [selfBoost]);
+    }
+    log.push(`특성으로 ${selfBoost.stat === "attack" ? "공격" : "방어"}이(가) 올랐다!`);
+    return oppStages;
   }
 
   const weather = WEATHER_SETTERS[ability];

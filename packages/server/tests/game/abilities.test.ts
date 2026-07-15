@@ -301,6 +301,20 @@ describe("applySwitchInAbilities", () => {
     expect(battle.terrain).toBe("electric");
     expect(battle.terrainTurns).toBeGreaterThan(0);
   });
+
+  it("intrepid-sword raises the switching-in player's attack (self, not opp)", () => {
+    const battle = makeBattle();
+    const opp = defaultStatStages();
+    const result = applySwitchInAbilities(battle, "player", { abilityId: "intrepid-sword" }, opp, []);
+    expect(battle.playerStatStages.attack).toBe(1);
+    expect(result).toBe(opp); // 상대 스탯은 그대로
+  });
+
+  it("dauntless-shield raises the switching-in wild's defense", () => {
+    const battle = makeBattle();
+    applySwitchInAbilities(battle, "wild", { ability: "dauntless-shield" }, defaultStatStages(), []);
+    expect(battle.wildStatStages.defense).toBe(1);
+  });
 });
 
 // ---------------------------------------------------------------------------
