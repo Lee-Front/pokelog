@@ -94,6 +94,9 @@ export function applySwitchInAbilities(
   selfMon: AbilityHolder,
   oppStages: StatStages | undefined,
   log: string[],
+  // download 판정용 상대 방어스탯(선택). side==="player"면 battle.wild.stats를 자동 사용하므로
+  // 보통은 side==="wild"(야생이 download)일 때 플레이어 방어스탯을 넘긴다.
+  oppDefensiveStats?: { defense: number; spDefense: number },
 ): StatStages | undefined {
   const ability = getAbility(selfMon);
   if (!ability) return oppStages;
@@ -113,6 +116,21 @@ export function applySwitchInAbilities(
       battle.wildStatStages = applyStatChanges(battle.wildStatStages ?? defaultStatStages(), [selfBoost]);
     }
     log.push(`특성으로 ${selfBoost.stat === "attack" ? "공격" : "방어"}이(가) 올랐다!`);
+    return oppStages;
+  }
+
+  // 다운로드(download): 상대 방어 ≤ 특방이면 공격 +1, 아니면 특수공격 +1.
+  if (ability === "download") {
+    const oppStats = side === "player" ? battle.wild.stats : oppDefensiveStats;
+    if (oppStats) {
+      const stat: keyof StatStages = oppStats.defense <= oppStats.spDefense ? "attack" : "spAttack";
+      if (side === "player") {
+        battle.playerStatStages = applyStatChanges(battle.playerStatStages ?? defaultStatStages(), [{ stat, change: 1 }]);
+      } else {
+        battle.wildStatStages = applyStatChanges(battle.wildStatStages ?? defaultStatStages(), [{ stat, change: 1 }]);
+      }
+      log.push(`다운로드로 ${stat === "attack" ? "공격" : "특수공격"}이(가) 올랐다!`);
+    }
     return oppStages;
   }
 

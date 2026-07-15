@@ -340,6 +340,18 @@ describe("applySwitchInAbilities", () => {
     applySwitchInAbilities(battle, "wild", { ability: "dauntless-shield" }, defaultStatStages(), []);
     expect(battle.wildStatStages.defense).toBe(1);
   });
+
+  it("download raises attack vs lower-defense foe, spAttack vs lower-spDefense foe", () => {
+    const b1 = makeBattle();
+    b1.wild.stats = { attack: 10, defense: 5, spAttack: 10, spDefense: 20, speed: 10 };
+    applySwitchInAbilities(b1, "player", { abilityId: "download" }, defaultStatStages(), []);
+    expect(b1.playerStatStages.attack).toBe(1); // 상대 방어(5) ≤ 특방(20) → 공격
+
+    const b2 = makeBattle();
+    b2.wild.stats = { attack: 10, defense: 20, spAttack: 10, spDefense: 5, speed: 10 };
+    applySwitchInAbilities(b2, "player", { abilityId: "download" }, defaultStatStages(), []);
+    expect(b2.playerStatStages.spAttack).toBe(1); // 상대 특방(5) < 방어(20) → 특공
+  });
 });
 
 // ---------------------------------------------------------------------------
